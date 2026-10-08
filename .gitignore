@@ -43,3 +43,26 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# macOS
+.DS_Store
+
+# Gizli anahtarlar ve imzalama
+.env
+.env.*
+key.properties
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+
+# Firebase servis hesabı / admin anahtarları
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# Swift Package Manager (SPM) üretilen klasörleri
+.build/
+.swiftpm/
+
+# Claude Code yerel ayarları (CLAUDE.md commit'lenir)
+.claude/settings.local.json
