@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "693709283304",
+    "project_id": "gu-kulupler",
+    "storage_bucket": "gu-kulupler.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:693709283304:android:8ad668f54333e7124d8e5d",
+        "android_client_info": {
+          "package_name": "com.gukulupler.gu_kulupler"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCui_oBSgqDNRreKwFYjKVaJqX74nfIRRU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
