@@ -66,3 +66,8 @@ serviceAccount*.json
 
 # Claude Code yerel ayarları (CLAUDE.md commit'lenir)
 .claude/settings.local.json
+
+# Kod üretimi
+*.g.dart
+*.gen.dart
+lib/product/generated/

@@ -1,0 +1,18 @@
+targets:
+  $default:
+    builders:
+      json_serializable:json_serializable:
+        generate_for:
+          - lib/**/*_model.dart
+        options:
+          # Modeller Firestore'a doğrudan Map olarak yazılır, jsonEncode çalışmaz.
+          # Bu seçenek olmadan iç içe modeller ham Dart nesnesi olarak üretilir
+          # ve yazma "Invalid argument" hatasıyla patlar.
+          explicit_to_json: true
+      go_router_builder:go_router_builder:
+        generate_for:
+          - lib/product/navigation/app_router.dart
+      riverpod_generator:
+        options:
+          provider_name_suffix: "Provider"
+          provider_family_name_suffix: "Provider"
