@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-09T07:49:00.164Z",
+  "updated": "2026-10-09T11:31:02.895Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -141,11 +141,13 @@
       "notes": "İnceleme: mimari 1 kritik + 2 önemli, test 3 önemli — hepsi düzeltildi; CD-77/78/79; K-28 yeni"
     },
     "T-01": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-09T10:15:58.580Z",
+      "finishedAt": "2026-10-09T11:31:02.894Z",
+      "commits": [
+        "ea3b1cd"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-02": {
@@ -905,6 +907,16 @@
       "date": "2026-10-09",
       "task": null,
       "text": "Kullanıcı 2026-10-09 09:15: Faz 1 bitince DUR; 'devam et' deyince T-01'den kaldığı yerden sürdür"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "Kullanıcı 2026-10-09: main GitHub'a push edildi (101121b..7a1d8aa); bundan sonra her task main'e merge edilince otomatik 'git push origin main' (force yok, yalnızca main)"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "Kullanıcı 2026-10-09 (güncelleme): main'e doğrudan commit/push YOK. Her task feat/T-xx dalında; kapı yeşil → dal push → gh PR aç → Claude PR'ı GitHub üzerinden merge eder (onay beklemez) → yerel main origin'den güncellenir; sonraki task güncel main'den dallanır. Faz/doküman commit'leri de dalda + PR"
     }
   ],
   "knownIssuesAdded": [
@@ -912,6 +924,26 @@
       "date": "2026-10-09",
       "task": "T-00",
       "text": "K-28 ARB çoğul dallarında # — gen-l10n literal basar; # → {değişken} (T-00), check_arb_parity ARB15"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "K-55 avatar baş harf kontrastı 2.80 (art.js:41) — kayıtlı, renk değişmez (Q-15)"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "K-56 Inter 700 paketli değil (D-12) → Flutter 600 çizer; kayıtlı"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "K-57 sabit px yazı stilleri metin ölçeğiyle büyümez → nonScalingStyleNames + TextScaler.noScaling"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-01",
+      "text": "K-58 text-wrap:pretty Flutter karşılığı yok; kabul"
     }
   ]
 }
