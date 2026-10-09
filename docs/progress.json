@@ -135,7 +135,7 @@
       "startedAt": "2026-10-09T04:19:09.011Z",
       "finishedAt": "2026-10-09T05:23:14.667Z",
       "commits": [
-        "207fbc0"
+        "90878c9"
       ],
       "gate": "12 adım yeşil · analyze 0 · test 15+1+1 · ARB 1235/1235 · kapsam n/a (iskelet)",
       "notes": "İnceleme: mimari 1 kritik + 2 önemli, test 3 önemli — hepsi düzeltildi; CD-77/78/79; K-28 yeni"
