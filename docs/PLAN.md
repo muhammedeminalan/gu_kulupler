@@ -793,7 +793,6 @@ packages/gu_ui/
 │   ├── overlay/                      ← T-07  gu_sheet_frame.dart (GuSheetFrame: standard/full/flush/menu/footer; scrim, X, sürükle > GuSizes.sheetDragCloseThreshold, geri; GuContentColumn ile sarılı — CD-29) · gu_dialog_frame.dart (odak tuzağı) · gu_toast.dart (GuToast + GuToastHost: en çok 1, çubuk üstü; enum GuToastKind) · gu_pop_menu.dart (GuPopMenu)
 │   ├── extensions/
 │   │   ├── build_context_x.dart      ← T-01  GuBuildContextX: `context.gu` (GuThemeExtension) — tek getter; isCompact yok, genişlik kararı GuBreakpoints.isWide(context)
-│   │   ├── num_x.dart                ← T-01  num.gap / num.insetsAll (yalnızca GuSpacing sabitleriyle)
 │   │   └── string_x.dart             ← T-01  String.trLower() / trUpper() (İ→i, I→ı; ğ/ş/ç/ö/ü) · initials — CD-11; ViewModel nameLower/emailLower üretiminde bunu kullanır
 │   └── utils/
 │       ├── gu_key.dart               ← T-02  GuKey.action('<ID>.<aksiyon>') → ValueKey<String> (D-18)
@@ -1530,7 +1529,6 @@ linter:
 | `theme/gu_theme_extension.dart` | `GuThemeExtension` | `context.gu` arkasındaki değer nesnesi (§7.9.1) | T-01 | `theme/gu_theme_extension_test.dart` |
 | `theme/gu_system_ui.dart` | `GuSystemUi`, `GuSystemUiStyle` | durum çubuğu kapsayıcısı (§7.12) | T-07 | `theme/gu_system_ui_test.dart` |
 | `extensions/build_context_x.dart` | `GuBuildContextX` (`extension on BuildContext`) | `context.gu` getter'ı | T-01 | `theme/gu_theme_extension_test.dart` |
-| `extensions/num_x.dart` | `GuNumX` (`extension on num`) | `.gap` → `SizedBox`, `.insetsAll` → `EdgeInsets` yalnızca `GuSpacing` sabitleriyle çağrılır | T-01 | `tokens/gu_spacing_test.dart` |
 | `icons/gu_icons.dart` | `GuIcons` (enum, 130 üye) | kayıt defteri (§7.11) | T-03 | `icons/gu_icons_test.dart` |
 | `icons/gu_icon.dart` | `GuIcon` | widget (§7.11) | T-03 | `icons/gu_icon_test.dart` + golden |
 | `utils/text_scale.dart` | `GuTextScale` | metin ölçeği sarmalayıcısı (§7.13) | T-07 | `utils/gu_text_scale_test.dart` |
