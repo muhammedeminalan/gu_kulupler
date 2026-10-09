@@ -4961,7 +4961,7 @@ Kurulum (T-10, §11.6 ile birebir — CD-40): `firebase/package.json` (`@firebas
 | `view` | `lib/features/<f>/view/**` | **≥ 80 %** |
 
 - Hariç (`EXCLUDE`): `*.g.dart`, `*.gen.dart`, `*.freezed.dart`, `firebase_options.dart`, `lib/l10n/app_localizations*`. `lib/core/**` ve `lib/product/**` gruplara girmez (eşik yok) — ama D-33 gereği test zorunludur; `gu-test-auditor` eşleme kontrolüyle yakalar.
-- lcov'da görünmeyen (> 8 satır) kaynak dosya → **UYARI** (`"<dosya> hiçbir testte yüklenmiyor"`), ilk 20'si listelenir; eşik altı → **HATA** (`check_coverage: N hata`, çıkış 1). Girdi: `coverage/lcov.info` + `packages/*/coverage/lcov.info` (`flutter test --coverage`, yalnızca tam modda; `--fast` kapsamı atlar).
+- lcov'da görünmeyen ve çalıştırılabilir kod içeren kaynak dosya (CD-77; barrel/boş dosya ölçülemez sayılır) → **UYARI** (`"<dosya> hiçbir testte yüklenmiyor"`), ilk 20'si listelenir; eşik altı → **HATA** (`check_coverage: N hata`, çıkış 1). Girdi: `coverage/lcov.info` + `packages/*/coverage/lcov.info` (`flutter test --coverage`, yalnızca tam modda; `--fast` kapsamı atlar).
 - Hedef takibi: her task özetinde dört satırın yüzdesi; düşüş = inceleme notu.
 
 ### 16.8 `integration_test` akışları (emülatör; `flutter test integration_test --dart-define=ENV=emulator`, seed `tool/seed` → `demo-gu-kulupler`)

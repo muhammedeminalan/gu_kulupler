@@ -398,7 +398,7 @@
   "@adminClubsTitle": {
     "description": "Key adminClubs.title"
   },
-  "adminUsersClubCount": "{count, plural, one{# club} other{# clubs}}",
+  "adminUsersClubCount": "{count, plural, one{{count} club} other{{count} clubs}}",
   "@adminUsersClubCount": {
     "description": "Key adminUsers.clubCount",
     "placeholders": {
@@ -614,335 +614,6 @@
   "appliedTitle": "Your request was sent to the club board",
   "@appliedTitle": {
     "description": "Key applied.title"
-  },
-  "assetsCancel": "Cancel",
-  "@assetsCancel": {
-    "description": "Key assets.cancel"
-  },
-  "assetsColorsBadges": "Role & status badges",
-  "@assetsColorsBadges": {
-    "description": "Key assets.colors.badges"
-  },
-  "assetsColorsContrast": "Contrast (on surface)",
-  "@assetsColorsContrast": {
-    "description": "Key assets.colors.contrast"
-  },
-  "assetsColorsCopyCss": "CSS var",
-  "@assetsColorsCopyCss": {
-    "description": "Key assets.colors.copyCss"
-  },
-  "assetsColorsCopyDart": "Flutter",
-  "@assetsColorsCopyDart": {
-    "description": "Key assets.colors.copyDart"
-  },
-  "assetsColorsCopyHex": "Hex",
-  "@assetsColorsCopyHex": {
-    "description": "Key assets.colors.copyHex"
-  },
-  "assetsColorsDark": "Dark",
-  "@assetsColorsDark": {
-    "description": "Key assets.colors.dark"
-  },
-  "assetsColorsLight": "Light",
-  "@assetsColorsLight": {
-    "description": "Key assets.colors.light"
-  },
-  "assetsColorsPalettes": "Cover palettes",
-  "@assetsColorsPalettes": {
-    "description": "Key assets.colors.palettes"
-  },
-  "assetsColorsToken": "Token",
-  "@assetsColorsToken": {
-    "description": "Key assets.colors.token"
-  },
-  "assetsColorsUsage": "Usage",
-  "@assetsColorsUsage": {
-    "description": "Key assets.colors.usage"
-  },
-  "assetsCopied": "Copied",
-  "@assetsCopied": {
-    "description": "Key assets.copied"
-  },
-  "assetsCoversAvatar": "Avatar generator",
-  "@assetsCoversAvatar": {
-    "description": "Key assets.covers.avatar"
-  },
-  "assetsCoversClubs": "14 club covers (real seeds)",
-  "@assetsCoversClubs": {
-    "description": "Key assets.covers.clubs"
-  },
-  "assetsCoversGenerator": "CoverArt generator",
-  "@assetsCoversGenerator": {
-    "description": "Key assets.covers.generator"
-  },
-  "assetsCoversIcon": "Icon",
-  "@assetsCoversIcon": {
-    "description": "Key assets.covers.icon"
-  },
-  "assetsCoversName": "Name",
-  "@assetsCoversName": {
-    "description": "Key assets.covers.name"
-  },
-  "assetsCoversPatterns": "Patterns",
-  "@assetsCoversPatterns": {
-    "description": "Key assets.covers.patterns"
-  },
-  "assetsCoversSeed": "Seed",
-  "@assetsCoversSeed": {
-    "description": "Key assets.covers.seed"
-  },
-  "assetsCoversTemplates": "12 templates (3 palettes × 4 patterns)",
-  "@assetsCoversTemplates": {
-    "description": "Key assets.covers.templates"
-  },
-  "assetsDataArb": "Language files (ARB)",
-  "@assetsDataArb": {
-    "description": "Key assets.data.arb"
-  },
-  "assetsDataArbNote": "Generated from the dictionary: @@locale, ICU plurals/params, @key description for each key. Keys are camelCased for Flutter gen-l10n.",
-  "@assetsDataArbNote": {
-    "description": "Key assets.data.arbNote"
-  },
-  "assetsDataDemo": "demo-data.json",
-  "@assetsDataDemo": {
-    "description": "Key assets.data.demo"
-  },
-  "assetsDataDemoNote": "All of section 11: users, clubs, events, posts, notifications, applications, reports. Dates as ISO 8601 + relative day offset.",
-  "@assetsDataDemoNote": {
-    "description": "Key assets.data.demoNote"
-  },
-  "assetsDataFilter": "Search key or text",
-  "@assetsDataFilter": {
-    "description": "Key assets.data.filter"
-  },
-  "assetsDataKey": "Key",
-  "@assetsDataKey": {
-    "description": "Key assets.data.key"
-  },
-  "assetsDataKeys": "{count} keys",
-  "@assetsDataKeys": {
-    "description": "Key assets.data.keys",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsDataMissing": "Missing translations",
-  "@assetsDataMissing": {
-    "description": "Key assets.data.missing"
-  },
-  "assetsDataShowing": "Showing first {n} rows",
-  "@assetsDataShowing": {
-    "description": "Key assets.data.showing",
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsDesc": "Every visual and code asset used in the project. Download everything as a ZIP or grab items one by one.",
-  "@assetsDesc": {
-    "description": "Key assets.desc"
-  },
-  "assetsDownloadAll": "Download all (ZIP)",
-  "@assetsDownloadAll": {
-    "description": "Key assets.downloadAll"
-  },
-  "assetsDownloadSection": "Download this section (ZIP)",
-  "@assetsDownloadSection": {
-    "description": "Key assets.downloadSection"
-  },
-  "assetsFlutterCopy": "Copy",
-  "@assetsFlutterCopy": {
-    "description": "Key assets.flutter.copy"
-  },
-  "assetsFlutterDownload": "Download",
-  "@assetsFlutterDownload": {
-    "description": "Key assets.flutter.download"
-  },
-  "assetsFlutterNote": "Dart files generated from the design tokens. Values match section 4.1 exactly.",
-  "@assetsFlutterNote": {
-    "description": "Key assets.flutter.note"
-  },
-  "assetsFontsFail": "Font files could not be included in the ZIP; use the Google Fonts link.",
-  "@assetsFontsFail": {
-    "description": "Key assets.fontsFail"
-  },
-  "assetsIconsAliases": "Legacy names (aliases)",
-  "@assetsIconsAliases": {
-    "description": "Key assets.icons.aliases"
-  },
-  "assetsIconsColor": "Colour (preview)",
-  "@assetsIconsColor": {
-    "description": "Key assets.icons.color"
-  },
-  "assetsIconsCopyName": "Copy name",
-  "@assetsIconsCopyName": {
-    "description": "Key assets.icons.copyName"
-  },
-  "assetsIconsCopySvg": "Copy SVG",
-  "@assetsIconsCopySvg": {
-    "description": "Key assets.icons.copySvg"
-  },
-  "assetsIconsCount": "{count} icons · single ICONS registry · Lucide (ISC)",
-  "@assetsIconsCount": {
-    "description": "Key assets.icons.count",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsIconsFlutter": "Copy Flutter code",
-  "@assetsIconsFlutter": {
-    "description": "Key assets.icons.flutter"
-  },
-  "assetsIconsSize": "Size",
-  "@assetsIconsSize": {
-    "description": "Key assets.icons.size"
-  },
-  "assetsIconsSource": "Source: {src}",
-  "@assetsIconsSource": {
-    "description": "Key assets.icons.source",
-    "placeholders": {
-      "src": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsIconsStroke": "Stroke width",
-  "@assetsIconsStroke": {
-    "description": "Key assets.icons.stroke"
-  },
-  "assetsIconsSvg": "Download SVG",
-  "@assetsIconsSvg": {
-    "description": "Key assets.icons.svg"
-  },
-  "assetsIllusNote": "12 illustrations · single tone + red accent · light/dark ready",
-  "@assetsIllusNote": {
-    "description": "Key assets.illus.note"
-  },
-  "assetsLogoAppIcon": "App icon proposal (1024 × 1024)",
-  "@assetsLogoAppIcon": {
-    "description": "Key assets.logo.appIcon"
-  },
-  "assetsLogoMasks": "iOS rounded · Android circular mask",
-  "@assetsLogoMasks": {
-    "description": "Key assets.logo.masks"
-  },
-  "assetsLogoPlaceholder": "LogoPlaceholder (fallback mark)",
-  "@assetsLogoPlaceholder": {
-    "description": "Key assets.logo.placeholder"
-  },
-  "assetsLogoPlaceholderNote": "The red round mark used before the real logo arrived. Replace with the official logo where needed.",
-  "@assetsLogoPlaceholderNote": {
-    "description": "Key assets.logo.placeholderNote"
-  },
-  "assetsLogoReal": "Official logo (provided by the user)",
-  "@assetsLogoReal": {
-    "description": "Key assets.logo.real"
-  },
-  "assetsLogoRealNote": "The real university logo was added as app/assets/gu-logo.png and is used in the app. Usage rights belong to the university.",
-  "@assetsLogoRealNote": {
-    "description": "Key assets.logo.realNote"
-  },
-  "assetsLogoVariants": "Horizontal · Vertical · Mark only",
-  "@assetsLogoVariants": {
-    "description": "Key assets.logo.variants"
-  },
-  "assetsProgress": "{a}/{b} files",
-  "@assetsProgress": {
-    "description": "Key assets.progress",
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsSearch": "Search assets",
-  "@assetsSearch": {
-    "description": "Key assets.search"
-  },
-  "assetsTabColors": "Colours",
-  "@assetsTabColors": {
-    "description": "Key assets.tab.colors"
-  },
-  "assetsTabCovers": "Covers & Patterns",
-  "@assetsTabCovers": {
-    "description": "Key assets.tab.covers"
-  },
-  "assetsTabData": "Data & Language",
-  "@assetsTabData": {
-    "description": "Key assets.tab.data"
-  },
-  "assetsTabFlutter": "Flutter Output",
-  "@assetsTabFlutter": {
-    "description": "Key assets.tab.flutter"
-  },
-  "assetsTabIcons": "Icons",
-  "@assetsTabIcons": {
-    "description": "Key assets.tab.icons"
-  },
-  "assetsTabIllus": "Illustrations",
-  "@assetsTabIllus": {
-    "description": "Key assets.tab.illus"
-  },
-  "assetsTabLogo": "Logo",
-  "@assetsTabLogo": {
-    "description": "Key assets.tab.logo"
-  },
-  "assetsTabType": "Typography",
-  "@assetsTabType": {
-    "description": "Key assets.tab.type"
-  },
-  "assetsTitle": "Assets",
-  "@assetsTitle": {
-    "description": "Key assets.title"
-  },
-  "assetsTypeCopyCss": "Copy CSS",
-  "@assetsTypeCopyCss": {
-    "description": "Key assets.type.copyCss"
-  },
-  "assetsTypeCopyDart": "Copy TextStyle",
-  "@assetsTypeCopyDart": {
-    "description": "Key assets.type.copyDart"
-  },
-  "assetsTypeLatinExt": "latin-ext is required: ğ, ş, İ, ı",
-  "@assetsTypeLatinExt": {
-    "description": "Key assets.type.latinExt"
-  },
-  "assetsTypeOpenGoogle": "Open on Google Fonts",
-  "@assetsTypeOpenGoogle": {
-    "description": "Key assets.type.openGoogle"
-  },
-  "assetsTypeSample": "ĞÜŞİÖÇ ğüşıöç — Gümüşhane Üniversitesi — 0123456789",
-  "@assetsTypeSample": {
-    "description": "Key assets.type.sample"
-  },
-  "assetsTypeScale": "Type scale",
-  "@assetsTypeScale": {
-    "description": "Key assets.type.scale"
-  },
-  "assetsTypeWoff2": "Download woff2 (latin + latin-ext)",
-  "@assetsTypeWoff2": {
-    "description": "Key assets.type.woff2"
-  },
-  "assetsZipDone": "ZIP ready: {name}",
-  "@assetsZipDone": {
-    "description": "Key assets.zipDone",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsZipFail": "ZIP library could not load; downloading files one by one.",
-  "@assetsZipFail": {
-    "description": "Key assets.zipFail"
   },
   "attendanceAbsent": "No-show",
   "@attendanceAbsent": {
@@ -1587,7 +1258,7 @@
   "@clubsCardMemberShort": {
     "description": "Key clubs.card.memberShort"
   },
-  "clubsCardMembers": "{count, plural, one{# member} other{# members}}",
+  "clubsCardMembers": "{count, plural, one{{count} member} other{{count} members}}",
   "@clubsCardMembers": {
     "description": "Key clubs.card.members",
     "placeholders": {
@@ -1612,7 +1283,7 @@
   "@clubsCardRemoved": {
     "description": "Key clubs.card.removed"
   },
-  "clubsCount": "{count, plural, one{# club} other{# clubs}}",
+  "clubsCount": "{count, plural, one{{count} club} other{{count} clubs}}",
   "@clubsCount": {
     "description": "Key clubs.count",
     "placeholders": {
@@ -1950,7 +1621,7 @@
   "@contentHidden": {
     "description": "Key content.hidden"
   },
-  "contentReports": "{count, plural, one{# report} other{# reports}}",
+  "contentReports": "{count, plural, one{{count} report} other{{count} reports}}",
   "@contentReports": {
     "description": "Key content.reports",
     "placeholders": {
@@ -2664,118 +2335,6 @@
   "@dlgSystemPermissionBody": {
     "description": "Key dlg.system.permissionBody"
   },
-  "dsCatalogNote": "Opens the prototype with a suitable demo account and shows the item with sample data.",
-  "@dsCatalogNote": {
-    "description": "Key ds.catalogNote"
-  },
-  "dsCopyCode": "Copy code",
-  "@dsCopyCode": {
-    "description": "Key ds.copyCode"
-  },
-  "dsDesc": "Every component with all variants and states, light and dark side by side. The Catalog tab opens each sheet, dialog and toast inside the prototype.",
-  "@dsDesc": {
-    "description": "Key ds.desc"
-  },
-  "dsMotionCheck": "Success stroke",
-  "@dsMotionCheck": {
-    "description": "Key ds.motion.check"
-  },
-  "dsMotionDialog": "Dialog",
-  "@dsMotionDialog": {
-    "description": "Key ds.motion.dialog"
-  },
-  "dsMotionPage": "Page transition",
-  "@dsMotionPage": {
-    "description": "Key ds.motion.page"
-  },
-  "dsMotionReduced": "prefers-reduced-motion: fade only",
-  "@dsMotionReduced": {
-    "description": "Key ds.motion.reduced"
-  },
-  "dsMotionReplay": "Replay",
-  "@dsMotionReplay": {
-    "description": "Key ds.motion.replay"
-  },
-  "dsMotionSheet": "Bottom sheet",
-  "@dsMotionSheet": {
-    "description": "Key ds.motion.sheet"
-  },
-  "dsOpen": "Open",
-  "@dsOpen": {
-    "description": "Key ds.open"
-  },
-  "dsOpenInProto": "Open in prototype",
-  "@dsOpenInProto": {
-    "description": "Key ds.openInProto"
-  },
-  "dsSecBadges": "Badges & avatars",
-  "@dsSecBadges": {
-    "description": "Key ds.sec.badges"
-  },
-  "dsSecBanners": "Banners",
-  "@dsSecBanners": {
-    "description": "Key ds.sec.banners"
-  },
-  "dsSecButtons": "Buttons",
-  "@dsSecButtons": {
-    "description": "Key ds.sec.buttons"
-  },
-  "dsSecCards": "Cards",
-  "@dsSecCards": {
-    "description": "Key ds.sec.cards"
-  },
-  "dsSecCatalog": "Catalog",
-  "@dsSecCatalog": {
-    "description": "Key ds.sec.catalog"
-  },
-  "dsSecColors": "Colours",
-  "@dsSecColors": {
-    "description": "Key ds.sec.colors"
-  },
-  "dsSecFeedback": "Feedback",
-  "@dsSecFeedback": {
-    "description": "Key ds.sec.feedback"
-  },
-  "dsSecInputs": "Inputs",
-  "@dsSecInputs": {
-    "description": "Key ds.sec.inputs"
-  },
-  "dsSecMotion": "Motion",
-  "@dsSecMotion": {
-    "description": "Key ds.sec.motion"
-  },
-  "dsSecNav": "Navigation",
-  "@dsSecNav": {
-    "description": "Key ds.sec.nav"
-  },
-  "dsSecOverlays": "Sheet / Dialog / Toast",
-  "@dsSecOverlays": {
-    "description": "Key ds.sec.overlays"
-  },
-  "dsSecSelection": "Selection controls",
-  "@dsSecSelection": {
-    "description": "Key ds.sec.selection"
-  },
-  "dsSecSpace": "Spacing, radius, elevation",
-  "@dsSecSpace": {
-    "description": "Key ds.sec.space"
-  },
-  "dsSecSpecial": "Custom components",
-  "@dsSecSpecial": {
-    "description": "Key ds.sec.special"
-  },
-  "dsSecType": "Typography",
-  "@dsSecType": {
-    "description": "Key ds.sec.type"
-  },
-  "dsState": "State",
-  "@dsState": {
-    "description": "Key ds.state"
-  },
-  "dsTitle": "Design System",
-  "@dsTitle": {
-    "description": "Key ds.title"
-  },
   "editProfileBio": "Short bio",
   "@editProfileBio": {
     "description": "Key editProfile.bio"
@@ -2898,7 +2457,7 @@
       }
     }
   },
-  "eventRemaining": "{count, plural, one{# spot left} other{# spots left}}",
+  "eventRemaining": "{count, plural, one{{count} spot left} other{{count} spots left}}",
   "@eventRemaining": {
     "description": "Key event.remaining",
     "placeholders": {
@@ -3330,7 +2889,7 @@
       }
     }
   },
-  "feedPollVotes": "{count, plural, one{# vote} other{# votes}}",
+  "feedPollVotes": "{count, plural, one{{count} vote} other{{count} votes}}",
   "@feedPollVotes": {
     "description": "Key feed.poll.votes",
     "placeholders": {
@@ -3435,9 +2994,14 @@
   "@legalAccept": {
     "description": "Key legal.accept"
   },
-  "legalGizlilikB1": "This policy explains what information the GÜ Kulüpler app collects and how it is used.",
+  "legalGizlilikB1": "This policy explains what information the {appName} app collects and how it is used.",
   "@legalGizlilikB1": {
-    "description": "Key legal.gizlilik.b1"
+    "description": "Key legal.gizlilik.b1",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "legalGizlilikB2": "Your account is created with your university email; the email is visible only to club managers.",
   "@legalGizlilikB2": {
@@ -3635,66 +3199,6 @@
   "@legalUpdated": {
     "description": "Key legal.updated"
   },
-  "mapAssumptions": "Assumptions",
-  "@mapAssumptions": {
-    "description": "Key map.assumptions"
-  },
-  "mapColId": "ID",
-  "@mapColId": {
-    "description": "Key map.col.id"
-  },
-  "mapColName": "Screen",
-  "@mapColName": {
-    "description": "Key map.col.name"
-  },
-  "mapColOpen": "Open",
-  "@mapColOpen": {
-    "description": "Key map.col.open"
-  },
-  "mapColRoles": "Roles",
-  "@mapColRoles": {
-    "description": "Key map.col.roles"
-  },
-  "mapColRoute": "Route",
-  "@mapColRoute": {
-    "description": "Key map.col.route"
-  },
-  "mapDesc": "Flow diagrams, the 51-screen inventory and the assumptions made. Tapping a node opens the prototype at that screen with a suitable demo account.",
-  "@mapDesc": {
-    "description": "Key map.desc"
-  },
-  "mapFlows": "Flow diagrams",
-  "@mapFlows": {
-    "description": "Key map.flows"
-  },
-  "mapInventory": "Screen inventory",
-  "@mapInventory": {
-    "description": "Key map.inventory"
-  },
-  "mapRolesAdmin": "Super admin",
-  "@mapRolesAdmin": {
-    "description": "Key map.roles.admin"
-  },
-  "mapRolesAll": "All",
-  "@mapRolesAll": {
-    "description": "Key map.roles.all"
-  },
-  "mapRolesGuest": "Signed out",
-  "@mapRolesGuest": {
-    "description": "Key map.roles.guest"
-  },
-  "mapRolesManager": "Board, President (Advisor read-only)",
-  "@mapRolesManager": {
-    "description": "Key map.roles.manager"
-  },
-  "mapRolesMember": "Member+",
-  "@mapRolesMember": {
-    "description": "Key map.roles.member"
-  },
-  "mapTitle": "Screen Map",
-  "@mapTitle": {
-    "description": "Key map.title"
-  },
   "membersFilterBoard": "Board",
   "@membersFilterBoard": {
     "description": "Key members.filter.board"
@@ -3711,7 +3215,7 @@
   "@membersTitle": {
     "description": "Key members.title"
   },
-  "membersTotal": "{count, plural, one{# person} other{# people}}",
+  "membersTotal": "{count, plural, one{{count} person} other{{count} people}}",
   "@membersTotal": {
     "description": "Key members.total",
     "placeholders": {
@@ -4249,9 +3753,14 @@
   "@notifTypeSystemWelcomeBody": {
     "description": "Key notifType.system.welcome.body"
   },
-  "notifTypeSystemWelcomeTitle": "Welcome to GÜ Kulüpler",
+  "notifTypeSystemWelcomeTitle": "Welcome to {appNameDative}",
   "@notifTypeSystemWelcomeTitle": {
-    "description": "Key notifType.system.welcome.title"
+    "description": "Key notifType.system.welcome.title",
+    "placeholders": {
+      "appNameDative": {
+        "type": "String"
+      }
+    }
   },
   "notifTypeWaitlistPromotedBody": "You were promoted from the waitlist for {event}. Your ticket is ready.",
   "@notifTypeWaitlistPromotedBody": {
@@ -4306,139 +3815,6 @@
   "@onbTitle": {
     "description": "Key onb.title"
   },
-  "panelAccAdmin": "Super admin",
-  "@panelAccAdmin": {
-    "description": "Key panel.acc.admin"
-  },
-  "panelAccAyse": "No clubs",
-  "@panelAccAyse": {
-    "description": "Key panel.acc.ayse"
-  },
-  "panelAccBurak": "Outdoors president",
-  "@panelAccBurak": {
-    "description": "Key panel.acc.burak"
-  },
-  "panelAccElif": "Software board",
-  "@panelAccElif": {
-    "description": "Key panel.acc.elif"
-  },
-  "panelAccMehmet": "2 clubs, 1 pending",
-  "@panelAccMehmet": {
-    "description": "Key panel.acc.mehmet"
-  },
-  "panelAccZeynep": "Read-only",
-  "@panelAccZeynep": {
-    "description": "Key panel.acc.zeynep"
-  },
-  "panelAccount": "Account",
-  "@panelAccount": {
-    "description": "Key panel.account"
-  },
-  "panelAppearance": "Appearance",
-  "@panelAppearance": {
-    "description": "Key panel.appearance"
-  },
-  "panelApplicationSim": "Application simulation",
-  "@panelApplicationSim": {
-    "description": "Key panel.applicationSim"
-  },
-  "panelApproveMine": "Approve",
-  "@panelApproveMine": {
-    "description": "Key panel.approveMine"
-  },
-  "panelData": "Data state",
-  "@panelData": {
-    "description": "Key panel.data"
-  },
-  "panelDataGroup": "Data",
-  "@panelDataGroup": {
-    "description": "Key panel.dataGroup"
-  },
-  "panelDownloadJson": "Download all demo data (JSON)",
-  "@panelDownloadJson": {
-    "description": "Key panel.downloadJson"
-  },
-  "panelEmpty": "Empty",
-  "@panelEmpty": {
-    "description": "Key panel.empty"
-  },
-  "panelError": "Error",
-  "@panelError": {
-    "description": "Key panel.error"
-  },
-  "panelForceUpdate": "Show forced update",
-  "@panelForceUpdate": {
-    "description": "Key panel.forceUpdate"
-  },
-  "panelFrame": "Device frame",
-  "@panelFrame": {
-    "description": "Key panel.frame"
-  },
-  "panelLoginAs": "Sign in with this account",
-  "@panelLoginAs": {
-    "description": "Key panel.loginAs"
-  },
-  "panelNetwork": "Network",
-  "@panelNetwork": {
-    "description": "Key panel.network"
-  },
-  "panelNoPending": "This account has no pending application.",
-  "@panelNoPending": {
-    "description": "Key panel.noPending"
-  },
-  "panelNormal": "Normal",
-  "@panelNormal": {
-    "description": "Key panel.normal"
-  },
-  "panelOffline": "Offline",
-  "@panelOffline": {
-    "description": "Key panel.offline"
-  },
-  "panelOnline": "Online",
-  "@panelOnline": {
-    "description": "Key panel.online"
-  },
-  "panelPendingAt": "Pending application: {club}",
-  "@panelPendingAt": {
-    "description": "Key panel.pendingAt",
-    "placeholders": {
-      "club": {
-        "type": "String"
-      }
-    }
-  },
-  "panelRejectMine": "Reject",
-  "@panelRejectMine": {
-    "description": "Key panel.rejectMine"
-  },
-  "panelResetData": "Reset demo data",
-  "@panelResetData": {
-    "description": "Key panel.resetData"
-  },
-  "panelResetNotifPerm": "Reset notification permission",
-  "@panelResetNotifPerm": {
-    "description": "Key panel.resetNotifPerm"
-  },
-  "panelSessionExpired": "Session expired",
-  "@panelSessionExpired": {
-    "description": "Key panel.sessionExpired"
-  },
-  "panelShowLoading": "Show loading state (3 s)",
-  "@panelShowLoading": {
-    "description": "Key panel.showLoading"
-  },
-  "panelSimulateNotif": "Simulate a notification",
-  "@panelSimulateNotif": {
-    "description": "Key panel.simulateNotif"
-  },
-  "panelSlow": "Slow",
-  "@panelSlow": {
-    "description": "Key panel.slow"
-  },
-  "panelSystem": "System events",
-  "@panelSystem": {
-    "description": "Key panel.system"
-  },
   "placePl01": "Congress & Culture Centre — Hall A",
   "@placePl01": {
     "description": "Key place.pl01"
@@ -4483,15 +3859,12 @@
   "@postAdvisorNoComment": {
     "description": "Key post.advisorNoComment"
   },
-  "postComments": "{count, plural, =0{Comments} one{# comment} other{# comments}}",
+  "postComments": "{count, plural, =0{Comments} one{{count} comment} other{{count} comments}}",
   "@postComments": {
     "description": "Key post.comments",
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "Comments": {
-        "type": "String"
       }
     }
   },
@@ -4558,138 +3931,6 @@
   "profileYear": "Year",
   "@profileYear": {
     "description": "Key profile.year"
-  },
-  "qaColAction": "Action",
-  "@qaColAction": {
-    "description": "Key qa.col.action"
-  },
-  "qaColCount": "Clicks",
-  "@qaColCount": {
-    "description": "Key qa.col.count"
-  },
-  "qaColResult": "Result type",
-  "@qaColResult": {
-    "description": "Key qa.col.result"
-  },
-  "qaColScreen": "Screen",
-  "@qaColScreen": {
-    "description": "Key qa.col.screen"
-  },
-  "qaCoverage": "Coverage summary",
-  "@qaCoverage": {
-    "description": "Key qa.coverage"
-  },
-  "qaDeadSession": "Dead clicks caught this session",
-  "@qaDeadSession": {
-    "description": "Key qa.dead.session"
-  },
-  "qaDeadList": "Dead elements",
-  "@qaDeadList": {
-    "description": "Key qa.deadList"
-  },
-  "qaDesc": "Action coverage, dead-element scan and the section-15 self-check report.",
-  "@qaDesc": {
-    "description": "Key qa.desc"
-  },
-  "qaDialogs": "Dialogs",
-  "@qaDialogs": {
-    "description": "Key qa.dialogs"
-  },
-  "qaDownload": "Download report",
-  "@qaDownload": {
-    "description": "Key qa.download"
-  },
-  "qaFail": "FAIL",
-  "@qaFail": {
-    "description": "Key qa.fail"
-  },
-  "qaI18nMissing": "Missing i18n keys",
-  "@qaI18nMissing": {
-    "description": "Key qa.i18nMissing"
-  },
-  "qaMissingIds": "Missing ids",
-  "@qaMissingIds": {
-    "description": "Key qa.missingIds"
-  },
-  "qaNoClicks": "No clicks recorded yet. Start using the prototype.",
-  "@qaNoClicks": {
-    "description": "Key qa.noClicks"
-  },
-  "qaNoDead": "No dead elements",
-  "@qaNoDead": {
-    "description": "Key qa.noDead"
-  },
-  "qaPass": "PASS",
-  "@qaPass": {
-    "description": "Key qa.pass"
-  },
-  "qaPending": "RUN SCAN",
-  "@qaPending": {
-    "description": "Key qa.pending"
-  },
-  "qaRegistry": "Action registry",
-  "@qaRegistry": {
-    "description": "Key qa.registry"
-  },
-  "qaRegistryNote": "Every data-action clicked this session is collected here; the result type is classified by observing what changed after the click.",
-  "@qaRegistryNote": {
-    "description": "Key qa.registryNote"
-  },
-  "qaRunAll": "Run checks",
-  "@qaRunAll": {
-    "description": "Key qa.runAll"
-  },
-  "qaScanAll": "Scan all screens",
-  "@qaScanAll": {
-    "description": "Key qa.scanAll"
-  },
-  "qaScanResult": "{total} interactive elements · {dead} dead elements",
-  "@qaScanResult": {
-    "description": "Key qa.scanResult",
-    "placeholders": {
-      "total": {
-        "type": "String"
-      },
-      "dead": {
-        "type": "String"
-      }
-    }
-  },
-  "qaScanThis": "Scan this screen",
-  "@qaScanThis": {
-    "description": "Key qa.scanThis"
-  },
-  "qaScanning": "Scanning… {a}/{b}",
-  "@qaScanning": {
-    "description": "Key qa.scanning",
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
-  "qaScreens": "Screens",
-  "@qaScreens": {
-    "description": "Key qa.screens"
-  },
-  "qaSelfCheck": "Self-check report (section 15)",
-  "@qaSelfCheck": {
-    "description": "Key qa.selfCheck"
-  },
-  "qaSheets": "Sheets",
-  "@qaSheets": {
-    "description": "Key qa.sheets"
-  },
-  "qaTitle": "Quality Check",
-  "@qaTitle": {
-    "description": "Key qa.title"
-  },
-  "qaToasts": "Toasts",
-  "@qaToasts": {
-    "description": "Key qa.toasts"
   },
   "rejectReasonCriteria": "Criteria not met",
   "@rejectReasonCriteria": {
@@ -5504,38 +4745,6 @@
   "@sht34ZoomHint": {
     "description": "Key sht.34.zoomHint"
   },
-  "siteAssets": "Assets",
-  "@siteAssets": {
-    "description": "Key site.assets"
-  },
-  "siteDemo": "Demo",
-  "@siteDemo": {
-    "description": "Key site.demo"
-  },
-  "siteDs": "Design System",
-  "@siteDs": {
-    "description": "Key site.ds"
-  },
-  "siteFooter": "Design prototype · all data is fictional",
-  "@siteFooter": {
-    "description": "Key site.footer"
-  },
-  "siteMap": "Screen Map",
-  "@siteMap": {
-    "description": "Key site.map"
-  },
-  "siteMenu": "Site menu",
-  "@siteMenu": {
-    "description": "Key site.menu"
-  },
-  "siteProto": "Prototype",
-  "@siteProto": {
-    "description": "Key site.proto"
-  },
-  "siteQa": "Quality Check",
-  "@siteQa": {
-    "description": "Key site.qa"
-  },
   "statusAbsent": "No-show",
   "@statusAbsent": {
     "description": "Key status.absent"
@@ -5782,7 +4991,7 @@
   "@ticketTitle": {
     "description": "Key ticket.title"
   },
-  "timeDays": "{count, plural, one{# day} other{# days}}",
+  "timeDays": "{count, plural, one{{count} day} other{{count} days}}",
   "@timeDays": {
     "description": "Key time.days",
     "placeholders": {
@@ -5791,7 +5000,7 @@
       }
     }
   },
-  "timeDaysAgo": "{count, plural, one{# day ago} other{# days ago}}",
+  "timeDaysAgo": "{count, plural, one{{count} day ago} other{{count} days ago}}",
   "@timeDaysAgo": {
     "description": "Key time.daysAgo",
     "placeholders": {
@@ -5825,7 +5034,7 @@
       }
     }
   },
-  "timeHoursAgo": "{count, plural, one{# hour ago} other{# hours ago}}",
+  "timeHoursAgo": "{count, plural, one{{count} hour ago} other{{count} hours ago}}",
   "@timeHoursAgo": {
     "description": "Key time.hoursAgo",
     "placeholders": {
@@ -5834,15 +5043,12 @@
       }
     }
   },
-  "timeInDays": "{count, plural, =0{today} one{# day} other{# days}}",
+  "timeInDays": "{count, plural, =0{today} one{{count} day} other{{count} days}}",
   "@timeInDays": {
     "description": "Key time.inDays",
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "today": {
-        "type": "String"
       }
     }
   },
@@ -5876,7 +5082,7 @@
   "@timeTomorrow": {
     "description": "Key time.tomorrow"
   },
-  "timeWeeksAgo": "{count, plural, one{# week ago} other{# weeks ago}}",
+  "timeWeeksAgo": "{count, plural, one{{count} week ago} other{{count} weeks ago}}",
   "@timeWeeksAgo": {
     "description": "Key time.weeksAgo",
     "placeholders": {

@@ -10,10 +10,14 @@
  *        description'ı "Key assets.|panel.|qa.|ds.|map.|site." ile başlayan prototip-kabuğu anahtarlarını
  *        iki ARB'den çıkarıp design/prototype-only-arb/ altına arşivler (K-21; beklenen 1421 → 1235).
  *   ek: --root <dir> · --dir <arb-dir> (varsayılan l10n.yaml'daki arb-dir ya da lib/l10n)
+ *   ek: l10n.yaml `use-escaping` okunur (yok/false → varsayılan false; CD-51). false iken tek tırnak `'` DÜZ karakterdir
+ *       (ICU kaçışı `''` ve tırnaklı literal `'{…}'` yorumlanmaz — gen-l10n ile uyumlu, `'{q}'` yer tutucudur);
+ *       true iken ICU kuralı geçerlidir. `parseIcu(msg, { useEscaping })` ile anahtar bazında da verilebilir.
  *
  * Kurallar: ARB01 anahtar kümesi · ARB02 boş değer · ARB03 anahtar adı · ARB04 ICU sözdizimi · ARB05 `other` yok ·
  *  ARB06 yer tutucu kümesi · ARB07 select durumları · ARB08 @key.placeholders ↔ kullanım · ARB09 ürün adı literali ·
- *  ARB10 description biçimi · ARB11 @@locale · ARB12 artık metadata · ARB13 plural sayaç tipi · ARB14 kullanılmayan anahtar
+ *  ARB10 description biçimi · ARB11 @@locale · ARB12 artık metadata · ARB13 plural sayaç tipi · ARB14 kullanılmayan anahtar ·
+ *  ARB15 çoğul dalında '#' (K-28: Flutter gen-l10n ICU '#' işaretini sayıyla DEĞİŞTİRMEZ, literal basar — dalda `{değişken}` kullan)
  */
 const fs = require('fs');
 const path = require('path');
@@ -38,6 +42,14 @@ function arbDir() {
   return path.join(root, 'lib/l10n');
 }
 const dir = arbDir();
+/** l10n.yaml `use-escaping` (CD-51): yok/false → false (tek tırnak düz karakter); true → ICU kaçış kuralı */
+function readUseEscaping() {
+  try {
+    const m = /^use-escaping:\s*(\S+)/m.exec(fs.readFileSync(path.join(root, 'l10n.yaml'), 'utf8'));
+    return !!m && m[1].trim().toLowerCase() === 'true';
+  } catch (e) { return false; /* l10n.yaml yok */ }
+}
+const useEscaping = readUseEscaping();
 const relDir = core.toPosix(path.relative(root, dir)) || '.';
 const files = { tr: path.join(dir, 'app_tr.arb'), en: path.join(dir, 'app_en.arb') };
 
@@ -48,10 +60,19 @@ function load(lang) {
 const isKey = (k) => !k.startsWith('@');
 
 // ── mini ICU çözümleyici ───────────────────────────────────
-/** @returns {{args: Map<string,{types:Set<string>,cases?:Set<string>}>, errors: string[]}} */
-function parseIcu(msg) {
+/**
+ * @param {string} msg ICU mesajı
+ * @param {{useEscaping?: boolean}} [opts] useEscaping: true → `''` kaçış ve `'{…}'` tırnaklı literal (ICU);
+ *   false → tek tırnak düz karakter (gen-l10n use-escaping:false, CD-51). Verilmezse l10n.yaml'daki değer.
+ * @returns {{args: Map<string,{types:Set<string>,cases?:Set<string>}>, errors: string[], hashes: string[]}}
+ *   hashes: çoğul (plural/selectordinal) dalı içinde geçen her '#' için en yakın sayacın adı (ARB15, K-28)
+ */
+function parseIcu(msg, opts) {
+  const esc = opts && typeof opts.useEscaping === 'boolean' ? opts.useEscaping : useEscaping;
   const args = new Map();
   const errors = [];
+  const hashes = [];
+  const plurals = []; // açık çoğul sayaçları (iç içe select'te de en yakın çoğul geçerli)
   let i = 0;
   const n = msg.length;
   const note = (name, type, cases) => {
@@ -65,7 +86,7 @@ function parseIcu(msg) {
   function message(depth) {
     while (i < n) {
       const c = msg[i];
-      if (c === "'") {
+      if (c === "'" && esc) {
         if (msg[i + 1] === "'") { i += 2; continue; }
         if (msg[i + 1] === '{' || msg[i + 1] === '}') {
           const end = msg.indexOf("'", i + 1);
@@ -74,6 +95,7 @@ function parseIcu(msg) {
         }
         i++; continue;
       }
+      if (c === '#' && plurals.length) { hashes.push(plurals[plurals.length - 1]); i++; continue; }
       if (c === '{') { i++; argument(); continue; }
       if (c === '}') {
         if (depth > 0) return;
@@ -101,21 +123,25 @@ function parseIcu(msg) {
       if (msg[i] !== ',') { errors.push(`"${name}, ${type}" sonrası ',' bekleniyordu`); return; }
       i++;
       const cases = new Set();
+      const isPl = type !== 'select';
+      if (isPl) plurals.push(name);
+      const fail = (m) => { errors.push(m); if (isPl) plurals.pop(); };
       for (;;) {
         skipWs();
-        if (i >= n) { errors.push(`"${name}" ${type} kapanmadı`); return; }
+        if (i >= n) { fail(`"${name}" ${type} kapanmadı`); return; }
         if (msg[i] === '}') { i++; break; }
         const cs = i;
         while (i < n && !/[\s{]/.test(msg[i])) i++;
         const sel = msg.slice(cs, i);
         skipWs();
-        if (msg[i] !== '{') { errors.push(`"${name}" ${type}: "${sel}" sonrası '{' bekleniyordu`); return; }
+        if (msg[i] !== '{') { fail(`"${name}" ${type}: "${sel}" sonrası '{' bekleniyordu`); return; }
         i++;
         if (!/^offset:\d+$/.test(sel)) cases.add(sel);
         message(1);
-        if (msg[i] !== '}') { errors.push(`"${name}" ${type}: "${sel}" dalı kapanmadı`); return; }
+        if (msg[i] !== '}') { fail(`"${name}" ${type}: "${sel}" dalı kapanmadı`); return; }
         i++;
       }
+      if (isPl) plurals.pop();
       if (!cases.has('other')) errors.push(`"${name}" ${type} için 'other' dalı yok`);
       note(name, type, type === 'select' ? cases : null);
       return;
@@ -127,7 +153,7 @@ function parseIcu(msg) {
     note(name, type);
   }
   message(0);
-  return { args, errors };
+  return { args, errors, hashes };
 }
 
 // ── denetim ────────────────────────────────────────────────
@@ -162,12 +188,13 @@ function lint() {
       const parsed = parseIcu(v);
       for (const m of parsed.errors) E('ARB04', k, `${name}: ${m}`);
       for (const m of parsed.errors) if (/'other'/.test(m)) E('ARB05', k, `${name}: ${m}`);
+      if (parsed.hashes.length) E('ARB15', k, `${name}: çoğul dalında '#' (${parsed.hashes.length}×) — gen-l10n # işaretini değiştirmez; ${[...new Set(parsed.hashes)].map((v) => '`{' + v + '}`').join(' / ')} kullan (K-28)`);
       const declared = meta && meta.placeholders ? Object.keys(meta.placeholders) : [];
       const used = [...parsed.args.keys()];
       for (const u of used) if (!declared.includes(u)) (isTemplate ? E : W)('ARB08', k, `${name}: "{${u}}" kullanılıyor ama @${k}.placeholders içinde tanımlı değil`);
       for (const d of declared) {
         if (used.includes(d)) continue;
-        const hint = v.includes("'{" + d + "}'") ? " — `'{" + d + "}'` ICU'da TIRNAKLI LİTERALDİR, değer basılmaz; düz tırnak için `''{" + d + "}''` ya da tipografik “{" + d + "}” kullan (K-23)"
+        const hint = useEscaping && v.includes("'{" + d + "}'") ? " — `'{" + d + "}'` use-escaping:true ile ICU'da TIRNAKLI LİTERALDİR, değer basılmaz; düz tırnak için `''{" + d + "}''` ya da tipografik “{" + d + "}” kullan (K-23, CD-51)"
           : /(?:=\d+|one|other|zero|two|few|many)\{[^{}]*\}/.test(v) ? ' — plural dal metni yer tutucu sanılmış; metadata\'dan sil (K-23)' : '';
         (isTemplate ? E : W)('ARB08', k, `${name}: placeholders.${d} tanımlı ama metinde kullanılmıyor${hint}`);
       }

@@ -1,18 +1,13 @@
 targets:
   $default:
     builders:
-      json_serializable:json_serializable:
-        generate_for:
-          - lib/**/*_model.dart
-        options:
-          # Modeller Firestore'a doğrudan Map olarak yazılır, jsonEncode çalışmaz.
-          # Bu seçenek olmadan iç içe modeller ham Dart nesnesi olarak üretilir
-          # ve yazma "Invalid argument" hatasıyla patlar.
-          explicit_to_json: true
+      # Rotalar dal başına dosyalara bölünür (lib/product/navigation/routes/*.dart);
+      # her dosya kendi `part '…g.dart'` satırını taşır (CD-13).
       go_router_builder:go_router_builder:
         generate_for:
-          - lib/product/navigation/app_router.dart
+          - lib/product/navigation/**.dart
       riverpod_generator:
         options:
           provider_name_suffix: "Provider"
           provider_family_name_suffix: "Provider"
+# json_serializable kökte çalışmaz: modeller packages/gu_data'dadır (packages/gu_data/build.yaml, D-09).

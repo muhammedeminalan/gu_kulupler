@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-09T04:17:20.538Z",
+  "updated": "2026-10-09T05:20:29.695Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": false
   },
-  "currentTask": null,
+  "currentTask": "T-00",
   "statusValues": [
     "pending",
     "planning",
@@ -131,8 +131,8 @@
   },
   "tasks": {
     "T-00": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "review",
+      "startedAt": "2026-10-09T04:19:09.011Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -893,7 +893,18 @@
       "date": "2026-10-08",
       "task": null,
       "text": "Kullanıcı 2026-10-09 gece: 'koda geçme, bu aşama (Faz 0 plan) bitsin; sabah uyanınca devam deyince devam et' — PLAN.md tamamlanır, gate plan / Faz 0 commit / T-00 sabah 'devam' komutuyla başlar"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-00",
+      "text": "Kullanıcı 2026-10-09: 'tüm izinlerin yetkisini veriyorum kesintisiz çalış' — izin pencerelerinde durulmaz; push/deploy/gerçek Firebase/Blaze/kimlik bilgisi dışındaki her işlem onaysız yapılır"
     }
   ],
-  "knownIssuesAdded": []
+  "knownIssuesAdded": [
+    {
+      "date": "2026-10-09",
+      "task": "T-00",
+      "text": "K-28 ARB çoğul dallarında # — gen-l10n literal basar; # → {değişken} (T-00), check_arb_parity ARB15"
+    }
+  ]
 }

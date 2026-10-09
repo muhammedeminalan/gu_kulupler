@@ -398,7 +398,7 @@
   "@adminClubsTitle": {
     "description": "Key adminClubs.title"
   },
-  "adminUsersClubCount": "{count, plural, one{# kulüp} other{# kulüp}}",
+  "adminUsersClubCount": "{count, plural, one{{count} kulüp} other{{count} kulüp}}",
   "@adminUsersClubCount": {
     "description": "Key adminUsers.clubCount",
     "placeholders": {
@@ -614,335 +614,6 @@
   "appliedTitle": "İsteğin kulüp yönetimine iletildi",
   "@appliedTitle": {
     "description": "Key applied.title"
-  },
-  "assetsCancel": "İptal",
-  "@assetsCancel": {
-    "description": "Key assets.cancel"
-  },
-  "assetsColorsBadges": "Rol ve durum rozetleri",
-  "@assetsColorsBadges": {
-    "description": "Key assets.colors.badges"
-  },
-  "assetsColorsContrast": "Kontrast (beyaz/koyu yüzey)",
-  "@assetsColorsContrast": {
-    "description": "Key assets.colors.contrast"
-  },
-  "assetsColorsCopyCss": "CSS var",
-  "@assetsColorsCopyCss": {
-    "description": "Key assets.colors.copyCss"
-  },
-  "assetsColorsCopyDart": "Flutter",
-  "@assetsColorsCopyDart": {
-    "description": "Key assets.colors.copyDart"
-  },
-  "assetsColorsCopyHex": "Hex",
-  "@assetsColorsCopyHex": {
-    "description": "Key assets.colors.copyHex"
-  },
-  "assetsColorsDark": "Koyu",
-  "@assetsColorsDark": {
-    "description": "Key assets.colors.dark"
-  },
-  "assetsColorsLight": "Açık",
-  "@assetsColorsLight": {
-    "description": "Key assets.colors.light"
-  },
-  "assetsColorsPalettes": "Kapak paletleri",
-  "@assetsColorsPalettes": {
-    "description": "Key assets.colors.palettes"
-  },
-  "assetsColorsToken": "Token",
-  "@assetsColorsToken": {
-    "description": "Key assets.colors.token"
-  },
-  "assetsColorsUsage": "Kullanım",
-  "@assetsColorsUsage": {
-    "description": "Key assets.colors.usage"
-  },
-  "assetsCopied": "Kopyalandı",
-  "@assetsCopied": {
-    "description": "Key assets.copied"
-  },
-  "assetsCoversAvatar": "Avatar üreticisi",
-  "@assetsCoversAvatar": {
-    "description": "Key assets.covers.avatar"
-  },
-  "assetsCoversClubs": "14 kulüp kapağı (gerçek seed’lerle)",
-  "@assetsCoversClubs": {
-    "description": "Key assets.covers.clubs"
-  },
-  "assetsCoversGenerator": "CoverArt üreticisi",
-  "@assetsCoversGenerator": {
-    "description": "Key assets.covers.generator"
-  },
-  "assetsCoversIcon": "İkon",
-  "@assetsCoversIcon": {
-    "description": "Key assets.covers.icon"
-  },
-  "assetsCoversName": "Ad",
-  "@assetsCoversName": {
-    "description": "Key assets.covers.name"
-  },
-  "assetsCoversPatterns": "Desenler",
-  "@assetsCoversPatterns": {
-    "description": "Key assets.covers.patterns"
-  },
-  "assetsCoversSeed": "Seed",
-  "@assetsCoversSeed": {
-    "description": "Key assets.covers.seed"
-  },
-  "assetsCoversTemplates": "12 şablon (3 palet × 4 desen)",
-  "@assetsCoversTemplates": {
-    "description": "Key assets.covers.templates"
-  },
-  "assetsDataArb": "Dil dosyaları (ARB)",
-  "@assetsDataArb": {
-    "description": "Key assets.data.arb"
-  },
-  "assetsDataArbNote": "Sözlükten otomatik üretilir: @@locale, ICU çoğul/parametre, her anahtar için @anahtar açıklaması. Anahtarlar Flutter gen-l10n için camelCase’e çevrilir.",
-  "@assetsDataArbNote": {
-    "description": "Key assets.data.arbNote"
-  },
-  "assetsDataDemo": "demo-data.json",
-  "@assetsDataDemo": {
-    "description": "Key assets.data.demo"
-  },
-  "assetsDataDemoNote": "Bölüm 11’in tamamı: kullanıcılar, kulüpler, etkinlikler, gönderiler, bildirimler, başvurular, şikayetler. Tarihler ISO 8601 + göreli gün ofseti.",
-  "@assetsDataDemoNote": {
-    "description": "Key assets.data.demoNote"
-  },
-  "assetsDataFilter": "Anahtar veya metin ara",
-  "@assetsDataFilter": {
-    "description": "Key assets.data.filter"
-  },
-  "assetsDataKey": "Anahtar",
-  "@assetsDataKey": {
-    "description": "Key assets.data.key"
-  },
-  "assetsDataKeys": "{count} anahtar",
-  "@assetsDataKeys": {
-    "description": "Key assets.data.keys",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsDataMissing": "Eksik çeviri",
-  "@assetsDataMissing": {
-    "description": "Key assets.data.missing"
-  },
-  "assetsDataShowing": "İlk {n} satır gösteriliyor",
-  "@assetsDataShowing": {
-    "description": "Key assets.data.showing",
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsDesc": "Projede kullanılan tüm görsel ve kod varlıkları. Tek tuşla ZIP olarak indir ya da tek tek al.",
-  "@assetsDesc": {
-    "description": "Key assets.desc"
-  },
-  "assetsDownloadAll": "Tümünü indir (ZIP)",
-  "@assetsDownloadAll": {
-    "description": "Key assets.downloadAll"
-  },
-  "assetsDownloadSection": "Bu bölümü indir (ZIP)",
-  "@assetsDownloadSection": {
-    "description": "Key assets.downloadSection"
-  },
-  "assetsFlutterCopy": "Kopyala",
-  "@assetsFlutterCopy": {
-    "description": "Key assets.flutter.copy"
-  },
-  "assetsFlutterDownload": "İndir",
-  "@assetsFlutterDownload": {
-    "description": "Key assets.flutter.download"
-  },
-  "assetsFlutterNote": "Tasarım tokenlarından üretilen Dart dosyaları. Değerler Bölüm 4.1 ile birebirdir.",
-  "@assetsFlutterNote": {
-    "description": "Key assets.flutter.note"
-  },
-  "assetsFontsFail": "Yazı tipi dosyaları ZIP’e dahil edilemedi; Google Fonts bağlantısını kullan.",
-  "@assetsFontsFail": {
-    "description": "Key assets.fontsFail"
-  },
-  "assetsIconsAliases": "Eski adlar (alias)",
-  "@assetsIconsAliases": {
-    "description": "Key assets.icons.aliases"
-  },
-  "assetsIconsColor": "Renk (önizleme)",
-  "@assetsIconsColor": {
-    "description": "Key assets.icons.color"
-  },
-  "assetsIconsCopyName": "Adı kopyala",
-  "@assetsIconsCopyName": {
-    "description": "Key assets.icons.copyName"
-  },
-  "assetsIconsCopySvg": "SVG kopyala",
-  "@assetsIconsCopySvg": {
-    "description": "Key assets.icons.copySvg"
-  },
-  "assetsIconsCount": "{count} ikon · tek ICONS registry’si · Lucide (ISC)",
-  "@assetsIconsCount": {
-    "description": "Key assets.icons.count",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "assetsIconsFlutter": "Flutter kodu kopyala",
-  "@assetsIconsFlutter": {
-    "description": "Key assets.icons.flutter"
-  },
-  "assetsIconsSize": "Boyut",
-  "@assetsIconsSize": {
-    "description": "Key assets.icons.size"
-  },
-  "assetsIconsSource": "Kaynak: {src}",
-  "@assetsIconsSource": {
-    "description": "Key assets.icons.source",
-    "placeholders": {
-      "src": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsIconsStroke": "Çizgi kalınlığı",
-  "@assetsIconsStroke": {
-    "description": "Key assets.icons.stroke"
-  },
-  "assetsIconsSvg": "SVG indir",
-  "@assetsIconsSvg": {
-    "description": "Key assets.icons.svg"
-  },
-  "assetsIllusNote": "12 illüstrasyon · tek renk + kırmızı vurgu · açık/koyu uyumlu",
-  "@assetsIllusNote": {
-    "description": "Key assets.illus.note"
-  },
-  "assetsLogoAppIcon": "Uygulama ikonu önerisi (1024 × 1024)",
-  "@assetsLogoAppIcon": {
-    "description": "Key assets.logo.appIcon"
-  },
-  "assetsLogoMasks": "iOS köşeli · Android dairesel maske",
-  "@assetsLogoMasks": {
-    "description": "Key assets.logo.masks"
-  },
-  "assetsLogoPlaceholder": "LogoPlaceholder (yedek amblem)",
-  "@assetsLogoPlaceholder": {
-    "description": "Key assets.logo.placeholder"
-  },
-  "assetsLogoPlaceholderNote": "Gerçek logo sağlanmadan önce kullanılan kırmızı yuvarlak amblem. Gerekirse yerine resmi logoyu koy.",
-  "@assetsLogoPlaceholderNote": {
-    "description": "Key assets.logo.placeholderNote"
-  },
-  "assetsLogoReal": "Resmi logo (kullanıcı tarafından sağlandı)",
-  "@assetsLogoReal": {
-    "description": "Key assets.logo.real"
-  },
-  "assetsLogoRealNote": "Gerçek üniversite logosu app/assets/gu-logo.png olarak projeye eklendi ve uygulamada kullanılıyor. Kullanım izni üniversiteye aittir.",
-  "@assetsLogoRealNote": {
-    "description": "Key assets.logo.realNote"
-  },
-  "assetsLogoVariants": "Yatay · Dikey · Yalnızca amblem",
-  "@assetsLogoVariants": {
-    "description": "Key assets.logo.variants"
-  },
-  "assetsProgress": "{a}/{b} dosya",
-  "@assetsProgress": {
-    "description": "Key assets.progress",
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsSearch": "Varlık ara",
-  "@assetsSearch": {
-    "description": "Key assets.search"
-  },
-  "assetsTabColors": "Renkler",
-  "@assetsTabColors": {
-    "description": "Key assets.tab.colors"
-  },
-  "assetsTabCovers": "Kapaklar ve Desenler",
-  "@assetsTabCovers": {
-    "description": "Key assets.tab.covers"
-  },
-  "assetsTabData": "Veri ve Dil",
-  "@assetsTabData": {
-    "description": "Key assets.tab.data"
-  },
-  "assetsTabFlutter": "Flutter Çıktıları",
-  "@assetsTabFlutter": {
-    "description": "Key assets.tab.flutter"
-  },
-  "assetsTabIcons": "İkonlar",
-  "@assetsTabIcons": {
-    "description": "Key assets.tab.icons"
-  },
-  "assetsTabIllus": "İllüstrasyonlar",
-  "@assetsTabIllus": {
-    "description": "Key assets.tab.illus"
-  },
-  "assetsTabLogo": "Amblem",
-  "@assetsTabLogo": {
-    "description": "Key assets.tab.logo"
-  },
-  "assetsTabType": "Tipografi",
-  "@assetsTabType": {
-    "description": "Key assets.tab.type"
-  },
-  "assetsTitle": "Assets",
-  "@assetsTitle": {
-    "description": "Key assets.title"
-  },
-  "assetsTypeCopyCss": "CSS kopyala",
-  "@assetsTypeCopyCss": {
-    "description": "Key assets.type.copyCss"
-  },
-  "assetsTypeCopyDart": "TextStyle kopyala",
-  "@assetsTypeCopyDart": {
-    "description": "Key assets.type.copyDart"
-  },
-  "assetsTypeLatinExt": "latin-ext zorunlu: ğ, ş, İ, ı",
-  "@assetsTypeLatinExt": {
-    "description": "Key assets.type.latinExt"
-  },
-  "assetsTypeOpenGoogle": "Google Fonts’ta aç",
-  "@assetsTypeOpenGoogle": {
-    "description": "Key assets.type.openGoogle"
-  },
-  "assetsTypeSample": "ĞÜŞİÖÇ ğüşıöç — Gümüşhane Üniversitesi — 0123456789",
-  "@assetsTypeSample": {
-    "description": "Key assets.type.sample"
-  },
-  "assetsTypeScale": "Tipografi ölçeği",
-  "@assetsTypeScale": {
-    "description": "Key assets.type.scale"
-  },
-  "assetsTypeWoff2": "woff2 indir (latin + latin-ext)",
-  "@assetsTypeWoff2": {
-    "description": "Key assets.type.woff2"
-  },
-  "assetsZipDone": "ZIP hazır: {name}",
-  "@assetsZipDone": {
-    "description": "Key assets.zipDone",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "assetsZipFail": "ZIP kütüphanesi yüklenemedi; dosyalar tek tek indiriliyor.",
-  "@assetsZipFail": {
-    "description": "Key assets.zipFail"
   },
   "attendanceAbsent": "Gelmedi",
   "@attendanceAbsent": {
@@ -1587,7 +1258,7 @@
   "@clubsCardMemberShort": {
     "description": "Key clubs.card.memberShort"
   },
-  "clubsCardMembers": "{count, plural, one{# üye} other{# üye}}",
+  "clubsCardMembers": "{count, plural, one{{count} üye} other{{count} üye}}",
   "@clubsCardMembers": {
     "description": "Key clubs.card.members",
     "placeholders": {
@@ -1612,7 +1283,7 @@
   "@clubsCardRemoved": {
     "description": "Key clubs.card.removed"
   },
-  "clubsCount": "{count, plural, one{# kulüp} other{# kulüp}}",
+  "clubsCount": "{count, plural, one{{count} kulüp} other{{count} kulüp}}",
   "@clubsCount": {
     "description": "Key clubs.count",
     "placeholders": {
@@ -1950,7 +1621,7 @@
   "@contentHidden": {
     "description": "Key content.hidden"
   },
-  "contentReports": "{count, plural, one{# şikayet} other{# şikayet}}",
+  "contentReports": "{count, plural, one{{count} şikayet} other{{count} şikayet}}",
   "@contentReports": {
     "description": "Key content.reports",
     "placeholders": {
@@ -2664,118 +2335,6 @@
   "@dlgSystemPermissionBody": {
     "description": "Key dlg.system.permissionBody"
   },
-  "dsCatalogNote": "Seçim, prototipi uygun demo hesabıyla açar ve öğeyi örnek verilerle gösterir.",
-  "@dsCatalogNote": {
-    "description": "Key ds.catalogNote"
-  },
-  "dsCopyCode": "Kodu kopyala",
-  "@dsCopyCode": {
-    "description": "Key ds.copyCode"
-  },
-  "dsDesc": "Her bileşenin tüm varyant ve durumları; açık ve koyu tema yan yana. Katalog sekmesinden tüm sheet, dialog ve toast’lar prototipte tek tek açılabilir.",
-  "@dsDesc": {
-    "description": "Key ds.desc"
-  },
-  "dsMotionCheck": "Başarı çizgisi",
-  "@dsMotionCheck": {
-    "description": "Key ds.motion.check"
-  },
-  "dsMotionDialog": "Dialog",
-  "@dsMotionDialog": {
-    "description": "Key ds.motion.dialog"
-  },
-  "dsMotionPage": "Sayfa geçişi",
-  "@dsMotionPage": {
-    "description": "Key ds.motion.page"
-  },
-  "dsMotionReduced": "prefers-reduced-motion: yalnızca solma",
-  "@dsMotionReduced": {
-    "description": "Key ds.motion.reduced"
-  },
-  "dsMotionReplay": "Tekrar oynat",
-  "@dsMotionReplay": {
-    "description": "Key ds.motion.replay"
-  },
-  "dsMotionSheet": "Bottom sheet",
-  "@dsMotionSheet": {
-    "description": "Key ds.motion.sheet"
-  },
-  "dsOpen": "Aç",
-  "@dsOpen": {
-    "description": "Key ds.open"
-  },
-  "dsOpenInProto": "Prototipte aç",
-  "@dsOpenInProto": {
-    "description": "Key ds.openInProto"
-  },
-  "dsSecBadges": "Rozetler ve avatar",
-  "@dsSecBadges": {
-    "description": "Key ds.sec.badges"
-  },
-  "dsSecBanners": "Bantlar",
-  "@dsSecBanners": {
-    "description": "Key ds.sec.banners"
-  },
-  "dsSecButtons": "Butonlar",
-  "@dsSecButtons": {
-    "description": "Key ds.sec.buttons"
-  },
-  "dsSecCards": "Kartlar",
-  "@dsSecCards": {
-    "description": "Key ds.sec.cards"
-  },
-  "dsSecCatalog": "Katalog",
-  "@dsSecCatalog": {
-    "description": "Key ds.sec.catalog"
-  },
-  "dsSecColors": "Renkler",
-  "@dsSecColors": {
-    "description": "Key ds.sec.colors"
-  },
-  "dsSecFeedback": "Geri bildirim",
-  "@dsSecFeedback": {
-    "description": "Key ds.sec.feedback"
-  },
-  "dsSecInputs": "Girdiler",
-  "@dsSecInputs": {
-    "description": "Key ds.sec.inputs"
-  },
-  "dsSecMotion": "Hareket",
-  "@dsSecMotion": {
-    "description": "Key ds.sec.motion"
-  },
-  "dsSecNav": "Gezinme",
-  "@dsSecNav": {
-    "description": "Key ds.sec.nav"
-  },
-  "dsSecOverlays": "Sheet / Dialog / Toast",
-  "@dsSecOverlays": {
-    "description": "Key ds.sec.overlays"
-  },
-  "dsSecSelection": "Seçim kontrolleri",
-  "@dsSecSelection": {
-    "description": "Key ds.sec.selection"
-  },
-  "dsSecSpace": "Boşluk, köşe, gölge",
-  "@dsSecSpace": {
-    "description": "Key ds.sec.space"
-  },
-  "dsSecSpecial": "Özel bileşenler",
-  "@dsSecSpecial": {
-    "description": "Key ds.sec.special"
-  },
-  "dsSecType": "Tipografi",
-  "@dsSecType": {
-    "description": "Key ds.sec.type"
-  },
-  "dsState": "Durum",
-  "@dsState": {
-    "description": "Key ds.state"
-  },
-  "dsTitle": "Tasarım Sistemi",
-  "@dsTitle": {
-    "description": "Key ds.title"
-  },
   "editProfileBio": "Kısa biyografi",
   "@editProfileBio": {
     "description": "Key editProfile.bio"
@@ -2898,7 +2457,7 @@
       }
     }
   },
-  "eventRemaining": "{count, plural, one{# kişi kaldı} other{# kişi kaldı}}",
+  "eventRemaining": "{count, plural, one{{count} kişi kaldı} other{{count} kişi kaldı}}",
   "@eventRemaining": {
     "description": "Key event.remaining",
     "placeholders": {
@@ -3330,7 +2889,7 @@
       }
     }
   },
-  "feedPollVotes": "{count, plural, one{# oy} other{# oy}}",
+  "feedPollVotes": "{count, plural, one{{count} oy} other{{count} oy}}",
   "@feedPollVotes": {
     "description": "Key feed.poll.votes",
     "placeholders": {
@@ -3435,9 +2994,14 @@
   "@legalAccept": {
     "description": "Key legal.accept"
   },
-  "legalGizlilikB1": "Bu politika GÜ Kulüpler mobil uygulamasında toplanan bilgileri ve kullanımını açıklar.",
+  "legalGizlilikB1": "Bu politika {appName} mobil uygulamasında toplanan bilgileri ve kullanımını açıklar.",
   "@legalGizlilikB1": {
-    "description": "Key legal.gizlilik.b1"
+    "description": "Key legal.gizlilik.b1",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
   },
   "legalGizlilikB2": "Hesabınız üniversite e-postanızla oluşturulur; e-posta yalnızca kulüp yöneticilerine görünür.",
   "@legalGizlilikB2": {
@@ -3635,66 +3199,6 @@
   "@legalUpdated": {
     "description": "Key legal.updated"
   },
-  "mapAssumptions": "Varsayımlar",
-  "@mapAssumptions": {
-    "description": "Key map.assumptions"
-  },
-  "mapColId": "ID",
-  "@mapColId": {
-    "description": "Key map.col.id"
-  },
-  "mapColName": "Ekran",
-  "@mapColName": {
-    "description": "Key map.col.name"
-  },
-  "mapColOpen": "Aç",
-  "@mapColOpen": {
-    "description": "Key map.col.open"
-  },
-  "mapColRoles": "Roller",
-  "@mapColRoles": {
-    "description": "Key map.col.roles"
-  },
-  "mapColRoute": "Rota",
-  "@mapColRoute": {
-    "description": "Key map.col.route"
-  },
-  "mapDesc": "Akış diyagramları, 51 ekranlık envanter ve teslimde yapılan varsayımlar. Düğüme dokunmak prototipi ilgili ekranda, uygun demo hesapla açar.",
-  "@mapDesc": {
-    "description": "Key map.desc"
-  },
-  "mapFlows": "Akış diyagramları",
-  "@mapFlows": {
-    "description": "Key map.flows"
-  },
-  "mapInventory": "Ekran envanteri",
-  "@mapInventory": {
-    "description": "Key map.inventory"
-  },
-  "mapRolesAdmin": "Süper admin",
-  "@mapRolesAdmin": {
-    "description": "Key map.roles.admin"
-  },
-  "mapRolesAll": "Tümü",
-  "@mapRolesAll": {
-    "description": "Key map.roles.all"
-  },
-  "mapRolesGuest": "Oturumsuz",
-  "@mapRolesGuest": {
-    "description": "Key map.roles.guest"
-  },
-  "mapRolesManager": "YK, Başkan (Danışman salt okunur)",
-  "@mapRolesManager": {
-    "description": "Key map.roles.manager"
-  },
-  "mapRolesMember": "Üye+",
-  "@mapRolesMember": {
-    "description": "Key map.roles.member"
-  },
-  "mapTitle": "Ekran Haritası",
-  "@mapTitle": {
-    "description": "Key map.title"
-  },
   "membersFilterBoard": "Yönetim",
   "@membersFilterBoard": {
     "description": "Key members.filter.board"
@@ -3711,7 +3215,7 @@
   "@membersTitle": {
     "description": "Key members.title"
   },
-  "membersTotal": "{count, plural, one{# kişi} other{# kişi}}",
+  "membersTotal": "{count, plural, one{{count} kişi} other{{count} kişi}}",
   "@membersTotal": {
     "description": "Key members.total",
     "placeholders": {
@@ -4249,9 +3753,14 @@
   "@notifTypeSystemWelcomeBody": {
     "description": "Key notifType.system.welcome.body"
   },
-  "notifTypeSystemWelcomeTitle": "GÜ Kulüpler’e hoş geldin",
+  "notifTypeSystemWelcomeTitle": "{appNameDative} hoş geldin",
   "@notifTypeSystemWelcomeTitle": {
-    "description": "Key notifType.system.welcome.title"
+    "description": "Key notifType.system.welcome.title",
+    "placeholders": {
+      "appNameDative": {
+        "type": "String"
+      }
+    }
   },
   "notifTypeWaitlistPromotedBody": "{event} için bekleme listesinden kayıtlıya alındın. Biletin hazır.",
   "@notifTypeWaitlistPromotedBody": {
@@ -4306,139 +3815,6 @@
   "@onbTitle": {
     "description": "Key onb.title"
   },
-  "panelAccAdmin": "Süper admin",
-  "@panelAccAdmin": {
-    "description": "Key panel.acc.admin"
-  },
-  "panelAccAyse": "Üye değil",
-  "@panelAccAyse": {
-    "description": "Key panel.acc.ayse"
-  },
-  "panelAccBurak": "Doğa Sporları",
-  "@panelAccBurak": {
-    "description": "Key panel.acc.burak"
-  },
-  "panelAccElif": "Yazılım YK",
-  "@panelAccElif": {
-    "description": "Key panel.acc.elif"
-  },
-  "panelAccMehmet": "2 kulüp, 1 bekleyen",
-  "@panelAccMehmet": {
-    "description": "Key panel.acc.mehmet"
-  },
-  "panelAccZeynep": "Salt okunur",
-  "@panelAccZeynep": {
-    "description": "Key panel.acc.zeynep"
-  },
-  "panelAccount": "Hesap",
-  "@panelAccount": {
-    "description": "Key panel.account"
-  },
-  "panelAppearance": "Görünüm",
-  "@panelAppearance": {
-    "description": "Key panel.appearance"
-  },
-  "panelApplicationSim": "Başvuru simülasyonu",
-  "@panelApplicationSim": {
-    "description": "Key panel.applicationSim"
-  },
-  "panelApproveMine": "Onayla",
-  "@panelApproveMine": {
-    "description": "Key panel.approveMine"
-  },
-  "panelData": "Veri durumu",
-  "@panelData": {
-    "description": "Key panel.data"
-  },
-  "panelDataGroup": "Veri",
-  "@panelDataGroup": {
-    "description": "Key panel.dataGroup"
-  },
-  "panelDownloadJson": "Tüm demo verisini JSON indir",
-  "@panelDownloadJson": {
-    "description": "Key panel.downloadJson"
-  },
-  "panelEmpty": "Boş",
-  "@panelEmpty": {
-    "description": "Key panel.empty"
-  },
-  "panelError": "Hata",
-  "@panelError": {
-    "description": "Key panel.error"
-  },
-  "panelForceUpdate": "Zorunlu güncelleme göster",
-  "@panelForceUpdate": {
-    "description": "Key panel.forceUpdate"
-  },
-  "panelFrame": "Cihaz çerçevesi",
-  "@panelFrame": {
-    "description": "Key panel.frame"
-  },
-  "panelLoginAs": "Bu hesapla giriş yap",
-  "@panelLoginAs": {
-    "description": "Key panel.loginAs"
-  },
-  "panelNetwork": "Ağ",
-  "@panelNetwork": {
-    "description": "Key panel.network"
-  },
-  "panelNoPending": "Bu hesabın bekleyen başvurusu yok.",
-  "@panelNoPending": {
-    "description": "Key panel.noPending"
-  },
-  "panelNormal": "Normal",
-  "@panelNormal": {
-    "description": "Key panel.normal"
-  },
-  "panelOffline": "Çevrimdışı",
-  "@panelOffline": {
-    "description": "Key panel.offline"
-  },
-  "panelOnline": "Çevrimiçi",
-  "@panelOnline": {
-    "description": "Key panel.online"
-  },
-  "panelPendingAt": "Bekleyen başvurun: {club}",
-  "@panelPendingAt": {
-    "description": "Key panel.pendingAt",
-    "placeholders": {
-      "club": {
-        "type": "String"
-      }
-    }
-  },
-  "panelRejectMine": "Reddet",
-  "@panelRejectMine": {
-    "description": "Key panel.rejectMine"
-  },
-  "panelResetData": "Demo verisini sıfırla",
-  "@panelResetData": {
-    "description": "Key panel.resetData"
-  },
-  "panelResetNotifPerm": "Bildirim iznini sıfırla",
-  "@panelResetNotifPerm": {
-    "description": "Key panel.resetNotifPerm"
-  },
-  "panelSessionExpired": "Oturum süresi doldu",
-  "@panelSessionExpired": {
-    "description": "Key panel.sessionExpired"
-  },
-  "panelShowLoading": "Yükleniyor durumunu göster (3 sn)",
-  "@panelShowLoading": {
-    "description": "Key panel.showLoading"
-  },
-  "panelSimulateNotif": "Yeni bildirim simüle et",
-  "@panelSimulateNotif": {
-    "description": "Key panel.simulateNotif"
-  },
-  "panelSlow": "Yavaş",
-  "@panelSlow": {
-    "description": "Key panel.slow"
-  },
-  "panelSystem": "Sistem olayları",
-  "@panelSystem": {
-    "description": "Key panel.system"
-  },
   "placePl01": "Kongre ve Kültür Merkezi — Salon A",
   "@placePl01": {
     "description": "Key place.pl01"
@@ -4483,15 +3859,12 @@
   "@postAdvisorNoComment": {
     "description": "Key post.advisorNoComment"
   },
-  "postComments": "{count, plural, =0{Yorumlar} one{# yorum} other{# yorum}}",
+  "postComments": "{count, plural, =0{Yorumlar} one{{count} yorum} other{{count} yorum}}",
   "@postComments": {
     "description": "Key post.comments",
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "Yorumlar": {
-        "type": "String"
       }
     }
   },
@@ -4558,138 +3931,6 @@
   "profileYear": "Sınıf",
   "@profileYear": {
     "description": "Key profile.year"
-  },
-  "qaColAction": "Aksiyon",
-  "@qaColAction": {
-    "description": "Key qa.col.action"
-  },
-  "qaColCount": "Tıklanma",
-  "@qaColCount": {
-    "description": "Key qa.col.count"
-  },
-  "qaColResult": "Sonuç türü",
-  "@qaColResult": {
-    "description": "Key qa.col.result"
-  },
-  "qaColScreen": "Ekran",
-  "@qaColScreen": {
-    "description": "Key qa.col.screen"
-  },
-  "qaCoverage": "Kapsam özeti",
-  "@qaCoverage": {
-    "description": "Key qa.coverage"
-  },
-  "qaDeadSession": "Oturumda yakalanan ölü tıklama",
-  "@qaDeadSession": {
-    "description": "Key qa.dead.session"
-  },
-  "qaDeadList": "Ölü öğeler",
-  "@qaDeadList": {
-    "description": "Key qa.deadList"
-  },
-  "qaDesc": "Aksiyon kapsamı, ölü öğe taraması ve Bölüm 15 self-check raporu.",
-  "@qaDesc": {
-    "description": "Key qa.desc"
-  },
-  "qaDialogs": "Dialog",
-  "@qaDialogs": {
-    "description": "Key qa.dialogs"
-  },
-  "qaDownload": "Raporu indir",
-  "@qaDownload": {
-    "description": "Key qa.download"
-  },
-  "qaFail": "KALDI",
-  "@qaFail": {
-    "description": "Key qa.fail"
-  },
-  "qaI18nMissing": "i18n eksik anahtar",
-  "@qaI18nMissing": {
-    "description": "Key qa.i18nMissing"
-  },
-  "qaMissingIds": "Eksik kimlikler",
-  "@qaMissingIds": {
-    "description": "Key qa.missingIds"
-  },
-  "qaNoClicks": "Henüz tıklama kaydı yok. Prototipi kullanmaya başla.",
-  "@qaNoClicks": {
-    "description": "Key qa.noClicks"
-  },
-  "qaNoDead": "Ölü öğe yok",
-  "@qaNoDead": {
-    "description": "Key qa.noDead"
-  },
-  "qaPass": "GEÇTİ",
-  "@qaPass": {
-    "description": "Key qa.pass"
-  },
-  "qaPending": "TARA",
-  "@qaPending": {
-    "description": "Key qa.pending"
-  },
-  "qaRegistry": "Aksiyon kayıt defteri",
-  "@qaRegistry": {
-    "description": "Key qa.registry"
-  },
-  "qaRegistryNote": "Oturum içinde tıklanan her data-action burada toplanır; sonuç türü tıklamadan sonra gözlemlenerek sınıflandırılır.",
-  "@qaRegistryNote": {
-    "description": "Key qa.registryNote"
-  },
-  "qaRunAll": "Kontrolleri çalıştır",
-  "@qaRunAll": {
-    "description": "Key qa.runAll"
-  },
-  "qaScanAll": "Tüm ekranları tara",
-  "@qaScanAll": {
-    "description": "Key qa.scanAll"
-  },
-  "qaScanResult": "{total} etkileşimli öğe · {dead} ölü öğe",
-  "@qaScanResult": {
-    "description": "Key qa.scanResult",
-    "placeholders": {
-      "total": {
-        "type": "String"
-      },
-      "dead": {
-        "type": "String"
-      }
-    }
-  },
-  "qaScanThis": "Bu ekranı tara",
-  "@qaScanThis": {
-    "description": "Key qa.scanThis"
-  },
-  "qaScanning": "Taranıyor… {a}/{b}",
-  "@qaScanning": {
-    "description": "Key qa.scanning",
-    "placeholders": {
-      "a": {
-        "type": "String"
-      },
-      "b": {
-        "type": "String"
-      }
-    }
-  },
-  "qaScreens": "Ekran",
-  "@qaScreens": {
-    "description": "Key qa.screens"
-  },
-  "qaSelfCheck": "Self-check raporu (Bölüm 15)",
-  "@qaSelfCheck": {
-    "description": "Key qa.selfCheck"
-  },
-  "qaSheets": "Sheet",
-  "@qaSheets": {
-    "description": "Key qa.sheets"
-  },
-  "qaTitle": "Kalite Kontrol",
-  "@qaTitle": {
-    "description": "Key qa.title"
-  },
-  "qaToasts": "Toast",
-  "@qaToasts": {
-    "description": "Key qa.toasts"
   },
   "rejectReasonCriteria": "Koşulları karşılamıyor",
   "@rejectReasonCriteria": {
@@ -5504,38 +4745,6 @@
   "@sht34ZoomHint": {
     "description": "Key sht.34.zoomHint"
   },
-  "siteAssets": "Assets",
-  "@siteAssets": {
-    "description": "Key site.assets"
-  },
-  "siteDemo": "Demo",
-  "@siteDemo": {
-    "description": "Key site.demo"
-  },
-  "siteDs": "Tasarım Sistemi",
-  "@siteDs": {
-    "description": "Key site.ds"
-  },
-  "siteFooter": "Tasarım prototipi · tüm veriler kurgusaldır",
-  "@siteFooter": {
-    "description": "Key site.footer"
-  },
-  "siteMap": "Ekran Haritası",
-  "@siteMap": {
-    "description": "Key site.map"
-  },
-  "siteMenu": "Site menüsü",
-  "@siteMenu": {
-    "description": "Key site.menu"
-  },
-  "siteProto": "Prototip",
-  "@siteProto": {
-    "description": "Key site.proto"
-  },
-  "siteQa": "Kalite Kontrol",
-  "@siteQa": {
-    "description": "Key site.qa"
-  },
   "statusAbsent": "Gelmedin",
   "@statusAbsent": {
     "description": "Key status.absent"
@@ -5782,7 +4991,7 @@
   "@ticketTitle": {
     "description": "Key ticket.title"
   },
-  "timeDays": "{count, plural, one{# gün} other{# gün}}",
+  "timeDays": "{count, plural, one{{count} gün} other{{count} gün}}",
   "@timeDays": {
     "description": "Key time.days",
     "placeholders": {
@@ -5791,7 +5000,7 @@
       }
     }
   },
-  "timeDaysAgo": "{count, plural, one{# gün önce} other{# gün önce}}",
+  "timeDaysAgo": "{count, plural, one{{count} gün önce} other{{count} gün önce}}",
   "@timeDaysAgo": {
     "description": "Key time.daysAgo",
     "placeholders": {
@@ -5825,7 +5034,7 @@
       }
     }
   },
-  "timeHoursAgo": "{count, plural, one{# saat önce} other{# saat önce}}",
+  "timeHoursAgo": "{count, plural, one{{count} saat önce} other{{count} saat önce}}",
   "@timeHoursAgo": {
     "description": "Key time.hoursAgo",
     "placeholders": {
@@ -5834,15 +5043,12 @@
       }
     }
   },
-  "timeInDays": "{count, plural, =0{bugün} one{# gün} other{# gün}}",
+  "timeInDays": "{count, plural, =0{bugün} one{{count} gün} other{{count} gün}}",
   "@timeInDays": {
     "description": "Key time.inDays",
     "placeholders": {
       "count": {
         "type": "int"
-      },
-      "bug": {
-        "type": "String"
       }
     }
   },
@@ -5876,7 +5082,7 @@
   "@timeTomorrow": {
     "description": "Key time.tomorrow"
   },
-  "timeWeeksAgo": "{count, plural, one{# hafta önce} other{# hafta önce}}",
+  "timeWeeksAgo": "{count, plural, one{{count} hafta önce} other{{count} hafta önce}}",
   "@timeWeeksAgo": {
     "description": "Key time.weeksAgo",
     "placeholders": {

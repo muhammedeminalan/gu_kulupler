@@ -11,10 +11,13 @@
 4. `flutter pub outdated` Faz H'de çalıştırılır; güvenlik düzeltmeleri dışında **işin ortasında yükseltme yok**.
 5. Paket eklemek = aynı commit'te `docs/packages.md`'ye (bu tabloya) satır + gerekçe.
 6. Platform yapılandırması (iOS **SPM**, Android `minSdk`, izin metinleri `Info.plist` / `AndroidManifest.xml`) paketle **aynı task'ta** yapılır ve kullanıcıya bildirilir.
+7. `equatable ^2.1.0` (3.0.0'dan aşağı çekildi, T-00): `fake_cloud_firestore` ve `firebase_auth_mocks` (Q-06) yalnızca `equatable ^2.0.0` ile çözülür; 3.0.0'ın kırıcı değişiklikleri (runtimeType karşılaştırması, EquatableMixin, toString) projede kullanılmaz (CD-14).
 
 ## 2. Çalışma zamanı bağımlılıkları
 
 ### 2.1 Kök uygulama (`pubspec.yaml`)
+
+> Kök `pubspec.yaml` `flutter:` bloğunda `generate: true` (gen-l10n ön koşulu, T-00; CD-51).
 
 | Paket | Amaç | Nerede (tasarım ID) | Koşul |
 |---|---|---|---|
@@ -32,24 +35,24 @@
 | `permission_handler` | kamera/fotoğraf/bildirim izni, "Ayarlara git" | DLG-03/04/05, TST-32 | — |
 | `mobile_scanner` | QR okuma | MGT-07 | — |
 | `qr_flutter` | QR üretme | EVT-03 | — |
-| `image_picker` | kamera/galeri | SHT-16 | Q-19 ≠ "yükleme yok" |
-| `flutter_image_compress` (veya `image`) | yükleme öncesi boyutlandırma | SHT-16, AUT-05, PRF-02, FED-03, MGT-09 | Q-19 |
-| `cached_network_image` | Storage'tan gelen fotoğraflar | avatar, kapak, gönderi görselleri | Q-19 ≠ "yükleme yok" |
+| `image_picker` | kamera/galeri | SHT-16 | Q-19 = yükle (kesin) |
+| `flutter_image_compress` | yükleme öncesi boyutlandırma | SHT-16, AUT-05, PRF-02, FED-03, MGT-09 | Q-19 = yükle (kesin); `image` paketi kullanılmaz |
+| `cached_network_image` | Storage'tan gelen fotoğraflar | avatar, kapak, gönderi görselleri | Q-19 = yükle (kesin) |
 | `flutter_svg` | ikon/kapak/desen/illüstrasyon | her yer | — |
-| `flutter_local_notifications`, `timezone` | cihazda planlı hatırlatıcı | SHT-13, EVT-02 | Q-07 = yerel hatırlatıcı |
-| `table_calendar` | takvim | SHT-28, EVT-01 | **Q-08 = table_calendar** (önerilen değil; öneri `GuCalendar`) |
+| `flutter_local_notifications`, `timezone` | cihazda planlı hatırlatıcı | SHT-13, EVT-02 | Q-07 = yerel hatırlatıcı (kesin), T-23 |
+| `table_calendar` | takvim | SHT-28, EVT-01 | **Kaldırıldı (T-00)** — Q-08 = `GuCalendar` |
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | çekirdek | — | — |
-| `firebase_storage` | fotoğraf | Q-19 | Q-19 ≠ "yükleme yok" (yeni projede Blaze gerekir — `architecture.md §10`) |
-| `firebase_messaging` | FCM | bildirim izni, jeton | **Q-02 = Functions (Mod F)** |
-| `cloud_functions` | callable (gerekirse) | — | Q-02 = Functions **ve** callable gerekiyorsa |
+| `firebase_storage` | fotoğraf | Q-19 | Q-19 = yükle (kesin); bucket/Blaze K-L → T-46 (`architecture.md §10`) |
+| `firebase_messaging` | FCM | bildirim izni, jeton | **Eklenmez (Mod C, Q-02)**; T-42 Mod F'de eklenir |
+| `cloud_functions` | callable (gerekirse) | — | **Eklenmez (Mod C, Q-02)**; T-42 Mod F'de eklenir |
 | `firebase_remote_config` | sürüm kapısı, bakım, limit ipuçları | DLG-26 | — |
 | `firebase_crashlytics` | hata raporu | D-23 | — |
 
-**Kaldırılacaklar** (kullanıcının mevcut pubspec'inde var): `google_fonts` (D-12), `flutter_lints` (→ `very_good_analysis`); Q'ya göre `table_calendar`, `cloud_functions`, `firebase_messaging`, `firebase_storage`, `cached_network_image`. `uses-material-design: true` kalır (Material widget'ları kullanılır; `Icons.*` kullanılmaz).
+**Kaldırıldı / eklenmedi (T-00):** `google_fonts` (D-12; mevcut pubspec'te zaten yoktu), `flutter_lints` (→ `very_good_analysis`), `flutter_gen_runner` (izinli listede değil; asset erişimi el yazımı kayıt defterleri `GuIcons` / `GuIllustrations` / `GuCovers`, D-13), `table_calendar` (Q-08 → `GuCalendar`), `cloud_functions` ve `firebase_messaging` (Q-02 Mod C; T-42 Mod F'de eklenir). `firebase_storage` ve `cached_network_image` **kalır** (Q-19 = yükle). `uses-material-design: true` kalır (Material widget'ları kullanılır; `Icons.*` kullanılmaz).
 
 ### 2.2 `packages/gu_data`
-`cloud_firestore`, `firebase_auth`, `firebase_storage` (Q-19), `firebase_remote_config`, `firebase_messaging` (Mod F), `firebase_crashlytics`, `equatable`, `json_annotation`, `meta`, `collection`, `crypto`/`dart:math Random.secure` (bilet kodu — **yalnızca `Random.secure()`**).
-Dev: `build_runner`, `json_serializable`, `very_good_analysis`, `test`, `fake_cloud_firestore` + `firebase_auth_mocks` (+ `firebase_storage_mocks`) **Q-06**.
+`cloud_firestore`, `firebase_auth`, `firebase_storage` (Q-19 = yükle, kesin), `firebase_remote_config`, `firebase_messaging` (yalnızca Mod F'de (T-42); Mod C'de yok), `firebase_crashlytics`, `equatable`, `json_annotation`, `meta`, `collection`, `crypto`/`dart:math Random.secure` (bilet kodu — **yalnızca `Random.secure()`**).
+Dev: `build_runner`, `json_serializable`, `very_good_analysis`, `flutter_test` (sdk) — `test` paketi workspace'te çözülemez (`riverpod_generator` analyzer kısıtı, CD-15); `fake_cloud_firestore` + `firebase_auth_mocks` + `firebase_storage_mocks` (**Q-06**, kesin).
 
 ### 2.3 `packages/gu_ui`
 `flutter`, `flutter_svg`, `equatable`, `meta`. **Başka paket yok** (Firebase, l10n, router, Riverpod'a bağımlı değil).
@@ -57,8 +60,8 @@ Dev: `flutter_test`, `very_good_analysis`.
 
 ## 3. Dev bağımlılıkları (kök)
 
-`build_runner`, `riverpod_generator`, `go_router_builder`, `json_serializable`, `very_good_analysis`, `flutter_test`, `integration_test` (sdk), `flutter_launcher_icons`, `flutter_native_splash`. Test için ayrıca `fake_cloud_firestore`, `firebase_auth_mocks` (Q-06). **Mock kütüphanesi (mocktail/mockito) yok** — el yazımı fake'ler (CLAUDE.md §3). **Golden için üçüncü taraf paket yok** — Flutter'ın `matchesGoldenFile`'ı + `test/helpers/golden_helper.dart`.
-Opsiyonel (yalnızca uyumlu sürüm bulunursa, aksi halde kullanılmaz): `riverpod_lint` / `custom_lint` — kullanılamazsa `docs/PLAN.md`'ye not.
+`build_runner`, `riverpod_generator`, `go_router_builder`, `json_serializable`, `very_good_analysis`, `flutter_test`, `integration_test` (sdk), `flutter_launcher_icons`, `flutter_native_splash` (son ikisi: yapılandırma T-00, çalıştırma T-46). Test için ayrıca `fake_cloud_firestore`, `firebase_auth_mocks` (Q-06, kesin; `firebase_storage_mocks` yalnızca `gu_data`). **Mock kütüphanesi (mocktail/mockito) yok** — el yazımı fake'ler (CLAUDE.md §3). **Golden için üçüncü taraf paket yok** — Flutter'ın `matchesGoldenFile`'ı + `test/helpers/golden_helper.dart`.
+Opsiyonel (yalnızca uyumlu sürüm bulunursa, aksi halde kullanılmaz): `riverpod_lint` / `custom_lint` — kullanılamazsa `docs/PLAN.md`'ye not. **T-00 dry-run: çözülemez** (analyzer kısıtı — `riverpod_generator 4.0.9 → analyzer >=13 <15`, `custom_lint` / `riverpod_lint` eski analyzer ister; PLAN §5) → kullanılmaz; T-44/T-46'da yeniden denenir.
 
 ## 4. Firebase tarafı (Node)
 
@@ -70,11 +73,13 @@ Opsiyonel (yalnızca uyumlu sürüm bulunursa, aksi halde kullanılmaz): `riverp
 
 ## 5. Platform notları (görev başına doğrulanır)
 
-- **iOS:** SPM (kullanıcı `enable-swift-package-manager: true` açtı); CocoaPods gerektiren paket çıkarsa `AskUserQuestion`. `Info.plist` izin metinleri (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSUserNotificationsUsageDescription` gerekmez ama FCM için Push Capability) **ARB'den değil** `InfoPlist.strings` yerelleştirmesiyle TR/EN; uygulama ad(lar)ı `AppConstants.appName` ile tutarlı.
+- **iOS:** SPM (kullanıcı `enable-swift-package-manager: true` açtı); CocoaPods gerektiren paket çıkarsa `AskUserQuestion`. `Info.plist` izin metinleri (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSUserNotificationsUsageDescription` gerekmez; Mod C'de FCM yok → Push Capability **eklenmez**, T-42'de (Mod F) eklenir) **ARB'den değil** `InfoPlist.strings` yerelleştirmesiyle TR/EN; uygulama ad(lar)ı `AppConstants.appName` ile tutarlı.
 - **Android:** `minSdk` Firebase + `mobile_scanner` gereksinimine göre; izinler `AndroidManifest.xml`; bildirim kanalı adları ARB'den; predictive back için `android:enableOnBackInvokedCallback="true"`.
 - **Ekran yönü:** dikey kilit (Q-13) `SystemChrome.setPreferredOrientations` + platform dosyaları.
 - **Uygulama ikonu / splash:** `assets/logo/app-icon-1024.png` → `flutter_launcher_icons`; native splash `flutter_native_splash` (tema renkleri `GuColors`'tan **türetilmiş sabit** olarak `flutter_native_splash.yaml`'a yazılır ve tokenlarla testle eşleştirilir). Üniversite resmi logosu **yoktur** (yer tutucu amblem; K12).
 
 ## 6. Bilinçli olarak YOK
+
+> Not (T-00): aşağıdakilerden bazıları (`mockito`, `freezed_annotation`, `sqflite`) başka paketlerin **geçişli** bağımlılığı olarak `pubspec.lock`'ta görünür; doğrudan bağımlılık değildir ve import edilmez (`depend_on_referenced_packages` + `tool/check_boundaries.js` yakalar).
 
 Freezed · `AsyncValue`/`hooks_riverpod` · `google_fonts` · `provider` · `bloc` · `auto_route` · `dio` (Firebase dışı HTTP yok) · `hive/isar/sqflite` · `mocktail/mockito` · `golden_toolkit/alchemist` · `get` (GetX) · `flutter_hooks` · `intl_utils`/`easy_localization` · `firebase_analytics` · `firebase_dynamic_links` (kullanımdan kalktı) · `firebase_app_check` (kapsam dışı; K-adayı) · reklam/izleyici SDK'ları.

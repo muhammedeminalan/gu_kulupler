@@ -67,7 +67,13 @@ serviceAccount*.json
 # Claude Code yerel ayarları (CLAUDE.md commit'lenir)
 .claude/settings.local.json
 
-# Kod üretimi
+# Kod üretimi (D-08: üretilen dosyalar commit edilmez)
 *.g.dart
 *.gen.dart
-lib/product/generated/
+lib/l10n/app_localizations*.dart
+
+# Kalite kapısı önbelleği, kapsam raporları, paket araç/derleme dizinleri (CD-05)
+tool/.cache/
+**/coverage/
+packages/*/.dart_tool/
+packages/*/build/

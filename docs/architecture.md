@@ -52,7 +52,7 @@ lib/src/
   theme/       gu_theme.dart (light/dark ThemeData) · gu_theme_extension.dart (context.gu) · gu_system_ui.dart
   icons/       gu_icon.dart · gu_icons.dart (130, assets/icons ile birebir)
   widgets/     primitives/ (button, icon_button, chip, badge, avatar, …) · inputs/ · feedback/ (skeleton, empty/error/offline state, banner) · navigation/ (app_bar, tabs, segmented, bottom_nav) · display/ (card, tile, kpi, progress, chart, calendar, cover, illustration)
-  overlays/    gu_sheet_frame.dart · gu_dialog_frame.dart · gu_toast.dart · gu_pop_menu.dart
+  overlay/     gu_sheet_frame.dart · gu_dialog_frame.dart · gu_toast.dart · gu_pop_menu.dart
   extensions/  build_context_x.dart (gu, l10n köprüsü hariç) · num_x.dart
   utils/       gu_key.dart (GuKey.action) · gu_tap_target.dart · text_scale.dart
 test/ (token testi, widget testleri, golden)
