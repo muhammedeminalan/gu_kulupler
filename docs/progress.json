@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-09T11:07:35.895Z",
+  "updated": "2026-10-09T11:31:02.895Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": "T-01",
+  "currentTask": null,
   "statusValues": [
     "pending",
     "planning",
@@ -141,11 +141,13 @@
       "notes": "İnceleme: mimari 1 kritik + 2 önemli, test 3 önemli — hepsi düzeltildi; CD-77/78/79; K-28 yeni"
     },
     "T-01": {
-      "status": "review",
+      "status": "done",
       "startedAt": "2026-10-09T10:15:58.580Z",
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "finishedAt": "2026-10-09T11:31:02.894Z",
+      "commits": [
+        "ea3b1cd"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-02": {
