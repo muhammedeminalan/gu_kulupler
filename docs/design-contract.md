@@ -74,7 +74,7 @@ Referans ölçüm: `design/reference-shots/screens/*__light__tr.webp` üst 54 px
 
 ## 6. Durumlar (her liste/veri bloğu)
 
-`normal · yükleniyor (skeleton) · boş · hata · çevrimdışı` — tasarımda `states/{ID}__{empty|error|offline|loading}.webp` olan ekranlar: CLB-01, CLB-02, CLB-03, EVT-01, EVT-04, NTF-01, PRF-03, PRF-04, MGT-03, MGT-04, MGT-05, ADM-02, ADM-04, ADM-05. Diğer listelerde (üye, katılımcı, gönderi, yorum, faaliyet, başvuru vb.) aynı bileşenler (`GuListState`: `GuSkeleton`, `GuEmptyState`, `GuErrorState`, `GuOfflineState`) kullanılır ve testlenir; ekran görüntüsü yoksa bileşenin tasarım sistemi sayfasındaki hali referanstır (`design/reference-shots/prototype-pages-desktop/`).
+`normal · yükleniyor (skeleton) · boş · hata · çevrimdışı` — tasarımda `states/{ID}__{empty|error|offline|loading}.webp` olan ekranlar: CLB-01, CLB-02, CLB-03, EVT-01, EVT-04, NTF-01, PRF-03, PRF-04, MGT-03, MGT-04, ADM-02, ADM-04, ADM-05 (13 ekran). MGT-05'in `loading/empty/error` yakalamaları artefakttır (3 dosya özdeş, normal form; kaynakta liste durumu yok) → MGT-05'e yalnızca çevrimdışı bandı uygulanır; CLB-02/CLB-03 yakalamaları da artefakt, kanıt kaynak (`ui.js:95–99`, `screens-clubs.js:51`, etkinlik sekmesi `ListState`) + `ds_cards.webp` (K-51). Diğer listelerde (üye, katılımcı, gönderi, yorum, faaliyet, başvuru vb.) aynı bileşenler (`GuListState`: `GuSkeleton`, `GuEmptyState`, `GuErrorState`, `GuOfflineState`) kullanılır ve testlenir; ekran görüntüsü yoksa bileşenin tasarım sistemi sayfasındaki hali referanstır (`design/reference-shots/prototype-pages-desktop/`).
 Sıra: **hata → yükleniyor → boş → dolu**; çevrimdışı banner üstte kalıcı (CLAUDE.md §4).
 
 ## 7. Kontrol listesi — bir ekran "bitti" sayılması için

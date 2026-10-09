@@ -97,7 +97,7 @@ Bu plan (`docs/PLAN.md`) kaynak hiyerarşisinde 6. sıradaki `docs/*` grubundad�
 | Dialog | **32** | `DLG-01…32` | `registry.json#dialogs` |
 | Toast | **78 = 77 uygulanan + 1 muaf** | `TST-01…57` (57) + `TST-X1…X20` (20) uygulanır; `TST-58` ("Demo: … açılıyor") K-02 muaf. Hepsi `ToastId` enum'unda (`lib/product/feedback/toast_id.dart`), `TST-58` enum'da **yok** | `registry.json#toasts`, `design-contract.md §2`, `check_design_coverage.js` `excluded` |
 | Aksiyon | **1072 = 1060 uygulanan + 12 muaf** | Muaf (demo, `EXEMPT_ACTIONS`): `AUT-01.demoAccount.*` (6), `AUT-01.demoToggle` (1), `AUT-03.demoVerify` (1), `EVT-03.demoScan` (1), `MGT-07.demoScan.valid\|used\|invalid` (3). Her uygulanan aksiyon `GuKey.action('<ID>.<aksiyon>')` (D-18) | `screens-actions.json`, `check_design_coverage.js --actions`; `MAP11` muaf sayısı 12 |
-| ARB anahtarı | **1421 → 1235 (T-00) → 1248 (T-34)** | 186 prototip-kabuğu anahtarı (`panel.*` 32, `assets.*` 74, `ds.*` 28, `map.*` 15, `qa.*` 29, `site.*` 8) T-00'da `node tool/check_arb_parity.js --prune-prototype-only` ile `design/prototype-only-arb/`'a ayrılır (K-21); K-22 (`{appName}` 2 anahtar; çözüm CD-75) ve K-23 (3 bozuk anahtar; metin değişmez, betik düzeltmesi — CD-51 KESİNLEŞTİ) T-00'da giderilir; task'a bağlı 6 anahtar (§14.1 3c: T-11 `badgeOverflow`, T-14 `resetLinkInvalid`/`imageTooLarge`/`imageInvalidType`, T-29 `set03ConfirmWord`, T-34 `eventCopySuffix`) ve T-34 `SHT-31` ile 7 kapak palet/desen anahtarı (CD-35: `coverPaletteRed/Slate/Bordeaux`, `coverPatternMountain/Lines/Dots/Waves`) → T-34 sonrası 1248 | `lib/l10n/app_tr.arb`, `app_en.arb`, `tool/check_arb_parity.js --strict` |
+| ARB anahtarı | **1421 → 1235 (T-00) → 1248 → 1249 (T-23 `eventMapPlaceholder`, CD-88) (T-34)** | 186 prototip-kabuğu anahtarı (`panel.*` 32, `assets.*` 74, `ds.*` 28, `map.*` 15, `qa.*` 29, `site.*` 8) T-00'da `node tool/check_arb_parity.js --prune-prototype-only` ile `design/prototype-only-arb/`'a ayrılır (K-21); K-22 (`{appName}` 2 anahtar; çözüm CD-75) ve K-23 (3 bozuk anahtar; metin değişmez, betik düzeltmesi — CD-51 KESİNLEŞTİ) T-00'da giderilir; task'a bağlı 6 anahtar (§14.1 3c: T-11 `badgeOverflow`, T-14 `resetLinkInvalid`/`imageTooLarge`/`imageInvalidType`, T-29 `set03ConfirmWord`, T-34 `eventCopySuffix`) ve T-34 `SHT-31` ile 7 kapak palet/desen anahtarı (CD-35: `coverPaletteRed/Slate/Bordeaux`, `coverPatternMountain/Lines/Dots/Waves`) → T-34 sonrası 1248 | `lib/l10n/app_tr.arb`, `app_en.arb`, `tool/check_arb_parity.js --strict` |
 | Task | **48** | T-00…T-47; 8 faz A–H; T-42 koşullu → Q-02 Mod C: `pending` kalır, T-41 `done` olunca `skip` (CD-66, §3-b) | `docs/roadmap.md §2`, `docs/progress.json#tasks` (48 kayıt) |
 | Bağlama borcu | **38** | `progress.json#pendingWiring` 38 kayıt (W-01…W-47 numara aralığında; W-04, W-07, W-44 kasıtlı uygulanmayan K-02 noktalarıdır, listede değildir). Hepsi `status: open`; her birinin `resolveIn` task'ı `roadmap.md §5` tablosundadır. T-15'te CD-36 ile **W-NB-01** (`NoopNotificationDispatcher` → `ClientFanOutDispatcher` DI bağlaması; T-25'te kapanır) eklenir → kayıt sayısı 39 (§18.3) | `node tool/check_design_coverage.js --wiring` |
 | Durum görüntülü ekran | **14** | `CLB-01, CLB-02, CLB-03, EVT-01, EVT-04, NTF-01, PRF-03, PRF-04, MGT-03, MGT-04, MGT-05, ADM-02, ADM-04, ADM-05` — `states/{ID}__{empty\|error\|offline\|loading}.webp`; diğer listelerde `GuListState` bileşenleri | `design-contract.md §6`, `reference-shots/states/` (56 görüntü) |
@@ -747,6 +747,8 @@ packages/gu_data/
     └── fixtures/demo_data.dart       ← T-09  DemoDataFixture.toFirestoreJson (tool/seed/demo-data.json okuyucu, §9.1); testi models/demo_data_parse_test.dart (§9.11: her belge modele ayrışır)
 ```
 
+> **Faz 1 addendum (CD-94):** fnv1a32 tek kopya packages/gu_ui/lib/src/utils/stable_hash.dart (T-04); §10.2/§15 notificationId bunu kullanır.
+
 Türkçe küçük harf (`nameLower`, `emailLower`) `gu_data` içinde hesaplanmaz: ViewModel `String.trLower()` (gu_ui `extensions/string_x.dart`) ile üretir ve repository'ye verir; `tool/seed/seed_emulator.js` kendi TR lower fonksiyonunu taşır (CD-11). `turkish_text.dart` dosyası açılmaz.
 
 ### 4.3 `packages/gu_ui` (token · tema · ikon · çekirdek widget · overlay çerçeveleri · extension)
@@ -1148,6 +1150,7 @@ Mod C'de (Q-02) **oluşturulmaz**. T-42 kullanıcıya sorulmadan atlanır (CD-66
 ---
 
 <a id="5"></a>
+
 ## §5 — Paketler
 
 > Kaynaklar: `docs/packages.md` (izin verilen liste, sürüm politikası §1), `docs/decisions.md` D-03/D-04/D-05/D-07/D-08/D-09/D-11/D-12/D-13, Q-02/Q-05/Q-06/Q-07/Q-08/Q-12/Q-19, K-L; `prompts/02-faz0-kurulum.md` §2–§3, §6, §7; `docs/architecture.md` §2; `docs/testing.md` §2. Bu bölümdeki her sürüm 2026-10-08 tarihinde `/Users/wonzy/gu_kulupler` içinde **salt okunur** komutlarla doğrulanmıştır; `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `build.yaml` değişmemiştir (`git status --short pubspec.yaml pubspec.lock analysis_options.yaml build.yaml` → boş).
@@ -1678,6 +1681,8 @@ Boyuta bağlı iki stil widget'ta `copyWith(fontSize:)` ile türetilir, oran sab
 
 CSS'in ölçek dışı aralık sınıfları (`gap2` 6 ekran, `gap6` 23 ekran, `gap10` 5 ekran): `GuSpacing.s2 = 2`, `GuSpacing.s6 = 6`, `GuSpacing.s10 = 10` — `/// CSS-derived` yorumu ile ayrı grupta; token testi 9'u registry'den, 3'ü CSS `.gapN` sınıflarından doğrular. Bileşen içi dolgular (3, 14) `GuSizes`'tadır (§7.7). API: `GuGap.v16` → `const SizedBox(height: GuSpacing.s16)`; `GuInsets.h16v12` → `const EdgeInsets.symmetric(horizontal: GuSpacing.s16, vertical: GuSpacing.s12)`; `GuInsets.sym({double h, double v})` ve `GuInsets.only({double left, double top, double right, double bottom})` yardımcıları yalnızca `GuSpacing`/`GuSizes` sabitleriyle çağrılır (`check_hardcode` HC04 `GuSpacing.s16` gibi tanımlayıcı içindeki rakamı literal saymaz; doğrulandı: `scan_core.hasNonZeroNumber` `(?<![\w.$])\d`). Listeler: `hscroll` = yatay `ListView` `padding: GuInsets.h16` + `separator GuGap.h8` + üst/alt 3 (`GuSizes.hscrollPaddingY`).
 
+> **Faz 1 addendum (CD-99, K-42):** gap10/pb8/pt24 CSS'te tanımsız, tarayıcıda etkisiz; GuSpacing.s10 yazılmaz; CSS-derived grup s2, s6.
+
 ### 7.4 (d) Radius — `GuRadius`
 
 | Registry | `GuRadius` double | `BorderRadius` sabiti | Kullanım (CSS) |
@@ -2040,6 +2045,7 @@ Faz 1'de yazılacak, numarası bu bölümde önceden atanmış K satırları (§
 ---
 
 <a id="8"></a>
+
 ## §8 — Widget stratejisi
 
 > Bu bölüm Faz 1'in (`prompts/03-faz1-tasarim-analizi.md`, `docs/design-analysis.TEMPLATE.md §A` 63 satır) **ön planıdır**; nihai liste, API'ler ve durum kanıtları `docs/design-analysis.md` + `docs/widget-catalog.md`'de yazılır (Kapı 1); birleştirmeler (CD-27) ve roadmap dışı bileşen atamaları (CD-25) Claude kararıyla kesinleşmiştir, Faz 1 tablosu bunları onaylar, yeniden tartışmaz. Burada: yerleşim kuralı, 63 bileşenin roadmap T-03–T-07 ve ekran task'larıyla eşlemesi, durum matrisi, boşluklar, tekrar denetimi ve zorunlu test seti.
@@ -2207,9 +2213,12 @@ Satır sırası §8.2 numarasıyla (1–63) + §8.3 ekleri; product widget'ları
 
 Overlay çerçeveleri (T-07) ek: scrim/X/sürükle/geri kapanma, odak tuzağı (`FocusScope` dışına `Tab` çıkmaz), klavye altında kayma (`viewInsets.bottom = 320`), toast kuyruğu (ikinci toast ilkini kapatır), süre 4 s / 6 s (`tester.pump(GuMotion.toastDefault)`), `aboveNav` konumu. `GuCalendar` ek: Pazartesi/Pazar başlangıç, 42 hücre, ay geçişi, `min/max` devre dışı, noktalar ≤ 3. `GuRefresh` ek: 59 px çekme → tetiklenmez, 61 px → `onRefresh` bir kez. `GuContentColumn` ek: 390 → çocuk genişliği 390; 768 → 480, sol kenar 144 (§7.8).
 
+> **Faz 1 addendum (CD-82):** §8.2/§8.3 durum matrisleri, sayımları ve kullanım notları için docs/design-analysis.md A.2 ve §K esastır.
+
 ---
 
 <a id="9"></a>
+
 ## §9 — Veri modeli
 
 Kaynaklar: `docs/domain-model.md` §1–§2, §9–§11; `docs/soft-delete.md` §2–§3; `docs/firestore-rules-spec.md` §2–§3 (alan beyaz listeleri), §7–§8; `docs/architecture.md` §2 (`gu_data` dizini); `docs/roadmap.md` T-08 / T-09 / T-10; `tool/seed/README.md` + `tool/seed/demo-data.json`; `design/extracted/registry.json` (`constants`, `eventTypes`, `years`, `palettes`, `patterns`, `popularSearches`, `notifCat`, `actCat`); `reference/life_shared/lib/src/feature/firebase/soft_delete.dart` (yalnızca konvansiyon). Kilitli kararlar: D-09 (json_serializable + `explicit_to_json`), D-10 (hard delete yok), D-25 (düz koleksiyonlar + ID kuralları), D-26 (UTC `Timestamp`, sunucu zamanı), D-29 (e-posta yalnızca `private` alt belgelerinde), D-30 (bilet kodu), Q-02 (Mod C: `fcmTokens` boş kalır), Q-19 (Storage yolları), K-A (`clubs.advisor`), K-C (`coverPath`), K-F (`goingCount == 0` ⇒ taslağa alma), K-G (yoklama penceresi). Claude kararları (bağlayıcı; §22): CD-11 (Türkçe harf yalnızca gu_ui `trLower()/trUpper()`), CD-14 (`equatable ^2.1.0`), CD-24 (sunum süreleri `GuMotion`), CD-30 (üst sınır sabitleri), CD-31 (sınıf adı `Limits`), CD-32 (saat kayması toleransı), CD-33 (şikayet enum'ları 6/5), CD-34 (`ReminderOption` 4), CD-35 (kapak ARB anahtarları T-34), CD-38 (`eventNewInterestFanOutMax`), CD-41 (sayaç–belge referans alanları), CD-47 (etkinlik kapak yolu), CD-58 (`AppDurations`), CD-63 (kulüp adı benzersizliği), CD-76 (`EmailDomainPolicy`). Bu bölümdeki dosya, sınıf, enum ve sabit adları planın **tek doğruluk kaynağıdır**; diğer bölümler (§4.2, §10, §12, §13, §15, §16, §18) yalnızca bu adları kullanır (§9.1 ad sözlüğü).
