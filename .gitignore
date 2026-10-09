@@ -77,3 +77,6 @@ tool/.cache/
 **/coverage/
 packages/*/.dart_tool/
 packages/*/build/
+
+# Konvansiyon örnekleri yalnızca yerelde tutulur; GitHub'a gitmez (kullanıcı kararı 2026-10-09). Klasör diskte kalır.
+reference/
