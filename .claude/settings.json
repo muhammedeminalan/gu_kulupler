@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter pub add:*)",
+      "Bash(flutter pub remove:*)",
+      "Bash(flutter pub outdated:*)",
+      "Bash(flutter pub deps:*)",
+      "Bash(flutter gen-l10n:*)",
+      "Bash(flutter --version:*)",
+      "Bash(flutter doctor:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter build:*)",
+      "Bash(dart analyze:*)",
+      "Bash(dart format:*)",
+      "Bash(dart fix:*)",
+      "Bash(dart pub:*)",
+      "Bash(dart run build_runner:*)",
+      "Bash(dart --version:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(git switch:*)",
+      "Bash(git stash:*)",
+      "Bash(bash tool/:*)",
+      "Bash(node tool/:*)",
+      "Bash(node --version)",
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(npm ci:*)",
+      "Bash(firebase emulators:*)",
+      "Bash(firebase --version)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(chmod +x:*)",
+      "Bash(mkdir:*)",
+      "Edit(lib/**)",
+      "Edit(test/**)",
+      "Edit(packages/**)",
+      "Edit(firebase/**)",
+      "Edit(functions/**)",
+      "Edit(tool/**)",
+      "Edit(docs/**)",
+      "Edit(prompts/**)",
+      "Edit(integration_test/**)",
+      "Edit(assets/**)",
+      "Edit(pubspec.yaml)",
+      "Edit(analysis_options.yaml)",
+      "Edit(build.yaml)",
+      "Edit(l10n.yaml)",
+      "Edit(.gitignore)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git rebase:*)",
+      "Bash(git merge:*)",
+      "Bash(git tag:*)",
+      "Bash(gh:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase use:*)",
+      "Bash(firebase login:*)",
+      "Bash(firebase functions:*)",
+      "Bash(firebase firestore:*)",
+      "Bash(firebase projects:*)",
+      "Bash(flutterfire:*)",
+      "Bash(node tool/admin/:*)",
+      "Bash(cd tool/admin && npm install:*)",
+      "Bash(flutter create:*)",
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Edit(docs/roadmap.md)",
+      "Edit(docs/task-map.json)",
+      "Edit(docs/decisions.md)",
+      "Edit(CLAUDE.md)",
+      "Edit(.claude/**)",
+      "Write(docs/roadmap.md)",
+      "Write(docs/task-map.json)",
+      "Write(CLAUDE.md)",
+      "Write(.claude/**)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(rm -r:*)",
+      "Bash(git clean:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(git commit:* --no-verify*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(firebase firestore:delete:*)",
+      "Bash(sudo:*)",
+      "Edit(design/**)",
+      "Write(design/**)",
+      "Edit(reference/**)",
+      "Write(reference/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/serviceAccount*.json)",
+      "Read(./**/*-adminsdk-*.json)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.p12)",
+      "Read(./**/key.properties)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/tool/progress.js\" brief",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tool/hooks/post_edit.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

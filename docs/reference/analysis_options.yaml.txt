@@ -1,0 +1,25 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**.g.dart"
+    - "**.gen.dart"
+    - lib/product/generated/
+    - build/**
+    - android/**
+    - ios/**
+
+linter:
+  rules:
+    avoid_print: true
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    avoid_empty_else: true
+    prefer_const_constructors: true
+    sort_constructors_first: true
+    depend_on_referenced_packages: false
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+    sort_pub_dependencies: false
+    use_setters_to_change_properties: false
+    avoid_positional_boolean_parameters: false

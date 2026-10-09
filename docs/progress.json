@@ -1,0 +1,899 @@
+{
+  "schema": 1,
+  "updated": "2026-10-09T04:17:20.538Z",
+  "gate": {
+    "planApproved": true,
+    "designAnalysisApproved": false
+  },
+  "currentTask": null,
+  "statusValues": [
+    "pending",
+    "planning",
+    "in_progress",
+    "review",
+    "done",
+    "blocked",
+    "skipped"
+  ],
+  "questionsAnswered": {
+    "Q-02": {
+      "answer": "Önce yalnızca istemci (Mod C); T-43 başında yeniden sorulur",
+      "answeredAt": "2026-10-08T18:57:06.366Z"
+    },
+    "Q-19": {
+      "answer": "Storage'a yükle; bucket/Blaze durumu T-46 öncesi doğrulanır",
+      "answeredAt": "2026-10-08T18:57:06.396Z"
+    },
+    "Q-01": {
+      "answer": "Emülatör önce (ENV=emulator)",
+      "answeredAt": "2026-10-08T18:57:06.419Z"
+    },
+    "Q-03": {
+      "answer": "Tek proje (gu-kulupler) + emülatör",
+      "answeredAt": "2026-10-08T18:57:06.441Z"
+    },
+    "Q-04": {
+      "answer": "E-posta/şifre + Firebase doğrulama bağlantısı",
+      "answeredAt": "2026-10-08T18:57:06.463Z"
+    },
+    "Q-05": {
+      "answer": "Yalnızca iki paket (gu_data + gu_ui)",
+      "answeredAt": "2026-10-08T18:57:06.484Z"
+    },
+    "Q-06": {
+      "answer": "fake_cloud_firestore + el yazımı fake",
+      "answeredAt": "2026-10-08T18:57:06.506Z"
+    },
+    "Q-08": {
+      "answer": "Kendi GuCalendar (table_calendar kaldırılır)",
+      "answeredAt": "2026-10-08T18:57:06.528Z"
+    },
+    "Q-07": {
+      "answer": "Cihazda planlı hatırlatıcı (flutter_local_notifications) + uygulama içi liste",
+      "answeredAt": "2026-10-08T18:57:06.550Z"
+    },
+    "Q-10": {
+      "answer": "Rules + sayaç belgesi (announcementCounters)",
+      "answeredAt": "2026-10-08T18:57:06.572Z"
+    },
+    "Q-11": {
+      "answer": "Anonimleştir + soft delete; Auth kimliği kalır",
+      "answeredAt": "2026-10-08T18:57:06.593Z"
+    },
+    "Q-09": {
+      "answer": "Üyelik belgesi + Rules (netleştirme sonrası; ilk seçim 'claim' Q-02/D-28 ile çeliştiği için geri alındı)",
+      "answeredAt": "2026-10-08T18:58:35.418Z"
+    },
+    "Q-12": {
+      "answer": "Okuma önbellekten, yazma engellenir (SYS-03 banner + TST-24)",
+      "answeredAt": "2026-10-08T18:59:58.646Z"
+    },
+    "Q-13": {
+      "answer": "Telefon dikey kilit; tablette ortalanmış 480 dp sütun",
+      "answeredAt": "2026-10-08T18:59:58.670Z"
+    },
+    "Q-14": {
+      "answer": "Uygulama içi × sistem ölçeği, üst sınır 1.6",
+      "answeredAt": "2026-10-08T18:59:58.695Z"
+    },
+    "Q-20": {
+      "answer": "Hedefin ev sekmesine geç (navigation.md §4 varsayılan A)",
+      "answeredAt": "2026-10-08T18:59:58.718Z"
+    },
+    "Q-15": {
+      "answer": "Flutter'da çöz (K-01…K-23 kararları uygulanır)",
+      "answeredAt": "2026-10-08T19:02:37.035Z"
+    },
+    "Q-16": {
+      "answer": "Önerilen kapsam (gu_ui açık+koyu; ekran 390×açık×TR + koyu; sheet/dialog/toast)",
+      "answeredAt": "2026-10-08T19:02:37.065Z"
+    },
+    "Q-17": {
+      "answer": "Task başına dal (feat/T-xx-…); merge akışı K-K ile netleştirilir",
+      "answeredAt": "2026-10-08T19:02:37.089Z"
+    },
+    "Q-18": {
+      "answer": "Şimdilik CI yok; yerel kalite kapısı; T-46'da yeniden sorulur",
+      "answeredAt": "2026-10-08T19:02:37.140Z"
+    },
+    "K-K": {
+      "answer": "Task başına dal; kapı yeşil + commit sonrası main'e yerel merge'i Claude yapar, onay beklemez, push yok ('merge işleminide sen yap direk benden onay bekleme')",
+      "answeredAt": "2026-10-08T19:05:39.800Z"
+    },
+    "K-L": {
+      "answer": "Bucket durumu şimdi bilinmiyor; T-46'da konsol kontrolü, gerekirse Blaze",
+      "answeredAt": "2026-10-08T19:05:39.830Z"
+    },
+    "K-A": {
+      "answer": "clubs.advisor{name,title,userId?} + advisor üyeliği tool/admin betiğiyle bağlanır",
+      "answeredAt": "2026-10-08T19:05:39.854Z"
+    },
+    "K-D": {
+      "answer": "Yer tutucu adres AppConstants.shareBaseUrl = https://kulupler.gumushane.edu.tr; App Links yok",
+      "answeredAt": "2026-10-08T19:05:39.878Z"
+    },
+    "K-N": {
+      "answer": "Yer tutucu AppConstants.supportEmail = kulupler-destek@gumushane.edu.tr",
+      "answeredAt": "2026-10-08T19:09:34.593Z"
+    },
+    "K-E": {
+      "answer": "Evet: yalnızca ENV=emulator/debug build'de DebugMenu (T-11 iskelet, T-43 tamamlanır); release'e girmez",
+      "answeredAt": "2026-10-08T19:09:34.622Z"
+    },
+    "K-F": {
+      "answer": "Reddet: yayındaki etkinlik yalnızca goingCount == 0 iken taslağa alınır (Rules)",
+      "answeredAt": "2026-10-08T19:09:34.645Z"
+    },
+    "K-G": {
+      "answer": "Yoklama penceresi: startsAt-2sa ≤ now ≤ endsAt+6sa (Rules)",
+      "answeredAt": "2026-10-08T19:09:34.667Z"
+    }
+  },
+  "tasks": {
+    "T-00": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-01": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-02": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-03": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-04": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-05": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-06": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-07": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-08": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-09": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-10": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-11": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-12": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-13": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-14": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-15": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-16": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-17": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-18": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-19": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-20": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-21": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-22": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-23": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-24": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-25": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-26": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-27": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-28": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-29": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-30": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-31": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-32": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-33": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-34": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-35": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-36": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-37": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-38": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-39": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-40": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-41": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-42": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": "",
+      "conditional": "Q-02 = Functions (Blaze)"
+    },
+    "T-43": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-44": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-45": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-46": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    },
+    "T-47": {
+      "status": "pending",
+      "startedAt": null,
+      "finishedAt": null,
+      "commits": [],
+      "gate": null,
+      "notes": ""
+    }
+  },
+  "pendingWiring": [
+    {
+      "id": "W-01",
+      "declaredIn": "T-11",
+      "text": "AppRedirect hedefi ONB-01 ve AUT-01 yer tutucu → T-13",
+      "resolveIn": [
+        "T-13"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-02",
+      "declaredIn": "T-11",
+      "text": "AppRedirect hedefi AUT-03 ve AUT-05 yer tutucu → T-14",
+      "resolveIn": [
+        "T-14"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-03",
+      "declaredIn": "T-11",
+      "text": "askıya alınmış hesap açılışında DLG-01 → T-13",
+      "resolveIn": [
+        "T-13"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-05",
+      "declaredIn": "T-13",
+      "text": "AUT-01 'Şifremi unuttum' → AUT-04 → T-14",
+      "resolveIn": [
+        "T-14"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-06",
+      "declaredIn": "T-13",
+      "text": "AUT-02 kayıt sonrası e-posta doğrulama → AUT-03 → T-14",
+      "resolveIn": [
+        "T-14"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-09",
+      "declaredIn": "T-14",
+      "text": "SHT-16 çoklu görsel sınırı (maxImages) parametresi hazır; TST-X5 sınırı FED-03 ile → T-21",
+      "resolveIn": [
+        "T-21"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-10",
+      "declaredIn": "T-16",
+      "text": "CLB-03 'Gönderiler' sekmesi içeriği → T-20 (FED-01)",
+      "resolveIn": [
+        "T-20"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-11",
+      "declaredIn": "T-16",
+      "text": "'Üye listesi' → T-18",
+      "resolveIn": [
+        "T-18"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-12",
+      "declaredIn": "T-16",
+      "text": "'Yönetim paneli' (MGT-01) → T-31",
+      "resolveIn": [
+        "T-31"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-13",
+      "declaredIn": "T-16",
+      "text": "'Kulüp ayarları' (MGT-09) → T-36",
+      "resolveIn": [
+        "T-36"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-14",
+      "declaredIn": "T-16",
+      "text": "DLG-09 → SHT-25 (başkanlık devri) → T-33",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-15",
+      "declaredIn": "T-16",
+      "text": "etkinlik satırı → EVT-02 → T-23",
+      "resolveIn": [
+        "T-23"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-16",
+      "declaredIn": "T-16",
+      "text": "yazı oluştur → FED-03 → T-21",
+      "resolveIn": [
+        "T-21"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-17",
+      "declaredIn": "T-16",
+      "text": "'Etkinlik oluştur' CTA → MGT-05 → T-34",
+      "resolveIn": [
+        "T-34"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-18",
+      "declaredIn": "T-17",
+      "text": "CLB-01 → PRF-03 'Kulüplerim' → T-27",
+      "resolveIn": [
+        "T-27"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-19",
+      "declaredIn": "T-17",
+      "text": "CLB-02 etkinlik sonuçları → EVT-02 → T-23",
+      "resolveIn": [
+        "T-23"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-20",
+      "declaredIn": "T-18",
+      "text": "üye satırı menüsü SHT-21 → T-33",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-21",
+      "declaredIn": "T-18",
+      "text": "SHT-27 yorum satırları (Yorumu sil → DLG-11, Yorumu şikayet et) → T-20",
+      "resolveIn": [
+        "T-20"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-24",
+      "declaredIn": "T-20",
+      "text": "FED-01 'yazı oluştur' → FED-03 → T-21",
+      "resolveIn": [
+        "T-21"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-25",
+      "declaredIn": "T-20",
+      "text": "SHT-08 'Düzenle' → FED-03 düzenleme modu → T-21",
+      "resolveIn": [
+        "T-21"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-26",
+      "declaredIn": "T-21",
+      "text": "SHT-18 varsayılan davranışı (onSelect verilmezse) → MGT-01 → T-31",
+      "resolveIn": [
+        "T-31"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-27",
+      "declaredIn": "T-23",
+      "text": "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35",
+      "resolveIn": [
+        "T-34",
+        "T-35"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-28",
+      "declaredIn": "T-26",
+      "text": "application_received → MGT-02/SHT-19 → T-32",
+      "resolveIn": [
+        "T-32"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-29",
+      "declaredIn": "T-26",
+      "text": "new_report → ADM-04/SHT-26 → T-40",
+      "resolveIn": [
+        "T-40"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-30",
+      "declaredIn": "T-26",
+      "text": "system/varsayılan bildirim → SET-04 → T-28",
+      "resolveIn": [
+        "T-28"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-31",
+      "declaredIn": "T-27",
+      "text": "yönetilen kulüp → MGT-01 → T-31",
+      "resolveIn": [
+        "T-31"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-32",
+      "declaredIn": "T-27",
+      "text": "PRF-01 ayarlar girişi → SET-01 → T-28",
+      "resolveIn": [
+        "T-28"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-33",
+      "declaredIn": "T-28",
+      "text": "SET-01 'Hesabımı sil' → SET-03 → T-29",
+      "resolveIn": [
+        "T-29"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-34",
+      "declaredIn": "T-29",
+      "text": "başkan ise → devir akışı MGT-03/SHT-25 → T-33",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-36",
+      "declaredIn": "T-31",
+      "text": "MGT-01 hızlı eylem: Başvurular → MGT-02 → T-32",
+      "resolveIn": [
+        "T-32"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-37",
+      "declaredIn": "T-31",
+      "text": "MGT-01 hızlı eylem: Üyeler → MGT-03 → T-33",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-38",
+      "declaredIn": "T-31",
+      "text": "MGT-01 hızlı eylem: Etkinlikler/Etkinlik oluştur → MGT-04, MGT-05 → T-34",
+      "resolveIn": [
+        "T-34"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-39",
+      "declaredIn": "T-31",
+      "text": "MGT-01 hızlı eylem: Yoklama → MGT-06 → T-35",
+      "resolveIn": [
+        "T-35"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-40",
+      "declaredIn": "T-31",
+      "text": "MGT-01 hızlı eylem: İçerik/Kulüp ayarları → MGT-08, MGT-09 → T-36",
+      "resolveIn": [
+        "T-36"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-42",
+      "declaredIn": "T-34",
+      "text": "SHT-23 yönetici satırları: Katılımcılar/Yoklama/QR → MGT-06, MGT-07 → T-35",
+      "resolveIn": [
+        "T-35"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-45",
+      "declaredIn": "T-38",
+      "text": "ADM-01 hızlı eylem: Kulüpler → ADM-02 → T-39",
+      "resolveIn": [
+        "T-39"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-46",
+      "declaredIn": "T-38",
+      "text": "ADM-01 şikayetler → ADM-04 → T-40",
+      "resolveIn": [
+        "T-40"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-47",
+      "declaredIn": "T-38",
+      "text": "ADM-01 kullanıcılar → ADM-05 → T-41",
+      "resolveIn": [
+        "T-41"
+      ],
+      "status": "open"
+    }
+  ],
+  "notImplemented": [
+    {
+      "id": "W-04",
+      "declaredIn": "T-13",
+      "text": "AUT-01 demo hesap bölümü UYGULANMAZ (K-02)"
+    },
+    {
+      "id": "W-07",
+      "declaredIn": "T-14",
+      "text": "AUT-03 'Doğrulandı simüle et' UYGULANMAZ (K-02)"
+    },
+    {
+      "id": "W-44",
+      "declaredIn": "T-35",
+      "text": "MGT-07 demo tarama düğmeleri UYGULANMAZ (K-02/K-04)"
+    }
+  ],
+  "deviations": [
+    {
+      "date": "2026-10-08",
+      "task": null,
+      "text": "tam otonom mod: plan ve analiz onayı önceden verildi"
+    },
+    {
+      "date": "2026-10-08",
+      "task": null,
+      "text": "Kullanıcı 2026-10-08 gece: 'tüm app bitince rapor ver, kendin test edecem, build gerekmez, karar gerektiren yerde akışı bozmayan seçeneği kendin ver ve sonunda söyle' — docs/PLAN.md onayı ExitPlanMode olmadan kullanıcı adına verildi; Claude'un kendi verdiği kararlar decisions.md K-tablosuna 'Claude kararı' etiketiyle yazılır; final rapor docs/reports/final-report.md"
+    },
+    {
+      "date": "2026-10-08",
+      "task": null,
+      "text": "Kullanıcı 2026-10-09 gece: 'koda geçme, bu aşama (Faz 0 plan) bitsin; sabah uyanınca devam deyince devam et' — PLAN.md tamamlanır, gate plan / Faz 0 commit / T-00 sabah 'devam' komutuyla başlar"
+    }
+  ],
+  "knownIssuesAdded": []
+}

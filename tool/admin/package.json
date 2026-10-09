@@ -1,0 +1,9 @@
+{
+  "name": "gu-admin-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "GÜ Kulüpler yönetici betikleri (Admin SDK). Yalnızca kullanıcının kendi makinesinde.",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=18" },
+  "dependencies": { "firebase-admin": "^13.0.0" }
+}

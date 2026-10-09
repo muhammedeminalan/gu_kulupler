@@ -1,0 +1,6418 @@
+{
+  "@@locale": "tr",
+  "@@last_modified": "2026-10-08T16:24:30.340Z",
+  "a11yBack": "Geri",
+  "@a11yBack": {
+    "description": "Key a11y.back"
+  },
+  "a11yClose": "Kapat",
+  "@a11yClose": {
+    "description": "Key a11y.close"
+  },
+  "a11yDismiss": "Kapat",
+  "@a11yDismiss": {
+    "description": "Key a11y.dismiss"
+  },
+  "a11yMainNav": "Ana gezinme",
+  "@a11yMainNav": {
+    "description": "Key a11y.mainNav"
+  },
+  "a11yMore": "Daha fazla",
+  "@a11yMore": {
+    "description": "Key a11y.more"
+  },
+  "a11yNextMonth": "Sonraki ay",
+  "@a11yNextMonth": {
+    "description": "Key a11y.nextMonth"
+  },
+  "a11yOpenImage": "Görseli aç ({n})",
+  "@a11yOpenImage": {
+    "description": "Key a11y.openImage",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "a11yPrevMonth": "Önceki ay",
+  "@a11yPrevMonth": {
+    "description": "Key a11y.prevMonth"
+  },
+  "aboutBuild": "Demo sürümü",
+  "@aboutBuild": {
+    "description": "Key about.build"
+  },
+  "aboutDesc": "Gümüşhane Üniversitesi öğrenci kulüpleri için, girişimcilik dersi projesi olarak geliştirilmiştir.",
+  "@aboutDesc": {
+    "description": "Key about.desc"
+  },
+  "aboutLicenseInter": "Inter yazı tipi SIL Open Font License 1.1 ile lisanslanmıştır.",
+  "@aboutLicenseInter": {
+    "description": "Key about.license.inter"
+  },
+  "aboutLicenseLucide": "Lucide ikon seti ISC lisansı ile dağıtılır; ikonlar değiştirilmeden kullanılmıştır.",
+  "@aboutLicenseLucide": {
+    "description": "Key about.license.lucide"
+  },
+  "aboutLicenseMontserrat": "Montserrat yazı tipi SIL Open Font License 1.1 ile lisanslanmıştır.",
+  "@aboutLicenseMontserrat": {
+    "description": "Key about.license.montserrat"
+  },
+  "aboutLicenses": "Açık kaynak lisansları",
+  "@aboutLicenses": {
+    "description": "Key about.licenses"
+  },
+  "aboutNote1": "Kulüp keşfi, başvuru ve üyelik akışları",
+  "@aboutNote1": {
+    "description": "Key about.note1"
+  },
+  "aboutNote2": "Etkinlik kaydı, QR bilet ve yoklama",
+  "@aboutNote2": {
+    "description": "Key about.note2"
+  },
+  "aboutNote3": "Kulüp yönetim paneli ve duyuru sistemi",
+  "@aboutNote3": {
+    "description": "Key about.note3"
+  },
+  "aboutNote4": "Açık/koyu tema, TR/EN dil desteği",
+  "@aboutNote4": {
+    "description": "Key about.note4"
+  },
+  "aboutReleaseNotes": "Sürüm notları",
+  "@aboutReleaseNotes": {
+    "description": "Key about.releaseNotes"
+  },
+  "aboutTeam": "Ekip",
+  "@aboutTeam": {
+    "description": "Key about.team"
+  },
+  "aboutTeamDesign": "Tasarım",
+  "@aboutTeamDesign": {
+    "description": "Key about.team.design"
+  },
+  "aboutTeamDev": "Geliştirme",
+  "@aboutTeamDev": {
+    "description": "Key about.team.dev"
+  },
+  "aboutTeamPm": "Ürün",
+  "@aboutTeamPm": {
+    "description": "Key about.team.pm"
+  },
+  "aboutTitle": "Hakkında",
+  "@aboutTitle": {
+    "description": "Key about.title"
+  },
+  "aboutViewLicense": "Lisansı görüntüle",
+  "@aboutViewLicense": {
+    "description": "Key about.viewLicense"
+  },
+  "activityAnnouncement": "{actor} bir duyuru yayınladı",
+  "@activityAnnouncement": {
+    "description": "Key activity.announcement",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationApproved": "{actor}, {user}'ın başvurusunu onayladı",
+  "@activityApplicationApproved": {
+    "description": "Key activity.application_approved",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationReceived": "{actor} kulübe başvurdu",
+  "@activityApplicationReceived": {
+    "description": "Key activity.application_received",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationRejected": "{actor}, {user}'ın başvurusunu reddetti",
+  "@activityApplicationRejected": {
+    "description": "Key activity.application_rejected",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCatContent": "İçerik",
+  "@activityCatContent": {
+    "description": "Key activity.cat.content"
+  },
+  "activityCatEvent": "Etkinlik",
+  "@activityCatEvent": {
+    "description": "Key activity.cat.event"
+  },
+  "activityCatMembership": "Üyelik",
+  "@activityCatMembership": {
+    "description": "Key activity.cat.membership"
+  },
+  "activityCatSettings": "Ayar",
+  "@activityCatSettings": {
+    "description": "Key activity.cat.settings"
+  },
+  "activityEmpty": "Henüz hareket yok",
+  "@activityEmpty": {
+    "description": "Key activity.empty"
+  },
+  "activityEventCancelled": "{actor} \"{event}\" etkinliğini iptal etti",
+  "@activityEventCancelled": {
+    "description": "Key activity.event_cancelled",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "activityEventPublished": "{actor} \"{event}\" etkinliğini yayınladı",
+  "@activityEventPublished": {
+    "description": "Key activity.event_published",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberJoined": "{actor} kulübe katıldı",
+  "@activityMemberJoined": {
+    "description": "Key activity.member_joined",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberLeft": "{actor} kulüpten ayrıldı",
+  "@activityMemberLeft": {
+    "description": "Key activity.member_left",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberRemoved": "{actor}, {user}'ı üyelikten çıkardı",
+  "@activityMemberRemoved": {
+    "description": "Key activity.member_removed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityPoll": "{actor} bir anket açtı",
+  "@activityPoll": {
+    "description": "Key activity.poll",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityPostCreated": "{actor} bir gönderi paylaştı",
+  "@activityPostCreated": {
+    "description": "Key activity.post_created",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityRoleChanged": "{actor}, {user}'ın rolünü {role} yaptı",
+  "@activityRoleChanged": {
+    "description": "Key activity.role_changed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySettingsChanged": "{actor} kulüp ayarlarını güncelledi",
+  "@activitySettingsChanged": {
+    "description": "Key activity.settings_changed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityTitle": "Faaliyet geçmişi",
+  "@activityTitle": {
+    "description": "Key activity.title"
+  },
+  "adminAttendanceDesc": "{events} geçmiş etkinlikte {registered} kayıttan {attended} katılım.",
+  "@adminAttendanceDesc": {
+    "description": "Key admin.attendanceDesc",
+    "placeholders": {
+      "events": {
+        "type": "String"
+      },
+      "registered": {
+        "type": "String"
+      },
+      "attended": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAttendanceRate": "Etkinlik katılım oranı",
+  "@adminAttendanceRate": {
+    "description": "Key admin.attendanceRate"
+  },
+  "adminKpiActiveClubs": "Aktif kulüp",
+  "@adminKpiActiveClubs": {
+    "description": "Key admin.kpi.activeClubs"
+  },
+  "adminKpiNewUsers": "+{count} yeni",
+  "@adminKpiNewUsers": {
+    "description": "Key admin.kpi.newUsers",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminKpiOpenReports": "Açık şikayet",
+  "@adminKpiOpenReports": {
+    "description": "Key admin.kpi.openReports"
+  },
+  "adminKpiSuspended": "Askıdaki kulüp",
+  "@adminKpiSuspended": {
+    "description": "Key admin.kpi.suspended"
+  },
+  "adminKpiUsers": "Toplam kullanıcı",
+  "@adminKpiUsers": {
+    "description": "Key admin.kpi.users"
+  },
+  "adminNoAccess": "Bu alan yalnızca kampüs yönetimine açık.",
+  "@adminNoAccess": {
+    "description": "Key admin.noAccess"
+  },
+  "adminPendingTasks": "Bekleyen işler",
+  "@adminPendingTasks": {
+    "description": "Key admin.pendingTasks"
+  },
+  "adminRange30": "30 gün",
+  "@adminRange30": {
+    "description": "Key admin.range.30"
+  },
+  "adminRange7": "7 gün",
+  "@adminRange7": {
+    "description": "Key admin.range.7"
+  },
+  "adminRangeTerm": "Dönem",
+  "@adminRangeTerm": {
+    "description": "Key admin.range.term"
+  },
+  "adminSegClubs": "Kulüpler",
+  "@adminSegClubs": {
+    "description": "Key admin.seg.clubs"
+  },
+  "adminSegOverview": "Genel",
+  "@adminSegOverview": {
+    "description": "Key admin.seg.overview"
+  },
+  "adminSegReports": "Şikayetler",
+  "@adminSegReports": {
+    "description": "Key admin.seg.reports"
+  },
+  "adminSegUsers": "Kullanıcılar",
+  "@adminSegUsers": {
+    "description": "Key admin.seg.users"
+  },
+  "adminTaskReports": "{count} açık şikayet",
+  "@adminTaskReports": {
+    "description": "Key admin.task.reports",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminTaskSuspended": "{count} askıdaki kulüp",
+  "@adminTaskSuspended": {
+    "description": "Key admin.task.suspended",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminTopClubs": "En aktif 5 kulüp",
+  "@adminTopClubs": {
+    "description": "Key admin.topClubs"
+  },
+  "adminWau": "Haftalık aktif kullanıcı",
+  "@adminWau": {
+    "description": "Key admin.wau"
+  },
+  "adminClubsActivate": "Etkinleştir",
+  "@adminClubsActivate": {
+    "description": "Key adminClubs.activate"
+  },
+  "adminClubsChangePresident": "Başkanı değiştir",
+  "@adminClubsChangePresident": {
+    "description": "Key adminClubs.changePresident"
+  },
+  "adminClubsCreate": "Kulüp oluştur",
+  "@adminClubsCreate": {
+    "description": "Key adminClubs.create"
+  },
+  "adminClubsEmpty": "Kulüp yok",
+  "@adminClubsEmpty": {
+    "description": "Key adminClubs.empty"
+  },
+  "adminClubsSuspend": "Askıya al",
+  "@adminClubsSuspend": {
+    "description": "Key adminClubs.suspend"
+  },
+  "adminClubsTitle": "Kulüpler",
+  "@adminClubsTitle": {
+    "description": "Key adminClubs.title"
+  },
+  "adminUsersClubCount": "{count, plural, one{# kulüp} other{# kulüp}}",
+  "@adminUsersClubCount": {
+    "description": "Key adminUsers.clubCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersHistory": "Üyelik geçmişi",
+  "@adminUsersHistory": {
+    "description": "Key adminUsers.history"
+  },
+  "adminUsersManagers": "Yöneticiler",
+  "@adminUsersManagers": {
+    "description": "Key adminUsers.managers"
+  },
+  "adminUsersNoHistory": "Üyelik kaydı yok.",
+  "@adminUsersNoHistory": {
+    "description": "Key adminUsers.noHistory"
+  },
+  "adminUsersSearch": "Ad veya e-posta ara",
+  "@adminUsersSearch": {
+    "description": "Key adminUsers.search"
+  },
+  "adminUsersSuspend": "Askıya al",
+  "@adminUsersSuspend": {
+    "description": "Key adminUsers.suspend"
+  },
+  "adminUsersTitle": "Kullanıcılar",
+  "@adminUsersTitle": {
+    "description": "Key adminUsers.title"
+  },
+  "adminUsersUnsuspend": "Askıyı kaldır",
+  "@adminUsersUnsuspend": {
+    "description": "Key adminUsers.unsuspend"
+  },
+  "appTagline": "Kampüsteki tüm kulüpler, tek cebinde.",
+  "@appTagline": {
+    "description": "Key app.tagline"
+  },
+  "applicationApprovedNote": "Üyeliğin onaylandı.",
+  "@applicationApprovedNote": {
+    "description": "Key application.approvedNote"
+  },
+  "applicationCanReapply": "Tekrar başvurabilirsin",
+  "@applicationCanReapply": {
+    "description": "Key application.canReapply"
+  },
+  "applicationCancel": "İsteği iptal et",
+  "@applicationCancel": {
+    "description": "Key application.cancel"
+  },
+  "applicationGoClub": "Kulübe git",
+  "@applicationGoClub": {
+    "description": "Key application.goClub"
+  },
+  "applicationNoneNote": "Bu kulübe aktif bir başvurun yok.",
+  "@applicationNoneNote": {
+    "description": "Key application.noneNote"
+  },
+  "applicationReapply": "Tekrar başvur",
+  "@applicationReapply": {
+    "description": "Key application.reapply"
+  },
+  "applicationReason": "Neden",
+  "@applicationReason": {
+    "description": "Key application.reason"
+  },
+  "applicationRetryAt": "Tekrar başvurabileceğin tarih: {date}",
+  "@applicationRetryAt": {
+    "description": "Key application.retryAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationRetryNote": "Reddedilen ya da çıkarılan üyelikler için 7 günlük bekleme süresi uygulanır.",
+  "@applicationRetryNote": {
+    "description": "Key application.retryNote"
+  },
+  "applicationReviewing": "Kulüp yönetimi inceliyor",
+  "@applicationReviewing": {
+    "description": "Key application.reviewing"
+  },
+  "applicationStepResult": "Sonuç",
+  "@applicationStepResult": {
+    "description": "Key application.step.result"
+  },
+  "applicationStepReview": "İnceleniyor",
+  "@applicationStepReview": {
+    "description": "Key application.step.review"
+  },
+  "applicationStepSent": "Gönderildi",
+  "@applicationStepSent": {
+    "description": "Key application.step.sent"
+  },
+  "applicationTitle": "Başvuru durumu",
+  "@applicationTitle": {
+    "description": "Key application.title"
+  },
+  "applicationWaitingResult": "Bekleniyor",
+  "@applicationWaitingResult": {
+    "description": "Key application.waitingResult"
+  },
+  "applicationYourNote": "Notun",
+  "@applicationYourNote": {
+    "description": "Key application.yourNote"
+  },
+  "applicationsApprove": "Onayla",
+  "@applicationsApprove": {
+    "description": "Key applications.approve"
+  },
+  "applicationsClosedBanner": "Başvurular kapalı.",
+  "@applicationsClosedBanner": {
+    "description": "Key applications.closedBanner"
+  },
+  "applicationsEmptyApproved": "Onaylanan başvuru yok",
+  "@applicationsEmptyApproved": {
+    "description": "Key applications.empty.approved"
+  },
+  "applicationsEmptyPending": "Bekleyen başvuru yok",
+  "@applicationsEmptyPending": {
+    "description": "Key applications.empty.pending"
+  },
+  "applicationsEmptyRejected": "Reddedilen başvuru yok",
+  "@applicationsEmptyRejected": {
+    "description": "Key applications.empty.rejected"
+  },
+  "applicationsHint": "Satıra basılı tutarak çoklu seçim yapabilirsin.",
+  "@applicationsHint": {
+    "description": "Key applications.hint"
+  },
+  "applicationsNApplicants": "{count} başvuru",
+  "@applicationsNApplicants": {
+    "description": "Key applications.nApplicants",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applicationsNoNote": "Not yok",
+  "@applicationsNoNote": {
+    "description": "Key applications.noNote"
+  },
+  "applicationsOpenToggle": "Başvuruları aç",
+  "@applicationsOpenToggle": {
+    "description": "Key applications.openToggle"
+  },
+  "applicationsPrior": "Daha önce başvurdu",
+  "@applicationsPrior": {
+    "description": "Key applications.prior"
+  },
+  "applicationsReject": "Reddet",
+  "@applicationsReject": {
+    "description": "Key applications.reject"
+  },
+  "applicationsSelectAll": "Hepsini seç",
+  "@applicationsSelectAll": {
+    "description": "Key applications.selectAll"
+  },
+  "applicationsSelected": "{count} seçili",
+  "@applicationsSelected": {
+    "description": "Key applications.selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applicationsTabApproved": "Onaylanan",
+  "@applicationsTabApproved": {
+    "description": "Key applications.tab.approved"
+  },
+  "applicationsTabPending": "Bekleyen",
+  "@applicationsTabPending": {
+    "description": "Key applications.tab.pending"
+  },
+  "applicationsTabRejected": "Reddedilen",
+  "@applicationsTabRejected": {
+    "description": "Key applications.tab.rejected"
+  },
+  "applicationsTitle": "Başvurular",
+  "@applicationsTitle": {
+    "description": "Key applications.title"
+  },
+  "appliedBrowse": "Diğer kulüplere göz at",
+  "@appliedBrowse": {
+    "description": "Key applied.browse"
+  },
+  "appliedDesc": "Sonuç bildirimle gelecek. Yanıt genellikle 1–3 gün içinde verilir.",
+  "@appliedDesc": {
+    "description": "Key applied.desc"
+  },
+  "appliedEnableNotif": "Sonucu kaçırma — bildirimleri aç.",
+  "@appliedEnableNotif": {
+    "description": "Key applied.enableNotif"
+  },
+  "appliedMyApplications": "Başvurularım",
+  "@appliedMyApplications": {
+    "description": "Key applied.myApplications"
+  },
+  "appliedSentAt": "Gönderildi: {date}",
+  "@appliedSentAt": {
+    "description": "Key applied.sentAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "appliedTitle": "İsteğin kulüp yönetimine iletildi",
+  "@appliedTitle": {
+    "description": "Key applied.title"
+  },
+  "assetsCancel": "İptal",
+  "@assetsCancel": {
+    "description": "Key assets.cancel"
+  },
+  "assetsColorsBadges": "Rol ve durum rozetleri",
+  "@assetsColorsBadges": {
+    "description": "Key assets.colors.badges"
+  },
+  "assetsColorsContrast": "Kontrast (beyaz/koyu yüzey)",
+  "@assetsColorsContrast": {
+    "description": "Key assets.colors.contrast"
+  },
+  "assetsColorsCopyCss": "CSS var",
+  "@assetsColorsCopyCss": {
+    "description": "Key assets.colors.copyCss"
+  },
+  "assetsColorsCopyDart": "Flutter",
+  "@assetsColorsCopyDart": {
+    "description": "Key assets.colors.copyDart"
+  },
+  "assetsColorsCopyHex": "Hex",
+  "@assetsColorsCopyHex": {
+    "description": "Key assets.colors.copyHex"
+  },
+  "assetsColorsDark": "Koyu",
+  "@assetsColorsDark": {
+    "description": "Key assets.colors.dark"
+  },
+  "assetsColorsLight": "Açık",
+  "@assetsColorsLight": {
+    "description": "Key assets.colors.light"
+  },
+  "assetsColorsPalettes": "Kapak paletleri",
+  "@assetsColorsPalettes": {
+    "description": "Key assets.colors.palettes"
+  },
+  "assetsColorsToken": "Token",
+  "@assetsColorsToken": {
+    "description": "Key assets.colors.token"
+  },
+  "assetsColorsUsage": "Kullanım",
+  "@assetsColorsUsage": {
+    "description": "Key assets.colors.usage"
+  },
+  "assetsCopied": "Kopyalandı",
+  "@assetsCopied": {
+    "description": "Key assets.copied"
+  },
+  "assetsCoversAvatar": "Avatar üreticisi",
+  "@assetsCoversAvatar": {
+    "description": "Key assets.covers.avatar"
+  },
+  "assetsCoversClubs": "14 kulüp kapağı (gerçek seed’lerle)",
+  "@assetsCoversClubs": {
+    "description": "Key assets.covers.clubs"
+  },
+  "assetsCoversGenerator": "CoverArt üreticisi",
+  "@assetsCoversGenerator": {
+    "description": "Key assets.covers.generator"
+  },
+  "assetsCoversIcon": "İkon",
+  "@assetsCoversIcon": {
+    "description": "Key assets.covers.icon"
+  },
+  "assetsCoversName": "Ad",
+  "@assetsCoversName": {
+    "description": "Key assets.covers.name"
+  },
+  "assetsCoversPatterns": "Desenler",
+  "@assetsCoversPatterns": {
+    "description": "Key assets.covers.patterns"
+  },
+  "assetsCoversSeed": "Seed",
+  "@assetsCoversSeed": {
+    "description": "Key assets.covers.seed"
+  },
+  "assetsCoversTemplates": "12 şablon (3 palet × 4 desen)",
+  "@assetsCoversTemplates": {
+    "description": "Key assets.covers.templates"
+  },
+  "assetsDataArb": "Dil dosyaları (ARB)",
+  "@assetsDataArb": {
+    "description": "Key assets.data.arb"
+  },
+  "assetsDataArbNote": "Sözlükten otomatik üretilir: @@locale, ICU çoğul/parametre, her anahtar için @anahtar açıklaması. Anahtarlar Flutter gen-l10n için camelCase’e çevrilir.",
+  "@assetsDataArbNote": {
+    "description": "Key assets.data.arbNote"
+  },
+  "assetsDataDemo": "demo-data.json",
+  "@assetsDataDemo": {
+    "description": "Key assets.data.demo"
+  },
+  "assetsDataDemoNote": "Bölüm 11’in tamamı: kullanıcılar, kulüpler, etkinlikler, gönderiler, bildirimler, başvurular, şikayetler. Tarihler ISO 8601 + göreli gün ofseti.",
+  "@assetsDataDemoNote": {
+    "description": "Key assets.data.demoNote"
+  },
+  "assetsDataFilter": "Anahtar veya metin ara",
+  "@assetsDataFilter": {
+    "description": "Key assets.data.filter"
+  },
+  "assetsDataKey": "Anahtar",
+  "@assetsDataKey": {
+    "description": "Key assets.data.key"
+  },
+  "assetsDataKeys": "{count} anahtar",
+  "@assetsDataKeys": {
+    "description": "Key assets.data.keys",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsDataMissing": "Eksik çeviri",
+  "@assetsDataMissing": {
+    "description": "Key assets.data.missing"
+  },
+  "assetsDataShowing": "İlk {n} satır gösteriliyor",
+  "@assetsDataShowing": {
+    "description": "Key assets.data.showing",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsDesc": "Projede kullanılan tüm görsel ve kod varlıkları. Tek tuşla ZIP olarak indir ya da tek tek al.",
+  "@assetsDesc": {
+    "description": "Key assets.desc"
+  },
+  "assetsDownloadAll": "Tümünü indir (ZIP)",
+  "@assetsDownloadAll": {
+    "description": "Key assets.downloadAll"
+  },
+  "assetsDownloadSection": "Bu bölümü indir (ZIP)",
+  "@assetsDownloadSection": {
+    "description": "Key assets.downloadSection"
+  },
+  "assetsFlutterCopy": "Kopyala",
+  "@assetsFlutterCopy": {
+    "description": "Key assets.flutter.copy"
+  },
+  "assetsFlutterDownload": "İndir",
+  "@assetsFlutterDownload": {
+    "description": "Key assets.flutter.download"
+  },
+  "assetsFlutterNote": "Tasarım tokenlarından üretilen Dart dosyaları. Değerler Bölüm 4.1 ile birebirdir.",
+  "@assetsFlutterNote": {
+    "description": "Key assets.flutter.note"
+  },
+  "assetsFontsFail": "Yazı tipi dosyaları ZIP’e dahil edilemedi; Google Fonts bağlantısını kullan.",
+  "@assetsFontsFail": {
+    "description": "Key assets.fontsFail"
+  },
+  "assetsIconsAliases": "Eski adlar (alias)",
+  "@assetsIconsAliases": {
+    "description": "Key assets.icons.aliases"
+  },
+  "assetsIconsColor": "Renk (önizleme)",
+  "@assetsIconsColor": {
+    "description": "Key assets.icons.color"
+  },
+  "assetsIconsCopyName": "Adı kopyala",
+  "@assetsIconsCopyName": {
+    "description": "Key assets.icons.copyName"
+  },
+  "assetsIconsCopySvg": "SVG kopyala",
+  "@assetsIconsCopySvg": {
+    "description": "Key assets.icons.copySvg"
+  },
+  "assetsIconsCount": "{count} ikon · tek ICONS registry’si · Lucide (ISC)",
+  "@assetsIconsCount": {
+    "description": "Key assets.icons.count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsIconsFlutter": "Flutter kodu kopyala",
+  "@assetsIconsFlutter": {
+    "description": "Key assets.icons.flutter"
+  },
+  "assetsIconsSize": "Boyut",
+  "@assetsIconsSize": {
+    "description": "Key assets.icons.size"
+  },
+  "assetsIconsSource": "Kaynak: {src}",
+  "@assetsIconsSource": {
+    "description": "Key assets.icons.source",
+    "placeholders": {
+      "src": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsIconsStroke": "Çizgi kalınlığı",
+  "@assetsIconsStroke": {
+    "description": "Key assets.icons.stroke"
+  },
+  "assetsIconsSvg": "SVG indir",
+  "@assetsIconsSvg": {
+    "description": "Key assets.icons.svg"
+  },
+  "assetsIllusNote": "12 illüstrasyon · tek renk + kırmızı vurgu · açık/koyu uyumlu",
+  "@assetsIllusNote": {
+    "description": "Key assets.illus.note"
+  },
+  "assetsLogoAppIcon": "Uygulama ikonu önerisi (1024 × 1024)",
+  "@assetsLogoAppIcon": {
+    "description": "Key assets.logo.appIcon"
+  },
+  "assetsLogoMasks": "iOS köşeli · Android dairesel maske",
+  "@assetsLogoMasks": {
+    "description": "Key assets.logo.masks"
+  },
+  "assetsLogoPlaceholder": "LogoPlaceholder (yedek amblem)",
+  "@assetsLogoPlaceholder": {
+    "description": "Key assets.logo.placeholder"
+  },
+  "assetsLogoPlaceholderNote": "Gerçek logo sağlanmadan önce kullanılan kırmızı yuvarlak amblem. Gerekirse yerine resmi logoyu koy.",
+  "@assetsLogoPlaceholderNote": {
+    "description": "Key assets.logo.placeholderNote"
+  },
+  "assetsLogoReal": "Resmi logo (kullanıcı tarafından sağlandı)",
+  "@assetsLogoReal": {
+    "description": "Key assets.logo.real"
+  },
+  "assetsLogoRealNote": "Gerçek üniversite logosu app/assets/gu-logo.png olarak projeye eklendi ve uygulamada kullanılıyor. Kullanım izni üniversiteye aittir.",
+  "@assetsLogoRealNote": {
+    "description": "Key assets.logo.realNote"
+  },
+  "assetsLogoVariants": "Yatay · Dikey · Yalnızca amblem",
+  "@assetsLogoVariants": {
+    "description": "Key assets.logo.variants"
+  },
+  "assetsProgress": "{a}/{b} dosya",
+  "@assetsProgress": {
+    "description": "Key assets.progress",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsSearch": "Varlık ara",
+  "@assetsSearch": {
+    "description": "Key assets.search"
+  },
+  "assetsTabColors": "Renkler",
+  "@assetsTabColors": {
+    "description": "Key assets.tab.colors"
+  },
+  "assetsTabCovers": "Kapaklar ve Desenler",
+  "@assetsTabCovers": {
+    "description": "Key assets.tab.covers"
+  },
+  "assetsTabData": "Veri ve Dil",
+  "@assetsTabData": {
+    "description": "Key assets.tab.data"
+  },
+  "assetsTabFlutter": "Flutter Çıktıları",
+  "@assetsTabFlutter": {
+    "description": "Key assets.tab.flutter"
+  },
+  "assetsTabIcons": "İkonlar",
+  "@assetsTabIcons": {
+    "description": "Key assets.tab.icons"
+  },
+  "assetsTabIllus": "İllüstrasyonlar",
+  "@assetsTabIllus": {
+    "description": "Key assets.tab.illus"
+  },
+  "assetsTabLogo": "Amblem",
+  "@assetsTabLogo": {
+    "description": "Key assets.tab.logo"
+  },
+  "assetsTabType": "Tipografi",
+  "@assetsTabType": {
+    "description": "Key assets.tab.type"
+  },
+  "assetsTitle": "Assets",
+  "@assetsTitle": {
+    "description": "Key assets.title"
+  },
+  "assetsTypeCopyCss": "CSS kopyala",
+  "@assetsTypeCopyCss": {
+    "description": "Key assets.type.copyCss"
+  },
+  "assetsTypeCopyDart": "TextStyle kopyala",
+  "@assetsTypeCopyDart": {
+    "description": "Key assets.type.copyDart"
+  },
+  "assetsTypeLatinExt": "latin-ext zorunlu: ğ, ş, İ, ı",
+  "@assetsTypeLatinExt": {
+    "description": "Key assets.type.latinExt"
+  },
+  "assetsTypeOpenGoogle": "Google Fonts’ta aç",
+  "@assetsTypeOpenGoogle": {
+    "description": "Key assets.type.openGoogle"
+  },
+  "assetsTypeSample": "ĞÜŞİÖÇ ğüşıöç — Gümüşhane Üniversitesi — 0123456789",
+  "@assetsTypeSample": {
+    "description": "Key assets.type.sample"
+  },
+  "assetsTypeScale": "Tipografi ölçeği",
+  "@assetsTypeScale": {
+    "description": "Key assets.type.scale"
+  },
+  "assetsTypeWoff2": "woff2 indir (latin + latin-ext)",
+  "@assetsTypeWoff2": {
+    "description": "Key assets.type.woff2"
+  },
+  "assetsZipDone": "ZIP hazır: {name}",
+  "@assetsZipDone": {
+    "description": "Key assets.zipDone",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsZipFail": "ZIP kütüphanesi yüklenemedi; dosyalar tek tek indiriliyor.",
+  "@assetsZipFail": {
+    "description": "Key assets.zipFail"
+  },
+  "attendanceAbsent": "Gelmedi",
+  "@attendanceAbsent": {
+    "description": "Key attendance.absent"
+  },
+  "attendanceAllRegistered": "Tüm kayıtlılar",
+  "@attendanceAllRegistered": {
+    "description": "Key attendance.allRegistered"
+  },
+  "attendanceCloseReg": "Kayıtları kapat",
+  "@attendanceCloseReg": {
+    "description": "Key attendance.closeReg"
+  },
+  "attendanceEmpty": "Henüz kayıt yok",
+  "@attendanceEmpty": {
+    "description": "Key attendance.empty"
+  },
+  "attendanceMarkAll": "Tüm kayıtlıları katıldı yap",
+  "@attendanceMarkAll": {
+    "description": "Key attendance.markAll"
+  },
+  "attendanceNoWaitlist": "Bekleme listesi boş.",
+  "@attendanceNoWaitlist": {
+    "description": "Key attendance.noWaitlist"
+  },
+  "attendanceNotStarted": "Etkinlik henüz başlamadı.",
+  "@attendanceNotStarted": {
+    "description": "Key attendance.notStarted"
+  },
+  "attendanceOpenReg": "Kayıtları aç",
+  "@attendanceOpenReg": {
+    "description": "Key attendance.openReg"
+  },
+  "attendancePromote": "Kayıtlıya al",
+  "@attendancePromote": {
+    "description": "Key attendance.promote"
+  },
+  "attendanceRate": "Yoklama",
+  "@attendanceRate": {
+    "description": "Key attendance.rate"
+  },
+  "attendanceRegistered": "Kayıtlı",
+  "@attendanceRegistered": {
+    "description": "Key attendance.registered"
+  },
+  "attendanceRegisteredOne": "Kayıtlı",
+  "@attendanceRegisteredOne": {
+    "description": "Key attendance.registeredOne"
+  },
+  "attendanceTitle": "Katılımcılar ve yoklama",
+  "@attendanceTitle": {
+    "description": "Key attendance.title"
+  },
+  "authChangeEmail": "E-postayı değiştir",
+  "@authChangeEmail": {
+    "description": "Key auth.changeEmail"
+  },
+  "authDemoAccounts": "Demo hesaplarla giriş",
+  "@authDemoAccounts": {
+    "description": "Key auth.demoAccounts"
+  },
+  "authDemoPassword": "Tüm demo hesapların şifresi",
+  "@authDemoPassword": {
+    "description": "Key auth.demoPassword"
+  },
+  "authEmail": "E-posta",
+  "@authEmail": {
+    "description": "Key auth.email"
+  },
+  "authErrDomain": "Yalnızca üniversite e-postası kullanılabilir",
+  "@authErrDomain": {
+    "description": "Key auth.err.domain"
+  },
+  "authErrEmail": "Geçerli bir e-posta gir",
+  "@authErrEmail": {
+    "description": "Key auth.err.email"
+  },
+  "authErrExists": "Bu e-posta zaten kayıtlı",
+  "@authErrExists": {
+    "description": "Key auth.err.exists"
+  },
+  "authErrLegal": "Devam etmek için onay kutusunu işaretle",
+  "@authErrLegal": {
+    "description": "Key auth.err.legal"
+  },
+  "authErrMismatch": "Şifreler uyuşmuyor",
+  "@authErrMismatch": {
+    "description": "Key auth.err.mismatch"
+  },
+  "authErrPassword": "Şifre en az 8 karakter, bir büyük harf ve bir rakam içermeli",
+  "@authErrPassword": {
+    "description": "Key auth.err.password"
+  },
+  "authErrRequired": "Bu alan zorunlu",
+  "@authErrRequired": {
+    "description": "Key auth.err.required"
+  },
+  "authErrWrong": "E-posta veya şifre hatalı",
+  "@authErrWrong": {
+    "description": "Key auth.err.wrong"
+  },
+  "authErrWrongPassword": "Şifre hatalı",
+  "@authErrWrongPassword": {
+    "description": "Key auth.err.wrongPassword"
+  },
+  "authForgot": "Şifremi unuttum",
+  "@authForgot": {
+    "description": "Key auth.forgot"
+  },
+  "authFullName": "Ad Soyad",
+  "@authFullName": {
+    "description": "Key auth.fullName"
+  },
+  "authHaveAccount": "Zaten hesabın var mı?",
+  "@authHaveAccount": {
+    "description": "Key auth.haveAccount"
+  },
+  "authHidePassword": "Şifreyi gizle",
+  "@authHidePassword": {
+    "description": "Key auth.hidePassword"
+  },
+  "authLegalCheck": "metinlerini okudum, kabul ediyorum.",
+  "@authLegalCheck": {
+    "description": "Key auth.legalCheck"
+  },
+  "authLegalPrefix": "Devam ederek",
+  "@authLegalPrefix": {
+    "description": "Key auth.legalPrefix"
+  },
+  "authLegalSuffix": "'nı kabul etmiş olursun.",
+  "@authLegalSuffix": {
+    "description": "Key auth.legalSuffix"
+  },
+  "authLockedFor": "{s} sn kilitli",
+  "@authLockedFor": {
+    "description": "Key auth.lockedFor",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginCta": "Giriş yap",
+  "@authLoginCta": {
+    "description": "Key auth.login.cta"
+  },
+  "authLoginTitle": "Giriş",
+  "@authLoginTitle": {
+    "description": "Key auth.login.title"
+  },
+  "authLoginWelcome": "Hoş geldin",
+  "@authLoginWelcome": {
+    "description": "Key auth.login.welcome"
+  },
+  "authLogout": "Çıkış yap",
+  "@authLogout": {
+    "description": "Key auth.logout"
+  },
+  "authNewEmail": "Yeni e-posta",
+  "@authNewEmail": {
+    "description": "Key auth.newEmail"
+  },
+  "authNoAccount": "Hesabın yok mu?",
+  "@authNoAccount": {
+    "description": "Key auth.noAccount"
+  },
+  "authPassword": "Şifre",
+  "@authPassword": {
+    "description": "Key auth.password"
+  },
+  "authPasswordRepeat": "Şifre tekrar",
+  "@authPasswordRepeat": {
+    "description": "Key auth.passwordRepeat"
+  },
+  "authRegisterCta": "Kayıt ol",
+  "@authRegisterCta": {
+    "description": "Key auth.register.cta"
+  },
+  "authRegisterEmailHelp": "Okul e-posta adresinle kayıt ol",
+  "@authRegisterEmailHelp": {
+    "description": "Key auth.register.emailHelp"
+  },
+  "authRegisterSubmit": "Hesap oluştur",
+  "@authRegisterSubmit": {
+    "description": "Key auth.register.submit"
+  },
+  "authRegisterTitle": "Kayıt ol",
+  "@authRegisterTitle": {
+    "description": "Key auth.register.title"
+  },
+  "authResend": "Tekrar gönder",
+  "@authResend": {
+    "description": "Key auth.resend"
+  },
+  "authResendIn": "Tekrar gönder ({s} sn)",
+  "@authResendIn": {
+    "description": "Key auth.resendIn",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "authResetDesc": "Üniversite e-postanı yaz; sana bir sıfırlama bağlantısı gönderelim.",
+  "@authResetDesc": {
+    "description": "Key auth.reset.desc"
+  },
+  "authResetSend": "Bağlantı gönder",
+  "@authResetSend": {
+    "description": "Key auth.reset.send"
+  },
+  "authResetSentDesc": "{email} adresine bir bağlantı gönderdik (kayıtlıysa).",
+  "@authResetSentDesc": {
+    "description": "Key auth.reset.sentDesc",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authResetSentTitle": "Gelen kutunu kontrol et",
+  "@authResetSentTitle": {
+    "description": "Key auth.reset.sentTitle"
+  },
+  "authResetTitle": "Şifre sıfırlama",
+  "@authResetTitle": {
+    "description": "Key auth.reset.title"
+  },
+  "authResetToLogin": "Girişe dön",
+  "@authResetToLogin": {
+    "description": "Key auth.reset.toLogin"
+  },
+  "authRuleDigit": "Bir rakam",
+  "@authRuleDigit": {
+    "description": "Key auth.rule.digit"
+  },
+  "authRuleLen": "En az 8 karakter",
+  "@authRuleLen": {
+    "description": "Key auth.rule.len"
+  },
+  "authRuleUpper": "Bir büyük harf",
+  "@authRuleUpper": {
+    "description": "Key auth.rule.upper"
+  },
+  "authSetupAddPhoto": "Fotoğraf ekle",
+  "@authSetupAddPhoto": {
+    "description": "Key auth.setup.addPhoto"
+  },
+  "authSetupEduDesc": "Bölüm ve sınıfın yalnızca kulüp yönetimleriyle paylaşılır.",
+  "@authSetupEduDesc": {
+    "description": "Key auth.setup.eduDesc"
+  },
+  "authSetupEduTitle": "Eğitim bilgin",
+  "@authSetupEduTitle": {
+    "description": "Key auth.setup.eduTitle"
+  },
+  "authSetupInterestDesc": "En az 1, en fazla 5 seç; önerilerimizi buna göre yapacağız.",
+  "@authSetupInterestDesc": {
+    "description": "Key auth.setup.interestDesc"
+  },
+  "authSetupInterestTitle": "İlgi alanların",
+  "@authSetupInterestTitle": {
+    "description": "Key auth.setup.interestTitle"
+  },
+  "authSetupMinInterest": "En az bir ilgi alanı seç",
+  "@authSetupMinInterest": {
+    "description": "Key auth.setup.minInterest"
+  },
+  "authSetupPhotoAdded": "Fotoğraf eklendi",
+  "@authSetupPhotoAdded": {
+    "description": "Key auth.setup.photoAdded"
+  },
+  "authSetupPhotoDesc": "Kulüp arkadaşların seni tanısın. Şimdilik atlayabilirsin.",
+  "@authSetupPhotoDesc": {
+    "description": "Key auth.setup.photoDesc"
+  },
+  "authSetupPhotoTitle": "Bir fotoğraf ekle",
+  "@authSetupPhotoTitle": {
+    "description": "Key auth.setup.photoTitle"
+  },
+  "authSetupProgress": "Adım {step}/{total}",
+  "@authSetupProgress": {
+    "description": "Key auth.setup.progress",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "authSetupSkipPhoto": "Şimdilik atla",
+  "@authSetupSkipPhoto": {
+    "description": "Key auth.setup.skipPhoto"
+  },
+  "authSetupTitle": "Profilini tamamla",
+  "@authSetupTitle": {
+    "description": "Key auth.setup.title"
+  },
+  "authShowPassword": "Şifreyi göster",
+  "@authShowPassword": {
+    "description": "Key auth.showPassword"
+  },
+  "authUniEmail": "Üniversite e-postası",
+  "@authUniEmail": {
+    "description": "Key auth.uniEmail"
+  },
+  "authVerifyConfirm": "Doğruladım",
+  "@authVerifyConfirm": {
+    "description": "Key auth.verify.confirm"
+  },
+  "authVerifyDemoLink": "Bağlantıya tıkladım",
+  "@authVerifyDemoLink": {
+    "description": "Key auth.verify.demoLink"
+  },
+  "authVerifyDesc": "{email} adresine bir doğrulama bağlantısı gönderdik.",
+  "@authVerifyDesc": {
+    "description": "Key auth.verify.desc",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authVerifySuccess": "E-postan doğrulandı",
+  "@authVerifySuccess": {
+    "description": "Key auth.verify.success"
+  },
+  "authVerifyTitle": "E-postanı doğrula",
+  "@authVerifyTitle": {
+    "description": "Key auth.verify.title"
+  },
+  "blockedDesc": "Engellediğin kişilerin gönderi ve yorumlarını görmezsin; onlar da seninle etkileşime geçemez.",
+  "@blockedDesc": {
+    "description": "Key blocked.desc"
+  },
+  "blockedEmpty": "Kimseyi engellemedin.",
+  "@blockedEmpty": {
+    "description": "Key blocked.empty"
+  },
+  "blockedTitle": "Engellenen kullanıcılar",
+  "@blockedTitle": {
+    "description": "Key blocked.title"
+  },
+  "cancelReasonOther": "Diğer",
+  "@cancelReasonOther": {
+    "description": "Key cancelReason.other"
+  },
+  "cancelReasonSpeaker": "Konuşmacı gelemiyor",
+  "@cancelReasonSpeaker": {
+    "description": "Key cancelReason.speaker"
+  },
+  "cancelReasonVenue": "Mekân sorunu",
+  "@cancelReasonVenue": {
+    "description": "Key cancelReason.venue"
+  },
+  "cancelReasonWeather": "Hava koşulları",
+  "@cancelReasonWeather": {
+    "description": "Key cancelReason.weather"
+  },
+  "catK01": "Teknoloji",
+  "@catK01": {
+    "description": "Key cat.k01"
+  },
+  "catK02": "Bilim ve Mühendislik",
+  "@catK02": {
+    "description": "Key cat.k02"
+  },
+  "catK03": "Spor ve Doğa",
+  "@catK03": {
+    "description": "Key cat.k03"
+  },
+  "catK04": "Sanat ve Kültür",
+  "@catK04": {
+    "description": "Key cat.k04"
+  },
+  "catK05": "Sosyal Sorumluluk",
+  "@catK05": {
+    "description": "Key cat.k05"
+  },
+  "catK06": "Kariyer ve Girişimcilik",
+  "@catK06": {
+    "description": "Key cat.k06"
+  },
+  "catK07": "Oyun ve Zekâ",
+  "@catK07": {
+    "description": "Key cat.k07"
+  },
+  "catK08": "Medya ve İletişim",
+  "@catK08": {
+    "description": "Key cat.k08"
+  },
+  "clubAdvisor": "Danışman",
+  "@clubAdvisor": {
+    "description": "Key club.advisor"
+  },
+  "clubAllMembers": "Tüm üyeler",
+  "@clubAllMembers": {
+    "description": "Key club.allMembers"
+  },
+  "clubBoard": "Yönetim kurulu",
+  "@clubBoard": {
+    "description": "Key club.board"
+  },
+  "clubClosedNote": "Başvurular şu an kapalı",
+  "@clubClosedNote": {
+    "description": "Key club.closedNote"
+  },
+  "clubConditions": "Katılım koşulları",
+  "@clubConditions": {
+    "description": "Key club.conditions"
+  },
+  "clubContactEmail": "E-posta",
+  "@clubContactEmail": {
+    "description": "Key club.contact.email"
+  },
+  "clubContactWeb": "Web sitesi",
+  "@clubContactWeb": {
+    "description": "Key club.contact.web"
+  },
+  "clubCtaCreateEvent": "Etkinlik oluştur",
+  "@clubCtaCreateEvent": {
+    "description": "Key club.cta.createEvent"
+  },
+  "clubCtaManage": "Yönetim",
+  "@clubCtaManage": {
+    "description": "Key club.cta.manage"
+  },
+  "clubCtaViewManage": "Yönetimi görüntüle",
+  "@clubCtaViewManage": {
+    "description": "Key club.cta.viewManage"
+  },
+  "clubEventsVisitorNote": "Üyelere özel etkinlikleri görmek için kulübe katıl.",
+  "@clubEventsVisitorNote": {
+    "description": "Key club.eventsVisitorNote"
+  },
+  "clubFounded": "{year} yılında kuruldu",
+  "@clubFounded": {
+    "description": "Key club.founded",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "clubGoClub": "Kulübe git",
+  "@clubGoClub": {
+    "description": "Key club.goClub"
+  },
+  "clubLeave": "Kulüpten ayrıl",
+  "@clubLeave": {
+    "description": "Key club.leave"
+  },
+  "clubMembersLocked": "{count} üye. Listeyi görmek için kulübe katıl.",
+  "@clubMembersLocked": {
+    "description": "Key club.membersLocked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubPostsLocked": "Gönderileri görmek için kulübe üye ol.",
+  "@clubPostsLocked": {
+    "description": "Key club.postsLocked"
+  },
+  "clubReport": "Bu kulübü şikayet et",
+  "@clubReport": {
+    "description": "Key club.report"
+  },
+  "clubSuspendedBanner": "Bu kulüp geçici olarak askıda.",
+  "@clubSuspendedBanner": {
+    "description": "Key club.suspendedBanner"
+  },
+  "clubTabAbout": "Hakkında",
+  "@clubTabAbout": {
+    "description": "Key club.tab.about"
+  },
+  "clubTabEvents": "Etkinlikler",
+  "@clubTabEvents": {
+    "description": "Key club.tab.events"
+  },
+  "clubTabMembers": "Üyeler",
+  "@clubTabMembers": {
+    "description": "Key club.tab.members"
+  },
+  "clubTabPosts": "Gönderiler",
+  "@clubTabPosts": {
+    "description": "Key club.tab.posts"
+  },
+  "clubTitle": "Kulüp",
+  "@clubTitle": {
+    "description": "Key club.title"
+  },
+  "clubTypeApproval": "Onay gerekli",
+  "@clubTypeApproval": {
+    "description": "Key club.type.approval"
+  },
+  "clubTypeInstant": "Anında katılım",
+  "@clubTypeInstant": {
+    "description": "Key club.type.instant"
+  },
+  "clubFormAdvisorTitle": "Unvan",
+  "@clubFormAdvisorTitle": {
+    "description": "Key clubForm.advisorTitle"
+  },
+  "clubFormAssignPresident": "Başkan ata",
+  "@clubFormAssignPresident": {
+    "description": "Key clubForm.assignPresident"
+  },
+  "clubFormCreate": "Oluştur",
+  "@clubFormCreate": {
+    "description": "Key clubForm.create"
+  },
+  "clubFormEditTitle": "Kulübü düzenle",
+  "@clubFormEditTitle": {
+    "description": "Key clubForm.editTitle"
+  },
+  "clubFormErrUnique": "Bu adda bir kulüp zaten var",
+  "@clubFormErrUnique": {
+    "description": "Key clubForm.err.unique"
+  },
+  "clubFormPresident": "Başkan",
+  "@clubFormPresident": {
+    "description": "Key clubForm.president"
+  },
+  "clubFormTitle": "Kulüp oluştur",
+  "@clubFormTitle": {
+    "description": "Key clubForm.title"
+  },
+  "clubSettingsAbout": "Uzun açıklama",
+  "@clubSettingsAbout": {
+    "description": "Key clubSettings.about"
+  },
+  "clubSettingsAdvisorLocked": "Danışman kampüs yönetimi tarafından atanır",
+  "@clubSettingsAdvisorLocked": {
+    "description": "Key clubSettings.advisorLocked"
+  },
+  "clubSettingsApplicationsOpen": "Başvurular açık",
+  "@clubSettingsApplicationsOpen": {
+    "description": "Key clubSettings.applicationsOpen"
+  },
+  "clubSettingsApplicationsOpenHelp": "Kapalıyken Katıl butonu devre dışı olur.",
+  "@clubSettingsApplicationsOpenHelp": {
+    "description": "Key clubSettings.applicationsOpenHelp"
+  },
+  "clubSettingsApprovalRequired": "Yönetim onayı gerekli",
+  "@clubSettingsApprovalRequired": {
+    "description": "Key clubSettings.approvalRequired"
+  },
+  "clubSettingsApprovalRequiredHelp": "Kapalıysa herkes anında üye olur.",
+  "@clubSettingsApprovalRequiredHelp": {
+    "description": "Key clubSettings.approvalRequiredHelp"
+  },
+  "clubSettingsCategory": "Kategori",
+  "@clubSettingsCategory": {
+    "description": "Key clubSettings.category"
+  },
+  "clubSettingsCover": "Kapak",
+  "@clubSettingsCover": {
+    "description": "Key clubSettings.cover"
+  },
+  "clubSettingsErrInstagram": "Geçerli bir kullanıcı adı gir",
+  "@clubSettingsErrInstagram": {
+    "description": "Key clubSettings.err.instagram"
+  },
+  "clubSettingsErrWeb": "https:// ile başlayan geçerli bir adres gir",
+  "@clubSettingsErrWeb": {
+    "description": "Key clubSettings.err.web"
+  },
+  "clubSettingsGroupContact": "İletişim",
+  "@clubSettingsGroupContact": {
+    "description": "Key clubSettings.group.contact"
+  },
+  "clubSettingsGroupInfo": "Bilgiler",
+  "@clubSettingsGroupInfo": {
+    "description": "Key clubSettings.group.info"
+  },
+  "clubSettingsGroupJoin": "Katılım",
+  "@clubSettingsGroupJoin": {
+    "description": "Key clubSettings.group.join"
+  },
+  "clubSettingsGroupLook": "Görünüm",
+  "@clubSettingsGroupLook": {
+    "description": "Key clubSettings.group.look"
+  },
+  "clubSettingsInstantWarning": "Herkes anında üye olur.",
+  "@clubSettingsInstantWarning": {
+    "description": "Key clubSettings.instantWarning"
+  },
+  "clubSettingsLogo": "Logo",
+  "@clubSettingsLogo": {
+    "description": "Key clubSettings.logo"
+  },
+  "clubSettingsName": "Kulüp adı",
+  "@clubSettingsName": {
+    "description": "Key clubSettings.name"
+  },
+  "clubSettingsNameLocked": "Ad değişikliği için kampüs yönetimiyle iletişime geç",
+  "@clubSettingsNameLocked": {
+    "description": "Key clubSettings.nameLocked"
+  },
+  "clubSettingsRequireNote": "Başvuruda not iste",
+  "@clubSettingsRequireNote": {
+    "description": "Key clubSettings.requireNote"
+  },
+  "clubSettingsRequireNoteHelp": "Başvuranlar neden katılmak istediğini yazar.",
+  "@clubSettingsRequireNoteHelp": {
+    "description": "Key clubSettings.requireNoteHelp"
+  },
+  "clubSettingsSummary": "Kısa açıklama",
+  "@clubSettingsSummary": {
+    "description": "Key clubSettings.summary"
+  },
+  "clubSettingsTitle": "Kulüp ayarları",
+  "@clubSettingsTitle": {
+    "description": "Key clubSettings.title"
+  },
+  "clubsActiveFilters": "{count} aktif filtre",
+  "@clubsActiveFilters": {
+    "description": "Key clubs.activeFilters",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsCardClosed": "Başvurular kapalı",
+  "@clubsCardClosed": {
+    "description": "Key clubs.card.closed"
+  },
+  "clubsCardJoin": "Katıl",
+  "@clubsCardJoin": {
+    "description": "Key clubs.card.join"
+  },
+  "clubsCardManager": "Yönetici",
+  "@clubsCardManager": {
+    "description": "Key clubs.card.manager"
+  },
+  "clubsCardMemberShort": "Üye",
+  "@clubsCardMemberShort": {
+    "description": "Key clubs.card.memberShort"
+  },
+  "clubsCardMembers": "{count, plural, one{# üye} other{# üye}}",
+  "@clubsCardMembers": {
+    "description": "Key clubs.card.members",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsCardOpen": "Aç",
+  "@clubsCardOpen": {
+    "description": "Key clubs.card.open"
+  },
+  "clubsCardPending": "İstek gönderildi",
+  "@clubsCardPending": {
+    "description": "Key clubs.card.pending"
+  },
+  "clubsCardRejected": "Reddedildi",
+  "@clubsCardRejected": {
+    "description": "Key clubs.card.rejected"
+  },
+  "clubsCardRemoved": "Çıkarıldın",
+  "@clubsCardRemoved": {
+    "description": "Key clubs.card.removed"
+  },
+  "clubsCount": "{count, plural, one{# kulüp} other{# kulüp}}",
+  "@clubsCount": {
+    "description": "Key clubs.count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsEmptyClear": "Filtreleri temizle",
+  "@clubsEmptyClear": {
+    "description": "Key clubs.empty.clear"
+  },
+  "clubsEmptyDesc": "Filtreleri gevşetmeyi ya da başka bir kategori seçmeyi dene.",
+  "@clubsEmptyDesc": {
+    "description": "Key clubs.empty.desc"
+  },
+  "clubsEmptyTitle": "Aramana uygun kulüp bulamadık",
+  "@clubsEmptyTitle": {
+    "description": "Key clubs.empty.title"
+  },
+  "clubsFirstCta": "Keşfet",
+  "@clubsFirstCta": {
+    "description": "Key clubs.first.cta"
+  },
+  "clubsFirstDesc": "İlgi alanlarına uygun kulüpleri keşfet ve başvur.",
+  "@clubsFirstDesc": {
+    "description": "Key clubs.first.desc"
+  },
+  "clubsFirstTitle": "İlk kulübünü bul",
+  "@clubsFirstTitle": {
+    "description": "Key clubs.first.title"
+  },
+  "clubsMyTitle": "Kulüplerim",
+  "@clubsMyTitle": {
+    "description": "Key clubs.my.title"
+  },
+  "clubsMyUnread": "Okunmamış bildirim",
+  "@clubsMyUnread": {
+    "description": "Key clubs.my.unread"
+  },
+  "commonAll": "Tümü",
+  "@commonAll": {
+    "description": "Key common.all"
+  },
+  "commonAllDone": "Hepsi bu kadar",
+  "@commonAllDone": {
+    "description": "Key common.allDone"
+  },
+  "commonAnd": "ve",
+  "@commonAnd": {
+    "description": "Key common.and"
+  },
+  "commonBack": "Geri",
+  "@commonBack": {
+    "description": "Key common.back"
+  },
+  "commonCancel": "İptal",
+  "@commonCancel": {
+    "description": "Key common.cancel"
+  },
+  "commonClear": "Temizle",
+  "@commonClear": {
+    "description": "Key common.clear"
+  },
+  "commonConfirm": "Onayla",
+  "@commonConfirm": {
+    "description": "Key common.confirm"
+  },
+  "commonContinue": "Devam",
+  "@commonContinue": {
+    "description": "Key common.continue"
+  },
+  "commonCopy": "Kopyala",
+  "@commonCopy": {
+    "description": "Key common.copy"
+  },
+  "commonDelete": "Sil",
+  "@commonDelete": {
+    "description": "Key common.delete"
+  },
+  "commonDeletedUser": "Silinmiş kullanıcı",
+  "@commonDeletedUser": {
+    "description": "Key common.deletedUser"
+  },
+  "commonDemo": "Demo",
+  "@commonDemo": {
+    "description": "Key common.demo"
+  },
+  "commonEdit": "Düzenle",
+  "@commonEdit": {
+    "description": "Key common.edit"
+  },
+  "commonEmptyGeneric": "Burada henüz bir şey yok",
+  "@commonEmptyGeneric": {
+    "description": "Key common.emptyGeneric"
+  },
+  "commonFilter": "Filtre",
+  "@commonFilter": {
+    "description": "Key common.filter"
+  },
+  "commonFilterSort": "Filtre / Sırala",
+  "@commonFilterSort": {
+    "description": "Key common.filterSort"
+  },
+  "commonFinish": "Tamamla",
+  "@commonFinish": {
+    "description": "Key common.finish"
+  },
+  "commonGiveUp": "Vazgeç",
+  "@commonGiveUp": {
+    "description": "Key common.giveUp"
+  },
+  "commonGridView": "Izgara görünümü",
+  "@commonGridView": {
+    "description": "Key common.gridView"
+  },
+  "commonListView": "Liste görünümü",
+  "@commonListView": {
+    "description": "Key common.listView"
+  },
+  "commonLoading": "Yükleniyor",
+  "@commonLoading": {
+    "description": "Key common.loading"
+  },
+  "commonNo": "Hayır",
+  "@commonNo": {
+    "description": "Key common.no"
+  },
+  "commonOff": "Kapalı",
+  "@commonOff": {
+    "description": "Key common.off"
+  },
+  "commonOk": "Tamam",
+  "@commonOk": {
+    "description": "Key common.ok"
+  },
+  "commonOn": "Açık",
+  "@commonOn": {
+    "description": "Key common.on"
+  },
+  "commonOpen": "Aç",
+  "@commonOpen": {
+    "description": "Key common.open"
+  },
+  "commonOptional": "İsteğe bağlı",
+  "@commonOptional": {
+    "description": "Key common.optional"
+  },
+  "commonReadMore": "Devamı",
+  "@commonReadMore": {
+    "description": "Key common.readMore"
+  },
+  "commonReadOnly": "Salt okunur",
+  "@commonReadOnly": {
+    "description": "Key common.readOnly"
+  },
+  "commonRemove": "Kaldır",
+  "@commonRemove": {
+    "description": "Key common.remove"
+  },
+  "commonRequired": "Zorunlu",
+  "@commonRequired": {
+    "description": "Key common.required"
+  },
+  "commonRetry": "Yeniden dene",
+  "@commonRetry": {
+    "description": "Key common.retry"
+  },
+  "commonSave": "Kaydet",
+  "@commonSave": {
+    "description": "Key common.save"
+  },
+  "commonSearch": "Ara",
+  "@commonSearch": {
+    "description": "Key common.search"
+  },
+  "commonSelect": "Seç",
+  "@commonSelect": {
+    "description": "Key common.select"
+  },
+  "commonSend": "Gönder",
+  "@commonSend": {
+    "description": "Key common.send"
+  },
+  "commonShare": "Paylaş",
+  "@commonShare": {
+    "description": "Key common.share"
+  },
+  "commonSort": "Sırala",
+  "@commonSort": {
+    "description": "Key common.sort"
+  },
+  "commonSuccess": "Başarılı",
+  "@commonSuccess": {
+    "description": "Key common.success"
+  },
+  "commonToday": "Bugün",
+  "@commonToday": {
+    "description": "Key common.today"
+  },
+  "commonUndo": "Geri al",
+  "@commonUndo": {
+    "description": "Key common.undo"
+  },
+  "commonUpdate": "Güncelle",
+  "@commonUpdate": {
+    "description": "Key common.update"
+  },
+  "commonView": "Görüntüle",
+  "@commonView": {
+    "description": "Key common.view"
+  },
+  "commonYes": "Evet",
+  "@commonYes": {
+    "description": "Key common.yes"
+  },
+  "composeAddImage": "Görsel ekle",
+  "@composeAddImage": {
+    "description": "Key compose.addImage"
+  },
+  "composeAddOption": "Seçenek ekle",
+  "@composeAddOption": {
+    "description": "Key compose.addOption"
+  },
+  "composeAnnouncementTitle": "Duyuru başlığı",
+  "@composeAnnouncementTitle": {
+    "description": "Key compose.announcementTitle"
+  },
+  "composeClear": "Temizle",
+  "@composeClear": {
+    "description": "Key compose.clear"
+  },
+  "composeDailyQuota": "Bugünkü duyuru hakkı",
+  "@composeDailyQuota": {
+    "description": "Key compose.dailyQuota"
+  },
+  "composeDuration": "Süre",
+  "@composeDuration": {
+    "description": "Key compose.duration"
+  },
+  "composeEdit": "Düzenlemeye dön",
+  "@composeEdit": {
+    "description": "Key compose.edit"
+  },
+  "composeEditTitle": "Gönderiyi düzenle",
+  "@composeEditTitle": {
+    "description": "Key compose.editTitle"
+  },
+  "composeErrDupOptions": "Seçenekler birbirinden farklı olmalı",
+  "@composeErrDupOptions": {
+    "description": "Key compose.err.dupOptions"
+  },
+  "composeErrMinOptions": "En az 2 seçenek gerekli",
+  "@composeErrMinOptions": {
+    "description": "Key compose.err.minOptions"
+  },
+  "composeImages": "Görseller",
+  "@composeImages": {
+    "description": "Key compose.images"
+  },
+  "composeLimitReached": "Bugünkü duyuru hakkın doldu.",
+  "@composeLimitReached": {
+    "description": "Key compose.limitReached"
+  },
+  "composeNoAccess": "Gönderi oluşturma yetkin yok.",
+  "@composeNoAccess": {
+    "description": "Key compose.noAccess"
+  },
+  "composeNotifPreview": "Bildirim önizlemesi",
+  "@composeNotifPreview": {
+    "description": "Key compose.notifPreview"
+  },
+  "composeOptionN": "Seçenek {n}",
+  "@composeOptionN": {
+    "description": "Key compose.optionN",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "composeOptions": "Seçenekler",
+  "@composeOptions": {
+    "description": "Key compose.options"
+  },
+  "composePin": "Sabitle",
+  "@composePin": {
+    "description": "Key compose.pin"
+  },
+  "composePreview": "Önizle",
+  "@composePreview": {
+    "description": "Key compose.preview"
+  },
+  "composePreviewNote": "Gönderi üyelere böyle görünecek.",
+  "@composePreviewNote": {
+    "description": "Key compose.previewNote"
+  },
+  "composePublish": "Yayınla",
+  "@composePublish": {
+    "description": "Key compose.publish"
+  },
+  "composePushHelp": "Üyelerin telefonuna anlık bildirim gider.",
+  "@composePushHelp": {
+    "description": "Key compose.pushHelp"
+  },
+  "composePushToggle": "Üyelere bildirim gönder",
+  "@composePushToggle": {
+    "description": "Key compose.pushToggle"
+  },
+  "composeQuestion": "Soru",
+  "@composeQuestion": {
+    "description": "Key compose.question"
+  },
+  "composeSaveDraft": "Taslak kaydet",
+  "@composeSaveDraft": {
+    "description": "Key compose.saveDraft"
+  },
+  "composeShowAfterVote": "Sonuçlar oy verince görünsün",
+  "@composeShowAfterVote": {
+    "description": "Key compose.showAfterVote"
+  },
+  "composeText": "Metin",
+  "@composeText": {
+    "description": "Key compose.text"
+  },
+  "composeTitle": "Yeni gönderi",
+  "@composeTitle": {
+    "description": "Key compose.title"
+  },
+  "contentEmpty": "İçerik yok",
+  "@contentEmpty": {
+    "description": "Key content.empty"
+  },
+  "contentHidden": "gizlendi",
+  "@contentHidden": {
+    "description": "Key content.hidden"
+  },
+  "contentReports": "{count, plural, one{# şikayet} other{# şikayet}}",
+  "@contentReports": {
+    "description": "Key content.reports",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentStats": "{likes} beğeni · {comments} yorum",
+  "@contentStats": {
+    "description": "Key content.stats",
+    "placeholders": {
+      "likes": {
+        "type": "String"
+      },
+      "comments": {
+        "type": "String"
+      }
+    }
+  },
+  "contentTabAnnouncements": "Duyurular",
+  "@contentTabAnnouncements": {
+    "description": "Key content.tab.announcements"
+  },
+  "contentTabPolls": "Anketler",
+  "@contentTabPolls": {
+    "description": "Key content.tab.polls"
+  },
+  "contentTabPosts": "Gönderiler",
+  "@contentTabPosts": {
+    "description": "Key content.tab.posts"
+  },
+  "contentTitle": "İçerik yönetimi",
+  "@contentTitle": {
+    "description": "Key content.title"
+  },
+  "deleteAccountConfirmCta": "Hesabımı kalıcı olarak sil",
+  "@deleteAccountConfirmCta": {
+    "description": "Key deleteAccount.confirmCta"
+  },
+  "deleteAccountConfirmTitle": "Son adım",
+  "@deleteAccountConfirmTitle": {
+    "description": "Key deleteAccount.confirmTitle"
+  },
+  "deleteAccountDeleted": "Silinecekler",
+  "@deleteAccountDeleted": {
+    "description": "Key deleteAccount.deleted"
+  },
+  "deleteAccountItemApplications": "Bekleyen başvuruların",
+  "@deleteAccountItemApplications": {
+    "description": "Key deleteAccount.item.applications"
+  },
+  "deleteAccountItemMemberships": "Kulüp üyeliklerin",
+  "@deleteAccountItemMemberships": {
+    "description": "Key deleteAccount.item.memberships"
+  },
+  "deleteAccountItemNotifications": "Bildirimlerin",
+  "@deleteAccountItemNotifications": {
+    "description": "Key deleteAccount.item.notifications"
+  },
+  "deleteAccountItemTickets": "Etkinlik biletlerin",
+  "@deleteAccountItemTickets": {
+    "description": "Key deleteAccount.item.tickets"
+  },
+  "deleteAccountKept": "Kalacaklar",
+  "@deleteAccountKept": {
+    "description": "Key deleteAccount.kept"
+  },
+  "deleteAccountKeptDesc": "Gönderi ve yorumların \"Silinmiş kullanıcı\" olarak anonimleşir.",
+  "@deleteAccountKeptDesc": {
+    "description": "Key deleteAccount.keptDesc"
+  },
+  "deleteAccountPresidentBlock": "Önce başkanlığı devretmelisin",
+  "@deleteAccountPresidentBlock": {
+    "description": "Key deleteAccount.presidentBlock"
+  },
+  "deleteAccountReasonGraduated": "Mezun oldum",
+  "@deleteAccountReasonGraduated": {
+    "description": "Key deleteAccount.reason.graduated"
+  },
+  "deleteAccountReasonNoUse": "Uygulamayı kullanmıyorum",
+  "@deleteAccountReasonNoUse": {
+    "description": "Key deleteAccount.reason.noUse"
+  },
+  "deleteAccountReasonOther": "Diğer",
+  "@deleteAccountReasonOther": {
+    "description": "Key deleteAccount.reason.other"
+  },
+  "deleteAccountReasonPrivacy": "Gizlilik endişeleri",
+  "@deleteAccountReasonPrivacy": {
+    "description": "Key deleteAccount.reason.privacy"
+  },
+  "deleteAccountReasonTooMany": "Çok fazla bildirim",
+  "@deleteAccountReasonTooMany": {
+    "description": "Key deleteAccount.reason.tooMany"
+  },
+  "deleteAccountReasonPlaceholder": "Eklemek istediğin bir şey var mı?",
+  "@deleteAccountReasonPlaceholder": {
+    "description": "Key deleteAccount.reasonPlaceholder"
+  },
+  "deleteAccountReasonTitle": "Neden ayrılıyorsun?",
+  "@deleteAccountReasonTitle": {
+    "description": "Key deleteAccount.reasonTitle"
+  },
+  "deleteAccountTitle": "Hesabı sil",
+  "@deleteAccountTitle": {
+    "description": "Key deleteAccount.title"
+  },
+  "deleteAccountTransfer": "Devret",
+  "@deleteAccountTransfer": {
+    "description": "Key deleteAccount.transfer"
+  },
+  "deleteAccountTypeDelete": "Onaylamak için SİL yaz",
+  "@deleteAccountTypeDelete": {
+    "description": "Key deleteAccount.typeDelete"
+  },
+  "deleteAccountWarning": "Bu işlem geri alınamaz. Lütfen aşağıdakileri dikkatle oku.",
+  "@deleteAccountWarning": {
+    "description": "Key deleteAccount.warning"
+  },
+  "deptD01": "Bilgisayar Mühendisliği",
+  "@deptD01": {
+    "description": "Key dept.d01"
+  },
+  "deptD02": "Elektrik-Elektronik Mühendisliği",
+  "@deptD02": {
+    "description": "Key dept.d02"
+  },
+  "deptD03": "İnşaat Mühendisliği",
+  "@deptD03": {
+    "description": "Key dept.d03"
+  },
+  "deptD04": "Maden Mühendisliği",
+  "@deptD04": {
+    "description": "Key dept.d04"
+  },
+  "deptD05": "Jeoloji Mühendisliği",
+  "@deptD05": {
+    "description": "Key dept.d05"
+  },
+  "deptD06": "Harita Mühendisliği",
+  "@deptD06": {
+    "description": "Key dept.d06"
+  },
+  "deptD07": "Gıda Mühendisliği",
+  "@deptD07": {
+    "description": "Key dept.d07"
+  },
+  "deptD08": "Mimarlık",
+  "@deptD08": {
+    "description": "Key dept.d08"
+  },
+  "deptD09": "Peyzaj Mimarlığı",
+  "@deptD09": {
+    "description": "Key dept.d09"
+  },
+  "deptD10": "Matematik",
+  "@deptD10": {
+    "description": "Key dept.d10"
+  },
+  "deptD11": "Fizik",
+  "@deptD11": {
+    "description": "Key dept.d11"
+  },
+  "deptD12": "Kimya",
+  "@deptD12": {
+    "description": "Key dept.d12"
+  },
+  "deptD13": "Türk Dili ve Edebiyatı",
+  "@deptD13": {
+    "description": "Key dept.d13"
+  },
+  "deptD14": "Tarih",
+  "@deptD14": {
+    "description": "Key dept.d14"
+  },
+  "deptD15": "Psikoloji",
+  "@deptD15": {
+    "description": "Key dept.d15"
+  },
+  "deptD16": "İşletme",
+  "@deptD16": {
+    "description": "Key dept.d16"
+  },
+  "deptD17": "İktisat",
+  "@deptD17": {
+    "description": "Key dept.d17"
+  },
+  "deptD18": "Uluslararası İlişkiler",
+  "@deptD18": {
+    "description": "Key dept.d18"
+  },
+  "deptD19": "Hemşirelik",
+  "@deptD19": {
+    "description": "Key dept.d19"
+  },
+  "deptD20": "Beden Eğitimi ve Spor",
+  "@deptD20": {
+    "description": "Key dept.d20"
+  },
+  "deptD21": "Gastronomi ve Mutfak Sanatları",
+  "@deptD21": {
+    "description": "Key dept.d21"
+  },
+  "deptD22": "Turizm İşletmeciliği",
+  "@deptD22": {
+    "description": "Key dept.d22"
+  },
+  "deptD23": "Radyo, Televizyon ve Sinema",
+  "@deptD23": {
+    "description": "Key dept.d23"
+  },
+  "deptD24": "Grafik Tasarımı",
+  "@deptD24": {
+    "description": "Key dept.d24"
+  },
+  "dlg01Body": "Topluluk kurallarını ihlal ettiği için hesabına erişimin geçici olarak kapatıldı. İtiraz için destek ekibine yazabilirsin.",
+  "@dlg01Body": {
+    "description": "Key dlg.01.body"
+  },
+  "dlg01Support": "Destekle iletişime geç",
+  "@dlg01Support": {
+    "description": "Key dlg.01.support"
+  },
+  "dlg01Title": "Hesabın askıya alındı",
+  "@dlg01Title": {
+    "description": "Key dlg.01.title"
+  },
+  "dlg02Body": "Güvenliğin için girişi {s} saniye kilitledik.",
+  "@dlg02Body": {
+    "description": "Key dlg.02.body",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg02Title": "Çok fazla deneme",
+  "@dlg02Title": {
+    "description": "Key dlg.02.title"
+  },
+  "dlg02Unlocked": "Kilit kalktı, tekrar deneyebilirsin.",
+  "@dlg02Unlocked": {
+    "description": "Key dlg.02.unlocked"
+  },
+  "dlg03Body": "Başvuru sonuçlarından ve etkinlik hatırlatmalarından haberdar olmak için bildirim izni ver.",
+  "@dlg03Body": {
+    "description": "Key dlg.03.body"
+  },
+  "dlg03Title": "Bildirimleri açalım mı?",
+  "@dlg03Title": {
+    "description": "Key dlg.03.title"
+  },
+  "dlg04Body": "QR kodları taramak için kameraya erişmemiz gerekiyor.",
+  "@dlg04Body": {
+    "description": "Key dlg.04.body"
+  },
+  "dlg04Title": "Kamera erişimi",
+  "@dlg04Title": {
+    "description": "Key dlg.04.title"
+  },
+  "dlg05Body": "Fotoğraf seçebilmek için galerine erişim izni ver.",
+  "@dlg05Body": {
+    "description": "Key dlg.05.body"
+  },
+  "dlg05Title": "Fotoğraflarına erişim",
+  "@dlg05Title": {
+    "description": "Key dlg.05.title"
+  },
+  "dlg06Body": "Hesabından çıkış yapacaksın. İstediğin zaman tekrar giriş yapabilirsin.",
+  "@dlg06Body": {
+    "description": "Key dlg.06.body"
+  },
+  "dlg06Title": "Çıkış yapılsın mı?",
+  "@dlg06Title": {
+    "description": "Key dlg.06.title"
+  },
+  "dlg07Body": "{club} kulübüne gönderdiğin istek geri çekilecek. İstediğin zaman yeniden başvurabilirsin.",
+  "@dlg07Body": {
+    "description": "Key dlg.07.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg07Title": "İsteği iptal et?",
+  "@dlg07Title": {
+    "description": "Key dlg.07.title"
+  },
+  "dlg08Body": "{club} üyeliğin sona erecek ve gönderileri göremeyeceksin. Tekrar katılmak için yeniden başvurman gerekebilir.",
+  "@dlg08Body": {
+    "description": "Key dlg.08.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg08Title": "Kulüpten ayrıl?",
+  "@dlg08Title": {
+    "description": "Key dlg.08.title"
+  },
+  "dlg09Body": "Bu kulübün tek başkanısın. Ayrılmadan önce başkanlığı başka bir üyeye devretmelisin.",
+  "@dlg09Body": {
+    "description": "Key dlg.09.body"
+  },
+  "dlg09Title": "Ayrılamazsın",
+  "@dlg09Title": {
+    "description": "Key dlg.09.title"
+  },
+  "dlg10Body": "Bu gönderi ve yorumları silinecek.",
+  "@dlg10Body": {
+    "description": "Key dlg.10.body"
+  },
+  "dlg10Title": "Gönderi silinsin mi?",
+  "@dlg10Title": {
+    "description": "Key dlg.10.title"
+  },
+  "dlg11Body": "Bu yorum silinecek.",
+  "@dlg11Body": {
+    "description": "Key dlg.11.body"
+  },
+  "dlg11Title": "Yorum silinsin mi?",
+  "@dlg11Title": {
+    "description": "Key dlg.11.title"
+  },
+  "dlg12Block": "{name} kullanıcısını da engelle",
+  "@dlg12Block": {
+    "description": "Key dlg.12.block",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg12Body": "Teşekkürler. Kampüs yönetimi içeriği inceleyecek; sonucu bildirimle haber vereceğiz.",
+  "@dlg12Body": {
+    "description": "Key dlg.12.body"
+  },
+  "dlg12Title": "Şikayetin alındı",
+  "@dlg12Title": {
+    "description": "Key dlg.12.title"
+  },
+  "dlg13Body": "Bu kullanıcının gönderilerini ve yorumlarını görmeyeceksin. Engeli Ayarlar’dan kaldırabilirsin.",
+  "@dlg13Body": {
+    "description": "Key dlg.13.body"
+  },
+  "dlg13Title": "{name} engellensin mi?",
+  "@dlg13Title": {
+    "description": "Key dlg.13.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg14Body": "Biletin iptal edilecek ve yerin bekleyenlere açılacak.",
+  "@dlg14Body": {
+    "description": "Key dlg.14.body"
+  },
+  "dlg14BodyWaitlist": "Bekleme listesinden çıkarılacaksın.",
+  "@dlg14BodyWaitlist": {
+    "description": "Key dlg.14.bodyWaitlist"
+  },
+  "dlg14Stay": "Kalmaya devam et",
+  "@dlg14Stay": {
+    "description": "Key dlg.14.stay"
+  },
+  "dlg14Title": "Katılımdan vazgeç?",
+  "@dlg14Title": {
+    "description": "Key dlg.14.title"
+  },
+  "dlg15Body": "Bu etkinlikte yer kalmadı. Bekleme listesine katılırsan boşalan yer olursa sana bildirim göndeririz. Şu an {n} kişi bekliyor.",
+  "@dlg15Body": {
+    "description": "Key dlg.15.body",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg15Title": "Kontenjan doldu",
+  "@dlg15Title": {
+    "description": "Key dlg.15.title"
+  },
+  "dlg16Body": "{event}, {reason} nedeniyle iptal edildi. Biletin geçersiz.",
+  "@dlg16Body": {
+    "description": "Key dlg.16.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg16Similar": "Benzer etkinlikleri gör",
+  "@dlg16Similar": {
+    "description": "Key dlg.16.similar"
+  },
+  "dlg16Title": "Etkinlik iptal edildi",
+  "@dlg16Title": {
+    "description": "Key dlg.16.title"
+  },
+  "dlg17Approve": "{count} başvuru onaylansın mı? Başvuranlara bildirim gider.",
+  "@dlg17Approve": {
+    "description": "Key dlg.17.approve",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Attendance": "Tüm kayıtlılar ({count}) katıldı olarak işaretlensin mi?",
+  "@dlg17Attendance": {
+    "description": "Key dlg.17.attendance",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Reject": "{count} başvuru reddedilsin mi? Başvuranlara bildirim gider.",
+  "@dlg17Reject": {
+    "description": "Key dlg.17.reject",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Title": "Toplu işlem onayı",
+  "@dlg17Title": {
+    "description": "Key dlg.17.title"
+  },
+  "dlg18Body": "Bu başvuru başka bir yönetici tarafından {result}. Liste yenilendi.",
+  "@dlg18Body": {
+    "description": "Key dlg.18.body",
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg18Title": "Başvuru zaten sonuçlandırıldı",
+  "@dlg18Title": {
+    "description": "Key dlg.18.title"
+  },
+  "dlg19Body": "Üyelikten çıkarılacak ve bilgilendirilecek. 7 gün boyunca yeniden başvuramaz.",
+  "@dlg19Body": {
+    "description": "Key dlg.19.body"
+  },
+  "dlg19Confirm": "Üyeyi çıkar",
+  "@dlg19Confirm": {
+    "description": "Key dlg.19.confirm"
+  },
+  "dlg19Reason": "Neden (isteğe bağlı)",
+  "@dlg19Reason": {
+    "description": "Key dlg.19.reason"
+  },
+  "dlg19Title": "{name} çıkarılsın mı?",
+  "@dlg19Title": {
+    "description": "Key dlg.19.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg20Body": "{name}, {oldRole} rolünden {newRole} rolüne geçecek. Yetkileri hemen değişir.",
+  "@dlg20Body": {
+    "description": "Key dlg.20.body",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "oldRole": {
+        "type": "String"
+      },
+      "newRole": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg20Title": "Rol değişsin mi?",
+  "@dlg20Title": {
+    "description": "Key dlg.20.title"
+  },
+  "dlg21Body1": "Başkanlığı {name} kullanıcısına devretmek üzeresin. Sen Yönetim Kurulu üyesi olacaksın. Bu işlem geri alınamaz.",
+  "@dlg21Body1": {
+    "description": "Key dlg.21.body1",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg21Body2": "Onaylamak için DEVRET yaz.",
+  "@dlg21Body2": {
+    "description": "Key dlg.21.body2"
+  },
+  "dlg21Confirm": "Devret",
+  "@dlg21Confirm": {
+    "description": "Key dlg.21.confirm"
+  },
+  "dlg21Title": "Başkanlığı devret?",
+  "@dlg21Title": {
+    "description": "Key dlg.21.title"
+  },
+  "dlg22Back": "Düzenlemeye dön",
+  "@dlg22Back": {
+    "description": "Key dlg.22.back"
+  },
+  "dlg22Body": "Etkinlik herkesin görebileceği şekilde yayınlanacak.",
+  "@dlg22Body": {
+    "description": "Key dlg.22.body"
+  },
+  "dlg22Notify": "{count} üyeye bildirim gönder",
+  "@dlg22Notify": {
+    "description": "Key dlg.22.notify",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg22Title": "Etkinlik yayınlansın mı?",
+  "@dlg22Title": {
+    "description": "Key dlg.22.title"
+  },
+  "dlg23Body": "{count} kayıtlı katılımcıya iptal bildirimi gidecek. Bu işlem geri alınamaz.",
+  "@dlg23Body": {
+    "description": "Key dlg.23.body",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg23Confirm": "Etkinliği iptal et",
+  "@dlg23Confirm": {
+    "description": "Key dlg.23.confirm"
+  },
+  "dlg23Title": "Etkinlik iptal edilsin mi?",
+  "@dlg23Title": {
+    "description": "Key dlg.23.title"
+  },
+  "dlg24Body": "Bir kulüp günde en fazla 2 duyuru bildirimi gönderebilir. Duyuruyu bildirimsiz yayınlayabilirsin. Yeni hakkın yarın 00:00’da yenilenir.",
+  "@dlg24Body": {
+    "description": "Key dlg.24.body"
+  },
+  "dlg24Silent": "Bildirimsiz yayınla",
+  "@dlg24Silent": {
+    "description": "Key dlg.24.silent"
+  },
+  "dlg24Title": "Bugünkü duyuru hakkın doldu",
+  "@dlg24Title": {
+    "description": "Key dlg.24.title"
+  },
+  "dlg25Body": "Çıkarsan yaptığın değişiklikler kaybolacak.",
+  "@dlg25Body": {
+    "description": "Key dlg.25.body"
+  },
+  "dlg25Discard": "Kaydetmeden çık",
+  "@dlg25Discard": {
+    "description": "Key dlg.25.discard"
+  },
+  "dlg25Keep": "Düzenlemeye devam et",
+  "@dlg25Keep": {
+    "description": "Key dlg.25.keep"
+  },
+  "dlg25Title": "Değişiklikler kaydedilmedi",
+  "@dlg25Title": {
+    "description": "Key dlg.25.title"
+  },
+  "dlg26Body": "Uygulamayı kullanmaya devam etmek için yeni sürüme güncellemelisin.",
+  "@dlg26Body": {
+    "description": "Key dlg.26.body"
+  },
+  "dlg26Store": "mağaza",
+  "@dlg26Store": {
+    "description": "Key dlg.26.store"
+  },
+  "dlg26Title": "Güncelleme gerekli",
+  "@dlg26Title": {
+    "description": "Key dlg.26.title"
+  },
+  "dlg26Update": "Güncelle",
+  "@dlg26Update": {
+    "description": "Key dlg.26.update"
+  },
+  "dlg27Body": "Güvenliğin için yeniden giriş yapman gerekiyor.",
+  "@dlg27Body": {
+    "description": "Key dlg.27.body"
+  },
+  "dlg27Title": "Oturumun sona erdi",
+  "@dlg27Title": {
+    "description": "Key dlg.27.title"
+  },
+  "dlg28Body": "Kulüp listede görünmez, üyeler gönderilere ve etkinliklere erişemez. İstediğin zaman yeniden etkinleştirebilirsin.",
+  "@dlg28Body": {
+    "description": "Key dlg.28.body"
+  },
+  "dlg28BodyActivate": "Kulüp yeniden listelenir ve üyeler tüm içeriğe erişir.",
+  "@dlg28BodyActivate": {
+    "description": "Key dlg.28.bodyActivate"
+  },
+  "dlg28Reason": "Neden",
+  "@dlg28Reason": {
+    "description": "Key dlg.28.reason"
+  },
+  "dlg28Title": "{club} askıya alınsın mı?",
+  "@dlg28Title": {
+    "description": "Key dlg.28.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg28TitleActivate": "{club} etkinleştirilsin mi?",
+  "@dlg28TitleActivate": {
+    "description": "Key dlg.28.titleActivate",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg29Body": "İçerik herkesten gizlenir ve yazarı bilgilendirilir. Şikayet çözüldü olarak işaretlenir.",
+  "@dlg29Body": {
+    "description": "Key dlg.29.body"
+  },
+  "dlg29Confirm": "Kaldır",
+  "@dlg29Confirm": {
+    "description": "Key dlg.29.confirm"
+  },
+  "dlg29Title": "İçerik kaldırılsın mı?",
+  "@dlg29Title": {
+    "description": "Key dlg.29.title"
+  },
+  "dlg30Body": "Kullanıcı giriş yapamaz ve içerikleri gizlenir.",
+  "@dlg30Body": {
+    "description": "Key dlg.30.body"
+  },
+  "dlg30BodyUnsuspend": "Kullanıcı yeniden giriş yapabilir ve içerikleri görünür olur.",
+  "@dlg30BodyUnsuspend": {
+    "description": "Key dlg.30.bodyUnsuspend"
+  },
+  "dlg30Title": "{name} askıya alınsın mı?",
+  "@dlg30Title": {
+    "description": "Key dlg.30.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg30TitleUnsuspend": "{name} askıdan çıkarılsın mı?",
+  "@dlg30TitleUnsuspend": {
+    "description": "Key dlg.30.titleUnsuspend",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg31Body": "Bu taslak kalıcı olarak silinecek.",
+  "@dlg31Body": {
+    "description": "Key dlg.31.body"
+  },
+  "dlg31Title": "Taslak silinsin mi?",
+  "@dlg31Title": {
+    "description": "Key dlg.31.title"
+  },
+  "dlg32Body1": "Şu adrese gidilecek:",
+  "@dlg32Body1": {
+    "description": "Key dlg.32.body1"
+  },
+  "dlg32Body2": "Bu adrese güveniyor musun?",
+  "@dlg32Body2": {
+    "description": "Key dlg.32.body2"
+  },
+  "dlg32Link": "bağlantı",
+  "@dlg32Link": {
+    "description": "Key dlg.32.link"
+  },
+  "dlg32Title": "Uygulamadan ayrılıyorsun",
+  "@dlg32Title": {
+    "description": "Key dlg.32.title"
+  },
+  "dlgPermissionAllow": "İzin ver",
+  "@dlgPermissionAllow": {
+    "description": "Key dlg.permission.allow"
+  },
+  "dlgPermissionNotNow": "Şimdi değil",
+  "@dlgPermissionNotNow": {
+    "description": "Key dlg.permission.notNow"
+  },
+  "dlgSystemAllow": "İzin Ver",
+  "@dlgSystemAllow": {
+    "description": "Key dlg.system.allow"
+  },
+  "dlgSystemDeny": "İzin Verme",
+  "@dlgSystemDeny": {
+    "description": "Key dlg.system.deny"
+  },
+  "dlgSystemPermissionBody": "(Sistem izni simülasyonu)",
+  "@dlgSystemPermissionBody": {
+    "description": "Key dlg.system.permissionBody"
+  },
+  "dsCatalogNote": "Seçim, prototipi uygun demo hesabıyla açar ve öğeyi örnek verilerle gösterir.",
+  "@dsCatalogNote": {
+    "description": "Key ds.catalogNote"
+  },
+  "dsCopyCode": "Kodu kopyala",
+  "@dsCopyCode": {
+    "description": "Key ds.copyCode"
+  },
+  "dsDesc": "Her bileşenin tüm varyant ve durumları; açık ve koyu tema yan yana. Katalog sekmesinden tüm sheet, dialog ve toast’lar prototipte tek tek açılabilir.",
+  "@dsDesc": {
+    "description": "Key ds.desc"
+  },
+  "dsMotionCheck": "Başarı çizgisi",
+  "@dsMotionCheck": {
+    "description": "Key ds.motion.check"
+  },
+  "dsMotionDialog": "Dialog",
+  "@dsMotionDialog": {
+    "description": "Key ds.motion.dialog"
+  },
+  "dsMotionPage": "Sayfa geçişi",
+  "@dsMotionPage": {
+    "description": "Key ds.motion.page"
+  },
+  "dsMotionReduced": "prefers-reduced-motion: yalnızca solma",
+  "@dsMotionReduced": {
+    "description": "Key ds.motion.reduced"
+  },
+  "dsMotionReplay": "Tekrar oynat",
+  "@dsMotionReplay": {
+    "description": "Key ds.motion.replay"
+  },
+  "dsMotionSheet": "Bottom sheet",
+  "@dsMotionSheet": {
+    "description": "Key ds.motion.sheet"
+  },
+  "dsOpen": "Aç",
+  "@dsOpen": {
+    "description": "Key ds.open"
+  },
+  "dsOpenInProto": "Prototipte aç",
+  "@dsOpenInProto": {
+    "description": "Key ds.openInProto"
+  },
+  "dsSecBadges": "Rozetler ve avatar",
+  "@dsSecBadges": {
+    "description": "Key ds.sec.badges"
+  },
+  "dsSecBanners": "Bantlar",
+  "@dsSecBanners": {
+    "description": "Key ds.sec.banners"
+  },
+  "dsSecButtons": "Butonlar",
+  "@dsSecButtons": {
+    "description": "Key ds.sec.buttons"
+  },
+  "dsSecCards": "Kartlar",
+  "@dsSecCards": {
+    "description": "Key ds.sec.cards"
+  },
+  "dsSecCatalog": "Katalog",
+  "@dsSecCatalog": {
+    "description": "Key ds.sec.catalog"
+  },
+  "dsSecColors": "Renkler",
+  "@dsSecColors": {
+    "description": "Key ds.sec.colors"
+  },
+  "dsSecFeedback": "Geri bildirim",
+  "@dsSecFeedback": {
+    "description": "Key ds.sec.feedback"
+  },
+  "dsSecInputs": "Girdiler",
+  "@dsSecInputs": {
+    "description": "Key ds.sec.inputs"
+  },
+  "dsSecMotion": "Hareket",
+  "@dsSecMotion": {
+    "description": "Key ds.sec.motion"
+  },
+  "dsSecNav": "Gezinme",
+  "@dsSecNav": {
+    "description": "Key ds.sec.nav"
+  },
+  "dsSecOverlays": "Sheet / Dialog / Toast",
+  "@dsSecOverlays": {
+    "description": "Key ds.sec.overlays"
+  },
+  "dsSecSelection": "Seçim kontrolleri",
+  "@dsSecSelection": {
+    "description": "Key ds.sec.selection"
+  },
+  "dsSecSpace": "Boşluk, köşe, gölge",
+  "@dsSecSpace": {
+    "description": "Key ds.sec.space"
+  },
+  "dsSecSpecial": "Özel bileşenler",
+  "@dsSecSpecial": {
+    "description": "Key ds.sec.special"
+  },
+  "dsSecType": "Tipografi",
+  "@dsSecType": {
+    "description": "Key ds.sec.type"
+  },
+  "dsState": "Durum",
+  "@dsState": {
+    "description": "Key ds.state"
+  },
+  "dsTitle": "Tasarım Sistemi",
+  "@dsTitle": {
+    "description": "Key ds.title"
+  },
+  "editProfileBio": "Kısa biyografi",
+  "@editProfileBio": {
+    "description": "Key editProfile.bio"
+  },
+  "editProfileEmailLocked": "Üniversite e-postası değiştirilemez",
+  "@editProfileEmailLocked": {
+    "description": "Key editProfile.emailLocked"
+  },
+  "editProfilePrivacy": "Profilin yalnızca ortak kulüp üyelerine ve kulüp yöneticilerine görünür.",
+  "@editProfilePrivacy": {
+    "description": "Key editProfile.privacy"
+  },
+  "editProfileTitle": "Profili düzenle",
+  "@editProfileTitle": {
+    "description": "Key editProfile.title"
+  },
+  "eventAbout": "Açıklama",
+  "@eventAbout": {
+    "description": "Key event.about"
+  },
+  "eventAddToCalendar": "Takvime ekle",
+  "@eventAddToCalendar": {
+    "description": "Key event.addToCalendar"
+  },
+  "eventAttendees": "Katılımcılar",
+  "@eventAttendees": {
+    "description": "Key event.attendees"
+  },
+  "eventAttendeesGoing": "{count} kişi katılıyor",
+  "@eventAttendeesGoing": {
+    "description": "Key event.attendeesGoing",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventCancelledBanner": "Bu etkinlik iptal edildi.",
+  "@eventCancelledBanner": {
+    "description": "Key event.cancelledBanner"
+  },
+  "eventCapacity": "Kontenjan",
+  "@eventCapacity": {
+    "description": "Key event.capacity"
+  },
+  "eventCtaApplyClub": "Kulübe başvur",
+  "@eventCtaApplyClub": {
+    "description": "Key event.cta.applyClub"
+  },
+  "eventCtaAttendees": "Katılımcılar",
+  "@eventCtaAttendees": {
+    "description": "Key event.cta.attendees"
+  },
+  "eventCtaClosed": "Kayıtlar kapalı",
+  "@eventCtaClosed": {
+    "description": "Key event.cta.closed"
+  },
+  "eventCtaJoin": "Katıl",
+  "@eventCtaJoin": {
+    "description": "Key event.cta.join"
+  },
+  "eventCtaLeave": "Vazgeç",
+  "@eventCtaLeave": {
+    "description": "Key event.cta.leave"
+  },
+  "eventCtaLeaveWaitlist": "Ayrıl",
+  "@eventCtaLeaveWaitlist": {
+    "description": "Key event.cta.leaveWaitlist"
+  },
+  "eventCtaScan": "Yoklama başlat",
+  "@eventCtaScan": {
+    "description": "Key event.cta.scan"
+  },
+  "eventCtaTicket": "Biletini göster",
+  "@eventCtaTicket": {
+    "description": "Key event.cta.ticket"
+  },
+  "eventCtaWaitlist": "Bekleme listesine katıl",
+  "@eventCtaWaitlist": {
+    "description": "Key event.cta.waitlist"
+  },
+  "eventDirections": "Yol tarifi",
+  "@eventDirections": {
+    "description": "Key event.directions"
+  },
+  "eventDraftBanner": "Bu etkinlik taslak; yalnızca yöneticiler görebilir.",
+  "@eventDraftBanner": {
+    "description": "Key event.draftBanner"
+  },
+  "eventEmptyTitle": "Etkinlik yok",
+  "@eventEmptyTitle": {
+    "description": "Key event.empty.title"
+  },
+  "eventEnded": "Etkinlik sona erdi",
+  "@eventEnded": {
+    "description": "Key event.ended"
+  },
+  "eventFull": "Kontenjan doldu",
+  "@eventFull": {
+    "description": "Key event.full"
+  },
+  "eventPast": "Geçmiş",
+  "@eventPast": {
+    "description": "Key event.past"
+  },
+  "eventPlaceCampus": "Kampüs",
+  "@eventPlaceCampus": {
+    "description": "Key event.placeCampus"
+  },
+  "eventPlaceTbd": "Yer belirlenecek",
+  "@eventPlaceTbd": {
+    "description": "Key event.placeTbd"
+  },
+  "eventRegisteredCount": "{count} kayıtlı",
+  "@eventRegisteredCount": {
+    "description": "Key event.registeredCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventRemaining": "{count, plural, one{# kişi kaldı} other{# kişi kaldı}}",
+  "@eventRemaining": {
+    "description": "Key event.remaining",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventReminder": "Hatırlatıcı",
+  "@eventReminder": {
+    "description": "Key event.reminder"
+  },
+  "eventReminderAfterJoin": "Katıldıktan sonra ayarlanır",
+  "@eventReminderAfterJoin": {
+    "description": "Key event.reminderAfterJoin"
+  },
+  "eventReport": "Etkinliği şikayet et",
+  "@eventReport": {
+    "description": "Key event.report"
+  },
+  "eventTitle": "Etkinlik",
+  "@eventTitle": {
+    "description": "Key event.title"
+  },
+  "eventUnlimited": "Sınırsız",
+  "@eventUnlimited": {
+    "description": "Key event.unlimited"
+  },
+  "eventUpcoming": "Yaklaşan",
+  "@eventUpcoming": {
+    "description": "Key event.upcoming"
+  },
+  "eventVisibilityMembers": "Sadece üyeler",
+  "@eventVisibilityMembers": {
+    "description": "Key event.visibility.members"
+  },
+  "eventVisibilityPublic": "Herkese açık",
+  "@eventVisibilityPublic": {
+    "description": "Key event.visibility.public"
+  },
+  "eventWaitlistCount": "{count} kişi bekliyor",
+  "@eventWaitlistCount": {
+    "description": "Key event.waitlistCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventWaitlistNote": "Yer açılırsa sana bildirim göndeririz.",
+  "@eventWaitlistNote": {
+    "description": "Key event.waitlistNote"
+  },
+  "eventWaitlistPos": "Bekleme listesindesin ({n}. sıra)",
+  "@eventWaitlistPos": {
+    "description": "Key event.waitlistPos",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormAutoReminder": "Otomatik hatırlatma",
+  "@eventFormAutoReminder": {
+    "description": "Key eventForm.autoReminder"
+  },
+  "eventFormAutoReminderHelp": "1 gün ve 1 saat önce",
+  "@eventFormAutoReminderHelp": {
+    "description": "Key eventForm.autoReminderHelp"
+  },
+  "eventFormCapacity": "Kontenjan",
+  "@eventFormCapacity": {
+    "description": "Key eventForm.capacity"
+  },
+  "eventFormChangeCover": "Kapağı değiştir",
+  "@eventFormChangeCover": {
+    "description": "Key eventForm.changeCover"
+  },
+  "eventFormConflict": "Aynı saatte {count} etkinlik var.",
+  "@eventFormConflict": {
+    "description": "Key eventForm.conflict",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormCover": "Kapak",
+  "@eventFormCover": {
+    "description": "Key eventForm.cover"
+  },
+  "eventFormDecrease": "Azalt",
+  "@eventFormDecrease": {
+    "description": "Key eventForm.decrease"
+  },
+  "eventFormDesc": "Açıklama",
+  "@eventFormDesc": {
+    "description": "Key eventForm.desc"
+  },
+  "eventFormEditTitle": "Etkinliği düzenle",
+  "@eventFormEditTitle": {
+    "description": "Key eventForm.editTitle"
+  },
+  "eventFormEndDate": "Bitiş",
+  "@eventFormEndDate": {
+    "description": "Key eventForm.endDate"
+  },
+  "eventFormErrCapacity": "Kontenjan mevcut kayıt sayısından ({count}) düşük olamaz",
+  "@eventFormErrCapacity": {
+    "description": "Key eventForm.err.capacity",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormErrEndAfter": "Bitiş başlangıçtan sonra olmalı",
+  "@eventFormErrEndAfter": {
+    "description": "Key eventForm.err.endAfter"
+  },
+  "eventFormErrFuture": "Başlangıç gelecekte olmalı",
+  "@eventFormErrFuture": {
+    "description": "Key eventForm.err.future"
+  },
+  "eventFormIncrease": "Artır",
+  "@eventFormIncrease": {
+    "description": "Key eventForm.increase"
+  },
+  "eventFormName": "Başlık",
+  "@eventFormName": {
+    "description": "Key eventForm.name"
+  },
+  "eventFormPlace": "Yer",
+  "@eventFormPlace": {
+    "description": "Key eventForm.place"
+  },
+  "eventFormPreviewNote": "Etkinlik üyelere böyle görünecek.",
+  "@eventFormPreviewNote": {
+    "description": "Key eventForm.previewNote"
+  },
+  "eventFormPublish": "Yayınla",
+  "@eventFormPublish": {
+    "description": "Key eventForm.publish"
+  },
+  "eventFormRegisteredNow": "Şu an {count} kayıtlı",
+  "@eventFormRegisteredNow": {
+    "description": "Key eventForm.registeredNow",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormSaveDraft": "Taslak olarak kaydet",
+  "@eventFormSaveDraft": {
+    "description": "Key eventForm.saveDraft"
+  },
+  "eventFormStartDate": "Başlangıç",
+  "@eventFormStartDate": {
+    "description": "Key eventForm.startDate"
+  },
+  "eventFormTime": "Saat",
+  "@eventFormTime": {
+    "description": "Key eventForm.time"
+  },
+  "eventFormTitle": "Etkinlik oluştur",
+  "@eventFormTitle": {
+    "description": "Key eventForm.title"
+  },
+  "eventFormType": "Tür",
+  "@eventFormType": {
+    "description": "Key eventForm.type"
+  },
+  "eventFormUnlimited": "Sınırsız",
+  "@eventFormUnlimited": {
+    "description": "Key eventForm.unlimited"
+  },
+  "eventFormUntitled": "Adsız etkinlik",
+  "@eventFormUntitled": {
+    "description": "Key eventForm.untitled"
+  },
+  "eventFormVisibility": "Görünürlük",
+  "@eventFormVisibility": {
+    "description": "Key eventForm.visibility"
+  },
+  "eventFormVisibilityHelpMembers": "Yalnızca kulüp üyeleri görür.",
+  "@eventFormVisibilityHelpMembers": {
+    "description": "Key eventForm.visibilityHelp.members"
+  },
+  "eventFormVisibilityHelpPublic": "Herkes görebilir ve kayıt olabilir.",
+  "@eventFormVisibilityHelpPublic": {
+    "description": "Key eventForm.visibilityHelp.public"
+  },
+  "eventTypeEgitim": "Eğitim",
+  "@eventTypeEgitim": {
+    "description": "Key eventType.egitim"
+  },
+  "eventTypeGezi": "Gezi",
+  "@eventTypeGezi": {
+    "description": "Key eventType.gezi"
+  },
+  "eventTypeKonferans": "Konferans",
+  "@eventTypeKonferans": {
+    "description": "Key eventType.konferans"
+  },
+  "eventTypeSosyal": "Sosyal",
+  "@eventTypeSosyal": {
+    "description": "Key eventType.sosyal"
+  },
+  "eventTypeYarisma": "Yarışma",
+  "@eventTypeYarisma": {
+    "description": "Key eventType.yarisma"
+  },
+  "eventsChipMine": "Kulüplerim",
+  "@eventsChipMine": {
+    "description": "Key events.chip.mine"
+  },
+  "eventsChipPublic": "Herkese açık",
+  "@eventsChipPublic": {
+    "description": "Key events.chip.public"
+  },
+  "eventsChipWeek": "Bu hafta",
+  "@eventsChipWeek": {
+    "description": "Key events.chip.week"
+  },
+  "eventsDiscover": "Etkinlikleri keşfet",
+  "@eventsDiscover": {
+    "description": "Key events.discover"
+  },
+  "eventsEmptyDay": "Bu gün için etkinlik yok",
+  "@eventsEmptyDay": {
+    "description": "Key events.empty.day"
+  },
+  "eventsEmptyDesc": "Filtreleri değiştir ya da başka bir tarih seç.",
+  "@eventsEmptyDesc": {
+    "description": "Key events.empty.desc"
+  },
+  "eventsEmptyTitle": "Bu aralıkta etkinlik yok",
+  "@eventsEmptyTitle": {
+    "description": "Key events.empty.title"
+  },
+  "eventsGroupLater": "Daha sonra",
+  "@eventsGroupLater": {
+    "description": "Key events.group.later"
+  },
+  "eventsGroupPastGroup": "Geçmiş",
+  "@eventsGroupPastGroup": {
+    "description": "Key events.group.pastGroup"
+  },
+  "eventsGroupToday": "Bugün",
+  "@eventsGroupToday": {
+    "description": "Key events.group.today"
+  },
+  "eventsGroupTomorrow": "Yarın",
+  "@eventsGroupTomorrow": {
+    "description": "Key events.group.tomorrow"
+  },
+  "eventsGroupWeek": "Bu hafta",
+  "@eventsGroupWeek": {
+    "description": "Key events.group.week"
+  },
+  "eventsTickets": "Biletlerim",
+  "@eventsTickets": {
+    "description": "Key events.tickets"
+  },
+  "eventsViewCalendar": "Takvim",
+  "@eventsViewCalendar": {
+    "description": "Key events.view.calendar"
+  },
+  "eventsViewList": "Liste",
+  "@eventsViewList": {
+    "description": "Key events.view.list"
+  },
+  "facultyF1": "Mühendislik ve Doğa Bilimleri Fakültesi",
+  "@facultyF1": {
+    "description": "Key faculty.f1"
+  },
+  "facultyF2": "Mimarlık ve Tasarım Fakültesi",
+  "@facultyF2": {
+    "description": "Key faculty.f2"
+  },
+  "facultyF3": "Edebiyat Fakültesi",
+  "@facultyF3": {
+    "description": "Key faculty.f3"
+  },
+  "facultyF4": "İktisadi ve İdari Bilimler Fakültesi",
+  "@facultyF4": {
+    "description": "Key faculty.f4"
+  },
+  "facultyF5": "Sağlık ve Spor Bilimleri",
+  "@facultyF5": {
+    "description": "Key faculty.f5"
+  },
+  "facultyF6": "Turizm ve Sanat",
+  "@facultyF6": {
+    "description": "Key faculty.f6"
+  },
+  "faqA1": "Kulüpler sekmesinden kulübü aç ve Katıl’a dokun. Onay gerektiren kulüplerde kısa bir not yazarsın; anında katılım kulüplerinde hemen üye olursun. Sonucu Bildirimler’den takip edebilirsin.",
+  "@faqA1": {
+    "description": "Key faq.a1"
+  },
+  "faqA2": "Başvuruları kulüp yönetim kurulu değerlendirir ve genellikle 1–3 gün içinde yanıt verir. Durumu Profil › Kulüplerim › Bekleyen sekmesinden görebilir, notunu güncelleyebilir ya da isteği iptal edebilirsin.",
+  "@faqA2": {
+    "description": "Key faq.a2"
+  },
+  "faqA3": "Ekran parlaklığını artır ve bileti tam ekran aç. Yine olmazsa görevliye biletin altındaki kodu söyle; manuel olarak girilebilir.",
+  "@faqA3": {
+    "description": "Key faq.a3"
+  },
+  "faqA4": "Ayarlar › Bildirim tercihleri’nden sistem izninin açık olduğunu ve ilgili türlerin kapatılmadığını kontrol et. Kulüp bazlı sessize alma da bildirimleri engeller.",
+  "@faqA4": {
+    "description": "Key faq.a4"
+  },
+  "faqA5": "Ayarlar › Hesabı sil adımlarını izle. Kulüp başkanıysan önce başkanlığı devretmen gerekir. Gönderi ve yorumların anonimleşir, üyelik ve biletlerin silinir.",
+  "@faqA5": {
+    "description": "Key faq.a5"
+  },
+  "faqA6": "Kulüpler kampüs yönetimi tarafından eklenir. Kulüp danışmanın ya da başkanın Sağlık, Kültür ve Spor birimine yazarak kulübün eklenmesini isteyebilir.",
+  "@faqA6": {
+    "description": "Key faq.a6"
+  },
+  "faqA7": "Üniversite e-postası hesabının kimliğidir ve değiştirilemez. Doğrulama aşamasında yanlış yazdıysan E-postayı değiştir seçeneğiyle düzeltebilirsin.",
+  "@faqA7": {
+    "description": "Key faq.a7"
+  },
+  "faqA8": "Gönderi, yorum, kullanıcı ya da kulübün ⋯ menüsünden Şikayet et’i seç, nedeni belirt. Kampüs yönetimi inceler; sonucu bildirimle alırsın.",
+  "@faqA8": {
+    "description": "Key faq.a8"
+  },
+  "faqQ1": "Bir kulübe nasıl başvururum?",
+  "@faqQ1": {
+    "description": "Key faq.q1"
+  },
+  "faqQ2": "Başvurum neden hâlâ beklemede?",
+  "@faqQ2": {
+    "description": "Key faq.q2"
+  },
+  "faqQ3": "QR kodum okutulmuyor, ne yapmalıyım?",
+  "@faqQ3": {
+    "description": "Key faq.q3"
+  },
+  "faqQ4": "Bildirim alamıyorum.",
+  "@faqQ4": {
+    "description": "Key faq.q4"
+  },
+  "faqQ5": "Hesabımı nasıl silerim?",
+  "@faqQ5": {
+    "description": "Key faq.q5"
+  },
+  "faqQ6": "Kulübüm uygulamada yok, nasıl eklenir?",
+  "@faqQ6": {
+    "description": "Key faq.q6"
+  },
+  "faqQ7": "E-posta adresimi değiştirebilir miyim?",
+  "@faqQ7": {
+    "description": "Key faq.q7"
+  },
+  "faqQ8": "Bir kullanıcıyı veya içeriği nasıl şikayet ederim?",
+  "@faqQ8": {
+    "description": "Key faq.q8"
+  },
+  "feedComment": "Yorum",
+  "@feedComment": {
+    "description": "Key feed.comment"
+  },
+  "feedComposePlaceholder": "Kulübüne bir şey yaz…",
+  "@feedComposePlaceholder": {
+    "description": "Key feed.composePlaceholder"
+  },
+  "feedEdited": "düzenlendi",
+  "@feedEdited": {
+    "description": "Key feed.edited"
+  },
+  "feedEmptyCta": "İlk gönderini yaz",
+  "@feedEmptyCta": {
+    "description": "Key feed.empty.cta"
+  },
+  "feedEmptyDesc": "Kulüp yönetimi paylaşım yaptığında burada görünecek.",
+  "@feedEmptyDesc": {
+    "description": "Key feed.empty.desc"
+  },
+  "feedEmptyDescManager": "İlk gönderini yazarak üyeleri selamla.",
+  "@feedEmptyDescManager": {
+    "description": "Key feed.empty.descManager"
+  },
+  "feedEmptyTitle": "Henüz gönderi yok",
+  "@feedEmptyTitle": {
+    "description": "Key feed.empty.title"
+  },
+  "feedFilterAnnouncements": "Duyurular",
+  "@feedFilterAnnouncements": {
+    "description": "Key feed.filter.announcements"
+  },
+  "feedFilterImages": "Görseller",
+  "@feedFilterImages": {
+    "description": "Key feed.filter.images"
+  },
+  "feedFilterPolls": "Anketler",
+  "@feedFilterPolls": {
+    "description": "Key feed.filter.polls"
+  },
+  "feedLike": "Beğen",
+  "@feedLike": {
+    "description": "Key feed.like"
+  },
+  "feedNewPosts": "{count} yeni gönderi",
+  "@feedNewPosts": {
+    "description": "Key feed.newPosts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedPinned": "Sabitlenmiş",
+  "@feedPinned": {
+    "description": "Key feed.pinned"
+  },
+  "feedPollEnded": "Anket sona erdi",
+  "@feedPollEnded": {
+    "description": "Key feed.poll.ended"
+  },
+  "feedPollRemaining": "{time} kaldı",
+  "@feedPollRemaining": {
+    "description": "Key feed.poll.remaining",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "feedPollVotes": "{count, plural, one{# oy} other{# oy}}",
+  "@feedPollVotes": {
+    "description": "Key feed.poll.votes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedPushSent": "Bildirim gönderildi",
+  "@feedPushSent": {
+    "description": "Key feed.pushSent"
+  },
+  "feedSave": "Kaydet",
+  "@feedSave": {
+    "description": "Key feed.save"
+  },
+  "feedTitle": "Akış",
+  "@feedTitle": {
+    "description": "Key feed.title"
+  },
+  "feedTypeAnnouncement": "Duyuru",
+  "@feedTypeAnnouncement": {
+    "description": "Key feed.type.announcement"
+  },
+  "feedTypePoll": "Anket",
+  "@feedTypePoll": {
+    "description": "Key feed.type.poll"
+  },
+  "feedTypePost": "Gönderi",
+  "@feedTypePost": {
+    "description": "Key feed.type.post"
+  },
+  "feedUnsave": "Kaydı kaldır",
+  "@feedUnsave": {
+    "description": "Key feed.unsave"
+  },
+  "interestI01": "Yazılım",
+  "@interestI01": {
+    "description": "Key interest.i01"
+  },
+  "interestI02": "Yapay zekâ",
+  "@interestI02": {
+    "description": "Key interest.i02"
+  },
+  "interestI03": "Girişimcilik",
+  "@interestI03": {
+    "description": "Key interest.i03"
+  },
+  "interestI04": "Doğa yürüyüşü",
+  "@interestI04": {
+    "description": "Key interest.i04"
+  },
+  "interestI05": "Dağcılık",
+  "@interestI05": {
+    "description": "Key interest.i05"
+  },
+  "interestI06": "Fotoğraf",
+  "@interestI06": {
+    "description": "Key interest.i06"
+  },
+  "interestI07": "Sinema",
+  "@interestI07": {
+    "description": "Key interest.i07"
+  },
+  "interestI08": "Müzik",
+  "@interestI08": {
+    "description": "Key interest.i08"
+  },
+  "interestI09": "Tiyatro",
+  "@interestI09": {
+    "description": "Key interest.i09"
+  },
+  "interestI10": "Edebiyat",
+  "@interestI10": {
+    "description": "Key interest.i10"
+  },
+  "interestI11": "Satranç",
+  "@interestI11": {
+    "description": "Key interest.i11"
+  },
+  "interestI12": "E-spor",
+  "@interestI12": {
+    "description": "Key interest.i12"
+  },
+  "interestI13": "Gönüllülük",
+  "@interestI13": {
+    "description": "Key interest.i13"
+  },
+  "interestI14": "Halk oyunları",
+  "@interestI14": {
+    "description": "Key interest.i14"
+  },
+  "interestI15": "Havacılık",
+  "@interestI15": {
+    "description": "Key interest.i15"
+  },
+  "interestI16": "Kariyer",
+  "@interestI16": {
+    "description": "Key interest.i16"
+  },
+  "legalAccept": "Okudum, anladım",
+  "@legalAccept": {
+    "description": "Key legal.accept"
+  },
+  "legalGizlilikB1": "Bu politika GÜ Kulüpler mobil uygulamasında toplanan bilgileri ve kullanımını açıklar.",
+  "@legalGizlilikB1": {
+    "description": "Key legal.gizlilik.b1"
+  },
+  "legalGizlilikB2": "Hesabınız üniversite e-postanızla oluşturulur; e-posta yalnızca kulüp yöneticilerine görünür.",
+  "@legalGizlilikB2": {
+    "description": "Key legal.gizlilik.b2"
+  },
+  "legalGizlilikB3": "Profiliniz yalnızca ortak kulüp üyelerine ve kulüp yöneticilerine görünür. Bölüm ve sınıf bilgisi herkese açık değildir.",
+  "@legalGizlilikB3": {
+    "description": "Key legal.gizlilik.b3"
+  },
+  "legalGizlilikB4": "Bildirim tercihlerinizi istediğiniz zaman Ayarlar’dan değiştirebilirsiniz. Sessiz saatler cihazınızda uygulanır.",
+  "@legalGizlilikB4": {
+    "description": "Key legal.gizlilik.b4"
+  },
+  "legalGizlilikB5": "Uygulama yalnızca oturumunuzu sürdürmek için yerel depolama kullanır; üçüncü taraf reklam izleyicisi yoktur.",
+  "@legalGizlilikB5": {
+    "description": "Key legal.gizlilik.b5"
+  },
+  "legalGizlilikB6": "Engellediğiniz kullanıcılar bunu görmez. Şikayetler kampüs yönetimi tarafından gizlilik içinde incelenir.",
+  "@legalGizlilikB6": {
+    "description": "Key legal.gizlilik.b6"
+  },
+  "legalGizlilikB7": "Politikadaki önemli değişiklikler uygulama içi bildirimle duyurulur.",
+  "@legalGizlilikB7": {
+    "description": "Key legal.gizlilik.b7"
+  },
+  "legalGizlilikH1": "Kapsam",
+  "@legalGizlilikH1": {
+    "description": "Key legal.gizlilik.h1"
+  },
+  "legalGizlilikH2": "Hesap bilgileri",
+  "@legalGizlilikH2": {
+    "description": "Key legal.gizlilik.h2"
+  },
+  "legalGizlilikH3": "Profil görünürlüğü",
+  "@legalGizlilikH3": {
+    "description": "Key legal.gizlilik.h3"
+  },
+  "legalGizlilikH4": "Bildirimler",
+  "@legalGizlilikH4": {
+    "description": "Key legal.gizlilik.h4"
+  },
+  "legalGizlilikH5": "Çerezler ve analitik",
+  "@legalGizlilikH5": {
+    "description": "Key legal.gizlilik.h5"
+  },
+  "legalGizlilikH6": "Engelleme ve şikayet",
+  "@legalGizlilikH6": {
+    "description": "Key legal.gizlilik.h6"
+  },
+  "legalGizlilikH7": "Değişiklikler",
+  "@legalGizlilikH7": {
+    "description": "Key legal.gizlilik.h7"
+  },
+  "legalGizlilikShort": "Gizlilik",
+  "@legalGizlilikShort": {
+    "description": "Key legal.gizlilik.short"
+  },
+  "legalGizlilikTitle": "Gizlilik Politikası",
+  "@legalGizlilikTitle": {
+    "description": "Key legal.gizlilik.title"
+  },
+  "legalKosullarB1": "Uygulamayı kullanarak bu koşulları ve topluluk kurallarını kabul etmiş olursunuz.",
+  "@legalKosullarB1": {
+    "description": "Key legal.kosullar.b1"
+  },
+  "legalKosullarB2": "Uygulama yalnızca geçerli üniversite e-postasına sahip öğrenci ve personelin kullanımına açıktır.",
+  "@legalKosullarB2": {
+    "description": "Key legal.kosullar.b2"
+  },
+  "legalKosullarB3": "Taciz, nefret söylemi, spam ve yanıltıcı içerik yasaktır. İhlaller içeriğin kaldırılması veya hesabın askıya alınmasıyla sonuçlanabilir.",
+  "@legalKosullarB3": {
+    "description": "Key legal.kosullar.b3"
+  },
+  "legalKosullarB4": "Kulüp yöneticileri başvuru kararlarından ve paylaştıkları içerikten sorumludur; günde en fazla 2 duyuru bildirimi gönderebilir.",
+  "@legalKosullarB4": {
+    "description": "Key legal.kosullar.b4"
+  },
+  "legalKosullarB5": "Kayıt olduğunuz etkinliğe katılamayacaksanız vazgeçerek yerinizi bekleyenlere bırakmanız beklenir.",
+  "@legalKosullarB5": {
+    "description": "Key legal.kosullar.b5"
+  },
+  "legalKosullarB6": "Uygulamadaki simgeler Lucide (ISC), yazı tipleri Montserrat ve Inter (SIL OFL) lisanslarıyla kullanılır.",
+  "@legalKosullarB6": {
+    "description": "Key legal.kosullar.b6"
+  },
+  "legalKosullarB7": "Uygulama \"olduğu gibi\" sunulur; kulüp etkinliklerinin içeriğinden ilgili kulüp sorumludur.",
+  "@legalKosullarB7": {
+    "description": "Key legal.kosullar.b7"
+  },
+  "legalKosullarH1": "Kabul",
+  "@legalKosullarH1": {
+    "description": "Key legal.kosullar.h1"
+  },
+  "legalKosullarH2": "Uygunluk",
+  "@legalKosullarH2": {
+    "description": "Key legal.kosullar.h2"
+  },
+  "legalKosullarH3": "Topluluk kuralları",
+  "@legalKosullarH3": {
+    "description": "Key legal.kosullar.h3"
+  },
+  "legalKosullarH4": "Kulüp yönetimi sorumluluğu",
+  "@legalKosullarH4": {
+    "description": "Key legal.kosullar.h4"
+  },
+  "legalKosullarH5": "Etkinlik kayıtları",
+  "@legalKosullarH5": {
+    "description": "Key legal.kosullar.h5"
+  },
+  "legalKosullarH6": "Fikri mülkiyet",
+  "@legalKosullarH6": {
+    "description": "Key legal.kosullar.h6"
+  },
+  "legalKosullarH7": "Sorumluluğun sınırı",
+  "@legalKosullarH7": {
+    "description": "Key legal.kosullar.h7"
+  },
+  "legalKosullarShort": "Koşullar",
+  "@legalKosullarShort": {
+    "description": "Key legal.kosullar.short"
+  },
+  "legalKosullarTitle": "Kullanım Koşulları",
+  "@legalKosullarTitle": {
+    "description": "Key legal.kosullar.title"
+  },
+  "legalKvkkB1": "Kişisel verileriniz, 6698 sayılı KVKK kapsamında veri sorumlusu sıfatıyla Gümüşhane Üniversitesi tarafından işlenir.",
+  "@legalKvkkB1": {
+    "description": "Key legal.kvkk.b1"
+  },
+  "legalKvkkB2": "Ad soyad, üniversite e-postası, bölüm, sınıf, ilgi alanları ve etkinlik katılım kayıtları işlenir. Konum ve rehber verisi toplanmaz.",
+  "@legalKvkkB2": {
+    "description": "Key legal.kvkk.b2"
+  },
+  "legalKvkkB3": "Kulüp üyeliklerinin yönetimi, etkinlik kayıt ve yoklaması, duyuruların iletilmesi ve güvenliğin sağlanması amacıyla işlenir.",
+  "@legalKvkkB3": {
+    "description": "Key legal.kvkk.b3"
+  },
+  "legalKvkkB4": "Verileriniz yalnızca üye olduğunuz kulübün yönetim kuruluyla ve yasal zorunluluk hâlinde yetkili kurumlarla paylaşılır.",
+  "@legalKvkkB4": {
+    "description": "Key legal.kvkk.b4"
+  },
+  "legalKvkkB5": "Üyelik verileri mezuniyet veya hesap silme tarihinden itibaren en çok 1 yıl saklanır; yoklama kayıtları dönem sonunda anonimleştirilir.",
+  "@legalKvkkB5": {
+    "description": "Key legal.kvkk.b5"
+  },
+  "legalKvkkB6": "KVKK’nın 11. maddesi uyarınca verilerinize erişme, düzeltme, silme ve işlemeye itiraz etme hakkına sahipsiniz.",
+  "@legalKvkkB6": {
+    "description": "Key legal.kvkk.b6"
+  },
+  "legalKvkkB7": "Taleplerinizi uygulama içindeki Yardım ve destek formu ya da kvkk@gumushane.edu.tr adresi üzerinden iletebilirsiniz.",
+  "@legalKvkkB7": {
+    "description": "Key legal.kvkk.b7"
+  },
+  "legalKvkkH1": "Veri sorumlusu",
+  "@legalKvkkH1": {
+    "description": "Key legal.kvkk.h1"
+  },
+  "legalKvkkH2": "İşlenen veriler",
+  "@legalKvkkH2": {
+    "description": "Key legal.kvkk.h2"
+  },
+  "legalKvkkH3": "İşleme amaçları",
+  "@legalKvkkH3": {
+    "description": "Key legal.kvkk.h3"
+  },
+  "legalKvkkH4": "Aktarım",
+  "@legalKvkkH4": {
+    "description": "Key legal.kvkk.h4"
+  },
+  "legalKvkkH5": "Saklama süresi",
+  "@legalKvkkH5": {
+    "description": "Key legal.kvkk.h5"
+  },
+  "legalKvkkH6": "Haklarınız",
+  "@legalKvkkH6": {
+    "description": "Key legal.kvkk.h6"
+  },
+  "legalKvkkH7": "Başvuru",
+  "@legalKvkkH7": {
+    "description": "Key legal.kvkk.h7"
+  },
+  "legalKvkkShort": "KVKK",
+  "@legalKvkkShort": {
+    "description": "Key legal.kvkk.short"
+  },
+  "legalKvkkTitle": "KVKK Aydınlatma Metni",
+  "@legalKvkkTitle": {
+    "description": "Key legal.kvkk.title"
+  },
+  "legalTitle": "Yasal metinler",
+  "@legalTitle": {
+    "description": "Key legal.title"
+  },
+  "legalUpdated": "Son güncelleme: Eylül 2026",
+  "@legalUpdated": {
+    "description": "Key legal.updated"
+  },
+  "mapAssumptions": "Varsayımlar",
+  "@mapAssumptions": {
+    "description": "Key map.assumptions"
+  },
+  "mapColId": "ID",
+  "@mapColId": {
+    "description": "Key map.col.id"
+  },
+  "mapColName": "Ekran",
+  "@mapColName": {
+    "description": "Key map.col.name"
+  },
+  "mapColOpen": "Aç",
+  "@mapColOpen": {
+    "description": "Key map.col.open"
+  },
+  "mapColRoles": "Roller",
+  "@mapColRoles": {
+    "description": "Key map.col.roles"
+  },
+  "mapColRoute": "Rota",
+  "@mapColRoute": {
+    "description": "Key map.col.route"
+  },
+  "mapDesc": "Akış diyagramları, 51 ekranlık envanter ve teslimde yapılan varsayımlar. Düğüme dokunmak prototipi ilgili ekranda, uygun demo hesapla açar.",
+  "@mapDesc": {
+    "description": "Key map.desc"
+  },
+  "mapFlows": "Akış diyagramları",
+  "@mapFlows": {
+    "description": "Key map.flows"
+  },
+  "mapInventory": "Ekran envanteri",
+  "@mapInventory": {
+    "description": "Key map.inventory"
+  },
+  "mapRolesAdmin": "Süper admin",
+  "@mapRolesAdmin": {
+    "description": "Key map.roles.admin"
+  },
+  "mapRolesAll": "Tümü",
+  "@mapRolesAll": {
+    "description": "Key map.roles.all"
+  },
+  "mapRolesGuest": "Oturumsuz",
+  "@mapRolesGuest": {
+    "description": "Key map.roles.guest"
+  },
+  "mapRolesManager": "YK, Başkan (Danışman salt okunur)",
+  "@mapRolesManager": {
+    "description": "Key map.roles.manager"
+  },
+  "mapRolesMember": "Üye+",
+  "@mapRolesMember": {
+    "description": "Key map.roles.member"
+  },
+  "mapTitle": "Ekran Haritası",
+  "@mapTitle": {
+    "description": "Key map.title"
+  },
+  "membersFilterBoard": "Yönetim",
+  "@membersFilterBoard": {
+    "description": "Key members.filter.board"
+  },
+  "membersNoResults": "Eşleşen üye yok",
+  "@membersNoResults": {
+    "description": "Key members.noResults"
+  },
+  "membersSearch": "Üye ara",
+  "@membersSearch": {
+    "description": "Key members.search"
+  },
+  "membersTitle": "Üyeler",
+  "@membersTitle": {
+    "description": "Key members.title"
+  },
+  "membersTotal": "{count, plural, one{# kişi} other{# kişi}}",
+  "@membersTotal": {
+    "description": "Key members.total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtChartAria": "Haftalık üye sayısı grafiği",
+  "@mgtChartAria": {
+    "description": "Key mgt.chart.aria"
+  },
+  "mgtGrowth": "Üye artışı",
+  "@mgtGrowth": {
+    "description": "Key mgt.growth"
+  },
+  "mgtKpiAnnouncements": "Bu ay duyuru",
+  "@mgtKpiAnnouncements": {
+    "description": "Key mgt.kpi.announcements"
+  },
+  "mgtKpiEvents": "Yaklaşan etkinlik",
+  "@mgtKpiEvents": {
+    "description": "Key mgt.kpi.events"
+  },
+  "mgtKpiMembers": "Toplam üye",
+  "@mgtKpiMembers": {
+    "description": "Key mgt.kpi.members"
+  },
+  "mgtKpiNewThisMonth": "+{count} bu ay",
+  "@mgtKpiNewThisMonth": {
+    "description": "Key mgt.kpi.newThisMonth",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtKpiPending": "Bekleyen başvuru",
+  "@mgtKpiPending": {
+    "description": "Key mgt.kpi.pending"
+  },
+  "mgtNewClubDesc": "Kulüp bağlantısını paylaşarak ilk üyelerini davet et.",
+  "@mgtNewClubDesc": {
+    "description": "Key mgt.newClub.desc"
+  },
+  "mgtNewClubTitle": "Henüz üyen yok",
+  "@mgtNewClubTitle": {
+    "description": "Key mgt.newClub.title"
+  },
+  "mgtNoAccess": "Bu paneli görüntüleme yetkin yok.",
+  "@mgtNoAccess": {
+    "description": "Key mgt.noAccess"
+  },
+  "mgtNoUpcoming": "Yaklaşan etkinlik yok.",
+  "@mgtNoUpcoming": {
+    "description": "Key mgt.noUpcoming"
+  },
+  "mgtQuickAnnounce": "Duyuru yap",
+  "@mgtQuickAnnounce": {
+    "description": "Key mgt.quick.announce"
+  },
+  "mgtQuickAttendance": "Yoklama al",
+  "@mgtQuickAttendance": {
+    "description": "Key mgt.quick.attendance"
+  },
+  "mgtQuickEvent": "Etkinlik oluştur",
+  "@mgtQuickEvent": {
+    "description": "Key mgt.quick.event"
+  },
+  "mgtQuickMembers": "Üyeler",
+  "@mgtQuickMembers": {
+    "description": "Key mgt.quick.members"
+  },
+  "mgtQuickPost": "Gönderi yaz",
+  "@mgtQuickPost": {
+    "description": "Key mgt.quick.post"
+  },
+  "mgtQuickSettings": "Kulüp ayarları",
+  "@mgtQuickSettings": {
+    "description": "Key mgt.quick.settings"
+  },
+  "mgtQuickTitle": "Hızlı işlemler",
+  "@mgtQuickTitle": {
+    "description": "Key mgt.quick.title"
+  },
+  "mgtQuotaLeft": "{count} duyuru hakkın kaldı",
+  "@mgtQuotaLeft": {
+    "description": "Key mgt.quotaLeft",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtReadOnlyBanner": "Danışman görünümü — salt okunur",
+  "@mgtReadOnlyBanner": {
+    "description": "Key mgt.readOnlyBanner"
+  },
+  "mgtRecent": "Son hareketler",
+  "@mgtRecent": {
+    "description": "Key mgt.recent"
+  },
+  "mgtTitle": "Yönetim paneli",
+  "@mgtTitle": {
+    "description": "Key mgt.title"
+  },
+  "mgtUpcoming": "Yaklaşan etkinlikler",
+  "@mgtUpcoming": {
+    "description": "Key mgt.upcoming"
+  },
+  "mgtWeekN": "{n}. hafta",
+  "@mgtWeekN": {
+    "description": "Key mgt.weekN",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtWeeks8": "Son 8 hafta",
+  "@mgtWeeks8": {
+    "description": "Key mgt.weeks8"
+  },
+  "mgtEventsCreate": "Etkinlik",
+  "@mgtEventsCreate": {
+    "description": "Key mgtEvents.create"
+  },
+  "mgtEventsEmptyCancelled": "İptal edilen etkinlik yok",
+  "@mgtEventsEmptyCancelled": {
+    "description": "Key mgtEvents.empty.cancelled"
+  },
+  "mgtEventsEmptyDraft": "Taslak yok",
+  "@mgtEventsEmptyDraft": {
+    "description": "Key mgtEvents.empty.draft"
+  },
+  "mgtEventsEmptyPast": "Geçmiş etkinlik yok",
+  "@mgtEventsEmptyPast": {
+    "description": "Key mgtEvents.empty.past"
+  },
+  "mgtEventsEmptyPublished": "Yayında etkinlik yok",
+  "@mgtEventsEmptyPublished": {
+    "description": "Key mgtEvents.empty.published"
+  },
+  "mgtEventsTitle": "Etkinlik yönetimi",
+  "@mgtEventsTitle": {
+    "description": "Key mgtEvents.title"
+  },
+  "mgtMembersExport": "Üye listesini dışa aktar (CSV)",
+  "@mgtMembersExport": {
+    "description": "Key mgtMembers.export"
+  },
+  "mgtMembersRate": "Katılım oranı",
+  "@mgtMembersRate": {
+    "description": "Key mgtMembers.rate"
+  },
+  "mgtMembersSince": "{date}'den beri",
+  "@mgtMembersSince": {
+    "description": "Key mgtMembers.since",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mgtMembersSortJoined": "Katılım tarihine göre",
+  "@mgtMembersSortJoined": {
+    "description": "Key mgtMembers.sort.joined"
+  },
+  "mgtMembersSortName": "Ada göre",
+  "@mgtMembersSortName": {
+    "description": "Key mgtMembers.sort.name"
+  },
+  "mgtMembersSortRate": "Katılım oranına göre",
+  "@mgtMembersSortRate": {
+    "description": "Key mgtMembers.sort.rate"
+  },
+  "mgtMembersTitle": "Üye yönetimi",
+  "@mgtMembersTitle": {
+    "description": "Key mgtMembers.title"
+  },
+  "mgtMembersTransfer": "Başkanlığı devret",
+  "@mgtMembersTransfer": {
+    "description": "Key mgtMembers.transfer"
+  },
+  "mgtMembersTransferDesc": "Başkanlığı başka bir üyeye devredersen sen Yönetim Kurulu üyesi olursun.",
+  "@mgtMembersTransferDesc": {
+    "description": "Key mgtMembers.transferDesc"
+  },
+  "mgtMembersTransferTitle": "Başkanlığı devret",
+  "@mgtMembersTransferTitle": {
+    "description": "Key mgtMembers.transferTitle"
+  },
+  "myclubsEmptyActive": "Henüz kulübün yok",
+  "@myclubsEmptyActive": {
+    "description": "Key myclubs.empty.active"
+  },
+  "myclubsEmptyHistory": "Geçmiş kayıt yok",
+  "@myclubsEmptyHistory": {
+    "description": "Key myclubs.empty.history"
+  },
+  "myclubsEmptyPending": "Bekleyen başvurun yok",
+  "@myclubsEmptyPending": {
+    "description": "Key myclubs.empty.pending"
+  },
+  "myclubsTabActive": "Üyeliklerim",
+  "@myclubsTabActive": {
+    "description": "Key myclubs.tab.active"
+  },
+  "myclubsTabHistory": "Geçmiş",
+  "@myclubsTabHistory": {
+    "description": "Key myclubs.tab.history"
+  },
+  "myclubsTabPending": "Bekleyen",
+  "@myclubsTabPending": {
+    "description": "Key myclubs.tab.pending"
+  },
+  "myclubsTitle": "Kulüplerim ve başvurularım",
+  "@myclubsTitle": {
+    "description": "Key myclubs.title"
+  },
+  "myeventsEmptyPast": "Geçmiş etkinliğin yok",
+  "@myeventsEmptyPast": {
+    "description": "Key myevents.empty.past"
+  },
+  "myeventsEmptyUpcoming": "Yaklaşan etkinliğin yok",
+  "@myeventsEmptyUpcoming": {
+    "description": "Key myevents.empty.upcoming"
+  },
+  "myeventsEmptyWaitlist": "Bekleme listesinde değilsin",
+  "@myeventsEmptyWaitlist": {
+    "description": "Key myevents.empty.waitlist"
+  },
+  "myeventsTitle": "Etkinliklerim",
+  "@myeventsTitle": {
+    "description": "Key myevents.title"
+  },
+  "navAdmin": "Admin",
+  "@navAdmin": {
+    "description": "Key nav.admin"
+  },
+  "navClubs": "Kulüpler",
+  "@navClubs": {
+    "description": "Key nav.clubs"
+  },
+  "navEvents": "Etkinlikler",
+  "@navEvents": {
+    "description": "Key nav.events"
+  },
+  "navNotifications": "Bildirimler",
+  "@navNotifications": {
+    "description": "Key nav.notifications"
+  },
+  "navProfile": "Profil",
+  "@navProfile": {
+    "description": "Key nav.profile"
+  },
+  "notifEmptyDesc": "Başvuru sonuçları, duyurular ve hatırlatmalar burada görünür.",
+  "@notifEmptyDesc": {
+    "description": "Key notif.empty.desc"
+  },
+  "notifEmptyTitle": "Henüz bildirimin yok",
+  "@notifEmptyTitle": {
+    "description": "Key notif.empty.title"
+  },
+  "notifMarkAllRead": "Tümünü okundu yap",
+  "@notifMarkAllRead": {
+    "description": "Key notif.markAllRead"
+  },
+  "notifMarkRead": "Okundu yap",
+  "@notifMarkRead": {
+    "description": "Key notif.markRead"
+  },
+  "notifMarkUnread": "Okunmadı yap",
+  "@notifMarkUnread": {
+    "description": "Key notif.markUnread"
+  },
+  "notifMuteType": "Bu türü kapat",
+  "@notifMuteType": {
+    "description": "Key notif.muteType"
+  },
+  "notifOffBanner": "Bildirimler kapalı",
+  "@notifOffBanner": {
+    "description": "Key notif.offBanner"
+  },
+  "notifSettings": "Bildirim ayarları",
+  "@notifSettings": {
+    "description": "Key notif.settings"
+  },
+  "notifSystem": "Sistem",
+  "@notifSystem": {
+    "description": "Key notif.system"
+  },
+  "notifUnread": "Okunmamış",
+  "@notifUnread": {
+    "description": "Key notif.unread"
+  },
+  "notifPrefsAnnouncements": "Duyurular",
+  "@notifPrefsAnnouncements": {
+    "description": "Key notifPrefs.announcements"
+  },
+  "notifPrefsApplicationResults": "Başvuru sonuçları",
+  "@notifPrefsApplicationResults": {
+    "description": "Key notifPrefs.applicationResults"
+  },
+  "notifPrefsCustomize": "Özelleştir",
+  "@notifPrefsCustomize": {
+    "description": "Key notifPrefs.customize"
+  },
+  "notifPrefsEnable": "İzni aç",
+  "@notifPrefsEnable": {
+    "description": "Key notifPrefs.enable"
+  },
+  "notifPrefsEventReminders": "Etkinlik hatırlatmaları",
+  "@notifPrefsEventReminders": {
+    "description": "Key notifPrefs.eventReminders"
+  },
+  "notifPrefsManagement": "Yönetim bildirimleri",
+  "@notifPrefsManagement": {
+    "description": "Key notifPrefs.management"
+  },
+  "notifPrefsMuted": "Sessize alındı",
+  "@notifPrefsMuted": {
+    "description": "Key notifPrefs.muted"
+  },
+  "notifPrefsNewEvents": "Yeni etkinlikler",
+  "@notifPrefsNewEvents": {
+    "description": "Key notifPrefs.newEvents"
+  },
+  "notifPrefsNoClubs": "Üye olduğun kulüp yok.",
+  "@notifPrefsNoClubs": {
+    "description": "Key notifPrefs.noClubs"
+  },
+  "notifPrefsPerClub": "Kulüp bazlı ayarlar",
+  "@notifPrefsPerClub": {
+    "description": "Key notifPrefs.perClub"
+  },
+  "notifPrefsPermission": "Sistem bildirim izni",
+  "@notifPrefsPermission": {
+    "description": "Key notifPrefs.permission"
+  },
+  "notifPrefsQuiet": "Sessiz saatler",
+  "@notifPrefsQuiet": {
+    "description": "Key notifPrefs.quiet"
+  },
+  "notifPrefsQuietDesc": "Bu saatlerde bildirim sesi çalmaz.",
+  "@notifPrefsQuietDesc": {
+    "description": "Key notifPrefs.quietDesc"
+  },
+  "notifPrefsQuietFrom": "Başlangıç",
+  "@notifPrefsQuietFrom": {
+    "description": "Key notifPrefs.quietFrom"
+  },
+  "notifPrefsQuietTo": "Bitiş",
+  "@notifPrefsQuietTo": {
+    "description": "Key notifPrefs.quietTo"
+  },
+  "notifPrefsReminderTime": "Hatırlatma zamanı",
+  "@notifPrefsReminderTime": {
+    "description": "Key notifPrefs.reminderTime"
+  },
+  "notifPrefsSystem": "Sistem",
+  "@notifPrefsSystem": {
+    "description": "Key notifPrefs.system"
+  },
+  "notifPrefsTitle": "Bildirim tercihleri",
+  "@notifPrefsTitle": {
+    "description": "Key notifPrefs.title"
+  },
+  "notifTypeAnnouncementBody": "Duyuru: {post}",
+  "@notifTypeAnnouncementBody": {
+    "description": "Key notifType.announcement.body",
+    "placeholders": {
+      "post": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeAnnouncementTitle": "{club}",
+  "@notifTypeAnnouncementTitle": {
+    "description": "Key notifType.announcement.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationApprovedBody": "{club} üyeliğin onaylandı. Hoş geldin!",
+  "@notifTypeApplicationApprovedBody": {
+    "description": "Key notifType.application_approved.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationApprovedTitle": "Başvurun onaylandı",
+  "@notifTypeApplicationApprovedTitle": {
+    "description": "Key notifType.application_approved.title"
+  },
+  "notifTypeApplicationReceivedBody": "{user}, {club} kulübüne katılmak için başvurdu.",
+  "@notifTypeApplicationReceivedBody": {
+    "description": "Key notifType.application_received.body",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationReceivedTitle": "Yeni başvuru",
+  "@notifTypeApplicationReceivedTitle": {
+    "description": "Key notifType.application_received.title"
+  },
+  "notifTypeApplicationRejectedBody": "{club} başvurun bu kez kabul edilmedi. Nedeni görmek için dokun.",
+  "@notifTypeApplicationRejectedBody": {
+    "description": "Key notifType.application_rejected.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationRejectedTitle": "Başvurun reddedildi",
+  "@notifTypeApplicationRejectedTitle": {
+    "description": "Key notifType.application_rejected.title"
+  },
+  "notifTypeEventCancelledBody": "{event} iptal edildi ({reason}).",
+  "@notifTypeEventCancelledBody": {
+    "description": "Key notifType.event_cancelled.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventCancelledTitle": "Etkinlik iptal edildi",
+  "@notifTypeEventCancelledTitle": {
+    "description": "Key notifType.event_cancelled.title"
+  },
+  "notifTypeEventNewBody": "{club} yeni bir etkinlik yayınladı. Yerini ayırt.",
+  "@notifTypeEventNewBody": {
+    "description": "Key notifType.event_new.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventNewTitle": "Yeni etkinlik: {event}",
+  "@notifTypeEventNewTitle": {
+    "description": "Key notifType.event_new.title",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventReminderBody": "Etkinlik yaklaşıyor ({time}). Biletin hazır.",
+  "@notifTypeEventReminderBody": {
+    "description": "Key notifType.event_reminder.body",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventReminderTitle": "Hatırlatma: {event}",
+  "@notifTypeEventReminderTitle": {
+    "description": "Key notifType.event_reminder.title",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeNewReportBody": "İncelenmeyi bekleyen yeni bir şikayet var.",
+  "@notifTypeNewReportBody": {
+    "description": "Key notifType.new_report.body"
+  },
+  "notifTypeNewReportTitle": "Yeni şikayet",
+  "@notifTypeNewReportTitle": {
+    "description": "Key notifType.new_report.title"
+  },
+  "notifTypeRemovedFromClubBody": "{club} üyeliğin kulüp yönetimi tarafından sonlandırıldı.",
+  "@notifTypeRemovedFromClubBody": {
+    "description": "Key notifType.removed_from_club.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeRemovedFromClubTitle": "Üyelik sona erdi",
+  "@notifTypeRemovedFromClubTitle": {
+    "description": "Key notifType.removed_from_club.title"
+  },
+  "notifTypeReportResolvedBody": "Kampüs yönetimi şikayetini inceledi ve gereken işlemi yaptı.",
+  "@notifTypeReportResolvedBody": {
+    "description": "Key notifType.report_resolved.body"
+  },
+  "notifTypeReportResolvedTitle": "Şikayetin sonuçlandı",
+  "@notifTypeReportResolvedTitle": {
+    "description": "Key notifType.report_resolved.title"
+  },
+  "notifTypeRoleChangedBody": "{club} kulübünde yeni rolün: {role}.",
+  "@notifTypeRoleChangedBody": {
+    "description": "Key notifType.role_changed.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeRoleChangedTitle": "Rolün değişti",
+  "@notifTypeRoleChangedTitle": {
+    "description": "Key notifType.role_changed.title"
+  },
+  "notifTypeSystemMaintenanceBody": "Uygulama Pazar 03:00–04:00 arasında kısa süreli bakımda olacak.",
+  "@notifTypeSystemMaintenanceBody": {
+    "description": "Key notifType.system.maintenance.body"
+  },
+  "notifTypeSystemMaintenanceTitle": "Planlı bakım",
+  "@notifTypeSystemMaintenanceTitle": {
+    "description": "Key notifType.system.maintenance.title"
+  },
+  "notifTypeSystemWelcomeBody": "Kampüsteki tüm kulüpler, tek cebinde. Keşfetmeye başla.",
+  "@notifTypeSystemWelcomeBody": {
+    "description": "Key notifType.system.welcome.body"
+  },
+  "notifTypeSystemWelcomeTitle": "GÜ Kulüpler’e hoş geldin",
+  "@notifTypeSystemWelcomeTitle": {
+    "description": "Key notifType.system.welcome.title"
+  },
+  "notifTypeWaitlistPromotedBody": "{event} için bekleme listesinden kayıtlıya alındın. Biletin hazır.",
+  "@notifTypeWaitlistPromotedBody": {
+    "description": "Key notifType.waitlist_promoted.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeWaitlistPromotedTitle": "Yerin açıldı!",
+  "@notifTypeWaitlistPromotedTitle": {
+    "description": "Key notifType.waitlist_promoted.title"
+  },
+  "onbDiscoverDesc": "Kampüsteki tüm kulüpler, tek cebinde. İlgi alanına uygun kulübü dakikalar içinde bul.",
+  "@onbDiscoverDesc": {
+    "description": "Key onb.discover.desc"
+  },
+  "onbDiscoverTitle": "Keşfet",
+  "@onbDiscoverTitle": {
+    "description": "Key onb.discover.title"
+  },
+  "onbFollowDesc": "Duyuruları kaçırma, QR ile saniyeler içinde yoklama ver.",
+  "@onbFollowDesc": {
+    "description": "Key onb.follow.desc"
+  },
+  "onbFollowTitle": "Takip et",
+  "@onbFollowTitle": {
+    "description": "Key onb.follow.title"
+  },
+  "onbJoinDesc": "Tek dokunuşla başvur, etkinliklere kaydol, biletin cebinde hazır olsun.",
+  "@onbJoinDesc": {
+    "description": "Key onb.join.desc"
+  },
+  "onbJoinTitle": "Katıl",
+  "@onbJoinTitle": {
+    "description": "Key onb.join.title"
+  },
+  "onbNext": "İleri",
+  "@onbNext": {
+    "description": "Key onb.next"
+  },
+  "onbSkip": "Atla",
+  "@onbSkip": {
+    "description": "Key onb.skip"
+  },
+  "onbStart": "Başla",
+  "@onbStart": {
+    "description": "Key onb.start"
+  },
+  "onbTitle": "Karşılama",
+  "@onbTitle": {
+    "description": "Key onb.title"
+  },
+  "panelAccAdmin": "Süper admin",
+  "@panelAccAdmin": {
+    "description": "Key panel.acc.admin"
+  },
+  "panelAccAyse": "Üye değil",
+  "@panelAccAyse": {
+    "description": "Key panel.acc.ayse"
+  },
+  "panelAccBurak": "Doğa Sporları",
+  "@panelAccBurak": {
+    "description": "Key panel.acc.burak"
+  },
+  "panelAccElif": "Yazılım YK",
+  "@panelAccElif": {
+    "description": "Key panel.acc.elif"
+  },
+  "panelAccMehmet": "2 kulüp, 1 bekleyen",
+  "@panelAccMehmet": {
+    "description": "Key panel.acc.mehmet"
+  },
+  "panelAccZeynep": "Salt okunur",
+  "@panelAccZeynep": {
+    "description": "Key panel.acc.zeynep"
+  },
+  "panelAccount": "Hesap",
+  "@panelAccount": {
+    "description": "Key panel.account"
+  },
+  "panelAppearance": "Görünüm",
+  "@panelAppearance": {
+    "description": "Key panel.appearance"
+  },
+  "panelApplicationSim": "Başvuru simülasyonu",
+  "@panelApplicationSim": {
+    "description": "Key panel.applicationSim"
+  },
+  "panelApproveMine": "Onayla",
+  "@panelApproveMine": {
+    "description": "Key panel.approveMine"
+  },
+  "panelData": "Veri durumu",
+  "@panelData": {
+    "description": "Key panel.data"
+  },
+  "panelDataGroup": "Veri",
+  "@panelDataGroup": {
+    "description": "Key panel.dataGroup"
+  },
+  "panelDownloadJson": "Tüm demo verisini JSON indir",
+  "@panelDownloadJson": {
+    "description": "Key panel.downloadJson"
+  },
+  "panelEmpty": "Boş",
+  "@panelEmpty": {
+    "description": "Key panel.empty"
+  },
+  "panelError": "Hata",
+  "@panelError": {
+    "description": "Key panel.error"
+  },
+  "panelForceUpdate": "Zorunlu güncelleme göster",
+  "@panelForceUpdate": {
+    "description": "Key panel.forceUpdate"
+  },
+  "panelFrame": "Cihaz çerçevesi",
+  "@panelFrame": {
+    "description": "Key panel.frame"
+  },
+  "panelLoginAs": "Bu hesapla giriş yap",
+  "@panelLoginAs": {
+    "description": "Key panel.loginAs"
+  },
+  "panelNetwork": "Ağ",
+  "@panelNetwork": {
+    "description": "Key panel.network"
+  },
+  "panelNoPending": "Bu hesabın bekleyen başvurusu yok.",
+  "@panelNoPending": {
+    "description": "Key panel.noPending"
+  },
+  "panelNormal": "Normal",
+  "@panelNormal": {
+    "description": "Key panel.normal"
+  },
+  "panelOffline": "Çevrimdışı",
+  "@panelOffline": {
+    "description": "Key panel.offline"
+  },
+  "panelOnline": "Çevrimiçi",
+  "@panelOnline": {
+    "description": "Key panel.online"
+  },
+  "panelPendingAt": "Bekleyen başvurun: {club}",
+  "@panelPendingAt": {
+    "description": "Key panel.pendingAt",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "panelRejectMine": "Reddet",
+  "@panelRejectMine": {
+    "description": "Key panel.rejectMine"
+  },
+  "panelResetData": "Demo verisini sıfırla",
+  "@panelResetData": {
+    "description": "Key panel.resetData"
+  },
+  "panelResetNotifPerm": "Bildirim iznini sıfırla",
+  "@panelResetNotifPerm": {
+    "description": "Key panel.resetNotifPerm"
+  },
+  "panelSessionExpired": "Oturum süresi doldu",
+  "@panelSessionExpired": {
+    "description": "Key panel.sessionExpired"
+  },
+  "panelShowLoading": "Yükleniyor durumunu göster (3 sn)",
+  "@panelShowLoading": {
+    "description": "Key panel.showLoading"
+  },
+  "panelSimulateNotif": "Yeni bildirim simüle et",
+  "@panelSimulateNotif": {
+    "description": "Key panel.simulateNotif"
+  },
+  "panelSlow": "Yavaş",
+  "@panelSlow": {
+    "description": "Key panel.slow"
+  },
+  "panelSystem": "Sistem olayları",
+  "@panelSystem": {
+    "description": "Key panel.system"
+  },
+  "placePl01": "Kongre ve Kültür Merkezi — Salon A",
+  "@placePl01": {
+    "description": "Key place.pl01"
+  },
+  "placePl02": "Kongre ve Kültür Merkezi — Salon B",
+  "@placePl02": {
+    "description": "Key place.pl02"
+  },
+  "placePl03": "Mühendislik Fakültesi Amfi-1",
+  "@placePl03": {
+    "description": "Key place.pl03"
+  },
+  "placePl04": "Bilgisayar Laboratuvarı-2",
+  "@placePl04": {
+    "description": "Key place.pl04"
+  },
+  "placePl05": "Açık Hava Sahnesi",
+  "@placePl05": {
+    "description": "Key place.pl05"
+  },
+  "placePl06": "Öğrenci Kulüpleri Binası — Toplantı Salonu",
+  "@placePl06": {
+    "description": "Key place.pl06"
+  },
+  "placePl07": "Merkez Kütüphane — Çalışma Salonu",
+  "@placePl07": {
+    "description": "Key place.pl07"
+  },
+  "placePl08": "Spor Salonu",
+  "@placePl08": {
+    "description": "Key place.pl08"
+  },
+  "placePl09": "Kampüs Ana Giriş (toplanma noktası)",
+  "@placePl09": {
+    "description": "Key place.pl09"
+  },
+  "placePl10": "Yemekhane Önü Meydan",
+  "@placePl10": {
+    "description": "Key place.pl10"
+  },
+  "postAdvisorNoComment": "Danışman olarak yorum yazamazsın.",
+  "@postAdvisorNoComment": {
+    "description": "Key post.advisorNoComment"
+  },
+  "postComments": "{count, plural, =0{Yorumlar} one{# yorum} other{# yorum}}",
+  "@postComments": {
+    "description": "Key post.comments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "Yorumlar": {
+        "type": "String"
+      }
+    }
+  },
+  "postNoComments": "İlk yorumu sen yaz.",
+  "@postNoComments": {
+    "description": "Key post.noComments"
+  },
+  "postPin": "Sabitle",
+  "@postPin": {
+    "description": "Key post.pin"
+  },
+  "postTitle": "Gönderi",
+  "@postTitle": {
+    "description": "Key post.title"
+  },
+  "postUnpin": "Sabitlemeyi kaldır",
+  "@postUnpin": {
+    "description": "Key post.unpin"
+  },
+  "postWriteComment": "Yorum yaz…",
+  "@postWriteComment": {
+    "description": "Key post.writeComment"
+  },
+  "profileChangePhoto": "Fotoğrafı değiştir",
+  "@profileChangePhoto": {
+    "description": "Key profile.changePhoto"
+  },
+  "profileDepartment": "Bölüm",
+  "@profileDepartment": {
+    "description": "Key profile.department"
+  },
+  "profileEdit": "Profili düzenle",
+  "@profileEdit": {
+    "description": "Key profile.edit"
+  },
+  "profileInterests": "İlgi alanları",
+  "@profileInterests": {
+    "description": "Key profile.interests"
+  },
+  "profileManagePanel": "Yönetim paneli",
+  "@profileManagePanel": {
+    "description": "Key profile.managePanel"
+  },
+  "profileManaged": "Yönettiğim kulüpler",
+  "@profileManaged": {
+    "description": "Key profile.managed"
+  },
+  "profileNoClubs": "Henüz kulübün yok.",
+  "@profileNoClubs": {
+    "description": "Key profile.noClubs"
+  },
+  "profileStatClubs": "Kulüp",
+  "@profileStatClubs": {
+    "description": "Key profile.stat.clubs"
+  },
+  "profileStatEvents": "Katıldığım etkinlik",
+  "@profileStatEvents": {
+    "description": "Key profile.stat.events"
+  },
+  "profileStatPending": "Bekleyen başvuru",
+  "@profileStatPending": {
+    "description": "Key profile.stat.pending"
+  },
+  "profileYear": "Sınıf",
+  "@profileYear": {
+    "description": "Key profile.year"
+  },
+  "qaColAction": "Aksiyon",
+  "@qaColAction": {
+    "description": "Key qa.col.action"
+  },
+  "qaColCount": "Tıklanma",
+  "@qaColCount": {
+    "description": "Key qa.col.count"
+  },
+  "qaColResult": "Sonuç türü",
+  "@qaColResult": {
+    "description": "Key qa.col.result"
+  },
+  "qaColScreen": "Ekran",
+  "@qaColScreen": {
+    "description": "Key qa.col.screen"
+  },
+  "qaCoverage": "Kapsam özeti",
+  "@qaCoverage": {
+    "description": "Key qa.coverage"
+  },
+  "qaDeadSession": "Oturumda yakalanan ölü tıklama",
+  "@qaDeadSession": {
+    "description": "Key qa.dead.session"
+  },
+  "qaDeadList": "Ölü öğeler",
+  "@qaDeadList": {
+    "description": "Key qa.deadList"
+  },
+  "qaDesc": "Aksiyon kapsamı, ölü öğe taraması ve Bölüm 15 self-check raporu.",
+  "@qaDesc": {
+    "description": "Key qa.desc"
+  },
+  "qaDialogs": "Dialog",
+  "@qaDialogs": {
+    "description": "Key qa.dialogs"
+  },
+  "qaDownload": "Raporu indir",
+  "@qaDownload": {
+    "description": "Key qa.download"
+  },
+  "qaFail": "KALDI",
+  "@qaFail": {
+    "description": "Key qa.fail"
+  },
+  "qaI18nMissing": "i18n eksik anahtar",
+  "@qaI18nMissing": {
+    "description": "Key qa.i18nMissing"
+  },
+  "qaMissingIds": "Eksik kimlikler",
+  "@qaMissingIds": {
+    "description": "Key qa.missingIds"
+  },
+  "qaNoClicks": "Henüz tıklama kaydı yok. Prototipi kullanmaya başla.",
+  "@qaNoClicks": {
+    "description": "Key qa.noClicks"
+  },
+  "qaNoDead": "Ölü öğe yok",
+  "@qaNoDead": {
+    "description": "Key qa.noDead"
+  },
+  "qaPass": "GEÇTİ",
+  "@qaPass": {
+    "description": "Key qa.pass"
+  },
+  "qaPending": "TARA",
+  "@qaPending": {
+    "description": "Key qa.pending"
+  },
+  "qaRegistry": "Aksiyon kayıt defteri",
+  "@qaRegistry": {
+    "description": "Key qa.registry"
+  },
+  "qaRegistryNote": "Oturum içinde tıklanan her data-action burada toplanır; sonuç türü tıklamadan sonra gözlemlenerek sınıflandırılır.",
+  "@qaRegistryNote": {
+    "description": "Key qa.registryNote"
+  },
+  "qaRunAll": "Kontrolleri çalıştır",
+  "@qaRunAll": {
+    "description": "Key qa.runAll"
+  },
+  "qaScanAll": "Tüm ekranları tara",
+  "@qaScanAll": {
+    "description": "Key qa.scanAll"
+  },
+  "qaScanResult": "{total} etkileşimli öğe · {dead} ölü öğe",
+  "@qaScanResult": {
+    "description": "Key qa.scanResult",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "dead": {
+        "type": "String"
+      }
+    }
+  },
+  "qaScanThis": "Bu ekranı tara",
+  "@qaScanThis": {
+    "description": "Key qa.scanThis"
+  },
+  "qaScanning": "Taranıyor… {a}/{b}",
+  "@qaScanning": {
+    "description": "Key qa.scanning",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "qaScreens": "Ekran",
+  "@qaScreens": {
+    "description": "Key qa.screens"
+  },
+  "qaSelfCheck": "Self-check raporu (Bölüm 15)",
+  "@qaSelfCheck": {
+    "description": "Key qa.selfCheck"
+  },
+  "qaSheets": "Sheet",
+  "@qaSheets": {
+    "description": "Key qa.sheets"
+  },
+  "qaTitle": "Kalite Kontrol",
+  "@qaTitle": {
+    "description": "Key qa.title"
+  },
+  "qaToasts": "Toast",
+  "@qaToasts": {
+    "description": "Key qa.toasts"
+  },
+  "rejectReasonCriteria": "Koşulları karşılamıyor",
+  "@rejectReasonCriteria": {
+    "description": "Key rejectReason.criteria"
+  },
+  "rejectReasonMissing": "Eksik bilgi",
+  "@rejectReasonMissing": {
+    "description": "Key rejectReason.missing"
+  },
+  "rejectReasonOther": "Diğer",
+  "@rejectReasonOther": {
+    "description": "Key rejectReason.other"
+  },
+  "rejectReasonQuota": "Kontenjan dolu",
+  "@rejectReasonQuota": {
+    "description": "Key rejectReason.quota"
+  },
+  "reminder15m": "15 dk önce",
+  "@reminder15m": {
+    "description": "Key reminder.15m"
+  },
+  "reminder1d": "1 gün önce",
+  "@reminder1d": {
+    "description": "Key reminder.1d"
+  },
+  "reminder1h": "1 saat önce",
+  "@reminder1h": {
+    "description": "Key reminder.1h"
+  },
+  "reminderBoth": "İkisi",
+  "@reminderBoth": {
+    "description": "Key reminder.both"
+  },
+  "reminderNone": "Hatırlatma yok",
+  "@reminderNone": {
+    "description": "Key reminder.none"
+  },
+  "reportActionDismissed": "Şikayet kapatıldı",
+  "@reportActionDismissed": {
+    "description": "Key reportAction.dismissed"
+  },
+  "reportActionRemoved": "İçerik kaldırıldı",
+  "@reportActionRemoved": {
+    "description": "Key reportAction.removed"
+  },
+  "reportActionSuspended": "Askıya alındı",
+  "@reportActionSuspended": {
+    "description": "Key reportAction.suspended"
+  },
+  "reportReasonHarassment": "Taciz veya zorbalık",
+  "@reportReasonHarassment": {
+    "description": "Key reportReason.harassment"
+  },
+  "reportReasonInappropriate": "Uygunsuz içerik",
+  "@reportReasonInappropriate": {
+    "description": "Key reportReason.inappropriate"
+  },
+  "reportReasonMisinformation": "Yanlış bilgi",
+  "@reportReasonMisinformation": {
+    "description": "Key reportReason.misinformation"
+  },
+  "reportReasonOfftopic": "Kulübe uygun değil",
+  "@reportReasonOfftopic": {
+    "description": "Key reportReason.offtopic"
+  },
+  "reportReasonOther": "Diğer",
+  "@reportReasonOther": {
+    "description": "Key reportReason.other"
+  },
+  "reportReasonSpam": "Spam",
+  "@reportReasonSpam": {
+    "description": "Key reportReason.spam"
+  },
+  "reportsEmptyOpen": "Açık şikayet yok",
+  "@reportsEmptyOpen": {
+    "description": "Key reports.empty.open"
+  },
+  "reportsEmptyResolved": "Çözülmüş şikayet yok",
+  "@reportsEmptyResolved": {
+    "description": "Key reports.empty.resolved"
+  },
+  "reportsTabOpen": "Açık",
+  "@reportsTabOpen": {
+    "description": "Key reports.tab.open"
+  },
+  "reportsTabResolved": "Çözüldü",
+  "@reportsTabResolved": {
+    "description": "Key reports.tab.resolved"
+  },
+  "reportsTargetClub": "Kulüp",
+  "@reportsTargetClub": {
+    "description": "Key reports.target.club"
+  },
+  "reportsTargetComment": "Yorum",
+  "@reportsTargetComment": {
+    "description": "Key reports.target.comment"
+  },
+  "reportsTargetEvent": "Etkinlik",
+  "@reportsTargetEvent": {
+    "description": "Key reports.target.event"
+  },
+  "reportsTargetPost": "Gönderi",
+  "@reportsTargetPost": {
+    "description": "Key reports.target.post"
+  },
+  "reportsTargetUser": "Kullanıcı",
+  "@reportsTargetUser": {
+    "description": "Key reports.target.user"
+  },
+  "reportsTitle": "Şikayetler",
+  "@reportsTitle": {
+    "description": "Key reports.title"
+  },
+  "roleAdvisor": "Danışman",
+  "@roleAdvisor": {
+    "description": "Key role.advisor"
+  },
+  "roleBoard": "Yönetim Kurulu",
+  "@roleBoard": {
+    "description": "Key role.board"
+  },
+  "roleMember": "Üye",
+  "@roleMember": {
+    "description": "Key role.member"
+  },
+  "rolePresident": "Başkan",
+  "@rolePresident": {
+    "description": "Key role.president"
+  },
+  "roleStudent": "Öğrenci",
+  "@roleStudent": {
+    "description": "Key role.student"
+  },
+  "roleSuperadmin": "Süper Admin",
+  "@roleSuperadmin": {
+    "description": "Key role.superadmin"
+  },
+  "savedEmpty": "Kaydettiğin gönderiler burada görünür",
+  "@savedEmpty": {
+    "description": "Key saved.empty"
+  },
+  "savedRemoved": "İçerik kaldırıldı",
+  "@savedRemoved": {
+    "description": "Key saved.removed"
+  },
+  "savedTitle": "Kaydedilenler",
+  "@savedTitle": {
+    "description": "Key saved.title"
+  },
+  "scanCounter": "Katıldı {a}/{b}",
+  "@scanCounter": {
+    "description": "Key scan.counter",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "scanDemoInvalid": "Geçersiz bilet",
+  "@scanDemoInvalid": {
+    "description": "Key scan.demo.invalid"
+  },
+  "scanDemoUsed": "Zaten okutulmuş",
+  "@scanDemoUsed": {
+    "description": "Key scan.demo.used"
+  },
+  "scanDemoValid": "Geçerli bilet",
+  "@scanDemoValid": {
+    "description": "Key scan.demo.valid"
+  },
+  "scanDemoScan": "bilet okut",
+  "@scanDemoScan": {
+    "description": "Key scan.demoScan"
+  },
+  "scanEnterCode": "Bilet kodu",
+  "@scanEnterCode": {
+    "description": "Key scan.enterCode"
+  },
+  "scanFlip": "Kamerayı çevir",
+  "@scanFlip": {
+    "description": "Key scan.flip"
+  },
+  "scanGoSettings": "Ayarlara git",
+  "@scanGoSettings": {
+    "description": "Key scan.goSettings"
+  },
+  "scanHint": "QR kodu çerçevenin içine hizala.",
+  "@scanHint": {
+    "description": "Key scan.hint"
+  },
+  "scanManualCode": "Kod gir",
+  "@scanManualCode": {
+    "description": "Key scan.manualCode"
+  },
+  "scanPermissionDesc": "QR taramak için Ayarlar’dan kamera iznini açabilir ya da kodu elle girebilirsin.",
+  "@scanPermissionDesc": {
+    "description": "Key scan.permissionDesc"
+  },
+  "scanPermissionTitle": "Kamera izni gerekli",
+  "@scanPermissionTitle": {
+    "description": "Key scan.permissionTitle"
+  },
+  "scanTitle": "QR tarayıcı",
+  "@scanTitle": {
+    "description": "Key scan.title"
+  },
+  "scanTorch": "Fener",
+  "@scanTorch": {
+    "description": "Key scan.torch"
+  },
+  "scanVerify": "Doğrula",
+  "@scanVerify": {
+    "description": "Key scan.verify"
+  },
+  "searchNoResults": "'{q}' için sonuç yok",
+  "@searchNoResults": {
+    "description": "Key search.noResults",
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "searchPlaceholder": "Kulüp veya etkinlik ara",
+  "@searchPlaceholder": {
+    "description": "Key search.placeholder"
+  },
+  "searchPopular": "Popüler aramalar",
+  "@searchPopular": {
+    "description": "Key search.popular"
+  },
+  "searchRecent": "Son aramalar",
+  "@searchRecent": {
+    "description": "Key search.recent"
+  },
+  "searchSuggested": "Sizin için önerilen kulüpler",
+  "@searchSuggested": {
+    "description": "Key search.suggested"
+  },
+  "searchTitle": "Arama",
+  "@searchTitle": {
+    "description": "Key search.title"
+  },
+  "settingsChangePassword": "Şifre değiştir",
+  "@settingsChangePassword": {
+    "description": "Key settings.changePassword"
+  },
+  "settingsGroupAccount": "Hesap",
+  "@settingsGroupAccount": {
+    "description": "Key settings.group.account"
+  },
+  "settingsGroupAppearance": "Görünüm",
+  "@settingsGroupAppearance": {
+    "description": "Key settings.group.appearance"
+  },
+  "settingsGroupPrivacy": "Gizlilik ve güvenlik",
+  "@settingsGroupPrivacy": {
+    "description": "Key settings.group.privacy"
+  },
+  "settingsGroupSupport": "Destek",
+  "@settingsGroupSupport": {
+    "description": "Key settings.group.support"
+  },
+  "settingsLanguage": "Dil",
+  "@settingsLanguage": {
+    "description": "Key settings.language"
+  },
+  "settingsPrivacyPolicy": "Gizlilik Politikası / KVKK",
+  "@settingsPrivacyPolicy": {
+    "description": "Key settings.privacyPolicy"
+  },
+  "settingsTextPreview": "Kampüsteki tüm kulüpler, tek cebinde.",
+  "@settingsTextPreview": {
+    "description": "Key settings.textPreview"
+  },
+  "settingsTextSize": "Yazı boyutu",
+  "@settingsTextSize": {
+    "description": "Key settings.textSize"
+  },
+  "settingsTheme": "Tema",
+  "@settingsTheme": {
+    "description": "Key settings.theme"
+  },
+  "settingsTitle": "Ayarlar",
+  "@settingsTitle": {
+    "description": "Key settings.title"
+  },
+  "sht01Title": "Dil",
+  "@sht01Title": {
+    "description": "Key sht.01.title"
+  },
+  "sht02Empty": "Bölüm bulunamadı",
+  "@sht02Empty": {
+    "description": "Key sht.02.empty"
+  },
+  "sht02Title": "Bölüm seç",
+  "@sht02Title": {
+    "description": "Key sht.02.title"
+  },
+  "sht03Title": "Sınıf seç",
+  "@sht03Title": {
+    "description": "Key sht.03.title"
+  },
+  "sht04Category": "Kategori",
+  "@sht04Category": {
+    "description": "Key sht.04.category"
+  },
+  "sht04InstantOnly": "Anında katılım olanlar",
+  "@sht04InstantOnly": {
+    "description": "Key sht.04.instantOnly"
+  },
+  "sht04Membership": "Üyelik durumu",
+  "@sht04Membership": {
+    "description": "Key sht.04.membership"
+  },
+  "sht04Mine": "Üye olduklarım",
+  "@sht04Mine": {
+    "description": "Key sht.04.mine"
+  },
+  "sht04NotMine": "Üye olmadıklarım",
+  "@sht04NotMine": {
+    "description": "Key sht.04.notMine"
+  },
+  "sht04OpenOnly": "Yalnızca başvurusu açık",
+  "@sht04OpenOnly": {
+    "description": "Key sht.04.openOnly"
+  },
+  "sht04Show": "Sonuçları göster ({count})",
+  "@sht04Show": {
+    "description": "Key sht.04.show",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht04SortAz": "A–Z",
+  "@sht04SortAz": {
+    "description": "Key sht.04.sort.az"
+  },
+  "sht04SortNew": "Yeni eklenen",
+  "@sht04SortNew": {
+    "description": "Key sht.04.sort.new"
+  },
+  "sht04SortPopular": "Popüler",
+  "@sht04SortPopular": {
+    "description": "Key sht.04.sort.popular"
+  },
+  "sht04Title": "Filtre ve sıralama",
+  "@sht04Title": {
+    "description": "Key sht.04.title"
+  },
+  "sht05Privacy": "Adın, bölümün ve sınıfın kulüp yönetimiyle paylaşılır.",
+  "@sht05Privacy": {
+    "description": "Key sht.05.privacy"
+  },
+  "sht05Submit": "Başvuruyu gönder",
+  "@sht05Submit": {
+    "description": "Key sht.05.submit"
+  },
+  "sht05Title": "Katılma başvurusu",
+  "@sht05Title": {
+    "description": "Key sht.05.title"
+  },
+  "sht05Why": "Neden katılmak istiyorsun?",
+  "@sht05Why": {
+    "description": "Key sht.05.why"
+  },
+  "sht06Notifications": "Bildirimleri yönet",
+  "@sht06Notifications": {
+    "description": "Key sht.06.notifications"
+  },
+  "sht06Report": "Şikayet et",
+  "@sht06Report": {
+    "description": "Key sht.06.report"
+  },
+  "sht06Title": "Kulüp menüsü",
+  "@sht06Title": {
+    "description": "Key sht.06.title"
+  },
+  "sht07Announcements": "Duyurular",
+  "@sht07Announcements": {
+    "description": "Key sht.07.announcements"
+  },
+  "sht07Events": "Yeni etkinlikler",
+  "@sht07Events": {
+    "description": "Key sht.07.events"
+  },
+  "sht07MuteAll": "Tümünü sessize al",
+  "@sht07MuteAll": {
+    "description": "Key sht.07.muteAll"
+  },
+  "sht07Posts": "Yeni gönderiler",
+  "@sht07Posts": {
+    "description": "Key sht.07.posts"
+  },
+  "sht07Title": "Kulüp bildirimleri",
+  "@sht07Title": {
+    "description": "Key sht.07.title"
+  },
+  "sht08BlockUser": "Kullanıcıyı engelle",
+  "@sht08BlockUser": {
+    "description": "Key sht.08.blockUser"
+  },
+  "sht08CopyLink": "Bağlantıyı kopyala",
+  "@sht08CopyLink": {
+    "description": "Key sht.08.copyLink"
+  },
+  "sht08Title": "Gönderi",
+  "@sht08Title": {
+    "description": "Key sht.08.title"
+  },
+  "sht09SeeAll": "Tümünü gör",
+  "@sht09SeeAll": {
+    "description": "Key sht.09.seeAll"
+  },
+  "sht09Title": "Yorumlar",
+  "@sht09Title": {
+    "description": "Key sht.09.title"
+  },
+  "sht10Desc": "Şikayetin kampüs yönetimine iletilir; kimliğin paylaşılmaz.",
+  "@sht10Desc": {
+    "description": "Key sht.10.desc"
+  },
+  "sht10Describe": "Açıklama",
+  "@sht10Describe": {
+    "description": "Key sht.10.describe"
+  },
+  "sht10OtherRequired": "\"Diğer\" için kısa bir açıklama yaz",
+  "@sht10OtherRequired": {
+    "description": "Key sht.10.otherRequired"
+  },
+  "sht10Submit": "Şikayet et",
+  "@sht10Submit": {
+    "description": "Key sht.10.submit"
+  },
+  "sht10Title": "Şikayet nedeni",
+  "@sht10Title": {
+    "description": "Key sht.10.title"
+  },
+  "sht11Apply": "Uygula ({count})",
+  "@sht11Apply": {
+    "description": "Key sht.11.apply",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht11Club": "Kulüp",
+  "@sht11Club": {
+    "description": "Key sht.11.club"
+  },
+  "sht11Custom": "Özel aralık",
+  "@sht11Custom": {
+    "description": "Key sht.11.custom"
+  },
+  "sht11Date": "Tarih",
+  "@sht11Date": {
+    "description": "Key sht.11.date"
+  },
+  "sht11FreeOnly": "Yalnızca boş kontenjan",
+  "@sht11FreeOnly": {
+    "description": "Key sht.11.freeOnly"
+  },
+  "sht11Month": "Bu ay",
+  "@sht11Month": {
+    "description": "Key sht.11.month"
+  },
+  "sht11SortDate": "Tarihe göre",
+  "@sht11SortDate": {
+    "description": "Key sht.11.sort.date"
+  },
+  "sht11SortPopular": "Popüler",
+  "@sht11SortPopular": {
+    "description": "Key sht.11.sort.popular"
+  },
+  "sht11Title": "Etkinlik filtresi",
+  "@sht11Title": {
+    "description": "Key sht.11.title"
+  },
+  "sht11To": "Bitiş tarihi",
+  "@sht11To": {
+    "description": "Key sht.11.to"
+  },
+  "sht12Confirm": "Katılımı onayla",
+  "@sht12Confirm": {
+    "description": "Key sht.12.confirm"
+  },
+  "sht12Conflict": "Aynı saatte kayıtlı olduğun başka bir etkinlik var.",
+  "@sht12Conflict": {
+    "description": "Key sht.12.conflict"
+  },
+  "sht12FullNote": "Kontenjan dolu; bekleme listesine eklenirsin.",
+  "@sht12FullNote": {
+    "description": "Key sht.12.fullNote"
+  },
+  "sht12Title": "Katılım onayı",
+  "@sht12Title": {
+    "description": "Key sht.12.title"
+  },
+  "sht13Title": "Hatırlatıcı",
+  "@sht13Title": {
+    "description": "Key sht.13.title"
+  },
+  "sht14Device": "Cihaz takvimi",
+  "@sht14Device": {
+    "description": "Key sht.14.device"
+  },
+  "sht14Google": "Google Takvim",
+  "@sht14Google": {
+    "description": "Key sht.14.google"
+  },
+  "sht14Title": "Takvime ekle",
+  "@sht14Title": {
+    "description": "Key sht.14.title"
+  },
+  "sht15Other": "Diğer…",
+  "@sht15Other": {
+    "description": "Key sht.15.other"
+  },
+  "sht15SystemShare": "sistem paylaşım menüsü",
+  "@sht15SystemShare": {
+    "description": "Key sht.15.systemShare"
+  },
+  "sht15Title": "Paylaş",
+  "@sht15Title": {
+    "description": "Key sht.15.title"
+  },
+  "sht16Add": "Ekle ({count})",
+  "@sht16Add": {
+    "description": "Key sht.16.add",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht16Camera": "Kamera",
+  "@sht16Camera": {
+    "description": "Key sht.16.camera"
+  },
+  "sht16Gallery": "Galeri",
+  "@sht16Gallery": {
+    "description": "Key sht.16.gallery"
+  },
+  "sht16Pick": "Görsel seç",
+  "@sht16Pick": {
+    "description": "Key sht.16.pick"
+  },
+  "sht16Remove": "Fotoğrafı kaldır",
+  "@sht16Remove": {
+    "description": "Key sht.16.remove"
+  },
+  "sht16Title": "Fotoğraf kaynağı",
+  "@sht16Title": {
+    "description": "Key sht.16.title"
+  },
+  "sht17Title": "Tema",
+  "@sht17Title": {
+    "description": "Key sht.17.title"
+  },
+  "sht18Empty": "Yönettiğin kulüp yok.",
+  "@sht18Empty": {
+    "description": "Key sht.18.empty"
+  },
+  "sht18Title": "Yönetilen kulüp seç",
+  "@sht18Title": {
+    "description": "Key sht.18.title"
+  },
+  "sht19Gone": "Bu başvuru artık yok.",
+  "@sht19Gone": {
+    "description": "Key sht.19.gone"
+  },
+  "sht19Note": "Başvuru notu",
+  "@sht19Note": {
+    "description": "Key sht.19.note"
+  },
+  "sht19Prior": "Daha önce bu kulübe başvurdu",
+  "@sht19Prior": {
+    "description": "Key sht.19.prior"
+  },
+  "sht19Title": "Başvuru detayı",
+  "@sht19Title": {
+    "description": "Key sht.19.title"
+  },
+  "sht20Note": "Açıklama (isteğe bağlı)",
+  "@sht20Note": {
+    "description": "Key sht.20.note"
+  },
+  "sht20Title": "Red nedeni",
+  "@sht20Title": {
+    "description": "Key sht.20.title"
+  },
+  "sht20Visible": "Neden başvurana gösterilir.",
+  "@sht20Visible": {
+    "description": "Key sht.20.visible"
+  },
+  "sht21Hierarchy": "Başkana ve yönetim kuruluna işlem yapılamaz",
+  "@sht21Hierarchy": {
+    "description": "Key sht.21.hierarchy"
+  },
+  "sht21PresidentOnly": "Yalnızca başkan değiştirebilir",
+  "@sht21PresidentOnly": {
+    "description": "Key sht.21.presidentOnly"
+  },
+  "sht21Title": "Üye işlemleri",
+  "@sht21Title": {
+    "description": "Key sht.21.title"
+  },
+  "sht22Board": "Gönderi ve etkinlik oluşturur, başvuruları onaylar, duyuru gönderir.",
+  "@sht22Board": {
+    "description": "Key sht.22.board"
+  },
+  "sht22Member": "Gönderileri görür, yorum yapar, etkinliklere katılır.",
+  "@sht22Member": {
+    "description": "Key sht.22.member"
+  },
+  "sht22Title": "Rol seç",
+  "@sht22Title": {
+    "description": "Key sht.22.title"
+  },
+  "sht22TransferNote": "Başkanlık devri Üye Yönetimi ekranından yapılır.",
+  "@sht22TransferNote": {
+    "description": "Key sht.22.transferNote"
+  },
+  "sht23Cancel": "İptal et",
+  "@sht23Cancel": {
+    "description": "Key sht.23.cancel"
+  },
+  "sht23Duplicate": "Çoğalt",
+  "@sht23Duplicate": {
+    "description": "Key sht.23.duplicate"
+  },
+  "sht23Title": "Etkinlik menüsü",
+  "@sht23Title": {
+    "description": "Key sht.23.title"
+  },
+  "sht23Unpublish": "Yayından kaldır / taslağa al",
+  "@sht23Unpublish": {
+    "description": "Key sht.23.unpublish"
+  },
+  "sht24Invalid": "Geçersiz bilet",
+  "@sht24Invalid": {
+    "description": "Key sht.24.invalid"
+  },
+  "sht24InvalidDesc": "Bu bilet bu etkinliğe ait değil.",
+  "@sht24InvalidDesc": {
+    "description": "Key sht.24.invalidDesc"
+  },
+  "sht24InvalidNone": "Okunamadı. Okutulacak kayıtlı bilet kalmadı.",
+  "@sht24InvalidNone": {
+    "description": "Key sht.24.invalidNone"
+  },
+  "sht24Next": "Sonraki bilet",
+  "@sht24Next": {
+    "description": "Key sht.24.next"
+  },
+  "sht24Title": "Tarama sonucu",
+  "@sht24Title": {
+    "description": "Key sht.24.title"
+  },
+  "sht24Used": "Zaten okutulmuş",
+  "@sht24Used": {
+    "description": "Key sht.24.used"
+  },
+  "sht24UsedDesc": "Bu bilet {time} saatinde okutulmuş.",
+  "@sht24UsedDesc": {
+    "description": "Key sht.24.usedDesc",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sht24Valid": "Geçerli bilet",
+  "@sht24Valid": {
+    "description": "Key sht.24.valid"
+  },
+  "sht24ValidDesc": "Katıldı olarak işaretlendi.",
+  "@sht24ValidDesc": {
+    "description": "Key sht.24.validDesc"
+  },
+  "sht25Assign": "Başkan ata",
+  "@sht25Assign": {
+    "description": "Key sht.25.assign"
+  },
+  "sht25Transfer": "Başkanlığı devret",
+  "@sht25Transfer": {
+    "description": "Key sht.25.transfer"
+  },
+  "sht26Close": "Şikayeti kapat",
+  "@sht26Close": {
+    "description": "Key sht.26.close"
+  },
+  "sht26Remove": "İçeriği kaldır",
+  "@sht26Remove": {
+    "description": "Key sht.26.remove"
+  },
+  "sht26ResolvedAt": "{date} tarihinde çözüldü: {action}",
+  "@sht26ResolvedAt": {
+    "description": "Key sht.26.resolvedAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "sht26SuspendUser": "Kullanıcıyı askıya al",
+  "@sht26SuspendUser": {
+    "description": "Key sht.26.suspendUser"
+  },
+  "sht26Title": "Şikayet detayı",
+  "@sht26Title": {
+    "description": "Key sht.26.title"
+  },
+  "sht27Block": "Engelle",
+  "@sht27Block": {
+    "description": "Key sht.27.block"
+  },
+  "sht27DeleteComment": "Yorumu sil",
+  "@sht27DeleteComment": {
+    "description": "Key sht.27.deleteComment"
+  },
+  "sht27ReportComment": "Yorumu şikayet et",
+  "@sht27ReportComment": {
+    "description": "Key sht.27.reportComment"
+  },
+  "sht27ReportUser": "Kullanıcıyı şikayet et",
+  "@sht27ReportUser": {
+    "description": "Key sht.27.reportUser"
+  },
+  "sht27Title": "Kullanıcı",
+  "@sht27Title": {
+    "description": "Key sht.27.title"
+  },
+  "sht28Title": "Tarih seç",
+  "@sht28Title": {
+    "description": "Key sht.28.title"
+  },
+  "sht29Hour": "Saat",
+  "@sht29Hour": {
+    "description": "Key sht.29.hour"
+  },
+  "sht29Minute": "Dakika",
+  "@sht29Minute": {
+    "description": "Key sht.29.minute"
+  },
+  "sht29Title": "Saat seç",
+  "@sht29Title": {
+    "description": "Key sht.29.title"
+  },
+  "sht30Custom": "Başka bir yer yaz",
+  "@sht30Custom": {
+    "description": "Key sht.30.custom"
+  },
+  "sht30CustomLabel": "Yer adı",
+  "@sht30CustomLabel": {
+    "description": "Key sht.30.customLabel"
+  },
+  "sht30Title": "Mekân seç",
+  "@sht30Title": {
+    "description": "Key sht.30.title"
+  },
+  "sht31Gallery": "Galeriden seç",
+  "@sht31Gallery": {
+    "description": "Key sht.31.gallery"
+  },
+  "sht31Shuffle": "Deseni karıştır",
+  "@sht31Shuffle": {
+    "description": "Key sht.31.shuffle"
+  },
+  "sht31Title": "Kapak seç",
+  "@sht31Title": {
+    "description": "Key sht.31.title"
+  },
+  "sht31Use": "Kullan",
+  "@sht31Use": {
+    "description": "Key sht.31.use"
+  },
+  "sht32Current": "Mevcut şifre",
+  "@sht32Current": {
+    "description": "Key sht.32.current"
+  },
+  "sht32New": "Yeni şifre",
+  "@sht32New": {
+    "description": "Key sht.32.new"
+  },
+  "sht32Repeat": "Yeni şifre tekrar",
+  "@sht32Repeat": {
+    "description": "Key sht.32.repeat"
+  },
+  "sht32Title": "Şifre değiştir",
+  "@sht32Title": {
+    "description": "Key sht.32.title"
+  },
+  "sht33Title": "Kategori seç",
+  "@sht33Title": {
+    "description": "Key sht.33.title"
+  },
+  "sht34Title": "Görsel",
+  "@sht34Title": {
+    "description": "Key sht.34.title"
+  },
+  "sht34ZoomHint": "Yakınlaştırmak için çift dokun, kapatmak için aşağı sürükle.",
+  "@sht34ZoomHint": {
+    "description": "Key sht.34.zoomHint"
+  },
+  "siteAssets": "Assets",
+  "@siteAssets": {
+    "description": "Key site.assets"
+  },
+  "siteDemo": "Demo",
+  "@siteDemo": {
+    "description": "Key site.demo"
+  },
+  "siteDs": "Tasarım Sistemi",
+  "@siteDs": {
+    "description": "Key site.ds"
+  },
+  "siteFooter": "Tasarım prototipi · tüm veriler kurgusaldır",
+  "@siteFooter": {
+    "description": "Key site.footer"
+  },
+  "siteMap": "Ekran Haritası",
+  "@siteMap": {
+    "description": "Key site.map"
+  },
+  "siteMenu": "Site menüsü",
+  "@siteMenu": {
+    "description": "Key site.menu"
+  },
+  "siteProto": "Prototip",
+  "@siteProto": {
+    "description": "Key site.proto"
+  },
+  "siteQa": "Kalite Kontrol",
+  "@siteQa": {
+    "description": "Key site.qa"
+  },
+  "statusAbsent": "Gelmedin",
+  "@statusAbsent": {
+    "description": "Key status.absent"
+  },
+  "statusActive": "Aktif",
+  "@statusActive": {
+    "description": "Key status.active"
+  },
+  "statusApproved": "Onaylandı",
+  "@statusApproved": {
+    "description": "Key status.approved"
+  },
+  "statusAttended": "Katıldın",
+  "@statusAttended": {
+    "description": "Key status.attended"
+  },
+  "statusCancelled": "İptal",
+  "@statusCancelled": {
+    "description": "Key status.cancelled"
+  },
+  "statusDraft": "Taslak",
+  "@statusDraft": {
+    "description": "Key status.draft"
+  },
+  "statusFull": "Dolu",
+  "@statusFull": {
+    "description": "Key status.full"
+  },
+  "statusGoing": "Katılıyorsun",
+  "@statusGoing": {
+    "description": "Key status.going"
+  },
+  "statusMembers": "Üyelere özel",
+  "@statusMembers": {
+    "description": "Key status.members"
+  },
+  "statusNone": "Üye değil",
+  "@statusNone": {
+    "description": "Key status.none"
+  },
+  "statusOpen": "Açık",
+  "@statusOpen": {
+    "description": "Key status.open"
+  },
+  "statusPast": "Geçmiş",
+  "@statusPast": {
+    "description": "Key status.past"
+  },
+  "statusPending": "Beklemede",
+  "@statusPending": {
+    "description": "Key status.pending"
+  },
+  "statusPublished": "Yayında",
+  "@statusPublished": {
+    "description": "Key status.published"
+  },
+  "statusRejected": "Reddedildi",
+  "@statusRejected": {
+    "description": "Key status.rejected"
+  },
+  "statusRemoved": "Çıkarıldı",
+  "@statusRemoved": {
+    "description": "Key status.removed"
+  },
+  "statusResolved": "Çözüldü",
+  "@statusResolved": {
+    "description": "Key status.resolved"
+  },
+  "statusSuspended": "Askıda",
+  "@statusSuspended": {
+    "description": "Key status.suspended"
+  },
+  "statusUsed": "Okutuldu",
+  "@statusUsed": {
+    "description": "Key status.used"
+  },
+  "statusValid": "Geçerli",
+  "@statusValid": {
+    "description": "Key status.valid"
+  },
+  "statusVoid": "İptal",
+  "@statusVoid": {
+    "description": "Key status.void"
+  },
+  "statusWaitlist": "Bekleme listesi",
+  "@statusWaitlist": {
+    "description": "Key status.waitlist"
+  },
+  "supportAttach": "Ekran görüntüsü ekle",
+  "@supportAttach": {
+    "description": "Key support.attach"
+  },
+  "supportAttached": "Ekran görüntüsü eklendi",
+  "@supportAttached": {
+    "description": "Key support.attached"
+  },
+  "supportContact": "Bize ulaş",
+  "@supportContact": {
+    "description": "Key support.contact"
+  },
+  "supportFaq": "Sık sorulan sorular",
+  "@supportFaq": {
+    "description": "Key support.faq"
+  },
+  "supportMessage": "Mesaj",
+  "@supportMessage": {
+    "description": "Key support.message"
+  },
+  "supportNewRequest": "Yeni talep",
+  "@supportNewRequest": {
+    "description": "Key support.newRequest"
+  },
+  "supportNoFaq": "Eşleşen soru yok.",
+  "@supportNoFaq": {
+    "description": "Key support.noFaq"
+  },
+  "supportSearchFaq": "SSS'de ara",
+  "@supportSearchFaq": {
+    "description": "Key support.searchFaq"
+  },
+  "supportSentDesc": "Talep no: {no}. En geç 3 iş günü içinde dönüş yapacağız.",
+  "@supportSentDesc": {
+    "description": "Key support.sentDesc",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "supportSentTitle": "Mesajın alındı",
+  "@supportSentTitle": {
+    "description": "Key support.sentTitle"
+  },
+  "supportSubject": "Konu",
+  "@supportSubject": {
+    "description": "Key support.subject"
+  },
+  "supportSubjectAccount": "Hesap",
+  "@supportSubjectAccount": {
+    "description": "Key support.subject.account"
+  },
+  "supportSubjectBug": "Hata bildirimi",
+  "@supportSubjectBug": {
+    "description": "Key support.subject.bug"
+  },
+  "supportSubjectClub": "Kulüp",
+  "@supportSubjectClub": {
+    "description": "Key support.subject.club"
+  },
+  "supportSubjectOther": "Diğer",
+  "@supportSubjectOther": {
+    "description": "Key support.subject.other"
+  },
+  "supportSubjectSuggestion": "Öneri",
+  "@supportSubjectSuggestion": {
+    "description": "Key support.subject.suggestion"
+  },
+  "supportTitle": "Yardım ve destek",
+  "@supportTitle": {
+    "description": "Key support.title"
+  },
+  "sysErrorDesc": "İçerik yüklenemedi. Bağlantını kontrol edip yeniden deneyebilirsin.",
+  "@sysErrorDesc": {
+    "description": "Key sys.error.desc"
+  },
+  "sysErrorHome": "Ana sayfaya dön",
+  "@sysErrorHome": {
+    "description": "Key sys.error.home"
+  },
+  "sysErrorTitle": "Bir şeyler ters gitti",
+  "@sysErrorTitle": {
+    "description": "Key sys.error.title"
+  },
+  "sysNotFoundDesc": "Silinmiş, taşınmış ya da erişim yetkin olmayabilir.",
+  "@sysNotFoundDesc": {
+    "description": "Key sys.notFound.desc"
+  },
+  "sysNotFoundTitle": "Bu içerik artık yok",
+  "@sysNotFoundTitle": {
+    "description": "Key sys.notFound.title"
+  },
+  "sysOfflineBanner": "Çevrimdışısın. Önbellekteki veriler gösteriliyor.",
+  "@sysOfflineBanner": {
+    "description": "Key sys.offline.banner"
+  },
+  "sysOfflineFullDesc": "Önbellekte gösterilecek veri yok. Bağlantı gelince yeniden dene.",
+  "@sysOfflineFullDesc": {
+    "description": "Key sys.offline.fullDesc"
+  },
+  "sysOfflineTitle": "Çevrimdışısın",
+  "@sysOfflineTitle": {
+    "description": "Key sys.offline.title"
+  },
+  "sysSplashTitle": "Açılış",
+  "@sysSplashTitle": {
+    "description": "Key sys.splash.title"
+  },
+  "themeDark": "Koyu",
+  "@themeDark": {
+    "description": "Key theme.dark"
+  },
+  "themeLight": "Açık",
+  "@themeLight": {
+    "description": "Key theme.light"
+  },
+  "themeSystem": "Sistem",
+  "@themeSystem": {
+    "description": "Key theme.system"
+  },
+  "ticketBrightness": "Ekran parlaklığı artırıldı",
+  "@ticketBrightness": {
+    "description": "Key ticket.brightness"
+  },
+  "ticketDemoScan": "Okutuldu simüle et (demo)",
+  "@ticketDemoScan": {
+    "description": "Key ticket.demoScan"
+  },
+  "ticketOpenEvent": "Etkinliğe git",
+  "@ticketOpenEvent": {
+    "description": "Key ticket.openEvent"
+  },
+  "ticketScannedAt": "Okutuldu: {time}",
+  "@ticketScannedAt": {
+    "description": "Key ticket.scannedAt",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "ticketStatusUsed": "Okutuldu",
+  "@ticketStatusUsed": {
+    "description": "Key ticket.status.used"
+  },
+  "ticketStatusValid": "Geçerli",
+  "@ticketStatusValid": {
+    "description": "Key ticket.status.valid"
+  },
+  "ticketStatusVoid": "İptal",
+  "@ticketStatusVoid": {
+    "description": "Key ticket.status.void"
+  },
+  "ticketTitle": "Bilet",
+  "@ticketTitle": {
+    "description": "Key ticket.title"
+  },
+  "timeDays": "{count, plural, one{# gün} other{# gün}}",
+  "@timeDays": {
+    "description": "Key time.days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysAgo": "{count, plural, one{# gün önce} other{# gün önce}}",
+  "@timeDaysAgo": {
+    "description": "Key time.daysAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeGroupOlder": "Daha eski",
+  "@timeGroupOlder": {
+    "description": "Key time.group.older"
+  },
+  "timeGroupToday": "Bugün",
+  "@timeGroupToday": {
+    "description": "Key time.group.today"
+  },
+  "timeGroupWeek": "Bu hafta",
+  "@timeGroupWeek": {
+    "description": "Key time.group.week"
+  },
+  "timeGroupYesterday": "Dün",
+  "@timeGroupYesterday": {
+    "description": "Key time.group.yesterday"
+  },
+  "timeHours": "{count} sa",
+  "@timeHours": {
+    "description": "Key time.hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "{count, plural, one{# saat önce} other{# saat önce}}",
+  "@timeHoursAgo": {
+    "description": "Key time.hoursAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeInDays": "{count, plural, =0{bugün} one{# gün} other{# gün}}",
+  "@timeInDays": {
+    "description": "Key time.inDays",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "bug": {
+        "type": "String"
+      }
+    }
+  },
+  "timeJustNow": "Az önce",
+  "@timeJustNow": {
+    "description": "Key time.justNow"
+  },
+  "timeMinutes": "{count} dk",
+  "@timeMinutes": {
+    "description": "Key time.minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeMinutesAgo": "{count} dk önce",
+  "@timeMinutesAgo": {
+    "description": "Key time.minutesAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeToday": "Bugün",
+  "@timeToday": {
+    "description": "Key time.today"
+  },
+  "timeTomorrow": "Yarın",
+  "@timeTomorrow": {
+    "description": "Key time.tomorrow"
+  },
+  "timeWeeksAgo": "{count, plural, one{# hafta önce} other{# hafta önce}}",
+  "@timeWeeksAgo": {
+    "description": "Key time.weeksAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeYesterday": "Dün",
+  "@timeYesterday": {
+    "description": "Key time.yesterday"
+  },
+  "tst01": "E-posta veya şifre hatalı.",
+  "@tst01": {
+    "description": "Key tst.01"
+  },
+  "tst02": "E-postan henüz doğrulanmamış. Bağlantıya tıkladıktan sonra tekrar dene.",
+  "@tst02": {
+    "description": "Key tst.02"
+  },
+  "tst03": "Bağlantı gönderildi. Gelen kutunu kontrol et.",
+  "@tst03": {
+    "description": "Key tst.03"
+  },
+  "tst04": "En fazla 5 ilgi alanı seçebilirsin.",
+  "@tst04": {
+    "description": "Key tst.04"
+  },
+  "tst05": "Hoş geldin, {name}!",
+  "@tst05": {
+    "description": "Key tst.05",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst06": "Son aramalar temizlendi.",
+  "@tst06": {
+    "description": "Key tst.06"
+  },
+  "tst07": "Notun kaydedildi.",
+  "@tst07": {
+    "description": "Key tst.07"
+  },
+  "tst08": "E-posta adresi kopyalandı.",
+  "@tst08": {
+    "description": "Key tst.08"
+  },
+  "tst09Blocked": "{name} engellendi.",
+  "@tst09Blocked": {
+    "description": "Key tst.09.blocked",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst09Unblocked": "{name} için engel kaldırıldı.",
+  "@tst09Unblocked": {
+    "description": "Key tst.09.unblocked",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst10": "Oyun kaydedildi. Anketlerde oy değiştirilemez.",
+  "@tst10": {
+    "description": "Key tst.10"
+  },
+  "tst11Removed": "Kaydedilenlerden kaldırıldı.",
+  "@tst11Removed": {
+    "description": "Key tst.11.removed"
+  },
+  "tst11Saved": "Kaydedilenlere eklendi.",
+  "@tst11Saved": {
+    "description": "Key tst.11.saved"
+  },
+  "tst12": "Yorumun gönderildi.",
+  "@tst12": {
+    "description": "Key tst.12"
+  },
+  "tst13": "Taslak kaydedildi.",
+  "@tst13": {
+    "description": "Key tst.13"
+  },
+  "tst14": "Yayınlandı.",
+  "@tst14": {
+    "description": "Key tst.14"
+  },
+  "tst15": "Biletin okutuldu. İyi eğlenceler!",
+  "@tst15": {
+    "description": "Key tst.15"
+  },
+  "tst16": "Bildirim silindi.",
+  "@tst16": {
+    "description": "Key tst.16"
+  },
+  "tst17": "Şikayetin incelendi ve gereken işlem yapıldı. Teşekkürler.",
+  "@tst17": {
+    "description": "Key tst.17"
+  },
+  "tst18": "Tüm bildirimler okundu olarak işaretlendi.",
+  "@tst18": {
+    "description": "Key tst.18"
+  },
+  "tst19": "Tercihin kaydedildi.",
+  "@tst19": {
+    "description": "Key tst.19"
+  },
+  "tst20": "Bu alan değiştirilemez.",
+  "@tst20": {
+    "description": "Key tst.20"
+  },
+  "tst21": "Değişiklikler kaydedildi.",
+  "@tst21": {
+    "description": "Key tst.21"
+  },
+  "tst22": "Hesabın silindi. Seni özleyeceğiz.",
+  "@tst22": {
+    "description": "Key tst.22"
+  },
+  "tst23": "Mesajın alındı. Talep no: {no}",
+  "@tst23": {
+    "description": "Key tst.23",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "tst24": "Çevrimdışısın. Bu işlem için internet bağlantısı gerekli.",
+  "@tst24": {
+    "description": "Key tst.24"
+  },
+  "tst25": "Tekrar çevrimiçisin.",
+  "@tst25": {
+    "description": "Key tst.25"
+  },
+  "tst26": "Danışman yetkisi salt okunurdur.",
+  "@tst26": {
+    "description": "Key tst.26"
+  },
+  "tst27": "{name} onaylandı.",
+  "@tst27": {
+    "description": "Key tst.27",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst28": "{name} reddedildi.",
+  "@tst28": {
+    "description": "Key tst.28",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst29": "Dışa aktarma hazır. Dosya indirildi.",
+  "@tst29": {
+    "description": "Key tst.29"
+  },
+  "tst30": "Etkinlik yayınlandı.",
+  "@tst30": {
+    "description": "Key tst.30"
+  },
+  "tst31": "{name} katıldı olarak işaretlendi.",
+  "@tst31": {
+    "description": "Key tst.31",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst32": "Kamera izni gerekli.",
+  "@tst32": {
+    "description": "Key tst.32"
+  },
+  "tst33": "Kulüp oluşturuldu.",
+  "@tst33": {
+    "description": "Key tst.33"
+  },
+  "tst34": "Kulübe katıldın!",
+  "@tst34": {
+    "description": "Key tst.34"
+  },
+  "tst35": "Bağlantı kopyalandı.",
+  "@tst35": {
+    "description": "Key tst.35"
+  },
+  "tst36": "Takvime eklendi.",
+  "@tst36": {
+    "description": "Key tst.36"
+  },
+  "tst37Off": "Hatırlatıcı kapatıldı.",
+  "@tst37Off": {
+    "description": "Key tst.37.off"
+  },
+  "tst37Set": "Hatırlatıcı ayarlandı.",
+  "@tst37Set": {
+    "description": "Key tst.37.set"
+  },
+  "tst38": "Kulüp bildirim ayarların güncellendi.",
+  "@tst38": {
+    "description": "Key tst.38"
+  },
+  "tst39": "Kulüpten ayrıldın.",
+  "@tst39": {
+    "description": "Key tst.39"
+  },
+  "tst40": "İsteğin iptal edildi.",
+  "@tst40": {
+    "description": "Key tst.40"
+  },
+  "tst41": "Kaydın alındı. Biletin hazır.",
+  "@tst41": {
+    "description": "Key tst.41"
+  },
+  "tst42": "Katılımdan vazgeçtin.",
+  "@tst42": {
+    "description": "Key tst.42"
+  },
+  "tst43": "Bekleme listesine eklendin ({n}. sıra).",
+  "@tst43": {
+    "description": "Key tst.43",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tst44": "Şifren değiştirildi.",
+  "@tst44": {
+    "description": "Key tst.44"
+  },
+  "tst45": "{what} silindi.",
+  "@tst45": {
+    "description": "Key tst.45",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "tst46": "{name} artık {role}.",
+  "@tst46": {
+    "description": "Key tst.46",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "tst47": "{name} kulüpten çıkarıldı.",
+  "@tst47": {
+    "description": "Key tst.47",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst48": "Etkinlik iptal edildi. Katılımcılara haber verildi.",
+  "@tst48": {
+    "description": "Key tst.48"
+  },
+  "tst49": "Başkanlık {name} kullanıcısına devredildi.",
+  "@tst49": {
+    "description": "Key tst.49",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst50Activated": "Kulüp yeniden etkinleştirildi.",
+  "@tst50Activated": {
+    "description": "Key tst.50.activated"
+  },
+  "tst50Suspended": "Kulüp askıya alındı.",
+  "@tst50Suspended": {
+    "description": "Key tst.50.suspended"
+  },
+  "tst51": "İçerik kaldırıldı.",
+  "@tst51": {
+    "description": "Key tst.51"
+  },
+  "tst52Suspended": "Kullanıcı askıya alındı.",
+  "@tst52Suspended": {
+    "description": "Key tst.52.suspended"
+  },
+  "tst52Unsuspended": "Kullanıcının askısı kaldırıldı.",
+  "@tst52Unsuspended": {
+    "description": "Key tst.52.unsuspended"
+  },
+  "tst53Pinned": "Gönderi sabitlendi.",
+  "@tst53Pinned": {
+    "description": "Key tst.53.pinned"
+  },
+  "tst53Unpinned": "Sabitleme kaldırıldı.",
+  "@tst53Unpinned": {
+    "description": "Key tst.53.unpinned"
+  },
+  "tst54Closed": "Başvurular kapatıldı.",
+  "@tst54Closed": {
+    "description": "Key tst.54.closed"
+  },
+  "tst54Opened": "Başvurular açıldı.",
+  "@tst54Opened": {
+    "description": "Key tst.54.opened"
+  },
+  "tst55": "Yeni bildirim: {title}",
+  "@tst55": {
+    "description": "Key tst.55",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "tst56": "Şikayet kapatıldı.",
+  "@tst56": {
+    "description": "Key tst.56"
+  },
+  "tst57": "Fotoğraf güncellendi.",
+  "@tst57": {
+    "description": "Key tst.57"
+  },
+  "tst58": "Demo: {what} açılıyor.",
+  "@tst58": {
+    "description": "Key tst.58",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX1": "Bu kulüp şu an başvuru almıyor.",
+  "@tstX1": {
+    "description": "Key tst.x1"
+  },
+  "tstX10": "Önce başkanlığı devretmelisin.",
+  "@tstX10": {
+    "description": "Key tst.x10"
+  },
+  "tstX11": "Şifreni gir ve onaylamak için SİL yaz.",
+  "@tstX11": {
+    "description": "Key tst.x11"
+  },
+  "tstX12": "Yoklama alınacak etkinlik yok.",
+  "@tstX12": {
+    "description": "Key tst.x12"
+  },
+  "tstX13": "{name} kayıtlıya alındı.",
+  "@tstX13": {
+    "description": "Key tst.x13",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX14": "Kontenjan dolu; önce yer açılmalı.",
+  "@tstX14": {
+    "description": "Key tst.x14"
+  },
+  "tstX15Closed": "Kayıtlar kapatıldı.",
+  "@tstX15Closed": {
+    "description": "Key tst.x15.closed"
+  },
+  "tstX15Opened": "Kayıtlar açıldı.",
+  "@tstX15Opened": {
+    "description": "Key tst.x15.opened"
+  },
+  "tstX16": "Önce \"Tümünü sessize al\" seçeneğini kapat.",
+  "@tstX16": {
+    "description": "Key tst.x16"
+  },
+  "tstX17": "Karar geri alındı; başvuru yeniden beklemede.",
+  "@tstX17": {
+    "description": "Key tst.x17"
+  },
+  "tstX18": "Bu işlem için yetkin yok.",
+  "@tstX18": {
+    "description": "Key tst.x18"
+  },
+  "tstX19": "Etkinlik taslağa alındı.",
+  "@tstX19": {
+    "description": "Key tst.x19"
+  },
+  "tstX2": "Bu etkinliğin kayıtları kapalı.",
+  "@tstX2": {
+    "description": "Key tst.x2"
+  },
+  "tstX20": "Onaylamak için DEVRET yaz.",
+  "@tstX20": {
+    "description": "Key tst.x20"
+  },
+  "tstX21": "Bu hesabın bekleyen başvurusu yok.",
+  "@tstX21": {
+    "description": "Key tst.x21"
+  },
+  "tstX22": "Önce bir hesapla giriş yap.",
+  "@tstX22": {
+    "description": "Key tst.x22"
+  },
+  "tstX23": "Demo verisi sıfırlandı.",
+  "@tstX23": {
+    "description": "Key tst.x23"
+  },
+  "tstX3": "Tekrar göndermek için {s} sn bekle.",
+  "@tstX3": {
+    "description": "Key tst.x3",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX4": "{date} tarihine kadar tekrar başvuramazsın.",
+  "@tstX4": {
+    "description": "Key tst.x4",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX5": "En fazla 4 görsel ekleyebilirsin.",
+  "@tstX5": {
+    "description": "Key tst.x5"
+  },
+  "tstX6": "Bu etkinlik sona erdi.",
+  "@tstX6": {
+    "description": "Key tst.x6"
+  },
+  "tstX7": "Hatırlatıcı için önce etkinliğe katıl.",
+  "@tstX7": {
+    "description": "Key tst.x7"
+  },
+  "tstX8": "{count} kişi katılıyor.",
+  "@tstX8": {
+    "description": "Key tst.x8",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tstX9": "Kaydedilecek değişiklik yok.",
+  "@tstX9": {
+    "description": "Key tst.x9"
+  },
+  "userprofileBlockedBanner": "Bu kullanıcıyı engelledin.",
+  "@userprofileBlockedBanner": {
+    "description": "Key userprofile.blockedBanner"
+  },
+  "userprofileChangeRole": "Rolü değiştir",
+  "@userprofileChangeRole": {
+    "description": "Key userprofile.changeRole"
+  },
+  "userprofileCommonClubs": "Ortak kulüpler",
+  "@userprofileCommonClubs": {
+    "description": "Key userprofile.commonClubs"
+  },
+  "userprofileMemberSince": "Üyelik tarihi",
+  "@userprofileMemberSince": {
+    "description": "Key userprofile.memberSince"
+  },
+  "userprofilePrivate": "Bu profil yalnızca ortak kulüp üyelerine açık.",
+  "@userprofilePrivate": {
+    "description": "Key userprofile.private"
+  },
+  "userprofileRemove": "Üyelikten çıkar",
+  "@userprofileRemove": {
+    "description": "Key userprofile.remove"
+  },
+  "userprofileRoleIn": "{club} içindeki rolü",
+  "@userprofileRoleIn": {
+    "description": "Key userprofile.roleIn",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "userprofileTitle": "Profil",
+  "@userprofileTitle": {
+    "description": "Key userprofile.title"
+  },
+  "userprofileUnblock": "Engeli kaldır",
+  "@userprofileUnblock": {
+    "description": "Key userprofile.unblock"
+  },
+  "userprofileView": "Profili gör",
+  "@userprofileView": {
+    "description": "Key userprofile.view"
+  },
+  "year1": "1. sınıf",
+  "@year1": {
+    "description": "Key year.1"
+  },
+  "year2": "2. sınıf",
+  "@year2": {
+    "description": "Key year.2"
+  },
+  "year3": "3. sınıf",
+  "@year3": {
+    "description": "Key year.3"
+  },
+  "year4": "4. sınıf",
+  "@year4": {
+    "description": "Key year.4"
+  },
+  "year5plus": "5+ sınıf",
+  "@year5plus": {
+    "description": "Key year.5plus"
+  },
+  "yearMaster": "Yüksek lisans",
+  "@yearMaster": {
+    "description": "Key year.master"
+  },
+  "yearPhd": "Doktora",
+  "@yearPhd": {
+    "description": "Key year.phd"
+  },
+  "yearPrep": "Hazırlık",
+  "@yearPrep": {
+    "description": "Key year.prep"
+  }
+}

@@ -1,0 +1,51 @@
+name: gu_kulupler
+description: "GÜ Kulüpler — Gümüşhane Üniversitesi öğrenci kulüpleri için yönetim ve sosyal uygulama."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Yerelleştirme (TR/EN) ---
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # --- State yönetimi ve navigasyon ---
+  flutter_riverpod: ^3.4.3
+  go_router: ^18.0.2
+
+  # --- Arayüz ---
+  cached_network_image: ^4.0.3
+  flutter_svg: ^2.3.0
+  google_fonts: ^8.2.1
+  table_calendar: ^3.2.1
+
+  # --- Yerel depolama ---
+  shared_preferences: ^2.5.6
+
+  # --- Firebase ---
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  cloud_firestore: ^6.10.0
+  firebase_storage: ^13.6.0
+  firebase_messaging: ^16.7.0
+  firebase_remote_config: ^6.7.0
+  firebase_crashlytics: ^5.4.0
+  cloud_functions: ^6.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  config:
+    enable-swift-package-manager: true

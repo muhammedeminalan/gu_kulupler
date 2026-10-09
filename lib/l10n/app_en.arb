@@ -1,0 +1,6418 @@
+{
+  "@@locale": "en",
+  "@@last_modified": "2026-10-08T16:24:30.345Z",
+  "a11yBack": "Back",
+  "@a11yBack": {
+    "description": "Key a11y.back"
+  },
+  "a11yClose": "Close",
+  "@a11yClose": {
+    "description": "Key a11y.close"
+  },
+  "a11yDismiss": "Dismiss",
+  "@a11yDismiss": {
+    "description": "Key a11y.dismiss"
+  },
+  "a11yMainNav": "Main navigation",
+  "@a11yMainNav": {
+    "description": "Key a11y.mainNav"
+  },
+  "a11yMore": "More",
+  "@a11yMore": {
+    "description": "Key a11y.more"
+  },
+  "a11yNextMonth": "Next month",
+  "@a11yNextMonth": {
+    "description": "Key a11y.nextMonth"
+  },
+  "a11yOpenImage": "Open image ({n})",
+  "@a11yOpenImage": {
+    "description": "Key a11y.openImage",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "a11yPrevMonth": "Previous month",
+  "@a11yPrevMonth": {
+    "description": "Key a11y.prevMonth"
+  },
+  "aboutBuild": "Demo build",
+  "@aboutBuild": {
+    "description": "Key about.build"
+  },
+  "aboutDesc": "Developed for Gümüşhane University student clubs as an entrepreneurship course project.",
+  "@aboutDesc": {
+    "description": "Key about.desc"
+  },
+  "aboutLicenseInter": "The Inter typeface is licensed under the SIL Open Font License 1.1.",
+  "@aboutLicenseInter": {
+    "description": "Key about.license.inter"
+  },
+  "aboutLicenseLucide": "The Lucide icon set is distributed under the ISC licence; icons are used unmodified.",
+  "@aboutLicenseLucide": {
+    "description": "Key about.license.lucide"
+  },
+  "aboutLicenseMontserrat": "The Montserrat typeface is licensed under the SIL Open Font License 1.1.",
+  "@aboutLicenseMontserrat": {
+    "description": "Key about.license.montserrat"
+  },
+  "aboutLicenses": "Open-source licences",
+  "@aboutLicenses": {
+    "description": "Key about.licenses"
+  },
+  "aboutNote1": "Club discovery, application and membership flows",
+  "@aboutNote1": {
+    "description": "Key about.note1"
+  },
+  "aboutNote2": "Event registration, QR tickets and check-in",
+  "@aboutNote2": {
+    "description": "Key about.note2"
+  },
+  "aboutNote3": "Club management panel and announcements",
+  "@aboutNote3": {
+    "description": "Key about.note3"
+  },
+  "aboutNote4": "Light/dark theme, TR/EN languages",
+  "@aboutNote4": {
+    "description": "Key about.note4"
+  },
+  "aboutReleaseNotes": "Release notes",
+  "@aboutReleaseNotes": {
+    "description": "Key about.releaseNotes"
+  },
+  "aboutTeam": "Team",
+  "@aboutTeam": {
+    "description": "Key about.team"
+  },
+  "aboutTeamDesign": "Design",
+  "@aboutTeamDesign": {
+    "description": "Key about.team.design"
+  },
+  "aboutTeamDev": "Engineering",
+  "@aboutTeamDev": {
+    "description": "Key about.team.dev"
+  },
+  "aboutTeamPm": "Product",
+  "@aboutTeamPm": {
+    "description": "Key about.team.pm"
+  },
+  "aboutTitle": "About",
+  "@aboutTitle": {
+    "description": "Key about.title"
+  },
+  "aboutViewLicense": "View licence",
+  "@aboutViewLicense": {
+    "description": "Key about.viewLicense"
+  },
+  "activityAnnouncement": "{actor} published an announcement",
+  "@activityAnnouncement": {
+    "description": "Key activity.announcement",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationApproved": "{actor} approved {user}’s application",
+  "@activityApplicationApproved": {
+    "description": "Key activity.application_approved",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationReceived": "{actor} applied to the club",
+  "@activityApplicationReceived": {
+    "description": "Key activity.application_received",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityApplicationRejected": "{actor} rejected {user}’s application",
+  "@activityApplicationRejected": {
+    "description": "Key activity.application_rejected",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityCatContent": "Content",
+  "@activityCatContent": {
+    "description": "Key activity.cat.content"
+  },
+  "activityCatEvent": "Event",
+  "@activityCatEvent": {
+    "description": "Key activity.cat.event"
+  },
+  "activityCatMembership": "Membership",
+  "@activityCatMembership": {
+    "description": "Key activity.cat.membership"
+  },
+  "activityCatSettings": "Settings",
+  "@activityCatSettings": {
+    "description": "Key activity.cat.settings"
+  },
+  "activityEmpty": "No activity yet",
+  "@activityEmpty": {
+    "description": "Key activity.empty"
+  },
+  "activityEventCancelled": "{actor} cancelled \"{event}\"",
+  "@activityEventCancelled": {
+    "description": "Key activity.event_cancelled",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "activityEventPublished": "{actor} published \"{event}\"",
+  "@activityEventPublished": {
+    "description": "Key activity.event_published",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberJoined": "{actor} joined the club",
+  "@activityMemberJoined": {
+    "description": "Key activity.member_joined",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberLeft": "{actor} left the club",
+  "@activityMemberLeft": {
+    "description": "Key activity.member_left",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityMemberRemoved": "{actor} removed {user}",
+  "@activityMemberRemoved": {
+    "description": "Key activity.member_removed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "activityPoll": "{actor} opened a poll",
+  "@activityPoll": {
+    "description": "Key activity.poll",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityPostCreated": "{actor} shared a post",
+  "@activityPostCreated": {
+    "description": "Key activity.post_created",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityRoleChanged": "{actor} changed {user}’s role to {role}",
+  "@activityRoleChanged": {
+    "description": "Key activity.role_changed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "user": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySettingsChanged": "{actor} updated club settings",
+  "@activitySettingsChanged": {
+    "description": "Key activity.settings_changed",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      }
+    }
+  },
+  "activityTitle": "Activity log",
+  "@activityTitle": {
+    "description": "Key activity.title"
+  },
+  "adminAttendanceDesc": "{attended} of {registered} registrations attended across {events} past events.",
+  "@adminAttendanceDesc": {
+    "description": "Key admin.attendanceDesc",
+    "placeholders": {
+      "attended": {
+        "type": "String"
+      },
+      "registered": {
+        "type": "String"
+      },
+      "events": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAttendanceRate": "Event attendance rate",
+  "@adminAttendanceRate": {
+    "description": "Key admin.attendanceRate"
+  },
+  "adminKpiActiveClubs": "Active clubs",
+  "@adminKpiActiveClubs": {
+    "description": "Key admin.kpi.activeClubs"
+  },
+  "adminKpiNewUsers": "+{count} new",
+  "@adminKpiNewUsers": {
+    "description": "Key admin.kpi.newUsers",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminKpiOpenReports": "Open reports",
+  "@adminKpiOpenReports": {
+    "description": "Key admin.kpi.openReports"
+  },
+  "adminKpiSuspended": "Suspended clubs",
+  "@adminKpiSuspended": {
+    "description": "Key admin.kpi.suspended"
+  },
+  "adminKpiUsers": "Total users",
+  "@adminKpiUsers": {
+    "description": "Key admin.kpi.users"
+  },
+  "adminNoAccess": "This area is for campus administration only.",
+  "@adminNoAccess": {
+    "description": "Key admin.noAccess"
+  },
+  "adminPendingTasks": "Pending tasks",
+  "@adminPendingTasks": {
+    "description": "Key admin.pendingTasks"
+  },
+  "adminRange30": "30 days",
+  "@adminRange30": {
+    "description": "Key admin.range.30"
+  },
+  "adminRange7": "7 days",
+  "@adminRange7": {
+    "description": "Key admin.range.7"
+  },
+  "adminRangeTerm": "Term",
+  "@adminRangeTerm": {
+    "description": "Key admin.range.term"
+  },
+  "adminSegClubs": "Clubs",
+  "@adminSegClubs": {
+    "description": "Key admin.seg.clubs"
+  },
+  "adminSegOverview": "Overview",
+  "@adminSegOverview": {
+    "description": "Key admin.seg.overview"
+  },
+  "adminSegReports": "Reports",
+  "@adminSegReports": {
+    "description": "Key admin.seg.reports"
+  },
+  "adminSegUsers": "Users",
+  "@adminSegUsers": {
+    "description": "Key admin.seg.users"
+  },
+  "adminTaskReports": "{count} open reports",
+  "@adminTaskReports": {
+    "description": "Key admin.task.reports",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminTaskSuspended": "{count} suspended clubs",
+  "@adminTaskSuspended": {
+    "description": "Key admin.task.suspended",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminTopClubs": "Top 5 clubs",
+  "@adminTopClubs": {
+    "description": "Key admin.topClubs"
+  },
+  "adminWau": "Weekly active users",
+  "@adminWau": {
+    "description": "Key admin.wau"
+  },
+  "adminClubsActivate": "Activate",
+  "@adminClubsActivate": {
+    "description": "Key adminClubs.activate"
+  },
+  "adminClubsChangePresident": "Change president",
+  "@adminClubsChangePresident": {
+    "description": "Key adminClubs.changePresident"
+  },
+  "adminClubsCreate": "Create club",
+  "@adminClubsCreate": {
+    "description": "Key adminClubs.create"
+  },
+  "adminClubsEmpty": "No clubs",
+  "@adminClubsEmpty": {
+    "description": "Key adminClubs.empty"
+  },
+  "adminClubsSuspend": "Suspend",
+  "@adminClubsSuspend": {
+    "description": "Key adminClubs.suspend"
+  },
+  "adminClubsTitle": "Clubs",
+  "@adminClubsTitle": {
+    "description": "Key adminClubs.title"
+  },
+  "adminUsersClubCount": "{count, plural, one{# club} other{# clubs}}",
+  "@adminUsersClubCount": {
+    "description": "Key adminUsers.clubCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersHistory": "Membership history",
+  "@adminUsersHistory": {
+    "description": "Key adminUsers.history"
+  },
+  "adminUsersManagers": "Managers",
+  "@adminUsersManagers": {
+    "description": "Key adminUsers.managers"
+  },
+  "adminUsersNoHistory": "No membership records.",
+  "@adminUsersNoHistory": {
+    "description": "Key adminUsers.noHistory"
+  },
+  "adminUsersSearch": "Search name or email",
+  "@adminUsersSearch": {
+    "description": "Key adminUsers.search"
+  },
+  "adminUsersSuspend": "Suspend",
+  "@adminUsersSuspend": {
+    "description": "Key adminUsers.suspend"
+  },
+  "adminUsersTitle": "Users",
+  "@adminUsersTitle": {
+    "description": "Key adminUsers.title"
+  },
+  "adminUsersUnsuspend": "Unsuspend",
+  "@adminUsersUnsuspend": {
+    "description": "Key adminUsers.unsuspend"
+  },
+  "appTagline": "Every club on campus, in your pocket.",
+  "@appTagline": {
+    "description": "Key app.tagline"
+  },
+  "applicationApprovedNote": "Your membership was approved.",
+  "@applicationApprovedNote": {
+    "description": "Key application.approvedNote"
+  },
+  "applicationCanReapply": "You can reapply",
+  "@applicationCanReapply": {
+    "description": "Key application.canReapply"
+  },
+  "applicationCancel": "Cancel request",
+  "@applicationCancel": {
+    "description": "Key application.cancel"
+  },
+  "applicationGoClub": "Go to club",
+  "@applicationGoClub": {
+    "description": "Key application.goClub"
+  },
+  "applicationNoneNote": "You have no active application to this club.",
+  "@applicationNoneNote": {
+    "description": "Key application.noneNote"
+  },
+  "applicationReapply": "Reapply",
+  "@applicationReapply": {
+    "description": "Key application.reapply"
+  },
+  "applicationReason": "Reason",
+  "@applicationReason": {
+    "description": "Key application.reason"
+  },
+  "applicationRetryAt": "You can reapply on {date}",
+  "@applicationRetryAt": {
+    "description": "Key application.retryAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "applicationRetryNote": "A 7-day waiting period applies after a rejection or removal.",
+  "@applicationRetryNote": {
+    "description": "Key application.retryNote"
+  },
+  "applicationReviewing": "The club board is reviewing",
+  "@applicationReviewing": {
+    "description": "Key application.reviewing"
+  },
+  "applicationStepResult": "Result",
+  "@applicationStepResult": {
+    "description": "Key application.step.result"
+  },
+  "applicationStepReview": "Under review",
+  "@applicationStepReview": {
+    "description": "Key application.step.review"
+  },
+  "applicationStepSent": "Sent",
+  "@applicationStepSent": {
+    "description": "Key application.step.sent"
+  },
+  "applicationTitle": "Application status",
+  "@applicationTitle": {
+    "description": "Key application.title"
+  },
+  "applicationWaitingResult": "Waiting",
+  "@applicationWaitingResult": {
+    "description": "Key application.waitingResult"
+  },
+  "applicationYourNote": "Your note",
+  "@applicationYourNote": {
+    "description": "Key application.yourNote"
+  },
+  "applicationsApprove": "Approve",
+  "@applicationsApprove": {
+    "description": "Key applications.approve"
+  },
+  "applicationsClosedBanner": "Applications are closed.",
+  "@applicationsClosedBanner": {
+    "description": "Key applications.closedBanner"
+  },
+  "applicationsEmptyApproved": "No approved applications",
+  "@applicationsEmptyApproved": {
+    "description": "Key applications.empty.approved"
+  },
+  "applicationsEmptyPending": "No pending applications",
+  "@applicationsEmptyPending": {
+    "description": "Key applications.empty.pending"
+  },
+  "applicationsEmptyRejected": "No rejected applications",
+  "@applicationsEmptyRejected": {
+    "description": "Key applications.empty.rejected"
+  },
+  "applicationsHint": "Long-press a row to select several.",
+  "@applicationsHint": {
+    "description": "Key applications.hint"
+  },
+  "applicationsNApplicants": "{count} applications",
+  "@applicationsNApplicants": {
+    "description": "Key applications.nApplicants",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applicationsNoNote": "No note",
+  "@applicationsNoNote": {
+    "description": "Key applications.noNote"
+  },
+  "applicationsOpenToggle": "Open applications",
+  "@applicationsOpenToggle": {
+    "description": "Key applications.openToggle"
+  },
+  "applicationsPrior": "Applied before",
+  "@applicationsPrior": {
+    "description": "Key applications.prior"
+  },
+  "applicationsReject": "Reject",
+  "@applicationsReject": {
+    "description": "Key applications.reject"
+  },
+  "applicationsSelectAll": "Select all",
+  "@applicationsSelectAll": {
+    "description": "Key applications.selectAll"
+  },
+  "applicationsSelected": "{count} selected",
+  "@applicationsSelected": {
+    "description": "Key applications.selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "applicationsTabApproved": "Approved",
+  "@applicationsTabApproved": {
+    "description": "Key applications.tab.approved"
+  },
+  "applicationsTabPending": "Pending",
+  "@applicationsTabPending": {
+    "description": "Key applications.tab.pending"
+  },
+  "applicationsTabRejected": "Rejected",
+  "@applicationsTabRejected": {
+    "description": "Key applications.tab.rejected"
+  },
+  "applicationsTitle": "Applications",
+  "@applicationsTitle": {
+    "description": "Key applications.title"
+  },
+  "appliedBrowse": "Browse other clubs",
+  "@appliedBrowse": {
+    "description": "Key applied.browse"
+  },
+  "appliedDesc": "You'll get a notification with the result, usually within 1–3 days.",
+  "@appliedDesc": {
+    "description": "Key applied.desc"
+  },
+  "appliedEnableNotif": "Don't miss the result — turn on notifications.",
+  "@appliedEnableNotif": {
+    "description": "Key applied.enableNotif"
+  },
+  "appliedMyApplications": "My applications",
+  "@appliedMyApplications": {
+    "description": "Key applied.myApplications"
+  },
+  "appliedSentAt": "Sent: {date}",
+  "@appliedSentAt": {
+    "description": "Key applied.sentAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "appliedTitle": "Your request was sent to the club board",
+  "@appliedTitle": {
+    "description": "Key applied.title"
+  },
+  "assetsCancel": "Cancel",
+  "@assetsCancel": {
+    "description": "Key assets.cancel"
+  },
+  "assetsColorsBadges": "Role & status badges",
+  "@assetsColorsBadges": {
+    "description": "Key assets.colors.badges"
+  },
+  "assetsColorsContrast": "Contrast (on surface)",
+  "@assetsColorsContrast": {
+    "description": "Key assets.colors.contrast"
+  },
+  "assetsColorsCopyCss": "CSS var",
+  "@assetsColorsCopyCss": {
+    "description": "Key assets.colors.copyCss"
+  },
+  "assetsColorsCopyDart": "Flutter",
+  "@assetsColorsCopyDart": {
+    "description": "Key assets.colors.copyDart"
+  },
+  "assetsColorsCopyHex": "Hex",
+  "@assetsColorsCopyHex": {
+    "description": "Key assets.colors.copyHex"
+  },
+  "assetsColorsDark": "Dark",
+  "@assetsColorsDark": {
+    "description": "Key assets.colors.dark"
+  },
+  "assetsColorsLight": "Light",
+  "@assetsColorsLight": {
+    "description": "Key assets.colors.light"
+  },
+  "assetsColorsPalettes": "Cover palettes",
+  "@assetsColorsPalettes": {
+    "description": "Key assets.colors.palettes"
+  },
+  "assetsColorsToken": "Token",
+  "@assetsColorsToken": {
+    "description": "Key assets.colors.token"
+  },
+  "assetsColorsUsage": "Usage",
+  "@assetsColorsUsage": {
+    "description": "Key assets.colors.usage"
+  },
+  "assetsCopied": "Copied",
+  "@assetsCopied": {
+    "description": "Key assets.copied"
+  },
+  "assetsCoversAvatar": "Avatar generator",
+  "@assetsCoversAvatar": {
+    "description": "Key assets.covers.avatar"
+  },
+  "assetsCoversClubs": "14 club covers (real seeds)",
+  "@assetsCoversClubs": {
+    "description": "Key assets.covers.clubs"
+  },
+  "assetsCoversGenerator": "CoverArt generator",
+  "@assetsCoversGenerator": {
+    "description": "Key assets.covers.generator"
+  },
+  "assetsCoversIcon": "Icon",
+  "@assetsCoversIcon": {
+    "description": "Key assets.covers.icon"
+  },
+  "assetsCoversName": "Name",
+  "@assetsCoversName": {
+    "description": "Key assets.covers.name"
+  },
+  "assetsCoversPatterns": "Patterns",
+  "@assetsCoversPatterns": {
+    "description": "Key assets.covers.patterns"
+  },
+  "assetsCoversSeed": "Seed",
+  "@assetsCoversSeed": {
+    "description": "Key assets.covers.seed"
+  },
+  "assetsCoversTemplates": "12 templates (3 palettes × 4 patterns)",
+  "@assetsCoversTemplates": {
+    "description": "Key assets.covers.templates"
+  },
+  "assetsDataArb": "Language files (ARB)",
+  "@assetsDataArb": {
+    "description": "Key assets.data.arb"
+  },
+  "assetsDataArbNote": "Generated from the dictionary: @@locale, ICU plurals/params, @key description for each key. Keys are camelCased for Flutter gen-l10n.",
+  "@assetsDataArbNote": {
+    "description": "Key assets.data.arbNote"
+  },
+  "assetsDataDemo": "demo-data.json",
+  "@assetsDataDemo": {
+    "description": "Key assets.data.demo"
+  },
+  "assetsDataDemoNote": "All of section 11: users, clubs, events, posts, notifications, applications, reports. Dates as ISO 8601 + relative day offset.",
+  "@assetsDataDemoNote": {
+    "description": "Key assets.data.demoNote"
+  },
+  "assetsDataFilter": "Search key or text",
+  "@assetsDataFilter": {
+    "description": "Key assets.data.filter"
+  },
+  "assetsDataKey": "Key",
+  "@assetsDataKey": {
+    "description": "Key assets.data.key"
+  },
+  "assetsDataKeys": "{count} keys",
+  "@assetsDataKeys": {
+    "description": "Key assets.data.keys",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsDataMissing": "Missing translations",
+  "@assetsDataMissing": {
+    "description": "Key assets.data.missing"
+  },
+  "assetsDataShowing": "Showing first {n} rows",
+  "@assetsDataShowing": {
+    "description": "Key assets.data.showing",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsDesc": "Every visual and code asset used in the project. Download everything as a ZIP or grab items one by one.",
+  "@assetsDesc": {
+    "description": "Key assets.desc"
+  },
+  "assetsDownloadAll": "Download all (ZIP)",
+  "@assetsDownloadAll": {
+    "description": "Key assets.downloadAll"
+  },
+  "assetsDownloadSection": "Download this section (ZIP)",
+  "@assetsDownloadSection": {
+    "description": "Key assets.downloadSection"
+  },
+  "assetsFlutterCopy": "Copy",
+  "@assetsFlutterCopy": {
+    "description": "Key assets.flutter.copy"
+  },
+  "assetsFlutterDownload": "Download",
+  "@assetsFlutterDownload": {
+    "description": "Key assets.flutter.download"
+  },
+  "assetsFlutterNote": "Dart files generated from the design tokens. Values match section 4.1 exactly.",
+  "@assetsFlutterNote": {
+    "description": "Key assets.flutter.note"
+  },
+  "assetsFontsFail": "Font files could not be included in the ZIP; use the Google Fonts link.",
+  "@assetsFontsFail": {
+    "description": "Key assets.fontsFail"
+  },
+  "assetsIconsAliases": "Legacy names (aliases)",
+  "@assetsIconsAliases": {
+    "description": "Key assets.icons.aliases"
+  },
+  "assetsIconsColor": "Colour (preview)",
+  "@assetsIconsColor": {
+    "description": "Key assets.icons.color"
+  },
+  "assetsIconsCopyName": "Copy name",
+  "@assetsIconsCopyName": {
+    "description": "Key assets.icons.copyName"
+  },
+  "assetsIconsCopySvg": "Copy SVG",
+  "@assetsIconsCopySvg": {
+    "description": "Key assets.icons.copySvg"
+  },
+  "assetsIconsCount": "{count} icons · single ICONS registry · Lucide (ISC)",
+  "@assetsIconsCount": {
+    "description": "Key assets.icons.count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "assetsIconsFlutter": "Copy Flutter code",
+  "@assetsIconsFlutter": {
+    "description": "Key assets.icons.flutter"
+  },
+  "assetsIconsSize": "Size",
+  "@assetsIconsSize": {
+    "description": "Key assets.icons.size"
+  },
+  "assetsIconsSource": "Source: {src}",
+  "@assetsIconsSource": {
+    "description": "Key assets.icons.source",
+    "placeholders": {
+      "src": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsIconsStroke": "Stroke width",
+  "@assetsIconsStroke": {
+    "description": "Key assets.icons.stroke"
+  },
+  "assetsIconsSvg": "Download SVG",
+  "@assetsIconsSvg": {
+    "description": "Key assets.icons.svg"
+  },
+  "assetsIllusNote": "12 illustrations · single tone + red accent · light/dark ready",
+  "@assetsIllusNote": {
+    "description": "Key assets.illus.note"
+  },
+  "assetsLogoAppIcon": "App icon proposal (1024 × 1024)",
+  "@assetsLogoAppIcon": {
+    "description": "Key assets.logo.appIcon"
+  },
+  "assetsLogoMasks": "iOS rounded · Android circular mask",
+  "@assetsLogoMasks": {
+    "description": "Key assets.logo.masks"
+  },
+  "assetsLogoPlaceholder": "LogoPlaceholder (fallback mark)",
+  "@assetsLogoPlaceholder": {
+    "description": "Key assets.logo.placeholder"
+  },
+  "assetsLogoPlaceholderNote": "The red round mark used before the real logo arrived. Replace with the official logo where needed.",
+  "@assetsLogoPlaceholderNote": {
+    "description": "Key assets.logo.placeholderNote"
+  },
+  "assetsLogoReal": "Official logo (provided by the user)",
+  "@assetsLogoReal": {
+    "description": "Key assets.logo.real"
+  },
+  "assetsLogoRealNote": "The real university logo was added as app/assets/gu-logo.png and is used in the app. Usage rights belong to the university.",
+  "@assetsLogoRealNote": {
+    "description": "Key assets.logo.realNote"
+  },
+  "assetsLogoVariants": "Horizontal · Vertical · Mark only",
+  "@assetsLogoVariants": {
+    "description": "Key assets.logo.variants"
+  },
+  "assetsProgress": "{a}/{b} files",
+  "@assetsProgress": {
+    "description": "Key assets.progress",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsSearch": "Search assets",
+  "@assetsSearch": {
+    "description": "Key assets.search"
+  },
+  "assetsTabColors": "Colours",
+  "@assetsTabColors": {
+    "description": "Key assets.tab.colors"
+  },
+  "assetsTabCovers": "Covers & Patterns",
+  "@assetsTabCovers": {
+    "description": "Key assets.tab.covers"
+  },
+  "assetsTabData": "Data & Language",
+  "@assetsTabData": {
+    "description": "Key assets.tab.data"
+  },
+  "assetsTabFlutter": "Flutter Output",
+  "@assetsTabFlutter": {
+    "description": "Key assets.tab.flutter"
+  },
+  "assetsTabIcons": "Icons",
+  "@assetsTabIcons": {
+    "description": "Key assets.tab.icons"
+  },
+  "assetsTabIllus": "Illustrations",
+  "@assetsTabIllus": {
+    "description": "Key assets.tab.illus"
+  },
+  "assetsTabLogo": "Logo",
+  "@assetsTabLogo": {
+    "description": "Key assets.tab.logo"
+  },
+  "assetsTabType": "Typography",
+  "@assetsTabType": {
+    "description": "Key assets.tab.type"
+  },
+  "assetsTitle": "Assets",
+  "@assetsTitle": {
+    "description": "Key assets.title"
+  },
+  "assetsTypeCopyCss": "Copy CSS",
+  "@assetsTypeCopyCss": {
+    "description": "Key assets.type.copyCss"
+  },
+  "assetsTypeCopyDart": "Copy TextStyle",
+  "@assetsTypeCopyDart": {
+    "description": "Key assets.type.copyDart"
+  },
+  "assetsTypeLatinExt": "latin-ext is required: ğ, ş, İ, ı",
+  "@assetsTypeLatinExt": {
+    "description": "Key assets.type.latinExt"
+  },
+  "assetsTypeOpenGoogle": "Open on Google Fonts",
+  "@assetsTypeOpenGoogle": {
+    "description": "Key assets.type.openGoogle"
+  },
+  "assetsTypeSample": "ĞÜŞİÖÇ ğüşıöç — Gümüşhane Üniversitesi — 0123456789",
+  "@assetsTypeSample": {
+    "description": "Key assets.type.sample"
+  },
+  "assetsTypeScale": "Type scale",
+  "@assetsTypeScale": {
+    "description": "Key assets.type.scale"
+  },
+  "assetsTypeWoff2": "Download woff2 (latin + latin-ext)",
+  "@assetsTypeWoff2": {
+    "description": "Key assets.type.woff2"
+  },
+  "assetsZipDone": "ZIP ready: {name}",
+  "@assetsZipDone": {
+    "description": "Key assets.zipDone",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "assetsZipFail": "ZIP library could not load; downloading files one by one.",
+  "@assetsZipFail": {
+    "description": "Key assets.zipFail"
+  },
+  "attendanceAbsent": "No-show",
+  "@attendanceAbsent": {
+    "description": "Key attendance.absent"
+  },
+  "attendanceAllRegistered": "All registered",
+  "@attendanceAllRegistered": {
+    "description": "Key attendance.allRegistered"
+  },
+  "attendanceCloseReg": "Close registration",
+  "@attendanceCloseReg": {
+    "description": "Key attendance.closeReg"
+  },
+  "attendanceEmpty": "No registrations yet",
+  "@attendanceEmpty": {
+    "description": "Key attendance.empty"
+  },
+  "attendanceMarkAll": "Mark all registered as attended",
+  "@attendanceMarkAll": {
+    "description": "Key attendance.markAll"
+  },
+  "attendanceNoWaitlist": "The waitlist is empty.",
+  "@attendanceNoWaitlist": {
+    "description": "Key attendance.noWaitlist"
+  },
+  "attendanceNotStarted": "The event hasn't started yet.",
+  "@attendanceNotStarted": {
+    "description": "Key attendance.notStarted"
+  },
+  "attendanceOpenReg": "Open registration",
+  "@attendanceOpenReg": {
+    "description": "Key attendance.openReg"
+  },
+  "attendancePromote": "Promote",
+  "@attendancePromote": {
+    "description": "Key attendance.promote"
+  },
+  "attendanceRate": "Attendance",
+  "@attendanceRate": {
+    "description": "Key attendance.rate"
+  },
+  "attendanceRegistered": "Registered",
+  "@attendanceRegistered": {
+    "description": "Key attendance.registered"
+  },
+  "attendanceRegisteredOne": "Registered",
+  "@attendanceRegisteredOne": {
+    "description": "Key attendance.registeredOne"
+  },
+  "attendanceTitle": "Attendees & check-in",
+  "@attendanceTitle": {
+    "description": "Key attendance.title"
+  },
+  "authChangeEmail": "Change email",
+  "@authChangeEmail": {
+    "description": "Key auth.changeEmail"
+  },
+  "authDemoAccounts": "Sign in with a demo account",
+  "@authDemoAccounts": {
+    "description": "Key auth.demoAccounts"
+  },
+  "authDemoPassword": "Password for all demo accounts",
+  "@authDemoPassword": {
+    "description": "Key auth.demoPassword"
+  },
+  "authEmail": "Email",
+  "@authEmail": {
+    "description": "Key auth.email"
+  },
+  "authErrDomain": "Only a university email can be used",
+  "@authErrDomain": {
+    "description": "Key auth.err.domain"
+  },
+  "authErrEmail": "Enter a valid email",
+  "@authErrEmail": {
+    "description": "Key auth.err.email"
+  },
+  "authErrExists": "This email is already registered",
+  "@authErrExists": {
+    "description": "Key auth.err.exists"
+  },
+  "authErrLegal": "Tick the box to continue",
+  "@authErrLegal": {
+    "description": "Key auth.err.legal"
+  },
+  "authErrMismatch": "Passwords do not match",
+  "@authErrMismatch": {
+    "description": "Key auth.err.mismatch"
+  },
+  "authErrPassword": "Password needs 8+ characters, an uppercase letter and a digit",
+  "@authErrPassword": {
+    "description": "Key auth.err.password"
+  },
+  "authErrRequired": "This field is required",
+  "@authErrRequired": {
+    "description": "Key auth.err.required"
+  },
+  "authErrWrong": "Wrong email or password",
+  "@authErrWrong": {
+    "description": "Key auth.err.wrong"
+  },
+  "authErrWrongPassword": "Wrong password",
+  "@authErrWrongPassword": {
+    "description": "Key auth.err.wrongPassword"
+  },
+  "authForgot": "Forgot password",
+  "@authForgot": {
+    "description": "Key auth.forgot"
+  },
+  "authFullName": "Full name",
+  "@authFullName": {
+    "description": "Key auth.fullName"
+  },
+  "authHaveAccount": "Already have an account?",
+  "@authHaveAccount": {
+    "description": "Key auth.haveAccount"
+  },
+  "authHidePassword": "Hide password",
+  "@authHidePassword": {
+    "description": "Key auth.hidePassword"
+  },
+  "authLegalCheck": "— I have read and accept them.",
+  "@authLegalCheck": {
+    "description": "Key auth.legalCheck"
+  },
+  "authLegalPrefix": "By continuing you accept the",
+  "@authLegalPrefix": {
+    "description": "Key auth.legalPrefix"
+  },
+  "authLegalSuffix": ".",
+  "@authLegalSuffix": {
+    "description": "Key auth.legalSuffix"
+  },
+  "authLockedFor": "Locked for {s}s",
+  "@authLockedFor": {
+    "description": "Key auth.lockedFor",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "authLoginCta": "Sign in",
+  "@authLoginCta": {
+    "description": "Key auth.login.cta"
+  },
+  "authLoginTitle": "Sign in",
+  "@authLoginTitle": {
+    "description": "Key auth.login.title"
+  },
+  "authLoginWelcome": "Welcome",
+  "@authLoginWelcome": {
+    "description": "Key auth.login.welcome"
+  },
+  "authLogout": "Sign out",
+  "@authLogout": {
+    "description": "Key auth.logout"
+  },
+  "authNewEmail": "New email",
+  "@authNewEmail": {
+    "description": "Key auth.newEmail"
+  },
+  "authNoAccount": "Don't have an account?",
+  "@authNoAccount": {
+    "description": "Key auth.noAccount"
+  },
+  "authPassword": "Password",
+  "@authPassword": {
+    "description": "Key auth.password"
+  },
+  "authPasswordRepeat": "Repeat password",
+  "@authPasswordRepeat": {
+    "description": "Key auth.passwordRepeat"
+  },
+  "authRegisterCta": "Sign up",
+  "@authRegisterCta": {
+    "description": "Key auth.register.cta"
+  },
+  "authRegisterEmailHelp": "Sign up with your school email",
+  "@authRegisterEmailHelp": {
+    "description": "Key auth.register.emailHelp"
+  },
+  "authRegisterSubmit": "Create account",
+  "@authRegisterSubmit": {
+    "description": "Key auth.register.submit"
+  },
+  "authRegisterTitle": "Create account",
+  "@authRegisterTitle": {
+    "description": "Key auth.register.title"
+  },
+  "authResend": "Resend",
+  "@authResend": {
+    "description": "Key auth.resend"
+  },
+  "authResendIn": "Resend ({s}s)",
+  "@authResendIn": {
+    "description": "Key auth.resendIn",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "authResetDesc": "Enter your university email and we'll send you a reset link.",
+  "@authResetDesc": {
+    "description": "Key auth.reset.desc"
+  },
+  "authResetSend": "Send link",
+  "@authResetSend": {
+    "description": "Key auth.reset.send"
+  },
+  "authResetSentDesc": "We sent a link to {email} (if it is registered).",
+  "@authResetSentDesc": {
+    "description": "Key auth.reset.sentDesc",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authResetSentTitle": "Check your inbox",
+  "@authResetSentTitle": {
+    "description": "Key auth.reset.sentTitle"
+  },
+  "authResetTitle": "Reset password",
+  "@authResetTitle": {
+    "description": "Key auth.reset.title"
+  },
+  "authResetToLogin": "Back to sign in",
+  "@authResetToLogin": {
+    "description": "Key auth.reset.toLogin"
+  },
+  "authRuleDigit": "One digit",
+  "@authRuleDigit": {
+    "description": "Key auth.rule.digit"
+  },
+  "authRuleLen": "At least 8 characters",
+  "@authRuleLen": {
+    "description": "Key auth.rule.len"
+  },
+  "authRuleUpper": "One uppercase letter",
+  "@authRuleUpper": {
+    "description": "Key auth.rule.upper"
+  },
+  "authSetupAddPhoto": "Add photo",
+  "@authSetupAddPhoto": {
+    "description": "Key auth.setup.addPhoto"
+  },
+  "authSetupEduDesc": "Your department and year are shared only with club boards.",
+  "@authSetupEduDesc": {
+    "description": "Key auth.setup.eduDesc"
+  },
+  "authSetupEduTitle": "Your studies",
+  "@authSetupEduTitle": {
+    "description": "Key auth.setup.eduTitle"
+  },
+  "authSetupInterestDesc": "Pick 1 to 5; we will tailor suggestions to them.",
+  "@authSetupInterestDesc": {
+    "description": "Key auth.setup.interestDesc"
+  },
+  "authSetupInterestTitle": "Your interests",
+  "@authSetupInterestTitle": {
+    "description": "Key auth.setup.interestTitle"
+  },
+  "authSetupMinInterest": "Pick at least one interest",
+  "@authSetupMinInterest": {
+    "description": "Key auth.setup.minInterest"
+  },
+  "authSetupPhotoAdded": "Photo added",
+  "@authSetupPhotoAdded": {
+    "description": "Key auth.setup.photoAdded"
+  },
+  "authSetupPhotoDesc": "Let your club mates recognise you. You can skip for now.",
+  "@authSetupPhotoDesc": {
+    "description": "Key auth.setup.photoDesc"
+  },
+  "authSetupPhotoTitle": "Add a photo",
+  "@authSetupPhotoTitle": {
+    "description": "Key auth.setup.photoTitle"
+  },
+  "authSetupProgress": "Step {step}/{total}",
+  "@authSetupProgress": {
+    "description": "Key auth.setup.progress",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "authSetupSkipPhoto": "Skip for now",
+  "@authSetupSkipPhoto": {
+    "description": "Key auth.setup.skipPhoto"
+  },
+  "authSetupTitle": "Complete your profile",
+  "@authSetupTitle": {
+    "description": "Key auth.setup.title"
+  },
+  "authShowPassword": "Show password",
+  "@authShowPassword": {
+    "description": "Key auth.showPassword"
+  },
+  "authUniEmail": "University email",
+  "@authUniEmail": {
+    "description": "Key auth.uniEmail"
+  },
+  "authVerifyConfirm": "I verified it",
+  "@authVerifyConfirm": {
+    "description": "Key auth.verify.confirm"
+  },
+  "authVerifyDemoLink": "I clicked the link",
+  "@authVerifyDemoLink": {
+    "description": "Key auth.verify.demoLink"
+  },
+  "authVerifyDesc": "We sent a verification link to {email}.",
+  "@authVerifyDesc": {
+    "description": "Key auth.verify.desc",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authVerifySuccess": "Email verified",
+  "@authVerifySuccess": {
+    "description": "Key auth.verify.success"
+  },
+  "authVerifyTitle": "Verify your email",
+  "@authVerifyTitle": {
+    "description": "Key auth.verify.title"
+  },
+  "blockedDesc": "You won't see posts or comments from blocked users, and they can't interact with you.",
+  "@blockedDesc": {
+    "description": "Key blocked.desc"
+  },
+  "blockedEmpty": "You haven't blocked anyone.",
+  "@blockedEmpty": {
+    "description": "Key blocked.empty"
+  },
+  "blockedTitle": "Blocked users",
+  "@blockedTitle": {
+    "description": "Key blocked.title"
+  },
+  "cancelReasonOther": "Other",
+  "@cancelReasonOther": {
+    "description": "Key cancelReason.other"
+  },
+  "cancelReasonSpeaker": "Speaker unavailable",
+  "@cancelReasonSpeaker": {
+    "description": "Key cancelReason.speaker"
+  },
+  "cancelReasonVenue": "Venue issue",
+  "@cancelReasonVenue": {
+    "description": "Key cancelReason.venue"
+  },
+  "cancelReasonWeather": "Weather conditions",
+  "@cancelReasonWeather": {
+    "description": "Key cancelReason.weather"
+  },
+  "catK01": "Technology",
+  "@catK01": {
+    "description": "Key cat.k01"
+  },
+  "catK02": "Science & Engineering",
+  "@catK02": {
+    "description": "Key cat.k02"
+  },
+  "catK03": "Sports & Outdoors",
+  "@catK03": {
+    "description": "Key cat.k03"
+  },
+  "catK04": "Arts & Culture",
+  "@catK04": {
+    "description": "Key cat.k04"
+  },
+  "catK05": "Social Responsibility",
+  "@catK05": {
+    "description": "Key cat.k05"
+  },
+  "catK06": "Career & Entrepreneurship",
+  "@catK06": {
+    "description": "Key cat.k06"
+  },
+  "catK07": "Games & Mind",
+  "@catK07": {
+    "description": "Key cat.k07"
+  },
+  "catK08": "Media & Communication",
+  "@catK08": {
+    "description": "Key cat.k08"
+  },
+  "clubAdvisor": "Advisor",
+  "@clubAdvisor": {
+    "description": "Key club.advisor"
+  },
+  "clubAllMembers": "All members",
+  "@clubAllMembers": {
+    "description": "Key club.allMembers"
+  },
+  "clubBoard": "Board",
+  "@clubBoard": {
+    "description": "Key club.board"
+  },
+  "clubClosedNote": "Applications are currently closed",
+  "@clubClosedNote": {
+    "description": "Key club.closedNote"
+  },
+  "clubConditions": "Membership conditions",
+  "@clubConditions": {
+    "description": "Key club.conditions"
+  },
+  "clubContactEmail": "Email",
+  "@clubContactEmail": {
+    "description": "Key club.contact.email"
+  },
+  "clubContactWeb": "Website",
+  "@clubContactWeb": {
+    "description": "Key club.contact.web"
+  },
+  "clubCtaCreateEvent": "Create event",
+  "@clubCtaCreateEvent": {
+    "description": "Key club.cta.createEvent"
+  },
+  "clubCtaManage": "Manage",
+  "@clubCtaManage": {
+    "description": "Key club.cta.manage"
+  },
+  "clubCtaViewManage": "View management",
+  "@clubCtaViewManage": {
+    "description": "Key club.cta.viewManage"
+  },
+  "clubEventsVisitorNote": "Join the club to see members-only events.",
+  "@clubEventsVisitorNote": {
+    "description": "Key club.eventsVisitorNote"
+  },
+  "clubFounded": "Founded in {year}",
+  "@clubFounded": {
+    "description": "Key club.founded",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "clubGoClub": "Go to club",
+  "@clubGoClub": {
+    "description": "Key club.goClub"
+  },
+  "clubLeave": "Leave club",
+  "@clubLeave": {
+    "description": "Key club.leave"
+  },
+  "clubMembersLocked": "{count} members. Join the club to see the list.",
+  "@clubMembersLocked": {
+    "description": "Key club.membersLocked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubPostsLocked": "Become a member to see posts.",
+  "@clubPostsLocked": {
+    "description": "Key club.postsLocked"
+  },
+  "clubReport": "Report this club",
+  "@clubReport": {
+    "description": "Key club.report"
+  },
+  "clubSuspendedBanner": "This club is temporarily suspended.",
+  "@clubSuspendedBanner": {
+    "description": "Key club.suspendedBanner"
+  },
+  "clubTabAbout": "About",
+  "@clubTabAbout": {
+    "description": "Key club.tab.about"
+  },
+  "clubTabEvents": "Events",
+  "@clubTabEvents": {
+    "description": "Key club.tab.events"
+  },
+  "clubTabMembers": "Members",
+  "@clubTabMembers": {
+    "description": "Key club.tab.members"
+  },
+  "clubTabPosts": "Posts",
+  "@clubTabPosts": {
+    "description": "Key club.tab.posts"
+  },
+  "clubTitle": "Club",
+  "@clubTitle": {
+    "description": "Key club.title"
+  },
+  "clubTypeApproval": "Approval required",
+  "@clubTypeApproval": {
+    "description": "Key club.type.approval"
+  },
+  "clubTypeInstant": "Instant join",
+  "@clubTypeInstant": {
+    "description": "Key club.type.instant"
+  },
+  "clubFormAdvisorTitle": "Title",
+  "@clubFormAdvisorTitle": {
+    "description": "Key clubForm.advisorTitle"
+  },
+  "clubFormAssignPresident": "Assign president",
+  "@clubFormAssignPresident": {
+    "description": "Key clubForm.assignPresident"
+  },
+  "clubFormCreate": "Create",
+  "@clubFormCreate": {
+    "description": "Key clubForm.create"
+  },
+  "clubFormEditTitle": "Edit club",
+  "@clubFormEditTitle": {
+    "description": "Key clubForm.editTitle"
+  },
+  "clubFormErrUnique": "A club with this name already exists",
+  "@clubFormErrUnique": {
+    "description": "Key clubForm.err.unique"
+  },
+  "clubFormPresident": "President",
+  "@clubFormPresident": {
+    "description": "Key clubForm.president"
+  },
+  "clubFormTitle": "Create club",
+  "@clubFormTitle": {
+    "description": "Key clubForm.title"
+  },
+  "clubSettingsAbout": "Full description",
+  "@clubSettingsAbout": {
+    "description": "Key clubSettings.about"
+  },
+  "clubSettingsAdvisorLocked": "The advisor is assigned by campus administration",
+  "@clubSettingsAdvisorLocked": {
+    "description": "Key clubSettings.advisorLocked"
+  },
+  "clubSettingsApplicationsOpen": "Applications open",
+  "@clubSettingsApplicationsOpen": {
+    "description": "Key clubSettings.applicationsOpen"
+  },
+  "clubSettingsApplicationsOpenHelp": "When off, the Join button is disabled.",
+  "@clubSettingsApplicationsOpenHelp": {
+    "description": "Key clubSettings.applicationsOpenHelp"
+  },
+  "clubSettingsApprovalRequired": "Board approval required",
+  "@clubSettingsApprovalRequired": {
+    "description": "Key clubSettings.approvalRequired"
+  },
+  "clubSettingsApprovalRequiredHelp": "When off, anyone joins instantly.",
+  "@clubSettingsApprovalRequiredHelp": {
+    "description": "Key clubSettings.approvalRequiredHelp"
+  },
+  "clubSettingsCategory": "Category",
+  "@clubSettingsCategory": {
+    "description": "Key clubSettings.category"
+  },
+  "clubSettingsCover": "Cover",
+  "@clubSettingsCover": {
+    "description": "Key clubSettings.cover"
+  },
+  "clubSettingsErrInstagram": "Enter a valid username",
+  "@clubSettingsErrInstagram": {
+    "description": "Key clubSettings.err.instagram"
+  },
+  "clubSettingsErrWeb": "Enter a valid https:// address",
+  "@clubSettingsErrWeb": {
+    "description": "Key clubSettings.err.web"
+  },
+  "clubSettingsGroupContact": "Contact",
+  "@clubSettingsGroupContact": {
+    "description": "Key clubSettings.group.contact"
+  },
+  "clubSettingsGroupInfo": "Details",
+  "@clubSettingsGroupInfo": {
+    "description": "Key clubSettings.group.info"
+  },
+  "clubSettingsGroupJoin": "Joining",
+  "@clubSettingsGroupJoin": {
+    "description": "Key clubSettings.group.join"
+  },
+  "clubSettingsGroupLook": "Appearance",
+  "@clubSettingsGroupLook": {
+    "description": "Key clubSettings.group.look"
+  },
+  "clubSettingsInstantWarning": "Everyone becomes a member instantly.",
+  "@clubSettingsInstantWarning": {
+    "description": "Key clubSettings.instantWarning"
+  },
+  "clubSettingsLogo": "Logo",
+  "@clubSettingsLogo": {
+    "description": "Key clubSettings.logo"
+  },
+  "clubSettingsName": "Club name",
+  "@clubSettingsName": {
+    "description": "Key clubSettings.name"
+  },
+  "clubSettingsNameLocked": "Contact campus administration to change the name",
+  "@clubSettingsNameLocked": {
+    "description": "Key clubSettings.nameLocked"
+  },
+  "clubSettingsRequireNote": "Require a note",
+  "@clubSettingsRequireNote": {
+    "description": "Key clubSettings.requireNote"
+  },
+  "clubSettingsRequireNoteHelp": "Applicants write why they want to join.",
+  "@clubSettingsRequireNoteHelp": {
+    "description": "Key clubSettings.requireNoteHelp"
+  },
+  "clubSettingsSummary": "Short description",
+  "@clubSettingsSummary": {
+    "description": "Key clubSettings.summary"
+  },
+  "clubSettingsTitle": "Club settings",
+  "@clubSettingsTitle": {
+    "description": "Key clubSettings.title"
+  },
+  "clubsActiveFilters": "{count} active filters",
+  "@clubsActiveFilters": {
+    "description": "Key clubs.activeFilters",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsCardClosed": "Applications closed",
+  "@clubsCardClosed": {
+    "description": "Key clubs.card.closed"
+  },
+  "clubsCardJoin": "Join",
+  "@clubsCardJoin": {
+    "description": "Key clubs.card.join"
+  },
+  "clubsCardManager": "Manager",
+  "@clubsCardManager": {
+    "description": "Key clubs.card.manager"
+  },
+  "clubsCardMemberShort": "Member",
+  "@clubsCardMemberShort": {
+    "description": "Key clubs.card.memberShort"
+  },
+  "clubsCardMembers": "{count, plural, one{# member} other{# members}}",
+  "@clubsCardMembers": {
+    "description": "Key clubs.card.members",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsCardOpen": "Open",
+  "@clubsCardOpen": {
+    "description": "Key clubs.card.open"
+  },
+  "clubsCardPending": "Request sent",
+  "@clubsCardPending": {
+    "description": "Key clubs.card.pending"
+  },
+  "clubsCardRejected": "Rejected",
+  "@clubsCardRejected": {
+    "description": "Key clubs.card.rejected"
+  },
+  "clubsCardRemoved": "Removed",
+  "@clubsCardRemoved": {
+    "description": "Key clubs.card.removed"
+  },
+  "clubsCount": "{count, plural, one{# club} other{# clubs}}",
+  "@clubsCount": {
+    "description": "Key clubs.count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clubsEmptyClear": "Clear filters",
+  "@clubsEmptyClear": {
+    "description": "Key clubs.empty.clear"
+  },
+  "clubsEmptyDesc": "Try loosening the filters or picking another category.",
+  "@clubsEmptyDesc": {
+    "description": "Key clubs.empty.desc"
+  },
+  "clubsEmptyTitle": "No clubs match your filters",
+  "@clubsEmptyTitle": {
+    "description": "Key clubs.empty.title"
+  },
+  "clubsFirstCta": "Discover",
+  "@clubsFirstCta": {
+    "description": "Key clubs.first.cta"
+  },
+  "clubsFirstDesc": "Discover clubs that match your interests and apply.",
+  "@clubsFirstDesc": {
+    "description": "Key clubs.first.desc"
+  },
+  "clubsFirstTitle": "Find your first club",
+  "@clubsFirstTitle": {
+    "description": "Key clubs.first.title"
+  },
+  "clubsMyTitle": "My clubs",
+  "@clubsMyTitle": {
+    "description": "Key clubs.my.title"
+  },
+  "clubsMyUnread": "Unread notification",
+  "@clubsMyUnread": {
+    "description": "Key clubs.my.unread"
+  },
+  "commonAll": "All",
+  "@commonAll": {
+    "description": "Key common.all"
+  },
+  "commonAllDone": "That's all",
+  "@commonAllDone": {
+    "description": "Key common.allDone"
+  },
+  "commonAnd": "and",
+  "@commonAnd": {
+    "description": "Key common.and"
+  },
+  "commonBack": "Back",
+  "@commonBack": {
+    "description": "Key common.back"
+  },
+  "commonCancel": "Cancel",
+  "@commonCancel": {
+    "description": "Key common.cancel"
+  },
+  "commonClear": "Clear",
+  "@commonClear": {
+    "description": "Key common.clear"
+  },
+  "commonConfirm": "Confirm",
+  "@commonConfirm": {
+    "description": "Key common.confirm"
+  },
+  "commonContinue": "Continue",
+  "@commonContinue": {
+    "description": "Key common.continue"
+  },
+  "commonCopy": "Copy",
+  "@commonCopy": {
+    "description": "Key common.copy"
+  },
+  "commonDelete": "Delete",
+  "@commonDelete": {
+    "description": "Key common.delete"
+  },
+  "commonDeletedUser": "Deleted user",
+  "@commonDeletedUser": {
+    "description": "Key common.deletedUser"
+  },
+  "commonDemo": "Demo",
+  "@commonDemo": {
+    "description": "Key common.demo"
+  },
+  "commonEdit": "Edit",
+  "@commonEdit": {
+    "description": "Key common.edit"
+  },
+  "commonEmptyGeneric": "Nothing here yet",
+  "@commonEmptyGeneric": {
+    "description": "Key common.emptyGeneric"
+  },
+  "commonFilter": "Filter",
+  "@commonFilter": {
+    "description": "Key common.filter"
+  },
+  "commonFilterSort": "Filter / Sort",
+  "@commonFilterSort": {
+    "description": "Key common.filterSort"
+  },
+  "commonFinish": "Finish",
+  "@commonFinish": {
+    "description": "Key common.finish"
+  },
+  "commonGiveUp": "Cancel",
+  "@commonGiveUp": {
+    "description": "Key common.giveUp"
+  },
+  "commonGridView": "Grid view",
+  "@commonGridView": {
+    "description": "Key common.gridView"
+  },
+  "commonListView": "List view",
+  "@commonListView": {
+    "description": "Key common.listView"
+  },
+  "commonLoading": "Loading",
+  "@commonLoading": {
+    "description": "Key common.loading"
+  },
+  "commonNo": "No",
+  "@commonNo": {
+    "description": "Key common.no"
+  },
+  "commonOff": "Off",
+  "@commonOff": {
+    "description": "Key common.off"
+  },
+  "commonOk": "OK",
+  "@commonOk": {
+    "description": "Key common.ok"
+  },
+  "commonOn": "On",
+  "@commonOn": {
+    "description": "Key common.on"
+  },
+  "commonOpen": "Open",
+  "@commonOpen": {
+    "description": "Key common.open"
+  },
+  "commonOptional": "Optional",
+  "@commonOptional": {
+    "description": "Key common.optional"
+  },
+  "commonReadMore": "Read more",
+  "@commonReadMore": {
+    "description": "Key common.readMore"
+  },
+  "commonReadOnly": "Read-only",
+  "@commonReadOnly": {
+    "description": "Key common.readOnly"
+  },
+  "commonRemove": "Remove",
+  "@commonRemove": {
+    "description": "Key common.remove"
+  },
+  "commonRequired": "Required",
+  "@commonRequired": {
+    "description": "Key common.required"
+  },
+  "commonRetry": "Retry",
+  "@commonRetry": {
+    "description": "Key common.retry"
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Key common.save"
+  },
+  "commonSearch": "Search",
+  "@commonSearch": {
+    "description": "Key common.search"
+  },
+  "commonSelect": "Select",
+  "@commonSelect": {
+    "description": "Key common.select"
+  },
+  "commonSend": "Send",
+  "@commonSend": {
+    "description": "Key common.send"
+  },
+  "commonShare": "Share",
+  "@commonShare": {
+    "description": "Key common.share"
+  },
+  "commonSort": "Sort",
+  "@commonSort": {
+    "description": "Key common.sort"
+  },
+  "commonSuccess": "Success",
+  "@commonSuccess": {
+    "description": "Key common.success"
+  },
+  "commonToday": "Today",
+  "@commonToday": {
+    "description": "Key common.today"
+  },
+  "commonUndo": "Undo",
+  "@commonUndo": {
+    "description": "Key common.undo"
+  },
+  "commonUpdate": "Update",
+  "@commonUpdate": {
+    "description": "Key common.update"
+  },
+  "commonView": "View",
+  "@commonView": {
+    "description": "Key common.view"
+  },
+  "commonYes": "Yes",
+  "@commonYes": {
+    "description": "Key common.yes"
+  },
+  "composeAddImage": "Add photo",
+  "@composeAddImage": {
+    "description": "Key compose.addImage"
+  },
+  "composeAddOption": "Add option",
+  "@composeAddOption": {
+    "description": "Key compose.addOption"
+  },
+  "composeAnnouncementTitle": "Announcement title",
+  "@composeAnnouncementTitle": {
+    "description": "Key compose.announcementTitle"
+  },
+  "composeClear": "Clear",
+  "@composeClear": {
+    "description": "Key compose.clear"
+  },
+  "composeDailyQuota": "Today's announcement quota",
+  "@composeDailyQuota": {
+    "description": "Key compose.dailyQuota"
+  },
+  "composeDuration": "Duration",
+  "@composeDuration": {
+    "description": "Key compose.duration"
+  },
+  "composeEdit": "Back to editing",
+  "@composeEdit": {
+    "description": "Key compose.edit"
+  },
+  "composeEditTitle": "Edit post",
+  "@composeEditTitle": {
+    "description": "Key compose.editTitle"
+  },
+  "composeErrDupOptions": "Options must be different",
+  "@composeErrDupOptions": {
+    "description": "Key compose.err.dupOptions"
+  },
+  "composeErrMinOptions": "At least 2 options are required",
+  "@composeErrMinOptions": {
+    "description": "Key compose.err.minOptions"
+  },
+  "composeImages": "Photos",
+  "@composeImages": {
+    "description": "Key compose.images"
+  },
+  "composeLimitReached": "Today's announcement quota is used up.",
+  "@composeLimitReached": {
+    "description": "Key compose.limitReached"
+  },
+  "composeNoAccess": "You don't have permission to post.",
+  "@composeNoAccess": {
+    "description": "Key compose.noAccess"
+  },
+  "composeNotifPreview": "Notification preview",
+  "@composeNotifPreview": {
+    "description": "Key compose.notifPreview"
+  },
+  "composeOptionN": "Option {n}",
+  "@composeOptionN": {
+    "description": "Key compose.optionN",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "composeOptions": "Options",
+  "@composeOptions": {
+    "description": "Key compose.options"
+  },
+  "composePin": "Pin to top",
+  "@composePin": {
+    "description": "Key compose.pin"
+  },
+  "composePreview": "Preview",
+  "@composePreview": {
+    "description": "Key compose.preview"
+  },
+  "composePreviewNote": "This is how members will see the post.",
+  "@composePreviewNote": {
+    "description": "Key compose.previewNote"
+  },
+  "composePublish": "Publish",
+  "@composePublish": {
+    "description": "Key compose.publish"
+  },
+  "composePushHelp": "Members get a push notification.",
+  "@composePushHelp": {
+    "description": "Key compose.pushHelp"
+  },
+  "composePushToggle": "Notify members",
+  "@composePushToggle": {
+    "description": "Key compose.pushToggle"
+  },
+  "composeQuestion": "Question",
+  "@composeQuestion": {
+    "description": "Key compose.question"
+  },
+  "composeSaveDraft": "Save draft",
+  "@composeSaveDraft": {
+    "description": "Key compose.saveDraft"
+  },
+  "composeShowAfterVote": "Show results after voting",
+  "@composeShowAfterVote": {
+    "description": "Key compose.showAfterVote"
+  },
+  "composeText": "Text",
+  "@composeText": {
+    "description": "Key compose.text"
+  },
+  "composeTitle": "New post",
+  "@composeTitle": {
+    "description": "Key compose.title"
+  },
+  "contentEmpty": "No content",
+  "@contentEmpty": {
+    "description": "Key content.empty"
+  },
+  "contentHidden": "hidden",
+  "@contentHidden": {
+    "description": "Key content.hidden"
+  },
+  "contentReports": "{count, plural, one{# report} other{# reports}}",
+  "@contentReports": {
+    "description": "Key content.reports",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentStats": "{likes} likes · {comments} comments",
+  "@contentStats": {
+    "description": "Key content.stats",
+    "placeholders": {
+      "likes": {
+        "type": "String"
+      },
+      "comments": {
+        "type": "String"
+      }
+    }
+  },
+  "contentTabAnnouncements": "Announcements",
+  "@contentTabAnnouncements": {
+    "description": "Key content.tab.announcements"
+  },
+  "contentTabPolls": "Polls",
+  "@contentTabPolls": {
+    "description": "Key content.tab.polls"
+  },
+  "contentTabPosts": "Posts",
+  "@contentTabPosts": {
+    "description": "Key content.tab.posts"
+  },
+  "contentTitle": "Content management",
+  "@contentTitle": {
+    "description": "Key content.title"
+  },
+  "deleteAccountConfirmCta": "Permanently delete my account",
+  "@deleteAccountConfirmCta": {
+    "description": "Key deleteAccount.confirmCta"
+  },
+  "deleteAccountConfirmTitle": "Final step",
+  "@deleteAccountConfirmTitle": {
+    "description": "Key deleteAccount.confirmTitle"
+  },
+  "deleteAccountDeleted": "What gets deleted",
+  "@deleteAccountDeleted": {
+    "description": "Key deleteAccount.deleted"
+  },
+  "deleteAccountItemApplications": "Your pending applications",
+  "@deleteAccountItemApplications": {
+    "description": "Key deleteAccount.item.applications"
+  },
+  "deleteAccountItemMemberships": "Your club memberships",
+  "@deleteAccountItemMemberships": {
+    "description": "Key deleteAccount.item.memberships"
+  },
+  "deleteAccountItemNotifications": "Your notifications",
+  "@deleteAccountItemNotifications": {
+    "description": "Key deleteAccount.item.notifications"
+  },
+  "deleteAccountItemTickets": "Your event tickets",
+  "@deleteAccountItemTickets": {
+    "description": "Key deleteAccount.item.tickets"
+  },
+  "deleteAccountKept": "What stays",
+  "@deleteAccountKept": {
+    "description": "Key deleteAccount.kept"
+  },
+  "deleteAccountKeptDesc": "Your posts and comments stay, anonymised as \"Deleted user\".",
+  "@deleteAccountKeptDesc": {
+    "description": "Key deleteAccount.keptDesc"
+  },
+  "deleteAccountPresidentBlock": "Transfer the presidency first",
+  "@deleteAccountPresidentBlock": {
+    "description": "Key deleteAccount.presidentBlock"
+  },
+  "deleteAccountReasonGraduated": "I graduated",
+  "@deleteAccountReasonGraduated": {
+    "description": "Key deleteAccount.reason.graduated"
+  },
+  "deleteAccountReasonNoUse": "I don't use the app",
+  "@deleteAccountReasonNoUse": {
+    "description": "Key deleteAccount.reason.noUse"
+  },
+  "deleteAccountReasonOther": "Other",
+  "@deleteAccountReasonOther": {
+    "description": "Key deleteAccount.reason.other"
+  },
+  "deleteAccountReasonPrivacy": "Privacy concerns",
+  "@deleteAccountReasonPrivacy": {
+    "description": "Key deleteAccount.reason.privacy"
+  },
+  "deleteAccountReasonTooMany": "Too many notifications",
+  "@deleteAccountReasonTooMany": {
+    "description": "Key deleteAccount.reason.tooMany"
+  },
+  "deleteAccountReasonPlaceholder": "Anything you want to add?",
+  "@deleteAccountReasonPlaceholder": {
+    "description": "Key deleteAccount.reasonPlaceholder"
+  },
+  "deleteAccountReasonTitle": "Why are you leaving?",
+  "@deleteAccountReasonTitle": {
+    "description": "Key deleteAccount.reasonTitle"
+  },
+  "deleteAccountTitle": "Delete account",
+  "@deleteAccountTitle": {
+    "description": "Key deleteAccount.title"
+  },
+  "deleteAccountTransfer": "Transfer",
+  "@deleteAccountTransfer": {
+    "description": "Key deleteAccount.transfer"
+  },
+  "deleteAccountTypeDelete": "Type SİL to confirm",
+  "@deleteAccountTypeDelete": {
+    "description": "Key deleteAccount.typeDelete"
+  },
+  "deleteAccountWarning": "This cannot be undone. Please read the following carefully.",
+  "@deleteAccountWarning": {
+    "description": "Key deleteAccount.warning"
+  },
+  "deptD01": "Computer Engineering",
+  "@deptD01": {
+    "description": "Key dept.d01"
+  },
+  "deptD02": "Electrical & Electronics Engineering",
+  "@deptD02": {
+    "description": "Key dept.d02"
+  },
+  "deptD03": "Civil Engineering",
+  "@deptD03": {
+    "description": "Key dept.d03"
+  },
+  "deptD04": "Mining Engineering",
+  "@deptD04": {
+    "description": "Key dept.d04"
+  },
+  "deptD05": "Geological Engineering",
+  "@deptD05": {
+    "description": "Key dept.d05"
+  },
+  "deptD06": "Geomatics Engineering",
+  "@deptD06": {
+    "description": "Key dept.d06"
+  },
+  "deptD07": "Food Engineering",
+  "@deptD07": {
+    "description": "Key dept.d07"
+  },
+  "deptD08": "Architecture",
+  "@deptD08": {
+    "description": "Key dept.d08"
+  },
+  "deptD09": "Landscape Architecture",
+  "@deptD09": {
+    "description": "Key dept.d09"
+  },
+  "deptD10": "Mathematics",
+  "@deptD10": {
+    "description": "Key dept.d10"
+  },
+  "deptD11": "Physics",
+  "@deptD11": {
+    "description": "Key dept.d11"
+  },
+  "deptD12": "Chemistry",
+  "@deptD12": {
+    "description": "Key dept.d12"
+  },
+  "deptD13": "Turkish Language & Literature",
+  "@deptD13": {
+    "description": "Key dept.d13"
+  },
+  "deptD14": "History",
+  "@deptD14": {
+    "description": "Key dept.d14"
+  },
+  "deptD15": "Psychology",
+  "@deptD15": {
+    "description": "Key dept.d15"
+  },
+  "deptD16": "Business Administration",
+  "@deptD16": {
+    "description": "Key dept.d16"
+  },
+  "deptD17": "Economics",
+  "@deptD17": {
+    "description": "Key dept.d17"
+  },
+  "deptD18": "International Relations",
+  "@deptD18": {
+    "description": "Key dept.d18"
+  },
+  "deptD19": "Nursing",
+  "@deptD19": {
+    "description": "Key dept.d19"
+  },
+  "deptD20": "Physical Education & Sport",
+  "@deptD20": {
+    "description": "Key dept.d20"
+  },
+  "deptD21": "Gastronomy & Culinary Arts",
+  "@deptD21": {
+    "description": "Key dept.d21"
+  },
+  "deptD22": "Tourism Management",
+  "@deptD22": {
+    "description": "Key dept.d22"
+  },
+  "deptD23": "Radio, TV & Cinema",
+  "@deptD23": {
+    "description": "Key dept.d23"
+  },
+  "deptD24": "Graphic Design",
+  "@deptD24": {
+    "description": "Key dept.d24"
+  },
+  "dlg01Body": "Access to your account was temporarily closed for violating community rules. You can contact support to appeal.",
+  "@dlg01Body": {
+    "description": "Key dlg.01.body"
+  },
+  "dlg01Support": "Contact support",
+  "@dlg01Support": {
+    "description": "Key dlg.01.support"
+  },
+  "dlg01Title": "Your account is suspended",
+  "@dlg01Title": {
+    "description": "Key dlg.01.title"
+  },
+  "dlg02Body": "For your security we locked sign-in for {s} seconds.",
+  "@dlg02Body": {
+    "description": "Key dlg.02.body",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg02Title": "Too many attempts",
+  "@dlg02Title": {
+    "description": "Key dlg.02.title"
+  },
+  "dlg02Unlocked": "Unlocked, you can try again.",
+  "@dlg02Unlocked": {
+    "description": "Key dlg.02.unlocked"
+  },
+  "dlg03Body": "Allow notifications to hear about application results and event reminders.",
+  "@dlg03Body": {
+    "description": "Key dlg.03.body"
+  },
+  "dlg03Title": "Turn on notifications?",
+  "@dlg03Title": {
+    "description": "Key dlg.03.title"
+  },
+  "dlg04Body": "We need camera access to scan QR codes.",
+  "@dlg04Body": {
+    "description": "Key dlg.04.body"
+  },
+  "dlg04Title": "Camera access",
+  "@dlg04Title": {
+    "description": "Key dlg.04.title"
+  },
+  "dlg05Body": "Allow access to your gallery to pick photos.",
+  "@dlg05Body": {
+    "description": "Key dlg.05.body"
+  },
+  "dlg05Title": "Photo access",
+  "@dlg05Title": {
+    "description": "Key dlg.05.title"
+  },
+  "dlg06Body": "You will be signed out. You can sign in again any time.",
+  "@dlg06Body": {
+    "description": "Key dlg.06.body"
+  },
+  "dlg06Title": "Sign out?",
+  "@dlg06Title": {
+    "description": "Key dlg.06.title"
+  },
+  "dlg07Body": "Your request to {club} will be withdrawn. You can apply again any time.",
+  "@dlg07Body": {
+    "description": "Key dlg.07.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg07Title": "Cancel request?",
+  "@dlg07Title": {
+    "description": "Key dlg.07.title"
+  },
+  "dlg08Body": "Your {club} membership will end and you will not see posts. You may need to apply again to rejoin.",
+  "@dlg08Body": {
+    "description": "Key dlg.08.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg08Title": "Leave club?",
+  "@dlg08Title": {
+    "description": "Key dlg.08.title"
+  },
+  "dlg09Body": "You are the only president of this club. Transfer the presidency before leaving.",
+  "@dlg09Body": {
+    "description": "Key dlg.09.body"
+  },
+  "dlg09Title": "You can't leave yet",
+  "@dlg09Title": {
+    "description": "Key dlg.09.title"
+  },
+  "dlg10Body": "This post and its comments will be deleted.",
+  "@dlg10Body": {
+    "description": "Key dlg.10.body"
+  },
+  "dlg10Title": "Delete post?",
+  "@dlg10Title": {
+    "description": "Key dlg.10.title"
+  },
+  "dlg11Body": "This comment will be deleted.",
+  "@dlg11Body": {
+    "description": "Key dlg.11.body"
+  },
+  "dlg11Title": "Delete comment?",
+  "@dlg11Title": {
+    "description": "Key dlg.11.title"
+  },
+  "dlg12Block": "Also block {name}",
+  "@dlg12Block": {
+    "description": "Key dlg.12.block",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg12Body": "Thanks. Campus administration will review it; we will notify you about the result.",
+  "@dlg12Body": {
+    "description": "Key dlg.12.body"
+  },
+  "dlg12Title": "Report received",
+  "@dlg12Title": {
+    "description": "Key dlg.12.title"
+  },
+  "dlg13Body": "You won't see this user's posts and comments. You can unblock from Settings.",
+  "@dlg13Body": {
+    "description": "Key dlg.13.body"
+  },
+  "dlg13Title": "Block {name}?",
+  "@dlg13Title": {
+    "description": "Key dlg.13.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg14Body": "Your ticket will be cancelled and your spot released to the waitlist.",
+  "@dlg14Body": {
+    "description": "Key dlg.14.body"
+  },
+  "dlg14BodyWaitlist": "You will be removed from the waitlist.",
+  "@dlg14BodyWaitlist": {
+    "description": "Key dlg.14.bodyWaitlist"
+  },
+  "dlg14Stay": "Stay",
+  "@dlg14Stay": {
+    "description": "Key dlg.14.stay"
+  },
+  "dlg14Title": "Leave event?",
+  "@dlg14Title": {
+    "description": "Key dlg.14.title"
+  },
+  "dlg15Body": "No spots left. Join the waitlist and we will notify you if one opens. {n} people are waiting.",
+  "@dlg15Body": {
+    "description": "Key dlg.15.body",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg15Title": "Event is full",
+  "@dlg15Title": {
+    "description": "Key dlg.15.title"
+  },
+  "dlg16Body": "{event} was cancelled ({reason}). Your ticket is void.",
+  "@dlg16Body": {
+    "description": "Key dlg.16.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg16Similar": "See similar events",
+  "@dlg16Similar": {
+    "description": "Key dlg.16.similar"
+  },
+  "dlg16Title": "Event cancelled",
+  "@dlg16Title": {
+    "description": "Key dlg.16.title"
+  },
+  "dlg17Approve": "Approve {count} applications? Applicants will be notified.",
+  "@dlg17Approve": {
+    "description": "Key dlg.17.approve",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Attendance": "Mark all {count} registered attendees as attended?",
+  "@dlg17Attendance": {
+    "description": "Key dlg.17.attendance",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Reject": "Reject {count} applications? Applicants will be notified.",
+  "@dlg17Reject": {
+    "description": "Key dlg.17.reject",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg17Title": "Confirm bulk action",
+  "@dlg17Title": {
+    "description": "Key dlg.17.title"
+  },
+  "dlg18Body": "Another manager already decided this application ({result}). The list was refreshed.",
+  "@dlg18Body": {
+    "description": "Key dlg.18.body",
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg18Title": "Application already decided",
+  "@dlg18Title": {
+    "description": "Key dlg.18.title"
+  },
+  "dlg19Body": "They will be removed and notified, and cannot reapply for 7 days.",
+  "@dlg19Body": {
+    "description": "Key dlg.19.body"
+  },
+  "dlg19Confirm": "Remove member",
+  "@dlg19Confirm": {
+    "description": "Key dlg.19.confirm"
+  },
+  "dlg19Reason": "Reason (optional)",
+  "@dlg19Reason": {
+    "description": "Key dlg.19.reason"
+  },
+  "dlg19Title": "Remove {name}?",
+  "@dlg19Title": {
+    "description": "Key dlg.19.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg20Body": "{name} will move from {oldRole} to {newRole}. Permissions change immediately.",
+  "@dlg20Body": {
+    "description": "Key dlg.20.body",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "oldRole": {
+        "type": "String"
+      },
+      "newRole": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg20Title": "Change role?",
+  "@dlg20Title": {
+    "description": "Key dlg.20.title"
+  },
+  "dlg21Body1": "You are about to transfer the presidency to {name}. You will become a board member. This cannot be undone.",
+  "@dlg21Body1": {
+    "description": "Key dlg.21.body1",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg21Body2": "Type DEVRET to confirm.",
+  "@dlg21Body2": {
+    "description": "Key dlg.21.body2"
+  },
+  "dlg21Confirm": "Transfer",
+  "@dlg21Confirm": {
+    "description": "Key dlg.21.confirm"
+  },
+  "dlg21Title": "Transfer presidency?",
+  "@dlg21Title": {
+    "description": "Key dlg.21.title"
+  },
+  "dlg22Back": "Back to editing",
+  "@dlg22Back": {
+    "description": "Key dlg.22.back"
+  },
+  "dlg22Body": "The event will be published for everyone to see.",
+  "@dlg22Body": {
+    "description": "Key dlg.22.body"
+  },
+  "dlg22Notify": "Notify {count} members",
+  "@dlg22Notify": {
+    "description": "Key dlg.22.notify",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg22Title": "Publish event?",
+  "@dlg22Title": {
+    "description": "Key dlg.22.title"
+  },
+  "dlg23Body": "{count} registered attendees will be notified. This cannot be undone.",
+  "@dlg23Body": {
+    "description": "Key dlg.23.body",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dlg23Confirm": "Cancel event",
+  "@dlg23Confirm": {
+    "description": "Key dlg.23.confirm"
+  },
+  "dlg23Title": "Cancel event?",
+  "@dlg23Title": {
+    "description": "Key dlg.23.title"
+  },
+  "dlg24Body": "A club can send at most 2 announcement notifications per day. You can publish without a notification. The quota resets at 00:00 tomorrow.",
+  "@dlg24Body": {
+    "description": "Key dlg.24.body"
+  },
+  "dlg24Silent": "Publish without notification",
+  "@dlg24Silent": {
+    "description": "Key dlg.24.silent"
+  },
+  "dlg24Title": "Today's announcement quota is used up",
+  "@dlg24Title": {
+    "description": "Key dlg.24.title"
+  },
+  "dlg25Body": "If you leave, your changes will be lost.",
+  "@dlg25Body": {
+    "description": "Key dlg.25.body"
+  },
+  "dlg25Discard": "Leave without saving",
+  "@dlg25Discard": {
+    "description": "Key dlg.25.discard"
+  },
+  "dlg25Keep": "Keep editing",
+  "@dlg25Keep": {
+    "description": "Key dlg.25.keep"
+  },
+  "dlg25Title": "Unsaved changes",
+  "@dlg25Title": {
+    "description": "Key dlg.25.title"
+  },
+  "dlg26Body": "Update to the latest version to keep using the app.",
+  "@dlg26Body": {
+    "description": "Key dlg.26.body"
+  },
+  "dlg26Store": "the store",
+  "@dlg26Store": {
+    "description": "Key dlg.26.store"
+  },
+  "dlg26Title": "Update required",
+  "@dlg26Title": {
+    "description": "Key dlg.26.title"
+  },
+  "dlg26Update": "Update",
+  "@dlg26Update": {
+    "description": "Key dlg.26.update"
+  },
+  "dlg27Body": "For your security, please sign in again.",
+  "@dlg27Body": {
+    "description": "Key dlg.27.body"
+  },
+  "dlg27Title": "Session expired",
+  "@dlg27Title": {
+    "description": "Key dlg.27.title"
+  },
+  "dlg28Body": "The club disappears from the list and members lose access to posts and events. You can reactivate it any time.",
+  "@dlg28Body": {
+    "description": "Key dlg.28.body"
+  },
+  "dlg28BodyActivate": "The club is listed again and members regain access.",
+  "@dlg28BodyActivate": {
+    "description": "Key dlg.28.bodyActivate"
+  },
+  "dlg28Reason": "Reason",
+  "@dlg28Reason": {
+    "description": "Key dlg.28.reason"
+  },
+  "dlg28Title": "Suspend {club}?",
+  "@dlg28Title": {
+    "description": "Key dlg.28.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg28TitleActivate": "Activate {club}?",
+  "@dlg28TitleActivate": {
+    "description": "Key dlg.28.titleActivate",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg29Body": "The content is hidden from everyone and the author is notified. The report is marked resolved.",
+  "@dlg29Body": {
+    "description": "Key dlg.29.body"
+  },
+  "dlg29Confirm": "Remove",
+  "@dlg29Confirm": {
+    "description": "Key dlg.29.confirm"
+  },
+  "dlg29Title": "Remove content?",
+  "@dlg29Title": {
+    "description": "Key dlg.29.title"
+  },
+  "dlg30Body": "The user cannot sign in and their content is hidden.",
+  "@dlg30Body": {
+    "description": "Key dlg.30.body"
+  },
+  "dlg30BodyUnsuspend": "The user can sign in again and their content becomes visible.",
+  "@dlg30BodyUnsuspend": {
+    "description": "Key dlg.30.bodyUnsuspend"
+  },
+  "dlg30Title": "Suspend {name}?",
+  "@dlg30Title": {
+    "description": "Key dlg.30.title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg30TitleUnsuspend": "Unsuspend {name}?",
+  "@dlg30TitleUnsuspend": {
+    "description": "Key dlg.30.titleUnsuspend",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dlg31Body": "This draft will be permanently deleted.",
+  "@dlg31Body": {
+    "description": "Key dlg.31.body"
+  },
+  "dlg31Title": "Delete draft?",
+  "@dlg31Title": {
+    "description": "Key dlg.31.title"
+  },
+  "dlg32Body1": "You are about to open:",
+  "@dlg32Body1": {
+    "description": "Key dlg.32.body1"
+  },
+  "dlg32Body2": "Do you trust this address?",
+  "@dlg32Body2": {
+    "description": "Key dlg.32.body2"
+  },
+  "dlg32Link": "the link",
+  "@dlg32Link": {
+    "description": "Key dlg.32.link"
+  },
+  "dlg32Title": "Leaving the app",
+  "@dlg32Title": {
+    "description": "Key dlg.32.title"
+  },
+  "dlgPermissionAllow": "Allow",
+  "@dlgPermissionAllow": {
+    "description": "Key dlg.permission.allow"
+  },
+  "dlgPermissionNotNow": "Not now",
+  "@dlgPermissionNotNow": {
+    "description": "Key dlg.permission.notNow"
+  },
+  "dlgSystemAllow": "Allow",
+  "@dlgSystemAllow": {
+    "description": "Key dlg.system.allow"
+  },
+  "dlgSystemDeny": "Don't Allow",
+  "@dlgSystemDeny": {
+    "description": "Key dlg.system.deny"
+  },
+  "dlgSystemPermissionBody": "(System permission simulation)",
+  "@dlgSystemPermissionBody": {
+    "description": "Key dlg.system.permissionBody"
+  },
+  "dsCatalogNote": "Opens the prototype with a suitable demo account and shows the item with sample data.",
+  "@dsCatalogNote": {
+    "description": "Key ds.catalogNote"
+  },
+  "dsCopyCode": "Copy code",
+  "@dsCopyCode": {
+    "description": "Key ds.copyCode"
+  },
+  "dsDesc": "Every component with all variants and states, light and dark side by side. The Catalog tab opens each sheet, dialog and toast inside the prototype.",
+  "@dsDesc": {
+    "description": "Key ds.desc"
+  },
+  "dsMotionCheck": "Success stroke",
+  "@dsMotionCheck": {
+    "description": "Key ds.motion.check"
+  },
+  "dsMotionDialog": "Dialog",
+  "@dsMotionDialog": {
+    "description": "Key ds.motion.dialog"
+  },
+  "dsMotionPage": "Page transition",
+  "@dsMotionPage": {
+    "description": "Key ds.motion.page"
+  },
+  "dsMotionReduced": "prefers-reduced-motion: fade only",
+  "@dsMotionReduced": {
+    "description": "Key ds.motion.reduced"
+  },
+  "dsMotionReplay": "Replay",
+  "@dsMotionReplay": {
+    "description": "Key ds.motion.replay"
+  },
+  "dsMotionSheet": "Bottom sheet",
+  "@dsMotionSheet": {
+    "description": "Key ds.motion.sheet"
+  },
+  "dsOpen": "Open",
+  "@dsOpen": {
+    "description": "Key ds.open"
+  },
+  "dsOpenInProto": "Open in prototype",
+  "@dsOpenInProto": {
+    "description": "Key ds.openInProto"
+  },
+  "dsSecBadges": "Badges & avatars",
+  "@dsSecBadges": {
+    "description": "Key ds.sec.badges"
+  },
+  "dsSecBanners": "Banners",
+  "@dsSecBanners": {
+    "description": "Key ds.sec.banners"
+  },
+  "dsSecButtons": "Buttons",
+  "@dsSecButtons": {
+    "description": "Key ds.sec.buttons"
+  },
+  "dsSecCards": "Cards",
+  "@dsSecCards": {
+    "description": "Key ds.sec.cards"
+  },
+  "dsSecCatalog": "Catalog",
+  "@dsSecCatalog": {
+    "description": "Key ds.sec.catalog"
+  },
+  "dsSecColors": "Colours",
+  "@dsSecColors": {
+    "description": "Key ds.sec.colors"
+  },
+  "dsSecFeedback": "Feedback",
+  "@dsSecFeedback": {
+    "description": "Key ds.sec.feedback"
+  },
+  "dsSecInputs": "Inputs",
+  "@dsSecInputs": {
+    "description": "Key ds.sec.inputs"
+  },
+  "dsSecMotion": "Motion",
+  "@dsSecMotion": {
+    "description": "Key ds.sec.motion"
+  },
+  "dsSecNav": "Navigation",
+  "@dsSecNav": {
+    "description": "Key ds.sec.nav"
+  },
+  "dsSecOverlays": "Sheet / Dialog / Toast",
+  "@dsSecOverlays": {
+    "description": "Key ds.sec.overlays"
+  },
+  "dsSecSelection": "Selection controls",
+  "@dsSecSelection": {
+    "description": "Key ds.sec.selection"
+  },
+  "dsSecSpace": "Spacing, radius, elevation",
+  "@dsSecSpace": {
+    "description": "Key ds.sec.space"
+  },
+  "dsSecSpecial": "Custom components",
+  "@dsSecSpecial": {
+    "description": "Key ds.sec.special"
+  },
+  "dsSecType": "Typography",
+  "@dsSecType": {
+    "description": "Key ds.sec.type"
+  },
+  "dsState": "State",
+  "@dsState": {
+    "description": "Key ds.state"
+  },
+  "dsTitle": "Design System",
+  "@dsTitle": {
+    "description": "Key ds.title"
+  },
+  "editProfileBio": "Short bio",
+  "@editProfileBio": {
+    "description": "Key editProfile.bio"
+  },
+  "editProfileEmailLocked": "University email cannot be changed",
+  "@editProfileEmailLocked": {
+    "description": "Key editProfile.emailLocked"
+  },
+  "editProfilePrivacy": "Your profile is visible only to shared-club members and club managers.",
+  "@editProfilePrivacy": {
+    "description": "Key editProfile.privacy"
+  },
+  "editProfileTitle": "Edit profile",
+  "@editProfileTitle": {
+    "description": "Key editProfile.title"
+  },
+  "eventAbout": "About",
+  "@eventAbout": {
+    "description": "Key event.about"
+  },
+  "eventAddToCalendar": "Add to calendar",
+  "@eventAddToCalendar": {
+    "description": "Key event.addToCalendar"
+  },
+  "eventAttendees": "Attendees",
+  "@eventAttendees": {
+    "description": "Key event.attendees"
+  },
+  "eventAttendeesGoing": "{count} going",
+  "@eventAttendeesGoing": {
+    "description": "Key event.attendeesGoing",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventCancelledBanner": "This event was cancelled.",
+  "@eventCancelledBanner": {
+    "description": "Key event.cancelledBanner"
+  },
+  "eventCapacity": "Capacity",
+  "@eventCapacity": {
+    "description": "Key event.capacity"
+  },
+  "eventCtaApplyClub": "Apply to club",
+  "@eventCtaApplyClub": {
+    "description": "Key event.cta.applyClub"
+  },
+  "eventCtaAttendees": "Attendees",
+  "@eventCtaAttendees": {
+    "description": "Key event.cta.attendees"
+  },
+  "eventCtaClosed": "Registration closed",
+  "@eventCtaClosed": {
+    "description": "Key event.cta.closed"
+  },
+  "eventCtaJoin": "Join",
+  "@eventCtaJoin": {
+    "description": "Key event.cta.join"
+  },
+  "eventCtaLeave": "Leave",
+  "@eventCtaLeave": {
+    "description": "Key event.cta.leave"
+  },
+  "eventCtaLeaveWaitlist": "Leave",
+  "@eventCtaLeaveWaitlist": {
+    "description": "Key event.cta.leaveWaitlist"
+  },
+  "eventCtaScan": "Start check-in",
+  "@eventCtaScan": {
+    "description": "Key event.cta.scan"
+  },
+  "eventCtaTicket": "Show ticket",
+  "@eventCtaTicket": {
+    "description": "Key event.cta.ticket"
+  },
+  "eventCtaWaitlist": "Join waitlist",
+  "@eventCtaWaitlist": {
+    "description": "Key event.cta.waitlist"
+  },
+  "eventDirections": "Directions",
+  "@eventDirections": {
+    "description": "Key event.directions"
+  },
+  "eventDraftBanner": "This event is a draft; only managers can see it.",
+  "@eventDraftBanner": {
+    "description": "Key event.draftBanner"
+  },
+  "eventEmptyTitle": "No events",
+  "@eventEmptyTitle": {
+    "description": "Key event.empty.title"
+  },
+  "eventEnded": "Event has ended",
+  "@eventEnded": {
+    "description": "Key event.ended"
+  },
+  "eventFull": "Fully booked",
+  "@eventFull": {
+    "description": "Key event.full"
+  },
+  "eventPast": "Past",
+  "@eventPast": {
+    "description": "Key event.past"
+  },
+  "eventPlaceCampus": "Campus",
+  "@eventPlaceCampus": {
+    "description": "Key event.placeCampus"
+  },
+  "eventPlaceTbd": "Place TBD",
+  "@eventPlaceTbd": {
+    "description": "Key event.placeTbd"
+  },
+  "eventRegisteredCount": "{count} registered",
+  "@eventRegisteredCount": {
+    "description": "Key event.registeredCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventRemaining": "{count, plural, one{# spot left} other{# spots left}}",
+  "@eventRemaining": {
+    "description": "Key event.remaining",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventReminder": "Reminder",
+  "@eventReminder": {
+    "description": "Key event.reminder"
+  },
+  "eventReminderAfterJoin": "Set after you join",
+  "@eventReminderAfterJoin": {
+    "description": "Key event.reminderAfterJoin"
+  },
+  "eventReport": "Report event",
+  "@eventReport": {
+    "description": "Key event.report"
+  },
+  "eventTitle": "Event",
+  "@eventTitle": {
+    "description": "Key event.title"
+  },
+  "eventUnlimited": "Unlimited",
+  "@eventUnlimited": {
+    "description": "Key event.unlimited"
+  },
+  "eventUpcoming": "Upcoming",
+  "@eventUpcoming": {
+    "description": "Key event.upcoming"
+  },
+  "eventVisibilityMembers": "Members only",
+  "@eventVisibilityMembers": {
+    "description": "Key event.visibility.members"
+  },
+  "eventVisibilityPublic": "Public",
+  "@eventVisibilityPublic": {
+    "description": "Key event.visibility.public"
+  },
+  "eventWaitlistCount": "{count} on the waitlist",
+  "@eventWaitlistCount": {
+    "description": "Key event.waitlistCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventWaitlistNote": "We'll notify you if a spot opens.",
+  "@eventWaitlistNote": {
+    "description": "Key event.waitlistNote"
+  },
+  "eventWaitlistPos": "You're on the waitlist (#{n})",
+  "@eventWaitlistPos": {
+    "description": "Key event.waitlistPos",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormAutoReminder": "Automatic reminder",
+  "@eventFormAutoReminder": {
+    "description": "Key eventForm.autoReminder"
+  },
+  "eventFormAutoReminderHelp": "1 day and 1 hour before",
+  "@eventFormAutoReminderHelp": {
+    "description": "Key eventForm.autoReminderHelp"
+  },
+  "eventFormCapacity": "Capacity",
+  "@eventFormCapacity": {
+    "description": "Key eventForm.capacity"
+  },
+  "eventFormChangeCover": "Change cover",
+  "@eventFormChangeCover": {
+    "description": "Key eventForm.changeCover"
+  },
+  "eventFormConflict": "{count} other event at the same time.",
+  "@eventFormConflict": {
+    "description": "Key eventForm.conflict",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormCover": "Cover",
+  "@eventFormCover": {
+    "description": "Key eventForm.cover"
+  },
+  "eventFormDecrease": "Decrease",
+  "@eventFormDecrease": {
+    "description": "Key eventForm.decrease"
+  },
+  "eventFormDesc": "Description",
+  "@eventFormDesc": {
+    "description": "Key eventForm.desc"
+  },
+  "eventFormEditTitle": "Edit event",
+  "@eventFormEditTitle": {
+    "description": "Key eventForm.editTitle"
+  },
+  "eventFormEndDate": "Ends",
+  "@eventFormEndDate": {
+    "description": "Key eventForm.endDate"
+  },
+  "eventFormErrCapacity": "Capacity cannot be below current registrations ({count})",
+  "@eventFormErrCapacity": {
+    "description": "Key eventForm.err.capacity",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormErrEndAfter": "End must be after start",
+  "@eventFormErrEndAfter": {
+    "description": "Key eventForm.err.endAfter"
+  },
+  "eventFormErrFuture": "Start must be in the future",
+  "@eventFormErrFuture": {
+    "description": "Key eventForm.err.future"
+  },
+  "eventFormIncrease": "Increase",
+  "@eventFormIncrease": {
+    "description": "Key eventForm.increase"
+  },
+  "eventFormName": "Title",
+  "@eventFormName": {
+    "description": "Key eventForm.name"
+  },
+  "eventFormPlace": "Place",
+  "@eventFormPlace": {
+    "description": "Key eventForm.place"
+  },
+  "eventFormPreviewNote": "This is how members will see the event.",
+  "@eventFormPreviewNote": {
+    "description": "Key eventForm.previewNote"
+  },
+  "eventFormPublish": "Publish",
+  "@eventFormPublish": {
+    "description": "Key eventForm.publish"
+  },
+  "eventFormRegisteredNow": "{count} registered now",
+  "@eventFormRegisteredNow": {
+    "description": "Key eventForm.registeredNow",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventFormSaveDraft": "Save as draft",
+  "@eventFormSaveDraft": {
+    "description": "Key eventForm.saveDraft"
+  },
+  "eventFormStartDate": "Starts",
+  "@eventFormStartDate": {
+    "description": "Key eventForm.startDate"
+  },
+  "eventFormTime": "Time",
+  "@eventFormTime": {
+    "description": "Key eventForm.time"
+  },
+  "eventFormTitle": "Create event",
+  "@eventFormTitle": {
+    "description": "Key eventForm.title"
+  },
+  "eventFormType": "Type",
+  "@eventFormType": {
+    "description": "Key eventForm.type"
+  },
+  "eventFormUnlimited": "Unlimited",
+  "@eventFormUnlimited": {
+    "description": "Key eventForm.unlimited"
+  },
+  "eventFormUntitled": "Untitled event",
+  "@eventFormUntitled": {
+    "description": "Key eventForm.untitled"
+  },
+  "eventFormVisibility": "Visibility",
+  "@eventFormVisibility": {
+    "description": "Key eventForm.visibility"
+  },
+  "eventFormVisibilityHelpMembers": "Only club members can see it.",
+  "@eventFormVisibilityHelpMembers": {
+    "description": "Key eventForm.visibilityHelp.members"
+  },
+  "eventFormVisibilityHelpPublic": "Anyone can see it and register.",
+  "@eventFormVisibilityHelpPublic": {
+    "description": "Key eventForm.visibilityHelp.public"
+  },
+  "eventTypeEgitim": "Training",
+  "@eventTypeEgitim": {
+    "description": "Key eventType.egitim"
+  },
+  "eventTypeGezi": "Trip",
+  "@eventTypeGezi": {
+    "description": "Key eventType.gezi"
+  },
+  "eventTypeKonferans": "Talk",
+  "@eventTypeKonferans": {
+    "description": "Key eventType.konferans"
+  },
+  "eventTypeSosyal": "Social",
+  "@eventTypeSosyal": {
+    "description": "Key eventType.sosyal"
+  },
+  "eventTypeYarisma": "Competition",
+  "@eventTypeYarisma": {
+    "description": "Key eventType.yarisma"
+  },
+  "eventsChipMine": "My clubs",
+  "@eventsChipMine": {
+    "description": "Key events.chip.mine"
+  },
+  "eventsChipPublic": "Public",
+  "@eventsChipPublic": {
+    "description": "Key events.chip.public"
+  },
+  "eventsChipWeek": "This week",
+  "@eventsChipWeek": {
+    "description": "Key events.chip.week"
+  },
+  "eventsDiscover": "Discover events",
+  "@eventsDiscover": {
+    "description": "Key events.discover"
+  },
+  "eventsEmptyDay": "No events on this day",
+  "@eventsEmptyDay": {
+    "description": "Key events.empty.day"
+  },
+  "eventsEmptyDesc": "Change the filters or pick another date.",
+  "@eventsEmptyDesc": {
+    "description": "Key events.empty.desc"
+  },
+  "eventsEmptyTitle": "No events in this range",
+  "@eventsEmptyTitle": {
+    "description": "Key events.empty.title"
+  },
+  "eventsGroupLater": "Later",
+  "@eventsGroupLater": {
+    "description": "Key events.group.later"
+  },
+  "eventsGroupPastGroup": "Past",
+  "@eventsGroupPastGroup": {
+    "description": "Key events.group.pastGroup"
+  },
+  "eventsGroupToday": "Today",
+  "@eventsGroupToday": {
+    "description": "Key events.group.today"
+  },
+  "eventsGroupTomorrow": "Tomorrow",
+  "@eventsGroupTomorrow": {
+    "description": "Key events.group.tomorrow"
+  },
+  "eventsGroupWeek": "This week",
+  "@eventsGroupWeek": {
+    "description": "Key events.group.week"
+  },
+  "eventsTickets": "My tickets",
+  "@eventsTickets": {
+    "description": "Key events.tickets"
+  },
+  "eventsViewCalendar": "Calendar",
+  "@eventsViewCalendar": {
+    "description": "Key events.view.calendar"
+  },
+  "eventsViewList": "List",
+  "@eventsViewList": {
+    "description": "Key events.view.list"
+  },
+  "facultyF1": "Faculty of Engineering & Natural Sciences",
+  "@facultyF1": {
+    "description": "Key faculty.f1"
+  },
+  "facultyF2": "Faculty of Architecture & Design",
+  "@facultyF2": {
+    "description": "Key faculty.f2"
+  },
+  "facultyF3": "Faculty of Letters",
+  "@facultyF3": {
+    "description": "Key faculty.f3"
+  },
+  "facultyF4": "Faculty of Economics & Administrative Sciences",
+  "@facultyF4": {
+    "description": "Key faculty.f4"
+  },
+  "facultyF5": "Health & Sport Sciences",
+  "@facultyF5": {
+    "description": "Key faculty.f5"
+  },
+  "facultyF6": "Tourism & Arts",
+  "@facultyF6": {
+    "description": "Key faculty.f6"
+  },
+  "faqA1": "Open the club from the Clubs tab and tap Join. Approval-based clubs ask for a short note; instant-join clubs make you a member right away. Follow the result in Notifications.",
+  "@faqA1": {
+    "description": "Key faq.a1"
+  },
+  "faqA2": "Club boards review applications and usually reply within 1–3 days. Check Profile › My clubs › Pending to update your note or cancel the request.",
+  "@faqA2": {
+    "description": "Key faq.a2"
+  },
+  "faqA3": "Raise screen brightness and open the ticket full screen. If it still fails, read the code under the QR to the staff; it can be entered manually.",
+  "@faqA3": {
+    "description": "Key faq.a3"
+  },
+  "faqA4": "In Settings › Notification preferences, make sure the system permission is on and the relevant types are not muted. Per-club muting also blocks notifications.",
+  "@faqA4": {
+    "description": "Key faq.a4"
+  },
+  "faqA5": "Follow Settings › Delete account. If you are a club president, transfer the presidency first. Your posts and comments are anonymised; memberships and tickets are deleted.",
+  "@faqA5": {
+    "description": "Key faq.a5"
+  },
+  "faqA6": "Clubs are added by campus administration. Your advisor or president can ask the Health, Culture and Sports office to add the club.",
+  "@faqA6": {
+    "description": "Key faq.a6"
+  },
+  "faqA7": "Your university email identifies your account and cannot be changed. If you mistyped it during verification, use Change email on that screen.",
+  "@faqA7": {
+    "description": "Key faq.a7"
+  },
+  "faqA8": "Use the ⋯ menu on a post, comment, user or club and choose Report, then pick a reason. Campus administration reviews it and notifies you of the result.",
+  "@faqA8": {
+    "description": "Key faq.a8"
+  },
+  "faqQ1": "How do I apply to a club?",
+  "@faqQ1": {
+    "description": "Key faq.q1"
+  },
+  "faqQ2": "Why is my application still pending?",
+  "@faqQ2": {
+    "description": "Key faq.q2"
+  },
+  "faqQ3": "My QR code won't scan, what should I do?",
+  "@faqQ3": {
+    "description": "Key faq.q3"
+  },
+  "faqQ4": "I'm not receiving notifications.",
+  "@faqQ4": {
+    "description": "Key faq.q4"
+  },
+  "faqQ5": "How do I delete my account?",
+  "@faqQ5": {
+    "description": "Key faq.q5"
+  },
+  "faqQ6": "My club isn't in the app, how is it added?",
+  "@faqQ6": {
+    "description": "Key faq.q6"
+  },
+  "faqQ7": "Can I change my email address?",
+  "@faqQ7": {
+    "description": "Key faq.q7"
+  },
+  "faqQ8": "How do I report a user or content?",
+  "@faqQ8": {
+    "description": "Key faq.q8"
+  },
+  "feedComment": "Comment",
+  "@feedComment": {
+    "description": "Key feed.comment"
+  },
+  "feedComposePlaceholder": "Write something to your club…",
+  "@feedComposePlaceholder": {
+    "description": "Key feed.composePlaceholder"
+  },
+  "feedEdited": "edited",
+  "@feedEdited": {
+    "description": "Key feed.edited"
+  },
+  "feedEmptyCta": "Write the first post",
+  "@feedEmptyCta": {
+    "description": "Key feed.empty.cta"
+  },
+  "feedEmptyDesc": "Posts will appear here when the board shares something.",
+  "@feedEmptyDesc": {
+    "description": "Key feed.empty.desc"
+  },
+  "feedEmptyDescManager": "Greet your members with the first post.",
+  "@feedEmptyDescManager": {
+    "description": "Key feed.empty.descManager"
+  },
+  "feedEmptyTitle": "No posts yet",
+  "@feedEmptyTitle": {
+    "description": "Key feed.empty.title"
+  },
+  "feedFilterAnnouncements": "Announcements",
+  "@feedFilterAnnouncements": {
+    "description": "Key feed.filter.announcements"
+  },
+  "feedFilterImages": "Photos",
+  "@feedFilterImages": {
+    "description": "Key feed.filter.images"
+  },
+  "feedFilterPolls": "Polls",
+  "@feedFilterPolls": {
+    "description": "Key feed.filter.polls"
+  },
+  "feedLike": "Like",
+  "@feedLike": {
+    "description": "Key feed.like"
+  },
+  "feedNewPosts": "{count} new posts",
+  "@feedNewPosts": {
+    "description": "Key feed.newPosts",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedPinned": "Pinned",
+  "@feedPinned": {
+    "description": "Key feed.pinned"
+  },
+  "feedPollEnded": "Poll ended",
+  "@feedPollEnded": {
+    "description": "Key feed.poll.ended"
+  },
+  "feedPollRemaining": "{time} left",
+  "@feedPollRemaining": {
+    "description": "Key feed.poll.remaining",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "feedPollVotes": "{count, plural, one{# vote} other{# votes}}",
+  "@feedPollVotes": {
+    "description": "Key feed.poll.votes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedPushSent": "Push sent",
+  "@feedPushSent": {
+    "description": "Key feed.pushSent"
+  },
+  "feedSave": "Save",
+  "@feedSave": {
+    "description": "Key feed.save"
+  },
+  "feedTitle": "Feed",
+  "@feedTitle": {
+    "description": "Key feed.title"
+  },
+  "feedTypeAnnouncement": "Announcement",
+  "@feedTypeAnnouncement": {
+    "description": "Key feed.type.announcement"
+  },
+  "feedTypePoll": "Poll",
+  "@feedTypePoll": {
+    "description": "Key feed.type.poll"
+  },
+  "feedTypePost": "Post",
+  "@feedTypePost": {
+    "description": "Key feed.type.post"
+  },
+  "feedUnsave": "Unsave",
+  "@feedUnsave": {
+    "description": "Key feed.unsave"
+  },
+  "interestI01": "Software",
+  "@interestI01": {
+    "description": "Key interest.i01"
+  },
+  "interestI02": "AI",
+  "@interestI02": {
+    "description": "Key interest.i02"
+  },
+  "interestI03": "Entrepreneurship",
+  "@interestI03": {
+    "description": "Key interest.i03"
+  },
+  "interestI04": "Hiking",
+  "@interestI04": {
+    "description": "Key interest.i04"
+  },
+  "interestI05": "Mountaineering",
+  "@interestI05": {
+    "description": "Key interest.i05"
+  },
+  "interestI06": "Photography",
+  "@interestI06": {
+    "description": "Key interest.i06"
+  },
+  "interestI07": "Cinema",
+  "@interestI07": {
+    "description": "Key interest.i07"
+  },
+  "interestI08": "Music",
+  "@interestI08": {
+    "description": "Key interest.i08"
+  },
+  "interestI09": "Theatre",
+  "@interestI09": {
+    "description": "Key interest.i09"
+  },
+  "interestI10": "Literature",
+  "@interestI10": {
+    "description": "Key interest.i10"
+  },
+  "interestI11": "Chess",
+  "@interestI11": {
+    "description": "Key interest.i11"
+  },
+  "interestI12": "E-sports",
+  "@interestI12": {
+    "description": "Key interest.i12"
+  },
+  "interestI13": "Volunteering",
+  "@interestI13": {
+    "description": "Key interest.i13"
+  },
+  "interestI14": "Folk dance",
+  "@interestI14": {
+    "description": "Key interest.i14"
+  },
+  "interestI15": "Aviation",
+  "@interestI15": {
+    "description": "Key interest.i15"
+  },
+  "interestI16": "Career",
+  "@interestI16": {
+    "description": "Key interest.i16"
+  },
+  "legalAccept": "I have read and understood",
+  "@legalAccept": {
+    "description": "Key legal.accept"
+  },
+  "legalGizlilikB1": "This policy explains what information the GÜ Kulüpler app collects and how it is used.",
+  "@legalGizlilikB1": {
+    "description": "Key legal.gizlilik.b1"
+  },
+  "legalGizlilikB2": "Your account is created with your university email; the email is visible only to club managers.",
+  "@legalGizlilikB2": {
+    "description": "Key legal.gizlilik.b2"
+  },
+  "legalGizlilikB3": "Your profile is visible only to shared-club members and club managers. Department and year are not public.",
+  "@legalGizlilikB3": {
+    "description": "Key legal.gizlilik.b3"
+  },
+  "legalGizlilikB4": "You can change notification preferences any time in Settings. Quiet hours are applied on your device.",
+  "@legalGizlilikB4": {
+    "description": "Key legal.gizlilik.b4"
+  },
+  "legalGizlilikB5": "The app uses local storage only to keep your session; there are no third-party ad trackers.",
+  "@legalGizlilikB5": {
+    "description": "Key legal.gizlilik.b5"
+  },
+  "legalGizlilikB6": "Blocked users are not informed. Reports are reviewed confidentially by campus administration.",
+  "@legalGizlilikB6": {
+    "description": "Key legal.gizlilik.b6"
+  },
+  "legalGizlilikB7": "Significant changes to this policy are announced with an in-app notification.",
+  "@legalGizlilikB7": {
+    "description": "Key legal.gizlilik.b7"
+  },
+  "legalGizlilikH1": "Scope",
+  "@legalGizlilikH1": {
+    "description": "Key legal.gizlilik.h1"
+  },
+  "legalGizlilikH2": "Account information",
+  "@legalGizlilikH2": {
+    "description": "Key legal.gizlilik.h2"
+  },
+  "legalGizlilikH3": "Profile visibility",
+  "@legalGizlilikH3": {
+    "description": "Key legal.gizlilik.h3"
+  },
+  "legalGizlilikH4": "Notifications",
+  "@legalGizlilikH4": {
+    "description": "Key legal.gizlilik.h4"
+  },
+  "legalGizlilikH5": "Cookies and analytics",
+  "@legalGizlilikH5": {
+    "description": "Key legal.gizlilik.h5"
+  },
+  "legalGizlilikH6": "Blocking and reports",
+  "@legalGizlilikH6": {
+    "description": "Key legal.gizlilik.h6"
+  },
+  "legalGizlilikH7": "Changes",
+  "@legalGizlilikH7": {
+    "description": "Key legal.gizlilik.h7"
+  },
+  "legalGizlilikShort": "Privacy",
+  "@legalGizlilikShort": {
+    "description": "Key legal.gizlilik.short"
+  },
+  "legalGizlilikTitle": "Privacy Policy",
+  "@legalGizlilikTitle": {
+    "description": "Key legal.gizlilik.title"
+  },
+  "legalKosullarB1": "By using the app you accept these terms and the community rules.",
+  "@legalKosullarB1": {
+    "description": "Key legal.kosullar.b1"
+  },
+  "legalKosullarB2": "The app is available only to students and staff with a valid university email.",
+  "@legalKosullarB2": {
+    "description": "Key legal.kosullar.b2"
+  },
+  "legalKosullarB3": "Harassment, hate speech, spam and misleading content are prohibited. Violations may lead to content removal or account suspension.",
+  "@legalKosullarB3": {
+    "description": "Key legal.kosullar.b3"
+  },
+  "legalKosullarB4": "Club managers are responsible for application decisions and the content they share; they may send at most 2 announcement notifications per day.",
+  "@legalKosullarB4": {
+    "description": "Key legal.kosullar.b4"
+  },
+  "legalKosullarB5": "If you cannot attend an event you registered for, you are expected to leave so your spot goes to the waitlist.",
+  "@legalKosullarB5": {
+    "description": "Key legal.kosullar.b5"
+  },
+  "legalKosullarB6": "Icons are from Lucide (ISC) and fonts are Montserrat and Inter (SIL OFL).",
+  "@legalKosullarB6": {
+    "description": "Key legal.kosullar.b6"
+  },
+  "legalKosullarB7": "The app is provided \"as is\"; the relevant club is responsible for the content of its events.",
+  "@legalKosullarB7": {
+    "description": "Key legal.kosullar.b7"
+  },
+  "legalKosullarH1": "Acceptance",
+  "@legalKosullarH1": {
+    "description": "Key legal.kosullar.h1"
+  },
+  "legalKosullarH2": "Eligibility",
+  "@legalKosullarH2": {
+    "description": "Key legal.kosullar.h2"
+  },
+  "legalKosullarH3": "Community rules",
+  "@legalKosullarH3": {
+    "description": "Key legal.kosullar.h3"
+  },
+  "legalKosullarH4": "Club management responsibility",
+  "@legalKosullarH4": {
+    "description": "Key legal.kosullar.h4"
+  },
+  "legalKosullarH5": "Event registrations",
+  "@legalKosullarH5": {
+    "description": "Key legal.kosullar.h5"
+  },
+  "legalKosullarH6": "Intellectual property",
+  "@legalKosullarH6": {
+    "description": "Key legal.kosullar.h6"
+  },
+  "legalKosullarH7": "Limitation of liability",
+  "@legalKosullarH7": {
+    "description": "Key legal.kosullar.h7"
+  },
+  "legalKosullarShort": "Terms",
+  "@legalKosullarShort": {
+    "description": "Key legal.kosullar.short"
+  },
+  "legalKosullarTitle": "Terms of Use",
+  "@legalKosullarTitle": {
+    "description": "Key legal.kosullar.title"
+  },
+  "legalKvkkB1": "Your personal data is processed by Gümüşhane University as the data controller under Law No. 6698 (KVKK).",
+  "@legalKvkkB1": {
+    "description": "Key legal.kvkk.b1"
+  },
+  "legalKvkkB2": "Name, university email, department, year, interests and event attendance records are processed. Location and contacts are not collected.",
+  "@legalKvkkB2": {
+    "description": "Key legal.kvkk.b2"
+  },
+  "legalKvkkB3": "Data is processed to manage club memberships, event registration and attendance, deliver announcements and keep the service secure.",
+  "@legalKvkkB3": {
+    "description": "Key legal.kvkk.b3"
+  },
+  "legalKvkkB4": "Your data is shared only with the board of clubs you join and, when legally required, with authorised institutions.",
+  "@legalKvkkB4": {
+    "description": "Key legal.kvkk.b4"
+  },
+  "legalKvkkB5": "Membership data is kept at most 1 year after graduation or deletion; attendance records are anonymised at term end.",
+  "@legalKvkkB5": {
+    "description": "Key legal.kvkk.b5"
+  },
+  "legalKvkkB6": "Under Article 11 of KVKK you may access, correct, delete your data and object to processing.",
+  "@legalKvkkB6": {
+    "description": "Key legal.kvkk.b6"
+  },
+  "legalKvkkB7": "Submit requests through the in-app Help & support form or kvkk@gumushane.edu.tr.",
+  "@legalKvkkB7": {
+    "description": "Key legal.kvkk.b7"
+  },
+  "legalKvkkH1": "Data controller",
+  "@legalKvkkH1": {
+    "description": "Key legal.kvkk.h1"
+  },
+  "legalKvkkH2": "Data processed",
+  "@legalKvkkH2": {
+    "description": "Key legal.kvkk.h2"
+  },
+  "legalKvkkH3": "Purposes",
+  "@legalKvkkH3": {
+    "description": "Key legal.kvkk.h3"
+  },
+  "legalKvkkH4": "Transfers",
+  "@legalKvkkH4": {
+    "description": "Key legal.kvkk.h4"
+  },
+  "legalKvkkH5": "Retention",
+  "@legalKvkkH5": {
+    "description": "Key legal.kvkk.h5"
+  },
+  "legalKvkkH6": "Your rights",
+  "@legalKvkkH6": {
+    "description": "Key legal.kvkk.h6"
+  },
+  "legalKvkkH7": "Requests",
+  "@legalKvkkH7": {
+    "description": "Key legal.kvkk.h7"
+  },
+  "legalKvkkShort": "Data notice",
+  "@legalKvkkShort": {
+    "description": "Key legal.kvkk.short"
+  },
+  "legalKvkkTitle": "Personal Data Notice",
+  "@legalKvkkTitle": {
+    "description": "Key legal.kvkk.title"
+  },
+  "legalTitle": "Legal",
+  "@legalTitle": {
+    "description": "Key legal.title"
+  },
+  "legalUpdated": "Last updated: September 2026",
+  "@legalUpdated": {
+    "description": "Key legal.updated"
+  },
+  "mapAssumptions": "Assumptions",
+  "@mapAssumptions": {
+    "description": "Key map.assumptions"
+  },
+  "mapColId": "ID",
+  "@mapColId": {
+    "description": "Key map.col.id"
+  },
+  "mapColName": "Screen",
+  "@mapColName": {
+    "description": "Key map.col.name"
+  },
+  "mapColOpen": "Open",
+  "@mapColOpen": {
+    "description": "Key map.col.open"
+  },
+  "mapColRoles": "Roles",
+  "@mapColRoles": {
+    "description": "Key map.col.roles"
+  },
+  "mapColRoute": "Route",
+  "@mapColRoute": {
+    "description": "Key map.col.route"
+  },
+  "mapDesc": "Flow diagrams, the 51-screen inventory and the assumptions made. Tapping a node opens the prototype at that screen with a suitable demo account.",
+  "@mapDesc": {
+    "description": "Key map.desc"
+  },
+  "mapFlows": "Flow diagrams",
+  "@mapFlows": {
+    "description": "Key map.flows"
+  },
+  "mapInventory": "Screen inventory",
+  "@mapInventory": {
+    "description": "Key map.inventory"
+  },
+  "mapRolesAdmin": "Super admin",
+  "@mapRolesAdmin": {
+    "description": "Key map.roles.admin"
+  },
+  "mapRolesAll": "All",
+  "@mapRolesAll": {
+    "description": "Key map.roles.all"
+  },
+  "mapRolesGuest": "Signed out",
+  "@mapRolesGuest": {
+    "description": "Key map.roles.guest"
+  },
+  "mapRolesManager": "Board, President (Advisor read-only)",
+  "@mapRolesManager": {
+    "description": "Key map.roles.manager"
+  },
+  "mapRolesMember": "Member+",
+  "@mapRolesMember": {
+    "description": "Key map.roles.member"
+  },
+  "mapTitle": "Screen Map",
+  "@mapTitle": {
+    "description": "Key map.title"
+  },
+  "membersFilterBoard": "Board",
+  "@membersFilterBoard": {
+    "description": "Key members.filter.board"
+  },
+  "membersNoResults": "No matching members",
+  "@membersNoResults": {
+    "description": "Key members.noResults"
+  },
+  "membersSearch": "Search members",
+  "@membersSearch": {
+    "description": "Key members.search"
+  },
+  "membersTitle": "Members",
+  "@membersTitle": {
+    "description": "Key members.title"
+  },
+  "membersTotal": "{count, plural, one{# person} other{# people}}",
+  "@membersTotal": {
+    "description": "Key members.total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtChartAria": "Weekly member count chart",
+  "@mgtChartAria": {
+    "description": "Key mgt.chart.aria"
+  },
+  "mgtGrowth": "Member growth",
+  "@mgtGrowth": {
+    "description": "Key mgt.growth"
+  },
+  "mgtKpiAnnouncements": "Announcements this month",
+  "@mgtKpiAnnouncements": {
+    "description": "Key mgt.kpi.announcements"
+  },
+  "mgtKpiEvents": "Upcoming events",
+  "@mgtKpiEvents": {
+    "description": "Key mgt.kpi.events"
+  },
+  "mgtKpiMembers": "Members",
+  "@mgtKpiMembers": {
+    "description": "Key mgt.kpi.members"
+  },
+  "mgtKpiNewThisMonth": "+{count} this month",
+  "@mgtKpiNewThisMonth": {
+    "description": "Key mgt.kpi.newThisMonth",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtKpiPending": "Pending applications",
+  "@mgtKpiPending": {
+    "description": "Key mgt.kpi.pending"
+  },
+  "mgtNewClubDesc": "Share the club link to invite your first members.",
+  "@mgtNewClubDesc": {
+    "description": "Key mgt.newClub.desc"
+  },
+  "mgtNewClubTitle": "No members yet",
+  "@mgtNewClubTitle": {
+    "description": "Key mgt.newClub.title"
+  },
+  "mgtNoAccess": "You don't have access to this panel.",
+  "@mgtNoAccess": {
+    "description": "Key mgt.noAccess"
+  },
+  "mgtNoUpcoming": "No upcoming events.",
+  "@mgtNoUpcoming": {
+    "description": "Key mgt.noUpcoming"
+  },
+  "mgtQuickAnnounce": "Announce",
+  "@mgtQuickAnnounce": {
+    "description": "Key mgt.quick.announce"
+  },
+  "mgtQuickAttendance": "Take attendance",
+  "@mgtQuickAttendance": {
+    "description": "Key mgt.quick.attendance"
+  },
+  "mgtQuickEvent": "Create event",
+  "@mgtQuickEvent": {
+    "description": "Key mgt.quick.event"
+  },
+  "mgtQuickMembers": "Members",
+  "@mgtQuickMembers": {
+    "description": "Key mgt.quick.members"
+  },
+  "mgtQuickPost": "Write post",
+  "@mgtQuickPost": {
+    "description": "Key mgt.quick.post"
+  },
+  "mgtQuickSettings": "Club settings",
+  "@mgtQuickSettings": {
+    "description": "Key mgt.quick.settings"
+  },
+  "mgtQuickTitle": "Quick actions",
+  "@mgtQuickTitle": {
+    "description": "Key mgt.quick.title"
+  },
+  "mgtQuotaLeft": "{count} announcements left today",
+  "@mgtQuotaLeft": {
+    "description": "Key mgt.quotaLeft",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtReadOnlyBanner": "Advisor view — read-only",
+  "@mgtReadOnlyBanner": {
+    "description": "Key mgt.readOnlyBanner"
+  },
+  "mgtRecent": "Recent activity",
+  "@mgtRecent": {
+    "description": "Key mgt.recent"
+  },
+  "mgtTitle": "Management panel",
+  "@mgtTitle": {
+    "description": "Key mgt.title"
+  },
+  "mgtUpcoming": "Upcoming events",
+  "@mgtUpcoming": {
+    "description": "Key mgt.upcoming"
+  },
+  "mgtWeekN": "Week {n}",
+  "@mgtWeekN": {
+    "description": "Key mgt.weekN",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "mgtWeeks8": "Last 8 weeks",
+  "@mgtWeeks8": {
+    "description": "Key mgt.weeks8"
+  },
+  "mgtEventsCreate": "Event",
+  "@mgtEventsCreate": {
+    "description": "Key mgtEvents.create"
+  },
+  "mgtEventsEmptyCancelled": "No cancelled events",
+  "@mgtEventsEmptyCancelled": {
+    "description": "Key mgtEvents.empty.cancelled"
+  },
+  "mgtEventsEmptyDraft": "No drafts",
+  "@mgtEventsEmptyDraft": {
+    "description": "Key mgtEvents.empty.draft"
+  },
+  "mgtEventsEmptyPast": "No past events",
+  "@mgtEventsEmptyPast": {
+    "description": "Key mgtEvents.empty.past"
+  },
+  "mgtEventsEmptyPublished": "No published events",
+  "@mgtEventsEmptyPublished": {
+    "description": "Key mgtEvents.empty.published"
+  },
+  "mgtEventsTitle": "Event management",
+  "@mgtEventsTitle": {
+    "description": "Key mgtEvents.title"
+  },
+  "mgtMembersExport": "Export member list (CSV)",
+  "@mgtMembersExport": {
+    "description": "Key mgtMembers.export"
+  },
+  "mgtMembersRate": "Attendance rate",
+  "@mgtMembersRate": {
+    "description": "Key mgtMembers.rate"
+  },
+  "mgtMembersSince": "Since {date}",
+  "@mgtMembersSince": {
+    "description": "Key mgtMembers.since",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "mgtMembersSortJoined": "By join date",
+  "@mgtMembersSortJoined": {
+    "description": "Key mgtMembers.sort.joined"
+  },
+  "mgtMembersSortName": "By name",
+  "@mgtMembersSortName": {
+    "description": "Key mgtMembers.sort.name"
+  },
+  "mgtMembersSortRate": "By attendance",
+  "@mgtMembersSortRate": {
+    "description": "Key mgtMembers.sort.rate"
+  },
+  "mgtMembersTitle": "Member management",
+  "@mgtMembersTitle": {
+    "description": "Key mgtMembers.title"
+  },
+  "mgtMembersTransfer": "Transfer presidency",
+  "@mgtMembersTransfer": {
+    "description": "Key mgtMembers.transfer"
+  },
+  "mgtMembersTransferDesc": "If you transfer the presidency you become a board member.",
+  "@mgtMembersTransferDesc": {
+    "description": "Key mgtMembers.transferDesc"
+  },
+  "mgtMembersTransferTitle": "Transfer presidency",
+  "@mgtMembersTransferTitle": {
+    "description": "Key mgtMembers.transferTitle"
+  },
+  "myclubsEmptyActive": "No clubs yet",
+  "@myclubsEmptyActive": {
+    "description": "Key myclubs.empty.active"
+  },
+  "myclubsEmptyHistory": "No history",
+  "@myclubsEmptyHistory": {
+    "description": "Key myclubs.empty.history"
+  },
+  "myclubsEmptyPending": "No pending applications",
+  "@myclubsEmptyPending": {
+    "description": "Key myclubs.empty.pending"
+  },
+  "myclubsTabActive": "Memberships",
+  "@myclubsTabActive": {
+    "description": "Key myclubs.tab.active"
+  },
+  "myclubsTabHistory": "History",
+  "@myclubsTabHistory": {
+    "description": "Key myclubs.tab.history"
+  },
+  "myclubsTabPending": "Pending",
+  "@myclubsTabPending": {
+    "description": "Key myclubs.tab.pending"
+  },
+  "myclubsTitle": "My clubs & applications",
+  "@myclubsTitle": {
+    "description": "Key myclubs.title"
+  },
+  "myeventsEmptyPast": "No past events",
+  "@myeventsEmptyPast": {
+    "description": "Key myevents.empty.past"
+  },
+  "myeventsEmptyUpcoming": "No upcoming events",
+  "@myeventsEmptyUpcoming": {
+    "description": "Key myevents.empty.upcoming"
+  },
+  "myeventsEmptyWaitlist": "You're not on any waitlist",
+  "@myeventsEmptyWaitlist": {
+    "description": "Key myevents.empty.waitlist"
+  },
+  "myeventsTitle": "My events",
+  "@myeventsTitle": {
+    "description": "Key myevents.title"
+  },
+  "navAdmin": "Admin",
+  "@navAdmin": {
+    "description": "Key nav.admin"
+  },
+  "navClubs": "Clubs",
+  "@navClubs": {
+    "description": "Key nav.clubs"
+  },
+  "navEvents": "Events",
+  "@navEvents": {
+    "description": "Key nav.events"
+  },
+  "navNotifications": "Notifications",
+  "@navNotifications": {
+    "description": "Key nav.notifications"
+  },
+  "navProfile": "Profile",
+  "@navProfile": {
+    "description": "Key nav.profile"
+  },
+  "notifEmptyDesc": "Application results, announcements and reminders show up here.",
+  "@notifEmptyDesc": {
+    "description": "Key notif.empty.desc"
+  },
+  "notifEmptyTitle": "No notifications yet",
+  "@notifEmptyTitle": {
+    "description": "Key notif.empty.title"
+  },
+  "notifMarkAllRead": "Mark all as read",
+  "@notifMarkAllRead": {
+    "description": "Key notif.markAllRead"
+  },
+  "notifMarkRead": "Mark read",
+  "@notifMarkRead": {
+    "description": "Key notif.markRead"
+  },
+  "notifMarkUnread": "Mark unread",
+  "@notifMarkUnread": {
+    "description": "Key notif.markUnread"
+  },
+  "notifMuteType": "Mute this type",
+  "@notifMuteType": {
+    "description": "Key notif.muteType"
+  },
+  "notifOffBanner": "Notifications are off",
+  "@notifOffBanner": {
+    "description": "Key notif.offBanner"
+  },
+  "notifSettings": "Notification settings",
+  "@notifSettings": {
+    "description": "Key notif.settings"
+  },
+  "notifSystem": "System",
+  "@notifSystem": {
+    "description": "Key notif.system"
+  },
+  "notifUnread": "Unread",
+  "@notifUnread": {
+    "description": "Key notif.unread"
+  },
+  "notifPrefsAnnouncements": "Announcements",
+  "@notifPrefsAnnouncements": {
+    "description": "Key notifPrefs.announcements"
+  },
+  "notifPrefsApplicationResults": "Application results",
+  "@notifPrefsApplicationResults": {
+    "description": "Key notifPrefs.applicationResults"
+  },
+  "notifPrefsCustomize": "Customise",
+  "@notifPrefsCustomize": {
+    "description": "Key notifPrefs.customize"
+  },
+  "notifPrefsEnable": "Enable",
+  "@notifPrefsEnable": {
+    "description": "Key notifPrefs.enable"
+  },
+  "notifPrefsEventReminders": "Event reminders",
+  "@notifPrefsEventReminders": {
+    "description": "Key notifPrefs.eventReminders"
+  },
+  "notifPrefsManagement": "Management notifications",
+  "@notifPrefsManagement": {
+    "description": "Key notifPrefs.management"
+  },
+  "notifPrefsMuted": "Muted",
+  "@notifPrefsMuted": {
+    "description": "Key notifPrefs.muted"
+  },
+  "notifPrefsNewEvents": "New events",
+  "@notifPrefsNewEvents": {
+    "description": "Key notifPrefs.newEvents"
+  },
+  "notifPrefsNoClubs": "You're not a member of any club.",
+  "@notifPrefsNoClubs": {
+    "description": "Key notifPrefs.noClubs"
+  },
+  "notifPrefsPerClub": "Per-club settings",
+  "@notifPrefsPerClub": {
+    "description": "Key notifPrefs.perClub"
+  },
+  "notifPrefsPermission": "System notification permission",
+  "@notifPrefsPermission": {
+    "description": "Key notifPrefs.permission"
+  },
+  "notifPrefsQuiet": "Quiet hours",
+  "@notifPrefsQuiet": {
+    "description": "Key notifPrefs.quiet"
+  },
+  "notifPrefsQuietDesc": "Notifications stay silent during these hours.",
+  "@notifPrefsQuietDesc": {
+    "description": "Key notifPrefs.quietDesc"
+  },
+  "notifPrefsQuietFrom": "From",
+  "@notifPrefsQuietFrom": {
+    "description": "Key notifPrefs.quietFrom"
+  },
+  "notifPrefsQuietTo": "To",
+  "@notifPrefsQuietTo": {
+    "description": "Key notifPrefs.quietTo"
+  },
+  "notifPrefsReminderTime": "Reminder time",
+  "@notifPrefsReminderTime": {
+    "description": "Key notifPrefs.reminderTime"
+  },
+  "notifPrefsSystem": "System",
+  "@notifPrefsSystem": {
+    "description": "Key notifPrefs.system"
+  },
+  "notifPrefsTitle": "Notification preferences",
+  "@notifPrefsTitle": {
+    "description": "Key notifPrefs.title"
+  },
+  "notifTypeAnnouncementBody": "Announcement: {post}",
+  "@notifTypeAnnouncementBody": {
+    "description": "Key notifType.announcement.body",
+    "placeholders": {
+      "post": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeAnnouncementTitle": "{club}",
+  "@notifTypeAnnouncementTitle": {
+    "description": "Key notifType.announcement.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationApprovedBody": "Your {club} membership was approved. Welcome!",
+  "@notifTypeApplicationApprovedBody": {
+    "description": "Key notifType.application_approved.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationApprovedTitle": "Application approved",
+  "@notifTypeApplicationApprovedTitle": {
+    "description": "Key notifType.application_approved.title"
+  },
+  "notifTypeApplicationReceivedBody": "{user} applied to join {club}.",
+  "@notifTypeApplicationReceivedBody": {
+    "description": "Key notifType.application_received.body",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationReceivedTitle": "New application",
+  "@notifTypeApplicationReceivedTitle": {
+    "description": "Key notifType.application_received.title"
+  },
+  "notifTypeApplicationRejectedBody": "Your {club} application was not accepted this time. Tap to see why.",
+  "@notifTypeApplicationRejectedBody": {
+    "description": "Key notifType.application_rejected.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeApplicationRejectedTitle": "Application rejected",
+  "@notifTypeApplicationRejectedTitle": {
+    "description": "Key notifType.application_rejected.title"
+  },
+  "notifTypeEventCancelledBody": "{event} was cancelled ({reason}).",
+  "@notifTypeEventCancelledBody": {
+    "description": "Key notifType.event_cancelled.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventCancelledTitle": "Event cancelled",
+  "@notifTypeEventCancelledTitle": {
+    "description": "Key notifType.event_cancelled.title"
+  },
+  "notifTypeEventNewBody": "{club} published a new event. Save your spot.",
+  "@notifTypeEventNewBody": {
+    "description": "Key notifType.event_new.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventNewTitle": "New event: {event}",
+  "@notifTypeEventNewTitle": {
+    "description": "Key notifType.event_new.title",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventReminderBody": "The event starts soon ({time}). Your ticket is ready.",
+  "@notifTypeEventReminderBody": {
+    "description": "Key notifType.event_reminder.body",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeEventReminderTitle": "Reminder: {event}",
+  "@notifTypeEventReminderTitle": {
+    "description": "Key notifType.event_reminder.title",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeNewReportBody": "A new report is waiting for review.",
+  "@notifTypeNewReportBody": {
+    "description": "Key notifType.new_report.body"
+  },
+  "notifTypeNewReportTitle": "New report",
+  "@notifTypeNewReportTitle": {
+    "description": "Key notifType.new_report.title"
+  },
+  "notifTypeRemovedFromClubBody": "Your {club} membership was ended by the board.",
+  "@notifTypeRemovedFromClubBody": {
+    "description": "Key notifType.removed_from_club.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeRemovedFromClubTitle": "Membership ended",
+  "@notifTypeRemovedFromClubTitle": {
+    "description": "Key notifType.removed_from_club.title"
+  },
+  "notifTypeReportResolvedBody": "Campus administration reviewed your report and took action.",
+  "@notifTypeReportResolvedBody": {
+    "description": "Key notifType.report_resolved.body"
+  },
+  "notifTypeReportResolvedTitle": "Your report was resolved",
+  "@notifTypeReportResolvedTitle": {
+    "description": "Key notifType.report_resolved.title"
+  },
+  "notifTypeRoleChangedBody": "Your new role in {club}: {role}.",
+  "@notifTypeRoleChangedBody": {
+    "description": "Key notifType.role_changed.body",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeRoleChangedTitle": "Your role changed",
+  "@notifTypeRoleChangedTitle": {
+    "description": "Key notifType.role_changed.title"
+  },
+  "notifTypeSystemMaintenanceBody": "The app will be briefly under maintenance Sunday 03:00–04:00.",
+  "@notifTypeSystemMaintenanceBody": {
+    "description": "Key notifType.system.maintenance.body"
+  },
+  "notifTypeSystemMaintenanceTitle": "Scheduled maintenance",
+  "@notifTypeSystemMaintenanceTitle": {
+    "description": "Key notifType.system.maintenance.title"
+  },
+  "notifTypeSystemWelcomeBody": "Every club on campus, in your pocket. Start exploring.",
+  "@notifTypeSystemWelcomeBody": {
+    "description": "Key notifType.system.welcome.body"
+  },
+  "notifTypeSystemWelcomeTitle": "Welcome to GÜ Kulüpler",
+  "@notifTypeSystemWelcomeTitle": {
+    "description": "Key notifType.system.welcome.title"
+  },
+  "notifTypeWaitlistPromotedBody": "You were promoted from the waitlist for {event}. Your ticket is ready.",
+  "@notifTypeWaitlistPromotedBody": {
+    "description": "Key notifType.waitlist_promoted.body",
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeWaitlistPromotedTitle": "A spot opened up!",
+  "@notifTypeWaitlistPromotedTitle": {
+    "description": "Key notifType.waitlist_promoted.title"
+  },
+  "onbDiscoverDesc": "Every club on campus, in your pocket. Find the one that fits you in minutes.",
+  "@onbDiscoverDesc": {
+    "description": "Key onb.discover.desc"
+  },
+  "onbDiscoverTitle": "Discover",
+  "@onbDiscoverTitle": {
+    "description": "Key onb.discover.title"
+  },
+  "onbFollowDesc": "Never miss an announcement; check in with QR in seconds.",
+  "@onbFollowDesc": {
+    "description": "Key onb.follow.desc"
+  },
+  "onbFollowTitle": "Stay in the loop",
+  "@onbFollowTitle": {
+    "description": "Key onb.follow.title"
+  },
+  "onbJoinDesc": "Apply with one tap, register for events, keep your ticket in your pocket.",
+  "@onbJoinDesc": {
+    "description": "Key onb.join.desc"
+  },
+  "onbJoinTitle": "Join",
+  "@onbJoinTitle": {
+    "description": "Key onb.join.title"
+  },
+  "onbNext": "Next",
+  "@onbNext": {
+    "description": "Key onb.next"
+  },
+  "onbSkip": "Skip",
+  "@onbSkip": {
+    "description": "Key onb.skip"
+  },
+  "onbStart": "Get started",
+  "@onbStart": {
+    "description": "Key onb.start"
+  },
+  "onbTitle": "Welcome",
+  "@onbTitle": {
+    "description": "Key onb.title"
+  },
+  "panelAccAdmin": "Super admin",
+  "@panelAccAdmin": {
+    "description": "Key panel.acc.admin"
+  },
+  "panelAccAyse": "No clubs",
+  "@panelAccAyse": {
+    "description": "Key panel.acc.ayse"
+  },
+  "panelAccBurak": "Outdoors president",
+  "@panelAccBurak": {
+    "description": "Key panel.acc.burak"
+  },
+  "panelAccElif": "Software board",
+  "@panelAccElif": {
+    "description": "Key panel.acc.elif"
+  },
+  "panelAccMehmet": "2 clubs, 1 pending",
+  "@panelAccMehmet": {
+    "description": "Key panel.acc.mehmet"
+  },
+  "panelAccZeynep": "Read-only",
+  "@panelAccZeynep": {
+    "description": "Key panel.acc.zeynep"
+  },
+  "panelAccount": "Account",
+  "@panelAccount": {
+    "description": "Key panel.account"
+  },
+  "panelAppearance": "Appearance",
+  "@panelAppearance": {
+    "description": "Key panel.appearance"
+  },
+  "panelApplicationSim": "Application simulation",
+  "@panelApplicationSim": {
+    "description": "Key panel.applicationSim"
+  },
+  "panelApproveMine": "Approve",
+  "@panelApproveMine": {
+    "description": "Key panel.approveMine"
+  },
+  "panelData": "Data state",
+  "@panelData": {
+    "description": "Key panel.data"
+  },
+  "panelDataGroup": "Data",
+  "@panelDataGroup": {
+    "description": "Key panel.dataGroup"
+  },
+  "panelDownloadJson": "Download all demo data (JSON)",
+  "@panelDownloadJson": {
+    "description": "Key panel.downloadJson"
+  },
+  "panelEmpty": "Empty",
+  "@panelEmpty": {
+    "description": "Key panel.empty"
+  },
+  "panelError": "Error",
+  "@panelError": {
+    "description": "Key panel.error"
+  },
+  "panelForceUpdate": "Show forced update",
+  "@panelForceUpdate": {
+    "description": "Key panel.forceUpdate"
+  },
+  "panelFrame": "Device frame",
+  "@panelFrame": {
+    "description": "Key panel.frame"
+  },
+  "panelLoginAs": "Sign in with this account",
+  "@panelLoginAs": {
+    "description": "Key panel.loginAs"
+  },
+  "panelNetwork": "Network",
+  "@panelNetwork": {
+    "description": "Key panel.network"
+  },
+  "panelNoPending": "This account has no pending application.",
+  "@panelNoPending": {
+    "description": "Key panel.noPending"
+  },
+  "panelNormal": "Normal",
+  "@panelNormal": {
+    "description": "Key panel.normal"
+  },
+  "panelOffline": "Offline",
+  "@panelOffline": {
+    "description": "Key panel.offline"
+  },
+  "panelOnline": "Online",
+  "@panelOnline": {
+    "description": "Key panel.online"
+  },
+  "panelPendingAt": "Pending application: {club}",
+  "@panelPendingAt": {
+    "description": "Key panel.pendingAt",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "panelRejectMine": "Reject",
+  "@panelRejectMine": {
+    "description": "Key panel.rejectMine"
+  },
+  "panelResetData": "Reset demo data",
+  "@panelResetData": {
+    "description": "Key panel.resetData"
+  },
+  "panelResetNotifPerm": "Reset notification permission",
+  "@panelResetNotifPerm": {
+    "description": "Key panel.resetNotifPerm"
+  },
+  "panelSessionExpired": "Session expired",
+  "@panelSessionExpired": {
+    "description": "Key panel.sessionExpired"
+  },
+  "panelShowLoading": "Show loading state (3 s)",
+  "@panelShowLoading": {
+    "description": "Key panel.showLoading"
+  },
+  "panelSimulateNotif": "Simulate a notification",
+  "@panelSimulateNotif": {
+    "description": "Key panel.simulateNotif"
+  },
+  "panelSlow": "Slow",
+  "@panelSlow": {
+    "description": "Key panel.slow"
+  },
+  "panelSystem": "System events",
+  "@panelSystem": {
+    "description": "Key panel.system"
+  },
+  "placePl01": "Congress & Culture Centre — Hall A",
+  "@placePl01": {
+    "description": "Key place.pl01"
+  },
+  "placePl02": "Congress & Culture Centre — Hall B",
+  "@placePl02": {
+    "description": "Key place.pl02"
+  },
+  "placePl03": "Engineering Faculty Lecture Hall 1",
+  "@placePl03": {
+    "description": "Key place.pl03"
+  },
+  "placePl04": "Computer Lab 2",
+  "@placePl04": {
+    "description": "Key place.pl04"
+  },
+  "placePl05": "Open-Air Stage",
+  "@placePl05": {
+    "description": "Key place.pl05"
+  },
+  "placePl06": "Student Clubs Building — Meeting Room",
+  "@placePl06": {
+    "description": "Key place.pl06"
+  },
+  "placePl07": "Central Library — Study Hall",
+  "@placePl07": {
+    "description": "Key place.pl07"
+  },
+  "placePl08": "Sports Hall",
+  "@placePl08": {
+    "description": "Key place.pl08"
+  },
+  "placePl09": "Campus Main Gate (meeting point)",
+  "@placePl09": {
+    "description": "Key place.pl09"
+  },
+  "placePl10": "Cafeteria Square",
+  "@placePl10": {
+    "description": "Key place.pl10"
+  },
+  "postAdvisorNoComment": "As an advisor you can't comment.",
+  "@postAdvisorNoComment": {
+    "description": "Key post.advisorNoComment"
+  },
+  "postComments": "{count, plural, =0{Comments} one{# comment} other{# comments}}",
+  "@postComments": {
+    "description": "Key post.comments",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "Comments": {
+        "type": "String"
+      }
+    }
+  },
+  "postNoComments": "Be the first to comment.",
+  "@postNoComments": {
+    "description": "Key post.noComments"
+  },
+  "postPin": "Pin",
+  "@postPin": {
+    "description": "Key post.pin"
+  },
+  "postTitle": "Post",
+  "@postTitle": {
+    "description": "Key post.title"
+  },
+  "postUnpin": "Unpin",
+  "@postUnpin": {
+    "description": "Key post.unpin"
+  },
+  "postWriteComment": "Write a comment…",
+  "@postWriteComment": {
+    "description": "Key post.writeComment"
+  },
+  "profileChangePhoto": "Change photo",
+  "@profileChangePhoto": {
+    "description": "Key profile.changePhoto"
+  },
+  "profileDepartment": "Department",
+  "@profileDepartment": {
+    "description": "Key profile.department"
+  },
+  "profileEdit": "Edit profile",
+  "@profileEdit": {
+    "description": "Key profile.edit"
+  },
+  "profileInterests": "Interests",
+  "@profileInterests": {
+    "description": "Key profile.interests"
+  },
+  "profileManagePanel": "Management panel",
+  "@profileManagePanel": {
+    "description": "Key profile.managePanel"
+  },
+  "profileManaged": "Clubs I manage",
+  "@profileManaged": {
+    "description": "Key profile.managed"
+  },
+  "profileNoClubs": "You don't have a club yet.",
+  "@profileNoClubs": {
+    "description": "Key profile.noClubs"
+  },
+  "profileStatClubs": "Clubs",
+  "@profileStatClubs": {
+    "description": "Key profile.stat.clubs"
+  },
+  "profileStatEvents": "Events attended",
+  "@profileStatEvents": {
+    "description": "Key profile.stat.events"
+  },
+  "profileStatPending": "Pending applications",
+  "@profileStatPending": {
+    "description": "Key profile.stat.pending"
+  },
+  "profileYear": "Year",
+  "@profileYear": {
+    "description": "Key profile.year"
+  },
+  "qaColAction": "Action",
+  "@qaColAction": {
+    "description": "Key qa.col.action"
+  },
+  "qaColCount": "Clicks",
+  "@qaColCount": {
+    "description": "Key qa.col.count"
+  },
+  "qaColResult": "Result type",
+  "@qaColResult": {
+    "description": "Key qa.col.result"
+  },
+  "qaColScreen": "Screen",
+  "@qaColScreen": {
+    "description": "Key qa.col.screen"
+  },
+  "qaCoverage": "Coverage summary",
+  "@qaCoverage": {
+    "description": "Key qa.coverage"
+  },
+  "qaDeadSession": "Dead clicks caught this session",
+  "@qaDeadSession": {
+    "description": "Key qa.dead.session"
+  },
+  "qaDeadList": "Dead elements",
+  "@qaDeadList": {
+    "description": "Key qa.deadList"
+  },
+  "qaDesc": "Action coverage, dead-element scan and the section-15 self-check report.",
+  "@qaDesc": {
+    "description": "Key qa.desc"
+  },
+  "qaDialogs": "Dialogs",
+  "@qaDialogs": {
+    "description": "Key qa.dialogs"
+  },
+  "qaDownload": "Download report",
+  "@qaDownload": {
+    "description": "Key qa.download"
+  },
+  "qaFail": "FAIL",
+  "@qaFail": {
+    "description": "Key qa.fail"
+  },
+  "qaI18nMissing": "Missing i18n keys",
+  "@qaI18nMissing": {
+    "description": "Key qa.i18nMissing"
+  },
+  "qaMissingIds": "Missing ids",
+  "@qaMissingIds": {
+    "description": "Key qa.missingIds"
+  },
+  "qaNoClicks": "No clicks recorded yet. Start using the prototype.",
+  "@qaNoClicks": {
+    "description": "Key qa.noClicks"
+  },
+  "qaNoDead": "No dead elements",
+  "@qaNoDead": {
+    "description": "Key qa.noDead"
+  },
+  "qaPass": "PASS",
+  "@qaPass": {
+    "description": "Key qa.pass"
+  },
+  "qaPending": "RUN SCAN",
+  "@qaPending": {
+    "description": "Key qa.pending"
+  },
+  "qaRegistry": "Action registry",
+  "@qaRegistry": {
+    "description": "Key qa.registry"
+  },
+  "qaRegistryNote": "Every data-action clicked this session is collected here; the result type is classified by observing what changed after the click.",
+  "@qaRegistryNote": {
+    "description": "Key qa.registryNote"
+  },
+  "qaRunAll": "Run checks",
+  "@qaRunAll": {
+    "description": "Key qa.runAll"
+  },
+  "qaScanAll": "Scan all screens",
+  "@qaScanAll": {
+    "description": "Key qa.scanAll"
+  },
+  "qaScanResult": "{total} interactive elements · {dead} dead elements",
+  "@qaScanResult": {
+    "description": "Key qa.scanResult",
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "dead": {
+        "type": "String"
+      }
+    }
+  },
+  "qaScanThis": "Scan this screen",
+  "@qaScanThis": {
+    "description": "Key qa.scanThis"
+  },
+  "qaScanning": "Scanning… {a}/{b}",
+  "@qaScanning": {
+    "description": "Key qa.scanning",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "qaScreens": "Screens",
+  "@qaScreens": {
+    "description": "Key qa.screens"
+  },
+  "qaSelfCheck": "Self-check report (section 15)",
+  "@qaSelfCheck": {
+    "description": "Key qa.selfCheck"
+  },
+  "qaSheets": "Sheets",
+  "@qaSheets": {
+    "description": "Key qa.sheets"
+  },
+  "qaTitle": "Quality Check",
+  "@qaTitle": {
+    "description": "Key qa.title"
+  },
+  "qaToasts": "Toasts",
+  "@qaToasts": {
+    "description": "Key qa.toasts"
+  },
+  "rejectReasonCriteria": "Criteria not met",
+  "@rejectReasonCriteria": {
+    "description": "Key rejectReason.criteria"
+  },
+  "rejectReasonMissing": "Missing information",
+  "@rejectReasonMissing": {
+    "description": "Key rejectReason.missing"
+  },
+  "rejectReasonOther": "Other",
+  "@rejectReasonOther": {
+    "description": "Key rejectReason.other"
+  },
+  "rejectReasonQuota": "Quota is full",
+  "@rejectReasonQuota": {
+    "description": "Key rejectReason.quota"
+  },
+  "reminder15m": "15 min before",
+  "@reminder15m": {
+    "description": "Key reminder.15m"
+  },
+  "reminder1d": "1 day before",
+  "@reminder1d": {
+    "description": "Key reminder.1d"
+  },
+  "reminder1h": "1 hour before",
+  "@reminder1h": {
+    "description": "Key reminder.1h"
+  },
+  "reminderBoth": "Both",
+  "@reminderBoth": {
+    "description": "Key reminder.both"
+  },
+  "reminderNone": "No reminder",
+  "@reminderNone": {
+    "description": "Key reminder.none"
+  },
+  "reportActionDismissed": "Report dismissed",
+  "@reportActionDismissed": {
+    "description": "Key reportAction.dismissed"
+  },
+  "reportActionRemoved": "Content removed",
+  "@reportActionRemoved": {
+    "description": "Key reportAction.removed"
+  },
+  "reportActionSuspended": "Suspended",
+  "@reportActionSuspended": {
+    "description": "Key reportAction.suspended"
+  },
+  "reportReasonHarassment": "Harassment or bullying",
+  "@reportReasonHarassment": {
+    "description": "Key reportReason.harassment"
+  },
+  "reportReasonInappropriate": "Inappropriate content",
+  "@reportReasonInappropriate": {
+    "description": "Key reportReason.inappropriate"
+  },
+  "reportReasonMisinformation": "Misinformation",
+  "@reportReasonMisinformation": {
+    "description": "Key reportReason.misinformation"
+  },
+  "reportReasonOfftopic": "Not relevant to the club",
+  "@reportReasonOfftopic": {
+    "description": "Key reportReason.offtopic"
+  },
+  "reportReasonOther": "Other",
+  "@reportReasonOther": {
+    "description": "Key reportReason.other"
+  },
+  "reportReasonSpam": "Spam",
+  "@reportReasonSpam": {
+    "description": "Key reportReason.spam"
+  },
+  "reportsEmptyOpen": "No open reports",
+  "@reportsEmptyOpen": {
+    "description": "Key reports.empty.open"
+  },
+  "reportsEmptyResolved": "No resolved reports",
+  "@reportsEmptyResolved": {
+    "description": "Key reports.empty.resolved"
+  },
+  "reportsTabOpen": "Open",
+  "@reportsTabOpen": {
+    "description": "Key reports.tab.open"
+  },
+  "reportsTabResolved": "Resolved",
+  "@reportsTabResolved": {
+    "description": "Key reports.tab.resolved"
+  },
+  "reportsTargetClub": "Club",
+  "@reportsTargetClub": {
+    "description": "Key reports.target.club"
+  },
+  "reportsTargetComment": "Comment",
+  "@reportsTargetComment": {
+    "description": "Key reports.target.comment"
+  },
+  "reportsTargetEvent": "Event",
+  "@reportsTargetEvent": {
+    "description": "Key reports.target.event"
+  },
+  "reportsTargetPost": "Post",
+  "@reportsTargetPost": {
+    "description": "Key reports.target.post"
+  },
+  "reportsTargetUser": "User",
+  "@reportsTargetUser": {
+    "description": "Key reports.target.user"
+  },
+  "reportsTitle": "Reports",
+  "@reportsTitle": {
+    "description": "Key reports.title"
+  },
+  "roleAdvisor": "Advisor",
+  "@roleAdvisor": {
+    "description": "Key role.advisor"
+  },
+  "roleBoard": "Board",
+  "@roleBoard": {
+    "description": "Key role.board"
+  },
+  "roleMember": "Member",
+  "@roleMember": {
+    "description": "Key role.member"
+  },
+  "rolePresident": "President",
+  "@rolePresident": {
+    "description": "Key role.president"
+  },
+  "roleStudent": "Student",
+  "@roleStudent": {
+    "description": "Key role.student"
+  },
+  "roleSuperadmin": "Super Admin",
+  "@roleSuperadmin": {
+    "description": "Key role.superadmin"
+  },
+  "savedEmpty": "Posts you save will appear here",
+  "@savedEmpty": {
+    "description": "Key saved.empty"
+  },
+  "savedRemoved": "Content removed",
+  "@savedRemoved": {
+    "description": "Key saved.removed"
+  },
+  "savedTitle": "Saved",
+  "@savedTitle": {
+    "description": "Key saved.title"
+  },
+  "scanCounter": "Checked in {a}/{b}",
+  "@scanCounter": {
+    "description": "Key scan.counter",
+    "placeholders": {
+      "a": {
+        "type": "String"
+      },
+      "b": {
+        "type": "String"
+      }
+    }
+  },
+  "scanDemoInvalid": "Invalid ticket",
+  "@scanDemoInvalid": {
+    "description": "Key scan.demo.invalid"
+  },
+  "scanDemoUsed": "Already scanned",
+  "@scanDemoUsed": {
+    "description": "Key scan.demo.used"
+  },
+  "scanDemoValid": "Valid ticket",
+  "@scanDemoValid": {
+    "description": "Key scan.demo.valid"
+  },
+  "scanDemoScan": "scan a ticket",
+  "@scanDemoScan": {
+    "description": "Key scan.demoScan"
+  },
+  "scanEnterCode": "Ticket code",
+  "@scanEnterCode": {
+    "description": "Key scan.enterCode"
+  },
+  "scanFlip": "Flip camera",
+  "@scanFlip": {
+    "description": "Key scan.flip"
+  },
+  "scanGoSettings": "Open settings",
+  "@scanGoSettings": {
+    "description": "Key scan.goSettings"
+  },
+  "scanHint": "Align the QR code inside the frame.",
+  "@scanHint": {
+    "description": "Key scan.hint"
+  },
+  "scanManualCode": "Enter code",
+  "@scanManualCode": {
+    "description": "Key scan.manualCode"
+  },
+  "scanPermissionDesc": "Enable camera access in Settings or enter the code manually.",
+  "@scanPermissionDesc": {
+    "description": "Key scan.permissionDesc"
+  },
+  "scanPermissionTitle": "Camera permission needed",
+  "@scanPermissionTitle": {
+    "description": "Key scan.permissionTitle"
+  },
+  "scanTitle": "QR scanner",
+  "@scanTitle": {
+    "description": "Key scan.title"
+  },
+  "scanTorch": "Torch",
+  "@scanTorch": {
+    "description": "Key scan.torch"
+  },
+  "scanVerify": "Verify",
+  "@scanVerify": {
+    "description": "Key scan.verify"
+  },
+  "searchNoResults": "No results for '{q}'",
+  "@searchNoResults": {
+    "description": "Key search.noResults",
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "searchPlaceholder": "Search clubs or events",
+  "@searchPlaceholder": {
+    "description": "Key search.placeholder"
+  },
+  "searchPopular": "Popular searches",
+  "@searchPopular": {
+    "description": "Key search.popular"
+  },
+  "searchRecent": "Recent searches",
+  "@searchRecent": {
+    "description": "Key search.recent"
+  },
+  "searchSuggested": "Suggested for you",
+  "@searchSuggested": {
+    "description": "Key search.suggested"
+  },
+  "searchTitle": "Search",
+  "@searchTitle": {
+    "description": "Key search.title"
+  },
+  "settingsChangePassword": "Change password",
+  "@settingsChangePassword": {
+    "description": "Key settings.changePassword"
+  },
+  "settingsGroupAccount": "Account",
+  "@settingsGroupAccount": {
+    "description": "Key settings.group.account"
+  },
+  "settingsGroupAppearance": "Appearance",
+  "@settingsGroupAppearance": {
+    "description": "Key settings.group.appearance"
+  },
+  "settingsGroupPrivacy": "Privacy & security",
+  "@settingsGroupPrivacy": {
+    "description": "Key settings.group.privacy"
+  },
+  "settingsGroupSupport": "Support",
+  "@settingsGroupSupport": {
+    "description": "Key settings.group.support"
+  },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": {
+    "description": "Key settings.language"
+  },
+  "settingsPrivacyPolicy": "Privacy Policy / Data notice",
+  "@settingsPrivacyPolicy": {
+    "description": "Key settings.privacyPolicy"
+  },
+  "settingsTextPreview": "Every club on campus, in your pocket.",
+  "@settingsTextPreview": {
+    "description": "Key settings.textPreview"
+  },
+  "settingsTextSize": "Text size",
+  "@settingsTextSize": {
+    "description": "Key settings.textSize"
+  },
+  "settingsTheme": "Theme",
+  "@settingsTheme": {
+    "description": "Key settings.theme"
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Key settings.title"
+  },
+  "sht01Title": "Language",
+  "@sht01Title": {
+    "description": "Key sht.01.title"
+  },
+  "sht02Empty": "No department found",
+  "@sht02Empty": {
+    "description": "Key sht.02.empty"
+  },
+  "sht02Title": "Choose department",
+  "@sht02Title": {
+    "description": "Key sht.02.title"
+  },
+  "sht03Title": "Choose year",
+  "@sht03Title": {
+    "description": "Key sht.03.title"
+  },
+  "sht04Category": "Category",
+  "@sht04Category": {
+    "description": "Key sht.04.category"
+  },
+  "sht04InstantOnly": "Instant-join only",
+  "@sht04InstantOnly": {
+    "description": "Key sht.04.instantOnly"
+  },
+  "sht04Membership": "Membership",
+  "@sht04Membership": {
+    "description": "Key sht.04.membership"
+  },
+  "sht04Mine": "My clubs",
+  "@sht04Mine": {
+    "description": "Key sht.04.mine"
+  },
+  "sht04NotMine": "Not a member",
+  "@sht04NotMine": {
+    "description": "Key sht.04.notMine"
+  },
+  "sht04OpenOnly": "Only open for applications",
+  "@sht04OpenOnly": {
+    "description": "Key sht.04.openOnly"
+  },
+  "sht04Show": "Show results ({count})",
+  "@sht04Show": {
+    "description": "Key sht.04.show",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht04SortAz": "A–Z",
+  "@sht04SortAz": {
+    "description": "Key sht.04.sort.az"
+  },
+  "sht04SortNew": "Newest",
+  "@sht04SortNew": {
+    "description": "Key sht.04.sort.new"
+  },
+  "sht04SortPopular": "Popular",
+  "@sht04SortPopular": {
+    "description": "Key sht.04.sort.popular"
+  },
+  "sht04Title": "Filter & sort",
+  "@sht04Title": {
+    "description": "Key sht.04.title"
+  },
+  "sht05Privacy": "Your name, department and year are shared with the club board.",
+  "@sht05Privacy": {
+    "description": "Key sht.05.privacy"
+  },
+  "sht05Submit": "Send application",
+  "@sht05Submit": {
+    "description": "Key sht.05.submit"
+  },
+  "sht05Title": "Membership application",
+  "@sht05Title": {
+    "description": "Key sht.05.title"
+  },
+  "sht05Why": "Why do you want to join?",
+  "@sht05Why": {
+    "description": "Key sht.05.why"
+  },
+  "sht06Notifications": "Manage notifications",
+  "@sht06Notifications": {
+    "description": "Key sht.06.notifications"
+  },
+  "sht06Report": "Report",
+  "@sht06Report": {
+    "description": "Key sht.06.report"
+  },
+  "sht06Title": "Club menu",
+  "@sht06Title": {
+    "description": "Key sht.06.title"
+  },
+  "sht07Announcements": "Announcements",
+  "@sht07Announcements": {
+    "description": "Key sht.07.announcements"
+  },
+  "sht07Events": "New events",
+  "@sht07Events": {
+    "description": "Key sht.07.events"
+  },
+  "sht07MuteAll": "Mute all",
+  "@sht07MuteAll": {
+    "description": "Key sht.07.muteAll"
+  },
+  "sht07Posts": "New posts",
+  "@sht07Posts": {
+    "description": "Key sht.07.posts"
+  },
+  "sht07Title": "Club notifications",
+  "@sht07Title": {
+    "description": "Key sht.07.title"
+  },
+  "sht08BlockUser": "Block user",
+  "@sht08BlockUser": {
+    "description": "Key sht.08.blockUser"
+  },
+  "sht08CopyLink": "Copy link",
+  "@sht08CopyLink": {
+    "description": "Key sht.08.copyLink"
+  },
+  "sht08Title": "Post",
+  "@sht08Title": {
+    "description": "Key sht.08.title"
+  },
+  "sht09SeeAll": "See all",
+  "@sht09SeeAll": {
+    "description": "Key sht.09.seeAll"
+  },
+  "sht09Title": "Comments",
+  "@sht09Title": {
+    "description": "Key sht.09.title"
+  },
+  "sht10Desc": "Your report goes to campus administration; your identity is not shared.",
+  "@sht10Desc": {
+    "description": "Key sht.10.desc"
+  },
+  "sht10Describe": "Description",
+  "@sht10Describe": {
+    "description": "Key sht.10.describe"
+  },
+  "sht10OtherRequired": "Add a short description for \"Other\"",
+  "@sht10OtherRequired": {
+    "description": "Key sht.10.otherRequired"
+  },
+  "sht10Submit": "Report",
+  "@sht10Submit": {
+    "description": "Key sht.10.submit"
+  },
+  "sht10Title": "Report reason",
+  "@sht10Title": {
+    "description": "Key sht.10.title"
+  },
+  "sht11Apply": "Apply ({count})",
+  "@sht11Apply": {
+    "description": "Key sht.11.apply",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht11Club": "Club",
+  "@sht11Club": {
+    "description": "Key sht.11.club"
+  },
+  "sht11Custom": "Custom range",
+  "@sht11Custom": {
+    "description": "Key sht.11.custom"
+  },
+  "sht11Date": "Date",
+  "@sht11Date": {
+    "description": "Key sht.11.date"
+  },
+  "sht11FreeOnly": "Only with free spots",
+  "@sht11FreeOnly": {
+    "description": "Key sht.11.freeOnly"
+  },
+  "sht11Month": "This month",
+  "@sht11Month": {
+    "description": "Key sht.11.month"
+  },
+  "sht11SortDate": "By date",
+  "@sht11SortDate": {
+    "description": "Key sht.11.sort.date"
+  },
+  "sht11SortPopular": "Popular",
+  "@sht11SortPopular": {
+    "description": "Key sht.11.sort.popular"
+  },
+  "sht11Title": "Event filter",
+  "@sht11Title": {
+    "description": "Key sht.11.title"
+  },
+  "sht11To": "End date",
+  "@sht11To": {
+    "description": "Key sht.11.to"
+  },
+  "sht12Confirm": "Confirm",
+  "@sht12Confirm": {
+    "description": "Key sht.12.confirm"
+  },
+  "sht12Conflict": "You are registered for another event at the same time.",
+  "@sht12Conflict": {
+    "description": "Key sht.12.conflict"
+  },
+  "sht12FullNote": "The event is full; you will be added to the waitlist.",
+  "@sht12FullNote": {
+    "description": "Key sht.12.fullNote"
+  },
+  "sht12Title": "Confirm registration",
+  "@sht12Title": {
+    "description": "Key sht.12.title"
+  },
+  "sht13Title": "Reminder",
+  "@sht13Title": {
+    "description": "Key sht.13.title"
+  },
+  "sht14Device": "Device calendar",
+  "@sht14Device": {
+    "description": "Key sht.14.device"
+  },
+  "sht14Google": "Google Calendar",
+  "@sht14Google": {
+    "description": "Key sht.14.google"
+  },
+  "sht14Title": "Add to calendar",
+  "@sht14Title": {
+    "description": "Key sht.14.title"
+  },
+  "sht15Other": "More…",
+  "@sht15Other": {
+    "description": "Key sht.15.other"
+  },
+  "sht15SystemShare": "the system share sheet",
+  "@sht15SystemShare": {
+    "description": "Key sht.15.systemShare"
+  },
+  "sht15Title": "Share",
+  "@sht15Title": {
+    "description": "Key sht.15.title"
+  },
+  "sht16Add": "Add ({count})",
+  "@sht16Add": {
+    "description": "Key sht.16.add",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sht16Camera": "Camera",
+  "@sht16Camera": {
+    "description": "Key sht.16.camera"
+  },
+  "sht16Gallery": "Gallery",
+  "@sht16Gallery": {
+    "description": "Key sht.16.gallery"
+  },
+  "sht16Pick": "Choose photos",
+  "@sht16Pick": {
+    "description": "Key sht.16.pick"
+  },
+  "sht16Remove": "Remove photo",
+  "@sht16Remove": {
+    "description": "Key sht.16.remove"
+  },
+  "sht16Title": "Photo source",
+  "@sht16Title": {
+    "description": "Key sht.16.title"
+  },
+  "sht17Title": "Theme",
+  "@sht17Title": {
+    "description": "Key sht.17.title"
+  },
+  "sht18Empty": "You don't manage any club.",
+  "@sht18Empty": {
+    "description": "Key sht.18.empty"
+  },
+  "sht18Title": "Choose a club to manage",
+  "@sht18Title": {
+    "description": "Key sht.18.title"
+  },
+  "sht19Gone": "This application no longer exists.",
+  "@sht19Gone": {
+    "description": "Key sht.19.gone"
+  },
+  "sht19Note": "Application note",
+  "@sht19Note": {
+    "description": "Key sht.19.note"
+  },
+  "sht19Prior": "Applied to this club before",
+  "@sht19Prior": {
+    "description": "Key sht.19.prior"
+  },
+  "sht19Title": "Application details",
+  "@sht19Title": {
+    "description": "Key sht.19.title"
+  },
+  "sht20Note": "Note (optional)",
+  "@sht20Note": {
+    "description": "Key sht.20.note"
+  },
+  "sht20Title": "Rejection reason",
+  "@sht20Title": {
+    "description": "Key sht.20.title"
+  },
+  "sht20Visible": "The reason is shown to the applicant.",
+  "@sht20Visible": {
+    "description": "Key sht.20.visible"
+  },
+  "sht21Hierarchy": "Cannot act on the president or board members",
+  "@sht21Hierarchy": {
+    "description": "Key sht.21.hierarchy"
+  },
+  "sht21PresidentOnly": "Only the president can change roles",
+  "@sht21PresidentOnly": {
+    "description": "Key sht.21.presidentOnly"
+  },
+  "sht21Title": "Member actions",
+  "@sht21Title": {
+    "description": "Key sht.21.title"
+  },
+  "sht22Board": "Creates posts and events, approves applications, sends announcements.",
+  "@sht22Board": {
+    "description": "Key sht.22.board"
+  },
+  "sht22Member": "Sees posts, comments, joins events.",
+  "@sht22Member": {
+    "description": "Key sht.22.member"
+  },
+  "sht22Title": "Choose role",
+  "@sht22Title": {
+    "description": "Key sht.22.title"
+  },
+  "sht22TransferNote": "Presidency transfer is done from Member Management.",
+  "@sht22TransferNote": {
+    "description": "Key sht.22.transferNote"
+  },
+  "sht23Cancel": "Cancel event",
+  "@sht23Cancel": {
+    "description": "Key sht.23.cancel"
+  },
+  "sht23Duplicate": "Duplicate",
+  "@sht23Duplicate": {
+    "description": "Key sht.23.duplicate"
+  },
+  "sht23Title": "Event menu",
+  "@sht23Title": {
+    "description": "Key sht.23.title"
+  },
+  "sht23Unpublish": "Unpublish / move to drafts",
+  "@sht23Unpublish": {
+    "description": "Key sht.23.unpublish"
+  },
+  "sht24Invalid": "Invalid ticket",
+  "@sht24Invalid": {
+    "description": "Key sht.24.invalid"
+  },
+  "sht24InvalidDesc": "This ticket does not belong to this event.",
+  "@sht24InvalidDesc": {
+    "description": "Key sht.24.invalidDesc"
+  },
+  "sht24InvalidNone": "Could not read. No registered tickets left to scan.",
+  "@sht24InvalidNone": {
+    "description": "Key sht.24.invalidNone"
+  },
+  "sht24Next": "Next ticket",
+  "@sht24Next": {
+    "description": "Key sht.24.next"
+  },
+  "sht24Title": "Scan result",
+  "@sht24Title": {
+    "description": "Key sht.24.title"
+  },
+  "sht24Used": "Already scanned",
+  "@sht24Used": {
+    "description": "Key sht.24.used"
+  },
+  "sht24UsedDesc": "This ticket was scanned at {time}.",
+  "@sht24UsedDesc": {
+    "description": "Key sht.24.usedDesc",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sht24Valid": "Valid ticket",
+  "@sht24Valid": {
+    "description": "Key sht.24.valid"
+  },
+  "sht24ValidDesc": "Marked as attended.",
+  "@sht24ValidDesc": {
+    "description": "Key sht.24.validDesc"
+  },
+  "sht25Assign": "Assign president",
+  "@sht25Assign": {
+    "description": "Key sht.25.assign"
+  },
+  "sht25Transfer": "Transfer presidency",
+  "@sht25Transfer": {
+    "description": "Key sht.25.transfer"
+  },
+  "sht26Close": "Dismiss report",
+  "@sht26Close": {
+    "description": "Key sht.26.close"
+  },
+  "sht26Remove": "Remove content",
+  "@sht26Remove": {
+    "description": "Key sht.26.remove"
+  },
+  "sht26ResolvedAt": "Resolved on {date}: {action}",
+  "@sht26ResolvedAt": {
+    "description": "Key sht.26.resolvedAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "sht26SuspendUser": "Suspend user",
+  "@sht26SuspendUser": {
+    "description": "Key sht.26.suspendUser"
+  },
+  "sht26Title": "Report details",
+  "@sht26Title": {
+    "description": "Key sht.26.title"
+  },
+  "sht27Block": "Block",
+  "@sht27Block": {
+    "description": "Key sht.27.block"
+  },
+  "sht27DeleteComment": "Delete comment",
+  "@sht27DeleteComment": {
+    "description": "Key sht.27.deleteComment"
+  },
+  "sht27ReportComment": "Report comment",
+  "@sht27ReportComment": {
+    "description": "Key sht.27.reportComment"
+  },
+  "sht27ReportUser": "Report user",
+  "@sht27ReportUser": {
+    "description": "Key sht.27.reportUser"
+  },
+  "sht27Title": "User",
+  "@sht27Title": {
+    "description": "Key sht.27.title"
+  },
+  "sht28Title": "Pick a date",
+  "@sht28Title": {
+    "description": "Key sht.28.title"
+  },
+  "sht29Hour": "Hour",
+  "@sht29Hour": {
+    "description": "Key sht.29.hour"
+  },
+  "sht29Minute": "Minute",
+  "@sht29Minute": {
+    "description": "Key sht.29.minute"
+  },
+  "sht29Title": "Pick a time",
+  "@sht29Title": {
+    "description": "Key sht.29.title"
+  },
+  "sht30Custom": "Enter another place",
+  "@sht30Custom": {
+    "description": "Key sht.30.custom"
+  },
+  "sht30CustomLabel": "Place name",
+  "@sht30CustomLabel": {
+    "description": "Key sht.30.customLabel"
+  },
+  "sht30Title": "Choose a venue",
+  "@sht30Title": {
+    "description": "Key sht.30.title"
+  },
+  "sht31Gallery": "From gallery",
+  "@sht31Gallery": {
+    "description": "Key sht.31.gallery"
+  },
+  "sht31Shuffle": "Shuffle pattern",
+  "@sht31Shuffle": {
+    "description": "Key sht.31.shuffle"
+  },
+  "sht31Title": "Choose a cover",
+  "@sht31Title": {
+    "description": "Key sht.31.title"
+  },
+  "sht31Use": "Use",
+  "@sht31Use": {
+    "description": "Key sht.31.use"
+  },
+  "sht32Current": "Current password",
+  "@sht32Current": {
+    "description": "Key sht.32.current"
+  },
+  "sht32New": "New password",
+  "@sht32New": {
+    "description": "Key sht.32.new"
+  },
+  "sht32Repeat": "Repeat new password",
+  "@sht32Repeat": {
+    "description": "Key sht.32.repeat"
+  },
+  "sht32Title": "Change password",
+  "@sht32Title": {
+    "description": "Key sht.32.title"
+  },
+  "sht33Title": "Choose category",
+  "@sht33Title": {
+    "description": "Key sht.33.title"
+  },
+  "sht34Title": "Image",
+  "@sht34Title": {
+    "description": "Key sht.34.title"
+  },
+  "sht34ZoomHint": "Double-tap to zoom, drag down to close.",
+  "@sht34ZoomHint": {
+    "description": "Key sht.34.zoomHint"
+  },
+  "siteAssets": "Assets",
+  "@siteAssets": {
+    "description": "Key site.assets"
+  },
+  "siteDemo": "Demo",
+  "@siteDemo": {
+    "description": "Key site.demo"
+  },
+  "siteDs": "Design System",
+  "@siteDs": {
+    "description": "Key site.ds"
+  },
+  "siteFooter": "Design prototype · all data is fictional",
+  "@siteFooter": {
+    "description": "Key site.footer"
+  },
+  "siteMap": "Screen Map",
+  "@siteMap": {
+    "description": "Key site.map"
+  },
+  "siteMenu": "Site menu",
+  "@siteMenu": {
+    "description": "Key site.menu"
+  },
+  "siteProto": "Prototype",
+  "@siteProto": {
+    "description": "Key site.proto"
+  },
+  "siteQa": "Quality Check",
+  "@siteQa": {
+    "description": "Key site.qa"
+  },
+  "statusAbsent": "No-show",
+  "@statusAbsent": {
+    "description": "Key status.absent"
+  },
+  "statusActive": "Active",
+  "@statusActive": {
+    "description": "Key status.active"
+  },
+  "statusApproved": "Approved",
+  "@statusApproved": {
+    "description": "Key status.approved"
+  },
+  "statusAttended": "Attended",
+  "@statusAttended": {
+    "description": "Key status.attended"
+  },
+  "statusCancelled": "Cancelled",
+  "@statusCancelled": {
+    "description": "Key status.cancelled"
+  },
+  "statusDraft": "Draft",
+  "@statusDraft": {
+    "description": "Key status.draft"
+  },
+  "statusFull": "Full",
+  "@statusFull": {
+    "description": "Key status.full"
+  },
+  "statusGoing": "Going",
+  "@statusGoing": {
+    "description": "Key status.going"
+  },
+  "statusMembers": "Members only",
+  "@statusMembers": {
+    "description": "Key status.members"
+  },
+  "statusNone": "Not a member",
+  "@statusNone": {
+    "description": "Key status.none"
+  },
+  "statusOpen": "Open",
+  "@statusOpen": {
+    "description": "Key status.open"
+  },
+  "statusPast": "Past",
+  "@statusPast": {
+    "description": "Key status.past"
+  },
+  "statusPending": "Pending",
+  "@statusPending": {
+    "description": "Key status.pending"
+  },
+  "statusPublished": "Published",
+  "@statusPublished": {
+    "description": "Key status.published"
+  },
+  "statusRejected": "Rejected",
+  "@statusRejected": {
+    "description": "Key status.rejected"
+  },
+  "statusRemoved": "Removed",
+  "@statusRemoved": {
+    "description": "Key status.removed"
+  },
+  "statusResolved": "Resolved",
+  "@statusResolved": {
+    "description": "Key status.resolved"
+  },
+  "statusSuspended": "Suspended",
+  "@statusSuspended": {
+    "description": "Key status.suspended"
+  },
+  "statusUsed": "Scanned",
+  "@statusUsed": {
+    "description": "Key status.used"
+  },
+  "statusValid": "Valid",
+  "@statusValid": {
+    "description": "Key status.valid"
+  },
+  "statusVoid": "Void",
+  "@statusVoid": {
+    "description": "Key status.void"
+  },
+  "statusWaitlist": "Waitlist",
+  "@statusWaitlist": {
+    "description": "Key status.waitlist"
+  },
+  "supportAttach": "Attach screenshot",
+  "@supportAttach": {
+    "description": "Key support.attach"
+  },
+  "supportAttached": "Screenshot attached",
+  "@supportAttached": {
+    "description": "Key support.attached"
+  },
+  "supportContact": "Contact us",
+  "@supportContact": {
+    "description": "Key support.contact"
+  },
+  "supportFaq": "Frequently asked questions",
+  "@supportFaq": {
+    "description": "Key support.faq"
+  },
+  "supportMessage": "Message",
+  "@supportMessage": {
+    "description": "Key support.message"
+  },
+  "supportNewRequest": "New request",
+  "@supportNewRequest": {
+    "description": "Key support.newRequest"
+  },
+  "supportNoFaq": "No matching questions.",
+  "@supportNoFaq": {
+    "description": "Key support.noFaq"
+  },
+  "supportSearchFaq": "Search FAQ",
+  "@supportSearchFaq": {
+    "description": "Key support.searchFaq"
+  },
+  "supportSentDesc": "Request {no}. We will reply within 3 working days.",
+  "@supportSentDesc": {
+    "description": "Key support.sentDesc",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "supportSentTitle": "Message received",
+  "@supportSentTitle": {
+    "description": "Key support.sentTitle"
+  },
+  "supportSubject": "Subject",
+  "@supportSubject": {
+    "description": "Key support.subject"
+  },
+  "supportSubjectAccount": "Account",
+  "@supportSubjectAccount": {
+    "description": "Key support.subject.account"
+  },
+  "supportSubjectBug": "Bug report",
+  "@supportSubjectBug": {
+    "description": "Key support.subject.bug"
+  },
+  "supportSubjectClub": "Club",
+  "@supportSubjectClub": {
+    "description": "Key support.subject.club"
+  },
+  "supportSubjectOther": "Other",
+  "@supportSubjectOther": {
+    "description": "Key support.subject.other"
+  },
+  "supportSubjectSuggestion": "Suggestion",
+  "@supportSubjectSuggestion": {
+    "description": "Key support.subject.suggestion"
+  },
+  "supportTitle": "Help & support",
+  "@supportTitle": {
+    "description": "Key support.title"
+  },
+  "sysErrorDesc": "We couldn't load this content. Check your connection and try again.",
+  "@sysErrorDesc": {
+    "description": "Key sys.error.desc"
+  },
+  "sysErrorHome": "Go home",
+  "@sysErrorHome": {
+    "description": "Key sys.error.home"
+  },
+  "sysErrorTitle": "Something went wrong",
+  "@sysErrorTitle": {
+    "description": "Key sys.error.title"
+  },
+  "sysNotFoundDesc": "It may have been deleted, moved, or you may not have access.",
+  "@sysNotFoundDesc": {
+    "description": "Key sys.notFound.desc"
+  },
+  "sysNotFoundTitle": "This content is gone",
+  "@sysNotFoundTitle": {
+    "description": "Key sys.notFound.title"
+  },
+  "sysOfflineBanner": "You're offline. Showing cached data.",
+  "@sysOfflineBanner": {
+    "description": "Key sys.offline.banner"
+  },
+  "sysOfflineFullDesc": "No cached data to show. Retry when you are back online.",
+  "@sysOfflineFullDesc": {
+    "description": "Key sys.offline.fullDesc"
+  },
+  "sysOfflineTitle": "You're offline",
+  "@sysOfflineTitle": {
+    "description": "Key sys.offline.title"
+  },
+  "sysSplashTitle": "Splash",
+  "@sysSplashTitle": {
+    "description": "Key sys.splash.title"
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Key theme.dark"
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Key theme.light"
+  },
+  "themeSystem": "System",
+  "@themeSystem": {
+    "description": "Key theme.system"
+  },
+  "ticketBrightness": "Screen brightness raised",
+  "@ticketBrightness": {
+    "description": "Key ticket.brightness"
+  },
+  "ticketDemoScan": "Simulate scan (demo)",
+  "@ticketDemoScan": {
+    "description": "Key ticket.demoScan"
+  },
+  "ticketOpenEvent": "Open event",
+  "@ticketOpenEvent": {
+    "description": "Key ticket.openEvent"
+  },
+  "ticketScannedAt": "Scanned: {time}",
+  "@ticketScannedAt": {
+    "description": "Key ticket.scannedAt",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "ticketStatusUsed": "Scanned",
+  "@ticketStatusUsed": {
+    "description": "Key ticket.status.used"
+  },
+  "ticketStatusValid": "Valid",
+  "@ticketStatusValid": {
+    "description": "Key ticket.status.valid"
+  },
+  "ticketStatusVoid": "Void",
+  "@ticketStatusVoid": {
+    "description": "Key ticket.status.void"
+  },
+  "ticketTitle": "Ticket",
+  "@ticketTitle": {
+    "description": "Key ticket.title"
+  },
+  "timeDays": "{count, plural, one{# day} other{# days}}",
+  "@timeDays": {
+    "description": "Key time.days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysAgo": "{count, plural, one{# day ago} other{# days ago}}",
+  "@timeDaysAgo": {
+    "description": "Key time.daysAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeGroupOlder": "Older",
+  "@timeGroupOlder": {
+    "description": "Key time.group.older"
+  },
+  "timeGroupToday": "Today",
+  "@timeGroupToday": {
+    "description": "Key time.group.today"
+  },
+  "timeGroupWeek": "This week",
+  "@timeGroupWeek": {
+    "description": "Key time.group.week"
+  },
+  "timeGroupYesterday": "Yesterday",
+  "@timeGroupYesterday": {
+    "description": "Key time.group.yesterday"
+  },
+  "timeHours": "{count} h",
+  "@timeHours": {
+    "description": "Key time.hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "{count, plural, one{# hour ago} other{# hours ago}}",
+  "@timeHoursAgo": {
+    "description": "Key time.hoursAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeInDays": "{count, plural, =0{today} one{# day} other{# days}}",
+  "@timeInDays": {
+    "description": "Key time.inDays",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "today": {
+        "type": "String"
+      }
+    }
+  },
+  "timeJustNow": "Just now",
+  "@timeJustNow": {
+    "description": "Key time.justNow"
+  },
+  "timeMinutes": "{count} min",
+  "@timeMinutes": {
+    "description": "Key time.minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeMinutesAgo": "{count} min ago",
+  "@timeMinutesAgo": {
+    "description": "Key time.minutesAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeToday": "Today",
+  "@timeToday": {
+    "description": "Key time.today"
+  },
+  "timeTomorrow": "Tomorrow",
+  "@timeTomorrow": {
+    "description": "Key time.tomorrow"
+  },
+  "timeWeeksAgo": "{count, plural, one{# week ago} other{# weeks ago}}",
+  "@timeWeeksAgo": {
+    "description": "Key time.weeksAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeYesterday": "Yesterday",
+  "@timeYesterday": {
+    "description": "Key time.yesterday"
+  },
+  "tst01": "Wrong email or password.",
+  "@tst01": {
+    "description": "Key tst.01"
+  },
+  "tst02": "Your email is not verified yet. Click the link and try again.",
+  "@tst02": {
+    "description": "Key tst.02"
+  },
+  "tst03": "Link sent. Check your inbox.",
+  "@tst03": {
+    "description": "Key tst.03"
+  },
+  "tst04": "You can pick at most 5 interests.",
+  "@tst04": {
+    "description": "Key tst.04"
+  },
+  "tst05": "Welcome, {name}!",
+  "@tst05": {
+    "description": "Key tst.05",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst06": "Recent searches cleared.",
+  "@tst06": {
+    "description": "Key tst.06"
+  },
+  "tst07": "Your note was saved.",
+  "@tst07": {
+    "description": "Key tst.07"
+  },
+  "tst08": "Email address copied.",
+  "@tst08": {
+    "description": "Key tst.08"
+  },
+  "tst09Blocked": "{name} was blocked.",
+  "@tst09Blocked": {
+    "description": "Key tst.09.blocked",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst09Unblocked": "{name} was unblocked.",
+  "@tst09Unblocked": {
+    "description": "Key tst.09.unblocked",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst10": "Your vote was saved. Votes cannot be changed.",
+  "@tst10": {
+    "description": "Key tst.10"
+  },
+  "tst11Removed": "Removed from saved.",
+  "@tst11Removed": {
+    "description": "Key tst.11.removed"
+  },
+  "tst11Saved": "Added to saved.",
+  "@tst11Saved": {
+    "description": "Key tst.11.saved"
+  },
+  "tst12": "Your comment was posted.",
+  "@tst12": {
+    "description": "Key tst.12"
+  },
+  "tst13": "Draft saved.",
+  "@tst13": {
+    "description": "Key tst.13"
+  },
+  "tst14": "Published.",
+  "@tst14": {
+    "description": "Key tst.14"
+  },
+  "tst15": "Your ticket was scanned. Enjoy!",
+  "@tst15": {
+    "description": "Key tst.15"
+  },
+  "tst16": "Notification deleted.",
+  "@tst16": {
+    "description": "Key tst.16"
+  },
+  "tst17": "Your report was reviewed and action was taken. Thank you.",
+  "@tst17": {
+    "description": "Key tst.17"
+  },
+  "tst18": "All notifications marked as read.",
+  "@tst18": {
+    "description": "Key tst.18"
+  },
+  "tst19": "Preference saved.",
+  "@tst19": {
+    "description": "Key tst.19"
+  },
+  "tst20": "This field cannot be changed.",
+  "@tst20": {
+    "description": "Key tst.20"
+  },
+  "tst21": "Changes saved.",
+  "@tst21": {
+    "description": "Key tst.21"
+  },
+  "tst22": "Your account was deleted. We will miss you.",
+  "@tst22": {
+    "description": "Key tst.22"
+  },
+  "tst23": "Message received. Request {no}",
+  "@tst23": {
+    "description": "Key tst.23",
+    "placeholders": {
+      "no": {
+        "type": "String"
+      }
+    }
+  },
+  "tst24": "You are offline. This action needs a connection.",
+  "@tst24": {
+    "description": "Key tst.24"
+  },
+  "tst25": "You are back online.",
+  "@tst25": {
+    "description": "Key tst.25"
+  },
+  "tst26": "Advisor access is read-only.",
+  "@tst26": {
+    "description": "Key tst.26"
+  },
+  "tst27": "{name} approved.",
+  "@tst27": {
+    "description": "Key tst.27",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst28": "{name} rejected.",
+  "@tst28": {
+    "description": "Key tst.28",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst29": "Export ready. File downloaded.",
+  "@tst29": {
+    "description": "Key tst.29"
+  },
+  "tst30": "Event published.",
+  "@tst30": {
+    "description": "Key tst.30"
+  },
+  "tst31": "{name} marked as attended.",
+  "@tst31": {
+    "description": "Key tst.31",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst32": "Camera permission needed.",
+  "@tst32": {
+    "description": "Key tst.32"
+  },
+  "tst33": "Club created.",
+  "@tst33": {
+    "description": "Key tst.33"
+  },
+  "tst34": "You joined the club!",
+  "@tst34": {
+    "description": "Key tst.34"
+  },
+  "tst35": "Link copied.",
+  "@tst35": {
+    "description": "Key tst.35"
+  },
+  "tst36": "Added to calendar.",
+  "@tst36": {
+    "description": "Key tst.36"
+  },
+  "tst37Off": "Reminder turned off.",
+  "@tst37Off": {
+    "description": "Key tst.37.off"
+  },
+  "tst37Set": "Reminder set.",
+  "@tst37Set": {
+    "description": "Key tst.37.set"
+  },
+  "tst38": "Club notification settings updated.",
+  "@tst38": {
+    "description": "Key tst.38"
+  },
+  "tst39": "You left the club.",
+  "@tst39": {
+    "description": "Key tst.39"
+  },
+  "tst40": "Your request was cancelled.",
+  "@tst40": {
+    "description": "Key tst.40"
+  },
+  "tst41": "You are registered. Your ticket is ready.",
+  "@tst41": {
+    "description": "Key tst.41"
+  },
+  "tst42": "You left the event.",
+  "@tst42": {
+    "description": "Key tst.42"
+  },
+  "tst43": "Added to the waitlist (#{n}).",
+  "@tst43": {
+    "description": "Key tst.43",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "tst44": "Password changed.",
+  "@tst44": {
+    "description": "Key tst.44"
+  },
+  "tst45": "{what} deleted.",
+  "@tst45": {
+    "description": "Key tst.45",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "tst46": "{name} is now {role}.",
+  "@tst46": {
+    "description": "Key tst.46",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "tst47": "{name} was removed from the club.",
+  "@tst47": {
+    "description": "Key tst.47",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst48": "Event cancelled. Attendees were notified.",
+  "@tst48": {
+    "description": "Key tst.48"
+  },
+  "tst49": "Presidency transferred to {name}.",
+  "@tst49": {
+    "description": "Key tst.49",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tst50Activated": "Club reactivated.",
+  "@tst50Activated": {
+    "description": "Key tst.50.activated"
+  },
+  "tst50Suspended": "Club suspended.",
+  "@tst50Suspended": {
+    "description": "Key tst.50.suspended"
+  },
+  "tst51": "Content removed.",
+  "@tst51": {
+    "description": "Key tst.51"
+  },
+  "tst52Suspended": "User suspended.",
+  "@tst52Suspended": {
+    "description": "Key tst.52.suspended"
+  },
+  "tst52Unsuspended": "User unsuspended.",
+  "@tst52Unsuspended": {
+    "description": "Key tst.52.unsuspended"
+  },
+  "tst53Pinned": "Post pinned.",
+  "@tst53Pinned": {
+    "description": "Key tst.53.pinned"
+  },
+  "tst53Unpinned": "Post unpinned.",
+  "@tst53Unpinned": {
+    "description": "Key tst.53.unpinned"
+  },
+  "tst54Closed": "Applications closed.",
+  "@tst54Closed": {
+    "description": "Key tst.54.closed"
+  },
+  "tst54Opened": "Applications opened.",
+  "@tst54Opened": {
+    "description": "Key tst.54.opened"
+  },
+  "tst55": "New notification: {title}",
+  "@tst55": {
+    "description": "Key tst.55",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "tst56": "Report dismissed.",
+  "@tst56": {
+    "description": "Key tst.56"
+  },
+  "tst57": "Photo updated.",
+  "@tst57": {
+    "description": "Key tst.57"
+  },
+  "tst58": "Demo: opening {what}.",
+  "@tst58": {
+    "description": "Key tst.58",
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX1": "This club is not accepting applications right now.",
+  "@tstX1": {
+    "description": "Key tst.x1"
+  },
+  "tstX10": "Transfer the presidency first.",
+  "@tstX10": {
+    "description": "Key tst.x10"
+  },
+  "tstX11": "Enter your password and type SİL to confirm.",
+  "@tstX11": {
+    "description": "Key tst.x11"
+  },
+  "tstX12": "No event to take attendance for.",
+  "@tstX12": {
+    "description": "Key tst.x12"
+  },
+  "tstX13": "{name} was promoted from the waitlist.",
+  "@tstX13": {
+    "description": "Key tst.x13",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX14": "The event is full; a spot must open first.",
+  "@tstX14": {
+    "description": "Key tst.x14"
+  },
+  "tstX15Closed": "Registration closed.",
+  "@tstX15Closed": {
+    "description": "Key tst.x15.closed"
+  },
+  "tstX15Opened": "Registration opened.",
+  "@tstX15Opened": {
+    "description": "Key tst.x15.opened"
+  },
+  "tstX16": "Turn off \"Mute all\" first.",
+  "@tstX16": {
+    "description": "Key tst.x16"
+  },
+  "tstX17": "Decision undone; the application is pending again.",
+  "@tstX17": {
+    "description": "Key tst.x17"
+  },
+  "tstX18": "You don't have permission for this.",
+  "@tstX18": {
+    "description": "Key tst.x18"
+  },
+  "tstX19": "Event moved to drafts.",
+  "@tstX19": {
+    "description": "Key tst.x19"
+  },
+  "tstX2": "Registration for this event is closed.",
+  "@tstX2": {
+    "description": "Key tst.x2"
+  },
+  "tstX20": "Type DEVRET to confirm.",
+  "@tstX20": {
+    "description": "Key tst.x20"
+  },
+  "tstX21": "This account has no pending application.",
+  "@tstX21": {
+    "description": "Key tst.x21"
+  },
+  "tstX22": "Sign in with an account first.",
+  "@tstX22": {
+    "description": "Key tst.x22"
+  },
+  "tstX23": "Demo data was reset.",
+  "@tstX23": {
+    "description": "Key tst.x23"
+  },
+  "tstX3": "Wait {s}s to resend.",
+  "@tstX3": {
+    "description": "Key tst.x3",
+    "placeholders": {
+      "s": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX4": "You cannot reapply until {date}.",
+  "@tstX4": {
+    "description": "Key tst.x4",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tstX5": "You can add at most 4 photos.",
+  "@tstX5": {
+    "description": "Key tst.x5"
+  },
+  "tstX6": "This event has ended.",
+  "@tstX6": {
+    "description": "Key tst.x6"
+  },
+  "tstX7": "Join the event to set a reminder.",
+  "@tstX7": {
+    "description": "Key tst.x7"
+  },
+  "tstX8": "{count} people are going.",
+  "@tstX8": {
+    "description": "Key tst.x8",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tstX9": "No changes to save.",
+  "@tstX9": {
+    "description": "Key tst.x9"
+  },
+  "userprofileBlockedBanner": "You blocked this user.",
+  "@userprofileBlockedBanner": {
+    "description": "Key userprofile.blockedBanner"
+  },
+  "userprofileChangeRole": "Change role",
+  "@userprofileChangeRole": {
+    "description": "Key userprofile.changeRole"
+  },
+  "userprofileCommonClubs": "Shared clubs",
+  "@userprofileCommonClubs": {
+    "description": "Key userprofile.commonClubs"
+  },
+  "userprofileMemberSince": "Member since",
+  "@userprofileMemberSince": {
+    "description": "Key userprofile.memberSince"
+  },
+  "userprofilePrivate": "This profile is visible only to members of shared clubs.",
+  "@userprofilePrivate": {
+    "description": "Key userprofile.private"
+  },
+  "userprofileRemove": "Remove from club",
+  "@userprofileRemove": {
+    "description": "Key userprofile.remove"
+  },
+  "userprofileRoleIn": "Role in {club}",
+  "@userprofileRoleIn": {
+    "description": "Key userprofile.roleIn",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "userprofileTitle": "Profile",
+  "@userprofileTitle": {
+    "description": "Key userprofile.title"
+  },
+  "userprofileUnblock": "Unblock",
+  "@userprofileUnblock": {
+    "description": "Key userprofile.unblock"
+  },
+  "userprofileView": "View profile",
+  "@userprofileView": {
+    "description": "Key userprofile.view"
+  },
+  "year1": "1st year",
+  "@year1": {
+    "description": "Key year.1"
+  },
+  "year2": "2nd year",
+  "@year2": {
+    "description": "Key year.2"
+  },
+  "year3": "3rd year",
+  "@year3": {
+    "description": "Key year.3"
+  },
+  "year4": "4th year",
+  "@year4": {
+    "description": "Key year.4"
+  },
+  "year5plus": "5th year+",
+  "@year5plus": {
+    "description": "Key year.5plus"
+  },
+  "yearMaster": "Master's",
+  "@yearMaster": {
+    "description": "Key year.master"
+  },
+  "yearPhd": "PhD",
+  "@yearPhd": {
+    "description": "Key year.phd"
+  },
+  "yearPrep": "Preparatory",
+  "@yearPrep": {
+    "description": "Key year.prep"
+  }
+}

@@ -1,0 +1,2635 @@
+{
+ "screens": [
+  {
+   "id": "SYS-01",
+   "tab": null,
+   "titleKey": "sys.splash.title",
+   "titleTr": "Açılış",
+   "titleEn": "Splash"
+  },
+  {
+   "id": "SYS-02",
+   "tab": null,
+   "titleKey": "sys.error.title",
+   "titleTr": "Bir şeyler ters gitti",
+   "titleEn": "Something went wrong"
+  },
+  {
+   "id": "SYS-03",
+   "tab": null,
+   "titleKey": "sys.offline.title",
+   "titleTr": "Çevrimdışısın",
+   "titleEn": "You're offline"
+  },
+  {
+   "id": "SYS-04",
+   "tab": null,
+   "titleKey": "sys.notFound.title",
+   "titleTr": "Bu içerik artık yok",
+   "titleEn": "This content is gone"
+  },
+  {
+   "id": "ONB-01",
+   "tab": null,
+   "titleKey": "onb.title",
+   "titleTr": "Karşılama",
+   "titleEn": "Welcome"
+  },
+  {
+   "id": "AUT-01",
+   "tab": null,
+   "titleKey": "auth.login.title",
+   "titleTr": "Giriş",
+   "titleEn": "Sign in"
+  },
+  {
+   "id": "AUT-02",
+   "tab": null,
+   "titleKey": "auth.register.title",
+   "titleTr": "Kayıt ol",
+   "titleEn": "Create account"
+  },
+  {
+   "id": "AUT-03",
+   "tab": null,
+   "titleKey": "auth.verify.title",
+   "titleTr": "E-postanı doğrula",
+   "titleEn": "Verify your email"
+  },
+  {
+   "id": "AUT-04",
+   "tab": null,
+   "titleKey": "auth.reset.title",
+   "titleTr": "Şifre sıfırlama",
+   "titleEn": "Reset password"
+  },
+  {
+   "id": "AUT-05",
+   "tab": null,
+   "titleKey": "auth.setup.title",
+   "titleTr": "Profilini tamamla",
+   "titleEn": "Complete your profile"
+  },
+  {
+   "id": "AUT-06",
+   "tab": null,
+   "titleKey": "legal.title",
+   "titleTr": "Yasal metinler",
+   "titleEn": "Legal"
+  },
+  {
+   "id": "CLB-01",
+   "tab": "clubs",
+   "titleKey": "nav.clubs",
+   "titleTr": "Kulüpler",
+   "titleEn": "Clubs"
+  },
+  {
+   "id": "CLB-02",
+   "tab": "clubs",
+   "titleKey": "search.title",
+   "titleTr": "Arama",
+   "titleEn": "Search"
+  },
+  {
+   "id": "FED-01",
+   "tab": "clubs",
+   "titleKey": "feed.title",
+   "titleTr": "Akış",
+   "titleEn": "Feed"
+  },
+  {
+   "id": "CLB-03",
+   "tab": "clubs",
+   "titleKey": "club.title",
+   "titleTr": "Kulüp",
+   "titleEn": "Club"
+  },
+  {
+   "id": "CLB-04",
+   "tab": "clubs",
+   "titleKey": "applied.title",
+   "titleTr": "İsteğin kulüp yönetimine iletildi",
+   "titleEn": "Your request was sent to the club board"
+  },
+  {
+   "id": "CLB-05",
+   "tab": "clubs",
+   "titleKey": "application.title",
+   "titleTr": "Başvuru durumu",
+   "titleEn": "Application status"
+  },
+  {
+   "id": "CLB-06",
+   "tab": "clubs",
+   "titleKey": "members.title",
+   "titleTr": "Üyeler",
+   "titleEn": "Members"
+  },
+  {
+   "id": "CLB-07",
+   "tab": null,
+   "titleKey": "userprofile.title",
+   "titleTr": "Profil",
+   "titleEn": "Profile"
+  },
+  {
+   "id": "FED-02",
+   "tab": "clubs",
+   "titleKey": "post.title",
+   "titleTr": "Gönderi",
+   "titleEn": "Post"
+  },
+  {
+   "id": "FED-03",
+   "tab": "clubs",
+   "titleKey": "compose.title",
+   "titleTr": "Yeni gönderi",
+   "titleEn": "New post"
+  },
+  {
+   "id": "EVT-01",
+   "tab": "events",
+   "titleKey": "nav.events",
+   "titleTr": "Etkinlikler",
+   "titleEn": "Events"
+  },
+  {
+   "id": "EVT-02",
+   "tab": "events",
+   "titleKey": "event.title",
+   "titleTr": "Etkinlik",
+   "titleEn": "Event"
+  },
+  {
+   "id": "EVT-03",
+   "tab": "events",
+   "titleKey": "ticket.title",
+   "titleTr": "Bilet",
+   "titleEn": "Ticket"
+  },
+  {
+   "id": "EVT-04",
+   "tab": "events",
+   "titleKey": "myevents.title",
+   "titleTr": "Etkinliklerim",
+   "titleEn": "My events"
+  },
+  {
+   "id": "NTF-01",
+   "tab": "notifications",
+   "titleKey": "nav.notifications",
+   "titleTr": "Bildirimler",
+   "titleEn": "Notifications"
+  },
+  {
+   "id": "NTF-02",
+   "tab": "notifications",
+   "titleKey": "notifPrefs.title",
+   "titleTr": "Bildirim tercihleri",
+   "titleEn": "Notification preferences"
+  },
+  {
+   "id": "PRF-01",
+   "tab": "profile",
+   "titleKey": "nav.profile",
+   "titleTr": "Profil",
+   "titleEn": "Profile"
+  },
+  {
+   "id": "PRF-02",
+   "tab": "profile",
+   "titleKey": "editProfile.title",
+   "titleTr": "Profili düzenle",
+   "titleEn": "Edit profile"
+  },
+  {
+   "id": "PRF-03",
+   "tab": "profile",
+   "titleKey": "myclubs.title",
+   "titleTr": "Kulüplerim ve başvurularım",
+   "titleEn": "My clubs & applications"
+  },
+  {
+   "id": "PRF-04",
+   "tab": "profile",
+   "titleKey": "saved.title",
+   "titleTr": "Kaydedilenler",
+   "titleEn": "Saved"
+  },
+  {
+   "id": "SET-01",
+   "tab": "profile",
+   "titleKey": "settings.title",
+   "titleTr": "Ayarlar",
+   "titleEn": "Settings"
+  },
+  {
+   "id": "SET-02",
+   "tab": "profile",
+   "titleKey": "blocked.title",
+   "titleTr": "Engellenen kullanıcılar",
+   "titleEn": "Blocked users"
+  },
+  {
+   "id": "SET-03",
+   "tab": "profile",
+   "titleKey": "deleteAccount.title",
+   "titleTr": "Hesabı sil",
+   "titleEn": "Delete account"
+  },
+  {
+   "id": "SET-04",
+   "tab": "profile",
+   "titleKey": "about.title",
+   "titleTr": "Hakkında",
+   "titleEn": "About"
+  },
+  {
+   "id": "SET-05",
+   "tab": "profile",
+   "titleKey": "support.title",
+   "titleTr": "Yardım ve destek",
+   "titleEn": "Help & support"
+  },
+  {
+   "id": "MGT-01",
+   "tab": "clubs",
+   "titleKey": "mgt.title",
+   "titleTr": "Yönetim paneli",
+   "titleEn": "Management panel"
+  },
+  {
+   "id": "MGT-02",
+   "tab": "clubs",
+   "titleKey": "applications.title",
+   "titleTr": "Başvurular",
+   "titleEn": "Applications"
+  },
+  {
+   "id": "MGT-03",
+   "tab": "clubs",
+   "titleKey": "mgtMembers.title",
+   "titleTr": "Üye yönetimi",
+   "titleEn": "Member management"
+  },
+  {
+   "id": "MGT-04",
+   "tab": "clubs",
+   "titleKey": "mgtEvents.title",
+   "titleTr": "Etkinlik yönetimi",
+   "titleEn": "Event management"
+  },
+  {
+   "id": "MGT-05",
+   "tab": "clubs",
+   "titleKey": "eventForm.title",
+   "titleTr": "Etkinlik oluştur",
+   "titleEn": "Create event"
+  },
+  {
+   "id": "MGT-06",
+   "tab": "clubs",
+   "titleKey": "attendance.title",
+   "titleTr": "Katılımcılar ve yoklama",
+   "titleEn": "Attendees & check-in"
+  },
+  {
+   "id": "MGT-07",
+   "tab": "clubs",
+   "titleKey": "scan.title",
+   "titleTr": "QR tarayıcı",
+   "titleEn": "QR scanner"
+  },
+  {
+   "id": "MGT-08",
+   "tab": "clubs",
+   "titleKey": "content.title",
+   "titleTr": "İçerik yönetimi",
+   "titleEn": "Content management"
+  },
+  {
+   "id": "MGT-09",
+   "tab": "clubs",
+   "titleKey": "clubSettings.title",
+   "titleTr": "Kulüp ayarları",
+   "titleEn": "Club settings"
+  },
+  {
+   "id": "MGT-10",
+   "tab": "clubs",
+   "titleKey": "activity.title",
+   "titleTr": "Faaliyet geçmişi",
+   "titleEn": "Activity log"
+  },
+  {
+   "id": "ADM-01",
+   "tab": "admin",
+   "titleKey": "nav.admin",
+   "titleTr": "Admin",
+   "titleEn": "Admin"
+  },
+  {
+   "id": "ADM-02",
+   "tab": "admin",
+   "titleKey": "adminClubs.title",
+   "titleTr": "Kulüpler",
+   "titleEn": "Clubs"
+  },
+  {
+   "id": "ADM-03",
+   "tab": "admin",
+   "titleKey": "clubForm.title",
+   "titleTr": "Kulüp oluştur",
+   "titleEn": "Create club"
+  },
+  {
+   "id": "ADM-04",
+   "tab": "admin",
+   "titleKey": "reports.title",
+   "titleTr": "Şikayetler",
+   "titleEn": "Reports"
+  },
+  {
+   "id": "ADM-05",
+   "tab": "admin",
+   "titleKey": "adminUsers.title",
+   "titleTr": "Kullanıcılar",
+   "titleEn": "Users"
+  }
+ ],
+ "sheets": [
+  {
+   "id": "SHT-01",
+   "titleKey": "sht.01.title",
+   "titleTr": "Dil",
+   "titleEn": "Language"
+  },
+  {
+   "id": "SHT-02",
+   "titleKey": "sht.02.title",
+   "titleTr": "Bölüm seç",
+   "titleEn": "Choose department"
+  },
+  {
+   "id": "SHT-03",
+   "titleKey": "sht.03.title",
+   "titleTr": "Sınıf seç",
+   "titleEn": "Choose year"
+  },
+  {
+   "id": "SHT-04",
+   "titleKey": "sht.04.title",
+   "titleTr": "Filtre ve sıralama",
+   "titleEn": "Filter & sort"
+  },
+  {
+   "id": "SHT-05",
+   "titleKey": "sht.05.title",
+   "titleTr": "Katılma başvurusu",
+   "titleEn": "Membership application"
+  },
+  {
+   "id": "SHT-06",
+   "titleKey": "sht.06.title",
+   "titleTr": "Kulüp menüsü",
+   "titleEn": "Club menu"
+  },
+  {
+   "id": "SHT-07",
+   "titleKey": "sht.07.title",
+   "titleTr": "Kulüp bildirimleri",
+   "titleEn": "Club notifications"
+  },
+  {
+   "id": "SHT-08",
+   "titleKey": "sht.08.title",
+   "titleTr": "Gönderi",
+   "titleEn": "Post"
+  },
+  {
+   "id": "SHT-09",
+   "titleKey": "sht.09.title",
+   "titleTr": "Yorumlar",
+   "titleEn": "Comments"
+  },
+  {
+   "id": "SHT-10",
+   "titleKey": "sht.10.title",
+   "titleTr": "Şikayet nedeni",
+   "titleEn": "Report reason"
+  },
+  {
+   "id": "SHT-11",
+   "titleKey": "sht.11.title",
+   "titleTr": "Etkinlik filtresi",
+   "titleEn": "Event filter"
+  },
+  {
+   "id": "SHT-12",
+   "titleKey": "sht.12.title",
+   "titleTr": "Katılım onayı",
+   "titleEn": "Confirm registration"
+  },
+  {
+   "id": "SHT-13",
+   "titleKey": "sht.13.title",
+   "titleTr": "Hatırlatıcı",
+   "titleEn": "Reminder"
+  },
+  {
+   "id": "SHT-14",
+   "titleKey": "sht.14.title",
+   "titleTr": "Takvime ekle",
+   "titleEn": "Add to calendar"
+  },
+  {
+   "id": "SHT-15",
+   "titleKey": "sht.15.title",
+   "titleTr": "Paylaş",
+   "titleEn": "Share"
+  },
+  {
+   "id": "SHT-16",
+   "titleKey": "sht.16.title",
+   "titleTr": "Fotoğraf kaynağı",
+   "titleEn": "Photo source"
+  },
+  {
+   "id": "SHT-17",
+   "titleKey": "sht.17.title",
+   "titleTr": "Tema",
+   "titleEn": "Theme"
+  },
+  {
+   "id": "SHT-18",
+   "titleKey": "sht.18.title",
+   "titleTr": "Yönetilen kulüp seç",
+   "titleEn": "Choose a club to manage"
+  },
+  {
+   "id": "SHT-19",
+   "titleKey": "sht.19.title",
+   "titleTr": "Başvuru detayı",
+   "titleEn": "Application details"
+  },
+  {
+   "id": "SHT-20",
+   "titleKey": "sht.20.title",
+   "titleTr": "Red nedeni",
+   "titleEn": "Rejection reason"
+  },
+  {
+   "id": "SHT-21",
+   "titleKey": "sht.21.title",
+   "titleTr": "Üye işlemleri",
+   "titleEn": "Member actions"
+  },
+  {
+   "id": "SHT-22",
+   "titleKey": "sht.22.title",
+   "titleTr": "Rol seç",
+   "titleEn": "Choose role"
+  },
+  {
+   "id": "SHT-23",
+   "titleKey": "sht.23.title",
+   "titleTr": "Etkinlik menüsü",
+   "titleEn": "Event menu"
+  },
+  {
+   "id": "SHT-24",
+   "titleKey": "sht.24.title",
+   "titleTr": "Tarama sonucu",
+   "titleEn": "Scan result"
+  },
+  {
+   "id": "SHT-25",
+   "titleKey": "sht.25.assign",
+   "titleTr": "Başkan ata",
+   "titleEn": "Assign president"
+  },
+  {
+   "id": "SHT-26",
+   "titleKey": "sht.26.title",
+   "titleTr": "Şikayet detayı",
+   "titleEn": "Report details"
+  },
+  {
+   "id": "SHT-27",
+   "titleKey": "sht.27.title",
+   "titleTr": "Kullanıcı",
+   "titleEn": "User"
+  },
+  {
+   "id": "SHT-28",
+   "titleKey": "sht.28.title",
+   "titleTr": "Tarih seç",
+   "titleEn": "Pick a date"
+  },
+  {
+   "id": "SHT-29",
+   "titleKey": "sht.29.title",
+   "titleTr": "Saat seç",
+   "titleEn": "Pick a time"
+  },
+  {
+   "id": "SHT-30",
+   "titleKey": "sht.30.title",
+   "titleTr": "Mekân seç",
+   "titleEn": "Choose a venue"
+  },
+  {
+   "id": "SHT-31",
+   "titleKey": "sht.31.title",
+   "titleTr": "Kapak seç",
+   "titleEn": "Choose a cover"
+  },
+  {
+   "id": "SHT-32",
+   "titleKey": "sht.32.title",
+   "titleTr": "Şifre değiştir",
+   "titleEn": "Change password"
+  },
+  {
+   "id": "SHT-33",
+   "titleKey": "sht.33.title",
+   "titleTr": "Kategori seç",
+   "titleEn": "Choose category"
+  },
+  {
+   "id": "SHT-34",
+   "titleKey": "sht.34.title",
+   "titleTr": "Görsel",
+   "titleEn": "Image"
+  }
+ ],
+ "dialogs": [
+  {
+   "id": "DLG-03",
+   "titleKey": "dlg.03.title",
+   "titleTr": "Bildirimleri açalım mı?",
+   "titleEn": "Turn on notifications?"
+  },
+  {
+   "id": "DLG-04",
+   "titleKey": "dlg.04.title",
+   "titleTr": "Kamera erişimi",
+   "titleEn": "Camera access"
+  },
+  {
+   "id": "DLG-05",
+   "titleKey": "dlg.05.title",
+   "titleTr": "Fotoğraflarına erişim",
+   "titleEn": "Photo access"
+  },
+  {
+   "id": "DLG-01",
+   "titleKey": "dlg.01.title",
+   "titleTr": "Hesabın askıya alındı",
+   "titleEn": "Your account is suspended"
+  },
+  {
+   "id": "DLG-02",
+   "titleKey": "dlg.02.title",
+   "titleTr": "Çok fazla deneme",
+   "titleEn": "Too many attempts"
+  },
+  {
+   "id": "DLG-06",
+   "titleKey": "dlg.06.title",
+   "titleTr": "Çıkış yapılsın mı?",
+   "titleEn": "Sign out?"
+  },
+  {
+   "id": "DLG-07",
+   "titleKey": "dlg.07.title",
+   "titleTr": "İsteği iptal et?",
+   "titleEn": "Cancel request?"
+  },
+  {
+   "id": "DLG-08",
+   "titleKey": "dlg.08.title",
+   "titleTr": "Kulüpten ayrıl?",
+   "titleEn": "Leave club?"
+  },
+  {
+   "id": "DLG-09",
+   "titleKey": "dlg.09.title",
+   "titleTr": "Ayrılamazsın",
+   "titleEn": "You can't leave yet"
+  },
+  {
+   "id": "DLG-10",
+   "titleKey": "dlg.10.title",
+   "titleTr": "Gönderi silinsin mi?",
+   "titleEn": "Delete post?"
+  },
+  {
+   "id": "DLG-11",
+   "titleKey": "dlg.11.title",
+   "titleTr": "Yorum silinsin mi?",
+   "titleEn": "Delete comment?"
+  },
+  {
+   "id": "DLG-12",
+   "titleKey": "dlg.12.title",
+   "titleTr": "Şikayetin alındı",
+   "titleEn": "Report received"
+  },
+  {
+   "id": "DLG-13",
+   "titleKey": "dlg.13.title",
+   "titleTr": "{name} engellensin mi?",
+   "titleEn": "Block {name}?"
+  },
+  {
+   "id": "DLG-14",
+   "titleKey": "dlg.14.title",
+   "titleTr": "Katılımdan vazgeç?",
+   "titleEn": "Leave event?"
+  },
+  {
+   "id": "DLG-15",
+   "titleKey": "dlg.15.title",
+   "titleTr": "Kontenjan doldu",
+   "titleEn": "Event is full"
+  },
+  {
+   "id": "DLG-16",
+   "titleKey": "dlg.16.title",
+   "titleTr": "Etkinlik iptal edildi",
+   "titleEn": "Event cancelled"
+  },
+  {
+   "id": "DLG-17",
+   "titleKey": "dlg.17.title",
+   "titleTr": "Toplu işlem onayı",
+   "titleEn": "Confirm bulk action"
+  },
+  {
+   "id": "DLG-18",
+   "titleKey": "dlg.18.title",
+   "titleTr": "Başvuru zaten sonuçlandırıldı",
+   "titleEn": "Application already decided"
+  },
+  {
+   "id": "DLG-19",
+   "titleKey": "dlg.19.title",
+   "titleTr": "{name} çıkarılsın mı?",
+   "titleEn": "Remove {name}?"
+  },
+  {
+   "id": "DLG-20",
+   "titleKey": "dlg.20.title",
+   "titleTr": "Rol değişsin mi?",
+   "titleEn": "Change role?"
+  },
+  {
+   "id": "DLG-21",
+   "titleKey": "dlg.21.title",
+   "titleTr": "Başkanlığı devret?",
+   "titleEn": "Transfer presidency?"
+  },
+  {
+   "id": "DLG-22",
+   "titleKey": "dlg.22.title",
+   "titleTr": "Etkinlik yayınlansın mı?",
+   "titleEn": "Publish event?"
+  },
+  {
+   "id": "DLG-23",
+   "titleKey": "dlg.23.title",
+   "titleTr": "Etkinlik iptal edilsin mi?",
+   "titleEn": "Cancel event?"
+  },
+  {
+   "id": "DLG-24",
+   "titleKey": "dlg.24.title",
+   "titleTr": "Bugünkü duyuru hakkın doldu",
+   "titleEn": "Today's announcement quota is used up"
+  },
+  {
+   "id": "DLG-25",
+   "titleKey": "dlg.25.title",
+   "titleTr": "Değişiklikler kaydedilmedi",
+   "titleEn": "Unsaved changes"
+  },
+  {
+   "id": "DLG-26",
+   "titleKey": "dlg.26.title",
+   "titleTr": "Güncelleme gerekli",
+   "titleEn": "Update required"
+  },
+  {
+   "id": "DLG-27",
+   "titleKey": "dlg.27.title",
+   "titleTr": "Oturumun sona erdi",
+   "titleEn": "Session expired"
+  },
+  {
+   "id": "DLG-28",
+   "titleKey": "dlg.28.title",
+   "titleTr": "{club} askıya alınsın mı?",
+   "titleEn": "Suspend {club}?"
+  },
+  {
+   "id": "DLG-29",
+   "titleKey": "dlg.29.title",
+   "titleTr": "İçerik kaldırılsın mı?",
+   "titleEn": "Remove content?"
+  },
+  {
+   "id": "DLG-30",
+   "titleKey": "dlg.30.title",
+   "titleTr": "{name} askıya alınsın mı?",
+   "titleEn": "Suspend {name}?"
+  },
+  {
+   "id": "DLG-31",
+   "titleKey": "dlg.31.title",
+   "titleTr": "Taslak silinsin mi?",
+   "titleEn": "Delete draft?"
+  },
+  {
+   "id": "DLG-32",
+   "titleKey": "dlg.32.title",
+   "titleTr": "Uygulamadan ayrılıyorsun",
+   "titleEn": "Leaving the app"
+  }
+ ],
+ "toasts": [
+  {
+   "id": "TST-01",
+   "kind": "error",
+   "textTr": "E-posta veya şifre hatalı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-02",
+   "kind": "info",
+   "textTr": "E-postan henüz doğrulanmamış. Bağlantıya tıkladıktan sonra tekrar dene.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-03",
+   "kind": "success",
+   "textTr": "Bağlantı gönderildi. Gelen kutunu kontrol et.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-04",
+   "kind": "info",
+   "textTr": "En fazla 5 ilgi alanı seçebilirsin.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-05",
+   "kind": "success",
+   "textTr": "Hoş geldin, Ayşe Demir!",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-06",
+   "kind": "info",
+   "textTr": "Son aramalar temizlendi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-07",
+   "kind": "success",
+   "textTr": "Notun kaydedildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-08",
+   "kind": "success",
+   "textTr": "E-posta adresi kopyalandı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-09",
+   "kind": "info",
+   "textTr": "Ayşe Demir engellendi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-10",
+   "kind": "info",
+   "textTr": "Oyun kaydedildi. Anketlerde oy değiştirilemez.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-11",
+   "kind": "success",
+   "textTr": "Kaydedilenlerden kaldırıldı.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-12",
+   "kind": "success",
+   "textTr": "Yorumun gönderildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-13",
+   "kind": "success",
+   "textTr": "Taslak kaydedildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-14",
+   "kind": "success",
+   "textTr": "Yayınlandı.",
+   "actionLabelTr": "Görüntüle",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-15",
+   "kind": "success",
+   "textTr": "Biletin okutuldu. İyi eğlenceler!",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-16",
+   "kind": "info",
+   "textTr": "Bildirim silindi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-17",
+   "kind": "success",
+   "textTr": "Şikayetin incelendi ve gereken işlem yapıldı. Teşekkürler.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-18",
+   "kind": "success",
+   "textTr": "Tüm bildirimler okundu olarak işaretlendi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-19",
+   "kind": "success",
+   "textTr": "Tercihin kaydedildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-20",
+   "kind": "info",
+   "textTr": "Bu alan değiştirilemez.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-21",
+   "kind": "success",
+   "textTr": "Değişiklikler kaydedildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-22",
+   "kind": "success",
+   "textTr": "Hesabın silindi. Seni özleyeceğiz.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-23",
+   "kind": "success",
+   "textTr": "Mesajın alındı. Talep no: #GU-4821",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-24",
+   "kind": "error",
+   "textTr": "Çevrimdışısın. Bu işlem için internet bağlantısı gerekli.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-25",
+   "kind": "success",
+   "textTr": "Tekrar çevrimiçisin.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-26",
+   "kind": "info",
+   "textTr": "Danışman yetkisi salt okunurdur.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-27",
+   "kind": "success",
+   "textTr": "Ayşe Demir onaylandı.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-28",
+   "kind": "info",
+   "textTr": "Ayşe Demir reddedildi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-29",
+   "kind": "success",
+   "textTr": "Dışa aktarma hazır. Dosya indirildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-30",
+   "kind": "success",
+   "textTr": "Etkinlik yayınlandı.",
+   "actionLabelTr": "Görüntüle",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-31",
+   "kind": "success",
+   "textTr": "Ayşe Demir katıldı olarak işaretlendi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-32",
+   "kind": "error",
+   "textTr": "Kamera izni gerekli.",
+   "actionLabelTr": "Ayarlara git",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-33",
+   "kind": "success",
+   "textTr": "Kulüp oluşturuldu.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-34",
+   "kind": "success",
+   "textTr": "Kulübe katıldın!",
+   "actionLabelTr": "Kulübe git",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-35",
+   "kind": "success",
+   "textTr": "Bağlantı kopyalandı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-36",
+   "kind": "success",
+   "textTr": "Takvime eklendi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-37",
+   "kind": "success",
+   "textTr": "Hatırlatıcı ayarlandı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-38",
+   "kind": "success",
+   "textTr": "Kulüp bildirim ayarların güncellendi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-39",
+   "kind": "info",
+   "textTr": "Kulüpten ayrıldın.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-40",
+   "kind": "info",
+   "textTr": "İsteğin iptal edildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-41",
+   "kind": "success",
+   "textTr": "Kaydın alındı. Biletin hazır.",
+   "actionLabelTr": "Biletini göster",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-42",
+   "kind": "info",
+   "textTr": "Katılımdan vazgeçtin.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-43",
+   "kind": "success",
+   "textTr": "Bekleme listesine eklendin (2. sıra).",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-44",
+   "kind": "success",
+   "textTr": "Şifren değiştirildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-45",
+   "kind": "info",
+   "textTr": "… silindi.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-46",
+   "kind": "success",
+   "textTr": "Ayşe Demir artık ….",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-47",
+   "kind": "info",
+   "textTr": "Ayşe Demir kulüpten çıkarıldı.",
+   "actionLabelTr": "Geri al",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-48",
+   "kind": "info",
+   "textTr": "Etkinlik iptal edildi. Katılımcılara haber verildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-49",
+   "kind": "success",
+   "textTr": "Başkanlık Ayşe Demir kullanıcısına devredildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-50",
+   "kind": "info",
+   "textTr": "Kulüp yeniden etkinleştirildi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-51",
+   "kind": "success",
+   "textTr": "İçerik kaldırıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-52",
+   "kind": "info",
+   "textTr": "Kullanıcının askısı kaldırıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-53",
+   "kind": "success",
+   "textTr": "Sabitleme kaldırıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-54",
+   "kind": "info",
+   "textTr": "Başvurular kapatıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-55",
+   "kind": "info",
+   "textTr": "Yeni bildirim: …",
+   "actionLabelTr": "Görüntüle",
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-56",
+   "kind": "info",
+   "textTr": "Şikayet kapatıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-57",
+   "kind": "success",
+   "textTr": "Fotoğraf güncellendi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-58",
+   "kind": "info",
+   "textTr": "Demo: … açılıyor.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X1",
+   "kind": "info",
+   "textTr": "Bu kulüp şu an başvuru almıyor.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X2",
+   "kind": "info",
+   "textTr": "Bu etkinliğin kayıtları kapalı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X3",
+   "kind": "info",
+   "textTr": "Tekrar göndermek için 42 sn bekle.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X4",
+   "kind": "info",
+   "textTr": "… tarihine kadar tekrar başvuramazsın.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X5",
+   "kind": "info",
+   "textTr": "En fazla 4 görsel ekleyebilirsin.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X6",
+   "kind": "info",
+   "textTr": "Bu etkinlik sona erdi.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X7",
+   "kind": "info",
+   "textTr": "Hatırlatıcı için önce etkinliğe katıl.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X8",
+   "kind": "info",
+   "textTr": "3 kişi katılıyor.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X9",
+   "kind": "info",
+   "textTr": "Kaydedilecek değişiklik yok.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X10",
+   "kind": "info",
+   "textTr": "Önce başkanlığı devretmelisin.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X11",
+   "kind": "info",
+   "textTr": "Şifreni gir ve onaylamak için SİL yaz.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X12",
+   "kind": "info",
+   "textTr": "Yoklama alınacak etkinlik yok.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X13",
+   "kind": "success",
+   "textTr": "Ayşe Demir kayıtlıya alındı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X14",
+   "kind": "info",
+   "textTr": "Kontenjan dolu; önce yer açılmalı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X15",
+   "kind": "info",
+   "textTr": "Kayıtlar kapatıldı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X16",
+   "kind": "info",
+   "textTr": "Önce \"Tümünü sessize al\" seçeneğini kapat.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X17",
+   "kind": "success",
+   "textTr": "Karar geri alındı; başvuru yeniden beklemede.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X18",
+   "kind": "info",
+   "textTr": "Bu işlem için yetkin yok.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X19",
+   "kind": "success",
+   "textTr": "Etkinlik taslağa alındı.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  },
+  {
+   "id": "TST-X20",
+   "kind": "info",
+   "textTr": "Onaylamak için DEVRET yaz.",
+   "actionLabelTr": null,
+   "persistent": false,
+   "duration": null
+  }
+ ],
+ "menus": [
+  "SHT-01",
+  "EVT-MENU"
+ ],
+ "inventory": [
+  [
+   "SYS-01",
+   "/splash",
+   "all",
+   null
+  ],
+  [
+   "SYS-02",
+   "/error",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SYS-03",
+   "/offline",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SYS-04",
+   "/not-found",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "ONB-01",
+   "/onboarding",
+   "guest",
+   null
+  ],
+  [
+   "AUT-01",
+   "/login",
+   "guest",
+   null
+  ],
+  [
+   "AUT-02",
+   "/register",
+   "guest",
+   null
+  ],
+  [
+   "AUT-03",
+   "/verify",
+   "guest",
+   "u_unverified"
+  ],
+  [
+   "AUT-04",
+   "/reset",
+   "guest",
+   null
+  ],
+  [
+   "AUT-05",
+   "/setup-profile",
+   "guest",
+   "u_unverified"
+  ],
+  [
+   "AUT-06",
+   "/legal/:tip",
+   "all",
+   null
+  ],
+  [
+   "CLB-01",
+   "/clubs",
+   "all",
+   "u_ayse"
+  ],
+  [
+   "CLB-02",
+   "/clubs/search",
+   "all",
+   "u_ayse"
+  ],
+  [
+   "CLB-03",
+   "/clubs/:id",
+   "all",
+   "u_ayse",
+   {
+    "id": "c03"
+   }
+  ],
+  [
+   "CLB-04",
+   "/clubs/:id/applied",
+   "all",
+   "u_mehmet",
+   {
+    "id": "c06"
+   }
+  ],
+  [
+   "CLB-05",
+   "/clubs/:id/application",
+   "all",
+   "u_mehmet",
+   {
+    "id": "c06"
+   }
+  ],
+  [
+   "CLB-06",
+   "/clubs/:id/members",
+   "member",
+   "u_mehmet",
+   {
+    "id": "c01"
+   }
+  ],
+  [
+   "CLB-07",
+   "/users/:id",
+   "member",
+   "u_burak",
+   {
+    "id": "u001",
+    "clubId": "c03"
+   }
+  ],
+  [
+   "FED-01",
+   "/clubs/:id (Gönderiler)",
+   "member",
+   "u_mehmet",
+   {
+    "id": "c01"
+   }
+  ],
+  [
+   "FED-02",
+   "/clubs/:id/posts/:postId",
+   "member",
+   "u_mehmet",
+   {
+    "clubId": "c01",
+    "postId": "p01"
+   }
+  ],
+  [
+   "FED-03",
+   "/clubs/:id/compose",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "EVT-01",
+   "/events",
+   "all",
+   "u_ayse"
+  ],
+  [
+   "EVT-02",
+   "/events/:id",
+   "all",
+   "u_ayse",
+   {
+    "id": "e01"
+   }
+  ],
+  [
+   "EVT-03",
+   "/events/:id/ticket",
+   "member",
+   "u_mehmet",
+   {
+    "id": "e01"
+   }
+  ],
+  [
+   "EVT-04",
+   "/events/mine",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "NTF-01",
+   "/notifications",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "NTF-02",
+   "/settings/notifications",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "PRF-01",
+   "/profile",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "PRF-02",
+   "/profile/edit",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "PRF-03",
+   "/profile/clubs",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "PRF-04",
+   "/profile/saved",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SET-01",
+   "/settings",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SET-02",
+   "/settings/blocked",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SET-03",
+   "/settings/delete",
+   "all",
+   "u_burak"
+  ],
+  [
+   "SET-04",
+   "/settings/about",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "SET-05",
+   "/settings/support",
+   "all",
+   "u_mehmet"
+  ],
+  [
+   "MGT-01",
+   "/manage/:clubId",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-02",
+   "/manage/:clubId/applications",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-03",
+   "/manage/:clubId/members",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-04",
+   "/manage/:clubId/events",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-05",
+   "/manage/:clubId/events/new",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-06",
+   "/manage/:clubId/events/:id/attendance",
+   "manager",
+   "u_elif",
+   {
+    "clubId": "c01",
+    "eventId": "e17"
+   }
+  ],
+  [
+   "MGT-07",
+   "/manage/:clubId/events/:id/scan",
+   "manager",
+   "u_elif",
+   {
+    "clubId": "c01",
+    "eventId": "e17"
+   }
+  ],
+  [
+   "MGT-08",
+   "/manage/:clubId/content",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-09",
+   "/manage/:clubId/settings",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "MGT-10",
+   "/manage/:clubId/activity",
+   "manager",
+   "u_burak",
+   {
+    "clubId": "c03"
+   }
+  ],
+  [
+   "ADM-01",
+   "/admin",
+   "admin",
+   "u_admin"
+  ],
+  [
+   "ADM-02",
+   "/admin/clubs",
+   "admin",
+   "u_admin"
+  ],
+  [
+   "ADM-03",
+   "/admin/clubs/new",
+   "admin",
+   "u_admin"
+  ],
+  [
+   "ADM-04",
+   "/admin/reports",
+   "admin",
+   "u_admin"
+  ],
+  [
+   "ADM-05",
+   "/admin/users",
+   "admin",
+   "u_admin"
+  ]
+ ],
+ "tabs": [
+  "clubs",
+  "events",
+  "notifications",
+  "admin",
+  "profile"
+ ],
+ "tabRoot": {
+  "clubs": "CLB-01",
+  "events": "EVT-01",
+  "notifications": "NTF-01",
+  "admin": "ADM-01",
+  "profile": "PRF-01"
+ },
+ "tabOf": null,
+ "constants": {
+  "APP_NAME": "GÜ Kulüpler",
+  "APP_VERSION": "1.0.0",
+  "ALLOWED_EMAIL_DOMAINS": [
+   "ogr.gumushane.edu.tr",
+   "gumushane.edu.tr"
+  ],
+  "DEMO_PASSWORD": "(demo only)"
+ },
+ "eventTypes": [
+  "egitim",
+  "sosyal",
+  "gezi",
+  "yarisma",
+  "konferans"
+ ],
+ "years": [
+  "prep",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5plus",
+  "master",
+  "phd"
+ ],
+ "popularSearches": [
+  "Hackathon",
+  "Doğa yürüyüşü",
+  "Tiyatro",
+  "E-spor",
+  "Fotoğraf",
+  "Satranç"
+ ],
+ "demoAccounts": [
+  {
+   "id": "u_ayse",
+   "roleKey": "role.student",
+   "descKey": "panel.acc.ayse"
+  },
+  {
+   "id": "u_mehmet",
+   "roleKey": "role.member",
+   "descKey": "panel.acc.mehmet"
+  },
+  {
+   "id": "u_elif",
+   "roleKey": "role.board",
+   "descKey": "panel.acc.elif"
+  },
+  {
+   "id": "u_burak",
+   "roleKey": "role.president",
+   "descKey": "panel.acc.burak"
+  },
+  {
+   "id": "u_zeynep",
+   "roleKey": "role.advisor",
+   "descKey": "panel.acc.zeynep"
+  },
+  {
+   "id": "u_admin",
+   "roleKey": "role.superadmin",
+   "descKey": "panel.acc.admin"
+  }
+ ],
+ "palettes": [
+  "red",
+  "slate",
+  "bordeaux"
+ ],
+ "patterns": {
+  "mountain": [
+   "Dağ silüeti",
+   "Mountain silhouette"
+  ],
+  "lines": [
+   "Çizgi",
+   "Lines"
+  ],
+  "dots": [
+   "Nokta ızgarası",
+   "Dot grid"
+  ],
+  "waves": [
+   "Dalga",
+   "Waves"
+  ]
+ },
+ "illustrations": [
+  "onb-discover",
+  "onb-join",
+  "onb-follow",
+  "empty-clubs",
+  "empty-events",
+  "empty-notifications",
+  "empty-posts",
+  "empty-applications",
+  "error",
+  "offline",
+  "email-verify",
+  "locked"
+ ],
+ "iconGroups": {
+  "nav": [
+   "home",
+   "search",
+   "bell",
+   "user",
+   "users",
+   "calendar",
+   "layout-grid",
+   "list",
+   "menu",
+   "chevron-left",
+   "chevron-right",
+   "chevron-down",
+   "chevron-up",
+   "arrow-left",
+   "arrow-right",
+   "arrow-up",
+   "x",
+   "plus",
+   "minus",
+   "check",
+   "check-check",
+   "more-vertical",
+   "more-horizontal",
+   "external-link",
+   "link",
+   "copy",
+   "share-2",
+   "download",
+   "upload",
+   "refresh-cw",
+   "sliders-horizontal",
+   "arrow-up-down",
+   "settings",
+   "log-in",
+   "log-out"
+  ],
+  "security": [
+   "mail",
+   "key-round",
+   "lock",
+   "lock-open",
+   "eye",
+   "eye-off",
+   "shield",
+   "shield-check",
+   "badge-check",
+   "smartphone",
+   "languages",
+   "globe",
+   "moon",
+   "sun",
+   "monitor"
+  ],
+  "user": [
+   "user-plus",
+   "user-check",
+   "user-x",
+   "user-cog",
+   "crown",
+   "graduation-cap"
+  ],
+  "content": [
+   "heart",
+   "message-circle",
+   "send",
+   "bookmark",
+   "megaphone",
+   "flag",
+   "ban",
+   "image",
+   "images",
+   "camera",
+   "pin",
+   "pin-off",
+   "pencil",
+   "trash-2",
+   "file-text",
+   "scroll-text",
+   "life-buoy",
+   "inbox",
+   "history",
+   "clipboard-list",
+   "list-checks",
+   "sparkles"
+  ],
+  "event": [
+   "calendar-plus",
+   "calendar-check",
+   "calendar-x",
+   "calendar-days",
+   "clock",
+   "map-pin",
+   "navigation",
+   "qr-code",
+   "scan-line",
+   "ticket",
+   "hourglass",
+   "party-popper",
+   "flashlight",
+   "switch-camera",
+   "bell-ring",
+   "bell-off",
+   "mic"
+  ],
+  "status": [
+   "circle-check",
+   "circle-x",
+   "triangle-alert",
+   "info",
+   "circle-help",
+   "wifi-off",
+   "cloud-off",
+   "loader-circle"
+  ],
+  "chart": [
+   "chart-column",
+   "chart-line",
+   "chart-pie",
+   "trending-up",
+   "trending-down"
+  ],
+  "club": [
+   "code-xml",
+   "flask-conical",
+   "mountain",
+   "drama",
+   "heart-handshake",
+   "briefcase",
+   "gamepad-2",
+   "music",
+   "rocket",
+   "lightbulb",
+   "book-open",
+   "pickaxe",
+   "puzzle",
+   "palette",
+   "trophy",
+   "landmark",
+   "newspaper",
+   "film",
+   "tent",
+   "users-round",
+   "cpu",
+   "dumbbell"
+  ],
+  "extra": []
+ },
+ "iconNames": [
+  "home",
+  "search",
+  "bell",
+  "user",
+  "users",
+  "calendar",
+  "layout-grid",
+  "list",
+  "menu",
+  "chevron-left",
+  "chevron-right",
+  "chevron-down",
+  "chevron-up",
+  "arrow-left",
+  "arrow-right",
+  "arrow-up",
+  "x",
+  "plus",
+  "minus",
+  "check",
+  "check-check",
+  "more-vertical",
+  "more-horizontal",
+  "external-link",
+  "link",
+  "copy",
+  "share-2",
+  "download",
+  "upload",
+  "refresh-cw",
+  "sliders-horizontal",
+  "arrow-up-down",
+  "settings",
+  "log-in",
+  "log-out",
+  "mail",
+  "key-round",
+  "lock",
+  "lock-open",
+  "eye",
+  "eye-off",
+  "shield",
+  "shield-check",
+  "badge-check",
+  "smartphone",
+  "languages",
+  "globe",
+  "moon",
+  "sun",
+  "monitor",
+  "user-plus",
+  "user-check",
+  "user-x",
+  "user-cog",
+  "crown",
+  "graduation-cap",
+  "heart",
+  "message-circle",
+  "send",
+  "bookmark",
+  "megaphone",
+  "flag",
+  "ban",
+  "image",
+  "images",
+  "camera",
+  "pin",
+  "pin-off",
+  "pencil",
+  "trash-2",
+  "file-text",
+  "scroll-text",
+  "life-buoy",
+  "inbox",
+  "history",
+  "clipboard-list",
+  "list-checks",
+  "sparkles",
+  "calendar-plus",
+  "calendar-check",
+  "calendar-x",
+  "calendar-days",
+  "clock",
+  "map-pin",
+  "navigation",
+  "qr-code",
+  "scan-line",
+  "ticket",
+  "hourglass",
+  "party-popper",
+  "flashlight",
+  "switch-camera",
+  "bell-ring",
+  "bell-off",
+  "mic",
+  "circle-check",
+  "circle-x",
+  "triangle-alert",
+  "info",
+  "circle-help",
+  "wifi-off",
+  "cloud-off",
+  "loader-circle",
+  "chart-column",
+  "chart-line",
+  "chart-pie",
+  "trending-up",
+  "trending-down",
+  "code-xml",
+  "flask-conical",
+  "mountain",
+  "drama",
+  "heart-handshake",
+  "briefcase",
+  "gamepad-2",
+  "music",
+  "rocket",
+  "lightbulb",
+  "book-open",
+  "pickaxe",
+  "puzzle",
+  "palette",
+  "trophy",
+  "landmark",
+  "newspaper",
+  "film",
+  "tent",
+  "users-round",
+  "cpu",
+  "dumbbell"
+ ],
+ "usedIcons": [
+  "wifi-off",
+  "languages",
+  "arrow-right",
+  "sliders-horizontal"
+ ],
+ "roleBadge": {
+  "president": [
+   "badge-president",
+   "crown"
+  ],
+  "board": [
+   "badge-board",
+   "shield-check"
+  ],
+  "advisor": [
+   "badge-advisor",
+   "graduation-cap"
+  ],
+  "member": [
+   "badge-member",
+   "user-check"
+  ],
+  "superadmin": [
+   "badge-superadmin",
+   "badge-check"
+  ]
+ },
+ "statusBadge": {
+  "pending": [
+   "badge-pending",
+   "hourglass"
+  ],
+  "approved": [
+   "badge-success",
+   "circle-check"
+  ],
+  "going": [
+   "badge-success",
+   "circle-check"
+  ],
+  "attended": [
+   "badge-success",
+   "circle-check"
+  ],
+  "active": [
+   "badge-success",
+   "circle-check"
+  ],
+  "rejected": [
+   "badge-danger",
+   "circle-x"
+  ],
+  "cancelled": [
+   "badge-danger",
+   "circle-x"
+  ],
+  "removed": [
+   "badge-danger",
+   "user-x"
+  ],
+  "absent": [
+   "badge-neutral",
+   "circle-x"
+  ],
+  "full": [
+   "badge-full",
+   "users"
+  ],
+  "waitlist": [
+   "badge-pending",
+   "hourglass"
+  ],
+  "members": [
+   "badge-neutral",
+   "lock"
+  ],
+  "draft": [
+   "badge-neutral",
+   "file-text"
+  ],
+  "published": [
+   "badge-success",
+   "circle-check"
+  ],
+  "suspended": [
+   "badge-danger",
+   "ban"
+  ],
+  "past": [
+   "badge-neutral",
+   "history"
+  ],
+  "open": [
+   "badge-pending",
+   "flag"
+  ],
+  "resolved": [
+   "badge-success",
+   "circle-check"
+  ],
+  "valid": [
+   "badge-success",
+   "circle-check"
+  ],
+  "used": [
+   "badge-neutral",
+   "check-check"
+  ],
+  "void": [
+   "badge-danger",
+   "circle-x"
+  ]
+ },
+ "notifIcon": {
+  "application_received": [
+   "user-plus",
+   "ni-brand"
+  ],
+  "application_approved": [
+   "circle-check",
+   "ni-success"
+  ],
+  "application_rejected": [
+   "circle-x",
+   "ni-danger"
+  ],
+  "removed_from_club": [
+   "user-x",
+   "ni-danger"
+  ],
+  "role_changed": [
+   "user-cog",
+   "ni-info"
+  ],
+  "announcement": [
+   "megaphone",
+   "ni-brand"
+  ],
+  "event_new": [
+   "calendar-plus",
+   "ni-info"
+  ],
+  "event_reminder": [
+   "bell-ring",
+   "ni-warning"
+  ],
+  "event_cancelled": [
+   "calendar-x",
+   "ni-danger"
+  ],
+  "waitlist_promoted": [
+   "ticket",
+   "ni-success"
+  ],
+  "report_resolved": [
+   "shield-check",
+   "ni-success"
+  ],
+  "new_report": [
+   "flag",
+   "ni-warning"
+  ],
+  "system": [
+   "info",
+   "ni-neutral"
+  ]
+ },
+ "notifCat": {
+  "application_received": "clubs",
+  "application_approved": "clubs",
+  "application_rejected": "clubs",
+  "removed_from_club": "clubs",
+  "role_changed": "clubs",
+  "announcement": "clubs",
+  "report_resolved": "clubs",
+  "new_report": "clubs",
+  "event_new": "events",
+  "event_reminder": "events",
+  "event_cancelled": "events",
+  "waitlist_promoted": "events",
+  "system": "system"
+ },
+ "actCat": {
+  "application_received": "membership",
+  "application_approved": "membership",
+  "application_rejected": "membership",
+  "member_joined": "membership",
+  "member_left": "membership",
+  "member_removed": "membership",
+  "role_changed": "membership",
+  "event_published": "event",
+  "event_cancelled": "event",
+  "post_created": "content",
+  "announcement": "content",
+  "poll": "content",
+  "settings_changed": "settings"
+ },
+ "tokens": {
+  "COLORS": {
+   "brand.primary": [
+    "#D00A2D",
+    "#D00A2D"
+   ],
+   "brand.primaryText": [
+    "#D00A2D",
+    "#F2536C"
+   ],
+   "brand.primaryPressed": [
+    "#A80824",
+    "#B8082A"
+   ],
+   "brand.onPrimary": [
+    "#FFFFFF",
+    "#FFFFFF"
+   ],
+   "brand.primaryContainer": [
+    "#FCE8EC",
+    "#3A0C16"
+   ],
+   "brand.onPrimaryContainer": [
+    "#7A0619",
+    "#FFD9E0"
+   ],
+   "bg.canvas": [
+    "#FAF9F6",
+    "#17191C"
+   ],
+   "bg.surface": [
+    "#FFFFFF",
+    "#1E2024"
+   ],
+   "bg.surfaceMuted": [
+    "#F1F5F9",
+    "#292E35"
+   ],
+   "bg.surfaceRaised": [
+    "#FFFFFF",
+    "#23272E"
+   ],
+   "border.default": [
+    "#E2E8F0",
+    "#39414B"
+   ],
+   "border.soft": [
+    "#EEF1F5",
+    "#303740"
+   ],
+   "text.primary": [
+    "#101828",
+    "#F1F1ED"
+   ],
+   "text.heading": [
+    "#1D293D",
+    "#F5F5F1"
+   ],
+   "text.secondary": [
+    "#45556C",
+    "#C6CCD4"
+   ],
+   "text.muted": [
+    "#62748E",
+    "#AEB5BF"
+   ],
+   "text.disabled": [
+    "#A3AEBF",
+    "#6B7480"
+   ],
+   "state.success": [
+    "#15803D",
+    "#4ADE80"
+   ],
+   "state.successContainer": [
+    "#DCFCE7",
+    "#0F2E1A"
+   ],
+   "state.warning": [
+    "#B45309",
+    "#FBBF24"
+   ],
+   "state.warningContainer": [
+    "#FEF3C7",
+    "#3A2A0A"
+   ],
+   "state.danger": [
+    "#B42318",
+    "#FF7A70"
+   ],
+   "state.dangerContainer": [
+    "#FEE4E2",
+    "#3B1512"
+   ],
+   "state.info": [
+    "#1D5FAD",
+    "#7DB7F2"
+   ],
+   "state.infoContainer": [
+    "#E3F0FC",
+    "#0F2538"
+   ],
+   "overlay.scrim": [
+    "rgba(16,24,40,.48)",
+    "rgba(0,0,0,.60)"
+   ],
+   "focus.ring": [
+    "#D00A2D",
+    "#F2536C"
+   ]
+  },
+  "COLOR_USAGE": {
+   "brand.primary": "Dolu butonlar, aktif sekme göstergesi, rozetler",
+   "brand.primaryText": "Link, ikon, vurgulu metin",
+   "brand.primaryPressed": "Basılı durum",
+   "brand.onPrimary": "Kırmızı üstü metin/ikon",
+   "brand.primaryContainer": "Tonal arka plan",
+   "brand.onPrimaryContainer": "Tonal üstü metin",
+   "bg.canvas": "Sayfa zemini",
+   "bg.surface": "Kart yüzeyi",
+   "bg.surfaceMuted": "Girdi, çip, ikincil alan",
+   "bg.surfaceRaised": "Sheet, dialog",
+   "border.default": "Kenarlık",
+   "border.soft": "Ayraç",
+   "text.primary": "Gövde",
+   "text.heading": "Başlık",
+   "text.secondary": "İkincil",
+   "text.muted": "Yardımcı, zaman damgası",
+   "text.disabled": "Devre dışı",
+   "state.success": "Onaylandı, katıldı",
+   "state.successContainer": "Başarı zemini",
+   "state.warning": "Beklemede, dikkat",
+   "state.warningContainer": "Uyarı zemini",
+   "state.danger": "Hata, silme",
+   "state.dangerContainer": "Hata zemini",
+   "state.info": "Bilgi",
+   "state.infoContainer": "Bilgi zemini",
+   "overlay.scrim": "Sheet/dialog arkası",
+   "focus.ring": "2 px halka, 2 px offset"
+  },
+  "TYPE_SCALE": [
+   {
+    "id": "display",
+    "name": "Display",
+    "font": "Montserrat",
+    "size": 28,
+    "line": 34,
+    "weight": 700,
+    "note": "Karşılama, hero başlıklar"
+   },
+   {
+    "id": "titleL",
+    "name": "Title L",
+    "font": "Montserrat",
+    "size": 22,
+    "line": 28,
+    "weight": 700,
+    "note": "Ekran başlığı"
+   },
+   {
+    "id": "titleM",
+    "name": "Title M",
+    "font": "Montserrat",
+    "size": 18,
+    "line": 24,
+    "weight": 600,
+    "note": "Bölüm başlığı"
+   },
+   {
+    "id": "titleS",
+    "name": "Title S",
+    "font": "Montserrat",
+    "size": 16,
+    "line": 22,
+    "weight": 600,
+    "note": "Kart başlığı"
+   },
+   {
+    "id": "bodyL",
+    "name": "Body L",
+    "font": "Inter",
+    "size": 16,
+    "line": 24,
+    "weight": 400,
+    "note": "Uzun metin"
+   },
+   {
+    "id": "bodyM",
+    "name": "Body M",
+    "font": "Inter",
+    "size": 15,
+    "line": 22,
+    "weight": 400,
+    "note": "Varsayılan gövde"
+   },
+   {
+    "id": "bodyS",
+    "name": "Body S",
+    "font": "Inter",
+    "size": 13,
+    "line": 18,
+    "weight": 400,
+    "note": "İkincil metin"
+   },
+   {
+    "id": "labelL",
+    "name": "Label L",
+    "font": "Inter",
+    "size": 14,
+    "line": 20,
+    "weight": 600,
+    "note": "Buton"
+   },
+   {
+    "id": "labelM",
+    "name": "Label M",
+    "font": "Inter",
+    "size": 12,
+    "line": 16,
+    "weight": 600,
+    "note": "Çip, rozet"
+   },
+   {
+    "id": "caption",
+    "name": "Caption",
+    "font": "Inter",
+    "size": 12,
+    "line": 16,
+    "weight": 500,
+    "note": "Zaman, yardımcı"
+   },
+   {
+    "id": "overline",
+    "name": "Overline",
+    "font": "Montserrat",
+    "size": 11,
+    "line": 14,
+    "weight": 600,
+    "note": "Bölüm üst etiketi",
+    "letterSpacing": "0.08em",
+    "uppercase": true
+   }
+  ],
+  "SPACING": [
+   4,
+   8,
+   12,
+   16,
+   20,
+   24,
+   32,
+   40,
+   48
+  ],
+  "RADIUS": {
+   "sm": 12,
+   "md": 16,
+   "lg": 20,
+   "xl": 28,
+   "full": 999
+  },
+  "SHADOWS": {
+   "e0": "none",
+   "e1": "0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08)",
+   "e2": "0 4px 12px rgba(16,24,40,.10)",
+   "e3": "0 -8px 32px rgba(16,24,40,.16)"
+  },
+  "MOTION": {
+   "fast": 120,
+   "base": 200,
+   "slow": 320,
+   "easeStandard": "cubic-bezier(.2,0,0,1)",
+   "easeEmphasized": "cubic-bezier(.3,0,0,1)"
+  }
+ }
+}

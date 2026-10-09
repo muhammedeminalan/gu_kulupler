@@ -1,0 +1,2978 @@
+{
+ "schema": 1,
+ "generated": "2026-10-08",
+ "note": "Kaynak: tasarım registry (design/extracted/registry.json). Her ekran/sheet/dialog/toast kimliği tam bir task'a atanmıştır; muaflar 'excluded' altındadır. Bu dosyayı elle değiştirme; değişiklik gerekirse docs/decisions.md'ye kayıt + kullanıcı onayı.",
+ "totals": {
+  "tasks": 48,
+  "screens": 51,
+  "sheets": 34,
+  "dialogs": 32,
+  "toasts": 78,
+  "toastsAssigned": 77,
+  "menus": 1,
+  "actions": 1072,
+  "exemptActions": 12
+ },
+ "phases": {
+  "A": "Temel (altyapı, tasarım sistemi, veri katmanı, uygulama iskeleti)",
+  "B": "Kimlik ve onboarding",
+  "C": "Kulüpler ve akış",
+  "D": "Etkinlikler",
+  "E": "Bildirimler, profil, ayarlar",
+  "F": "Kulüp yönetimi",
+  "G": "Süper admin",
+  "H": "Sertleştirme ve yayın"
+ },
+ "excluded": {
+  "toasts": {
+   "TST-58": "Yalnızca demo (K-02): 'Demo: … açılıyor' — uygulanmaz"
+  }
+ },
+ "owners": {
+  "screens": {
+   "SYS-01": "T-11",
+   "SYS-02": "T-11",
+   "SYS-03": "T-11",
+   "SYS-04": "T-11",
+   "ONB-01": "T-13",
+   "AUT-01": "T-13",
+   "AUT-02": "T-13",
+   "AUT-03": "T-14",
+   "AUT-04": "T-14",
+   "AUT-05": "T-14",
+   "AUT-06": "T-13",
+   "CLB-01": "T-17",
+   "CLB-02": "T-17",
+   "FED-01": "T-20",
+   "CLB-03": "T-16",
+   "CLB-04": "T-16",
+   "CLB-05": "T-16",
+   "CLB-06": "T-18",
+   "CLB-07": "T-18",
+   "FED-02": "T-20",
+   "FED-03": "T-21",
+   "EVT-01": "T-24",
+   "EVT-02": "T-23",
+   "EVT-03": "T-23",
+   "EVT-04": "T-24",
+   "NTF-01": "T-26",
+   "NTF-02": "T-26",
+   "PRF-01": "T-27",
+   "PRF-02": "T-27",
+   "PRF-03": "T-27",
+   "PRF-04": "T-27",
+   "SET-01": "T-28",
+   "SET-02": "T-28",
+   "SET-03": "T-29",
+   "SET-04": "T-28",
+   "SET-05": "T-28",
+   "MGT-01": "T-31",
+   "MGT-02": "T-32",
+   "MGT-03": "T-33",
+   "MGT-04": "T-34",
+   "MGT-05": "T-34",
+   "MGT-06": "T-35",
+   "MGT-07": "T-35",
+   "MGT-08": "T-36",
+   "MGT-09": "T-36",
+   "MGT-10": "T-31",
+   "ADM-01": "T-38",
+   "ADM-02": "T-39",
+   "ADM-03": "T-39",
+   "ADM-04": "T-40",
+   "ADM-05": "T-41"
+  },
+  "sheets": {
+   "SHT-01": "T-13",
+   "SHT-02": "T-14",
+   "SHT-03": "T-14",
+   "SHT-04": "T-17",
+   "SHT-05": "T-16",
+   "SHT-06": "T-16",
+   "SHT-07": "T-16",
+   "SHT-08": "T-20",
+   "SHT-09": "T-20",
+   "SHT-10": "T-16",
+   "SHT-11": "T-24",
+   "SHT-12": "T-23",
+   "SHT-13": "T-23",
+   "SHT-14": "T-23",
+   "SHT-15": "T-16",
+   "SHT-16": "T-14",
+   "SHT-17": "T-28",
+   "SHT-18": "T-21",
+   "SHT-19": "T-32",
+   "SHT-20": "T-32",
+   "SHT-21": "T-33",
+   "SHT-22": "T-33",
+   "SHT-23": "T-34",
+   "SHT-24": "T-35",
+   "SHT-25": "T-33",
+   "SHT-26": "T-40",
+   "SHT-27": "T-18",
+   "SHT-28": "T-24",
+   "SHT-29": "T-26",
+   "SHT-30": "T-34",
+   "SHT-31": "T-34",
+   "SHT-32": "T-28",
+   "SHT-33": "T-36",
+   "SHT-34": "T-20"
+  },
+  "dialogs": {
+   "DLG-03": "T-14",
+   "DLG-04": "T-14",
+   "DLG-05": "T-14",
+   "DLG-01": "T-13",
+   "DLG-02": "T-13",
+   "DLG-06": "T-14",
+   "DLG-07": "T-16",
+   "DLG-08": "T-16",
+   "DLG-09": "T-16",
+   "DLG-10": "T-20",
+   "DLG-11": "T-20",
+   "DLG-12": "T-16",
+   "DLG-13": "T-18",
+   "DLG-14": "T-23",
+   "DLG-15": "T-23",
+   "DLG-16": "T-23",
+   "DLG-17": "T-32",
+   "DLG-18": "T-32",
+   "DLG-19": "T-33",
+   "DLG-20": "T-33",
+   "DLG-21": "T-33",
+   "DLG-22": "T-34",
+   "DLG-23": "T-34",
+   "DLG-24": "T-21",
+   "DLG-25": "T-14",
+   "DLG-26": "T-11",
+   "DLG-27": "T-11",
+   "DLG-28": "T-39",
+   "DLG-29": "T-40",
+   "DLG-30": "T-40",
+   "DLG-31": "T-34",
+   "DLG-32": "T-16"
+  },
+  "toasts": {
+   "TST-01": "T-13",
+   "TST-02": "T-14",
+   "TST-03": "T-14",
+   "TST-04": "T-14",
+   "TST-05": "T-14",
+   "TST-06": "T-17",
+   "TST-07": "T-16",
+   "TST-08": "T-16",
+   "TST-09": "T-18",
+   "TST-10": "T-20",
+   "TST-11": "T-20",
+   "TST-12": "T-20",
+   "TST-13": "T-21",
+   "TST-14": "T-21",
+   "TST-15": "T-23",
+   "TST-16": "T-26",
+   "TST-17": "T-26",
+   "TST-18": "T-26",
+   "TST-19": "T-26",
+   "TST-20": "T-27",
+   "TST-21": "T-27",
+   "TST-22": "T-29",
+   "TST-23": "T-28",
+   "TST-24": "T-11",
+   "TST-25": "T-11",
+   "TST-26": "T-20",
+   "TST-27": "T-32",
+   "TST-28": "T-32",
+   "TST-29": "T-33",
+   "TST-30": "T-34",
+   "TST-31": "T-35",
+   "TST-32": "T-14",
+   "TST-33": "T-39",
+   "TST-34": "T-16",
+   "TST-35": "T-16",
+   "TST-36": "T-23",
+   "TST-37": "T-23",
+   "TST-38": "T-16",
+   "TST-39": "T-16",
+   "TST-40": "T-16",
+   "TST-41": "T-23",
+   "TST-42": "T-23",
+   "TST-43": "T-23",
+   "TST-44": "T-28",
+   "TST-45": "T-20",
+   "TST-46": "T-33",
+   "TST-47": "T-33",
+   "TST-48": "T-34",
+   "TST-49": "T-33",
+   "TST-50": "T-39",
+   "TST-51": "T-40",
+   "TST-52": "T-40",
+   "TST-53": "T-20",
+   "TST-54": "T-32",
+   "TST-55": "T-26",
+   "TST-56": "T-40",
+   "TST-57": "T-14",
+   "TST-X1": "T-16",
+   "TST-X2": "T-23",
+   "TST-X3": "T-14",
+   "TST-X4": "T-16",
+   "TST-X5": "T-21",
+   "TST-X6": "T-23",
+   "TST-X7": "T-23",
+   "TST-X8": "T-23",
+   "TST-X9": "T-27",
+   "TST-X10": "T-29",
+   "TST-X11": "T-29",
+   "TST-X12": "T-31",
+   "TST-X13": "T-35",
+   "TST-X14": "T-35",
+   "TST-X15": "T-34",
+   "TST-X16": "T-16",
+   "TST-X17": "T-32",
+   "TST-X18": "T-33",
+   "TST-X19": "T-34",
+   "TST-X20": "T-33"
+  },
+  "menus": {
+   "EVT-MENU": "T-23"
+  }
+ },
+ "tasks": [
+  {
+   "id": "T-00",
+   "phase": "A",
+   "title": "Depo kurulumu ve kalite kapısı",
+   "goal": "Pub workspace (kök + packages/gu_data + packages/gu_ui), pubspec/analysis_options/build.yaml uzlaştırma (docs/reference/*), very_good_analysis, codegen.sh, quality_gate.sh bağlama, .gitignore (üretilen dosyalar), l10n.yaml + ARB'den prototip-kabuğu anahtarlarının ayrılması (K-21) {appName} düzeltmesi (K-22) ve ARB dışa aktarım kusurlarının giderilmesi (K-23), asset kayıtları (fontlar/ikonlar/kapaklar/desenler/logo), platform yapılandırması (iOS SPM, Android minSdk, dikey kilit), AppConstants, ilk commit.",
+   "deps": [],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "AppConstants.appName",
+    "pubspec/workspace",
+    "tool/* bağlama"
+   ],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-03",
+    "Q-13",
+    "Q-17",
+    "Q-18"
+   ],
+   "tests": [
+    "tool/verify_pack.sh yeşil",
+    "flutter analyze temiz boş iskelet",
+    "check_arb_parity --strict 1235 anahtar (K-21/K-22/K-23)"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-01",
+   "phase": "A",
+   "title": "Token katmanı, tema ve fontlar (gu_ui)",
+   "goal": "GuColors (27×2, ThemeExtension+lerp), GuTypography (11 stil), GuSpacing/GuGap/GuInsets, GuRadius, GuShadows, GuMotion, GuSizes (component-css.css'ten), GuBreakpoints; GuTheme (açık/koyu ThemeData, CardThemeData/DialogThemeData), context.gu extension, bundled TTF kaydı, Türkçe glif testi.",
+   "deps": [
+    "T-00"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuColors",
+    "GuTypography",
+    "GuSpacing",
+    "GuRadius",
+    "GuShadows",
+    "GuMotion",
+    "GuSizes",
+    "GuTheme",
+    "context.gu"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-14"
+   ],
+   "tests": [
+    "Token testi (registry.json ↔ Dart)",
+    "AA kontrast",
+    "Türkçe glif golden"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-02",
+   "phase": "A",
+   "title": "Test altyapısı",
+   "goal": "pump_app, device_matrix (320/390/430/tablet × tema × dil × ölçek; `GU_MATRIX=fast|full` dart-define ile hızlı/tam), golden_helper, overflow_detector, action_inventory (screens-actions.json okuyucu), design_ids (registry okuyucu), fake iskeleti, GuKey.action, check_design_coverage.js ilk bağlama.",
+   "deps": [
+    "T-01"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuKey",
+    "test/helpers/*"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-16"
+   ],
+   "tests": [
+    "Yardımcıların kendi testleri",
+    "Kasıtlı taşan widget'ın matriste kırmızı olması"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-03",
+   "phase": "A",
+   "title": "İkon ve görsel kayıtları",
+   "goal": "GuIcon + GuIcons (130 Lucide SVG, srcIn renklendirme), GuLogo, GuIllustration (12), GuCover (palet×desen, 26 kapak + 4 desen), kapak üretici/ağır SVG performans önlemleri.",
+   "deps": [
+    "T-01"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuIcon",
+    "GuIcons",
+    "GuLogo",
+    "GuIllustration",
+    "GuCover",
+    "ClubPalette",
+    "ClubPattern"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "GuIcons ↔ assets/icons 130 birebir",
+    "her SVG yüklenir",
+    "rgba() taraması",
+    "golden"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-04",
+   "phase": "A",
+   "title": "gu_ui primitifler",
+   "goal": "Düğme ailesi, çip, rozet ailesi, avatar, kart/satır, bölüm başlığı, ilerleme/donut/KPI, tarih rozeti, mini grafik.",
+   "deps": [
+    "T-02",
+    "T-03"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuButton (filled/tonal/outline/text/danger × sm/md/lg + loading + ikon)",
+    "GuIconButton",
+    "GuChip",
+    "GuBadge",
+    "GuRoleBadge",
+    "GuStatusBadge",
+    "GuAvatar",
+    "GuAvatarGroup",
+    "GuDivider",
+    "GuSectionTitle",
+    "GuCard",
+    "GuTile",
+    "GuProgress",
+    "GuDonut",
+    "GuKpi",
+    "GuQuickAction",
+    "GuDateBadge",
+    "GuMiniLineChart",
+    "GuTapTarget"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "tüm durumlar (default/pressed/focus/disabled/loading/selected)",
+    "golden açık+koyu",
+    "dokunma hedefi",
+    "320 dp taşma"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-05",
+   "phase": "A",
+   "title": "gu_ui girdiler",
+   "goal": "Metin girişi (çok satırlı, sayaç, şifre, hata/yardım), seçici alan, anahtar, onay kutusu, radyo, seçenek kartı, segment, sekmeler (kaydırılabilir; K-05), arama alanı, adım çubuğu, sayaç adımlayıcı.",
+   "deps": [
+    "T-04"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuInput",
+    "GuPickerField",
+    "GuSwitch",
+    "GuCheckbox",
+    "GuRadio",
+    "GuOptionRow",
+    "GuOptionCard",
+    "GuSegmented",
+    "GuTabs",
+    "GuSearchField",
+    "GuStepbar",
+    "GuStepper"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "odak/hata/devre dışı durumları",
+    "klavye ve Semantics",
+    "golden",
+    "320×1.6 taşma"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-06",
+   "phase": "A",
+   "title": "gu_ui durum, gezinme ve takvim",
+   "goal": "İskelet (skeleton), boş/hata/çevrimdışı durumları, liste durum yöneticisi (hata→yükleniyor→boş→dolu), bant (banner), liste sonu, uygulama çubuğu, yapışkan CTA, alt sekme çubuğu, başarı çizgisi animasyonu, takvim (Q-08), yenile-çek.",
+   "deps": [
+    "T-04",
+    "T-05"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuSkeleton",
+    "GuEmptyState",
+    "GuErrorState",
+    "GuOfflineState",
+    "GuListState",
+    "GuBanner",
+    "GuListEnd",
+    "GuAppBar",
+    "GuStickyCta",
+    "GuBottomNav",
+    "GuSuccessCheck",
+    "GuCalendar",
+    "GuRefresh"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-08"
+   ],
+   "tests": [
+    "5 durum",
+    "takvim: Pazartesi başlangıç, TR/EN, ay geçişi",
+    "golden"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-07",
+   "phase": "A",
+   "title": "Overlay çerçeveleri ve geri bildirim servisi",
+   "goal": "GuSheetFrame, GuDialogFrame, GuPopMenu, GuToast + ToastHost (en çok 1; 4/6 sn; çubuk üstü), FeedbackService (showSheet/showDialog/showToast), SheetId/DialogId/ToastId enum'ları ve 78 toast kataloğu (metin/tür/aksiyon registry'den), GuSystemUi (D-20), GuPageTransitions (navigation §5), metin ölçeği sarmalayıcısı.",
+   "deps": [
+    "T-04",
+    "T-06"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "GuSheetFrame",
+    "GuDialogFrame",
+    "GuPopMenu",
+    "GuToast",
+    "FeedbackService",
+    "SheetId",
+    "DialogId",
+    "ToastId",
+    "GuSystemUi",
+    "GuPageTransitions",
+    "GuTextScale"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "78 toast katalog testi",
+    "sheet: scrim/X/sürükle/geri",
+    "dialog odak tuzağı",
+    "toast kuyruğu",
+    "durum çubuğu stilleri",
+    "cihaz matrisi"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-08",
+   "phase": "A",
+   "title": "gu_data çekirdeği",
+   "goal": "FirebaseResult/FirestoreResult/StorageResult, hata türleri, BaseFields, SoftDelete, AppClock (Istanbul günü), sabitler (FirestoreCollections/Fields, Limits, RoleCodes), statik tablolar (kategori, ilgi, fakülte/bölüm, mekân, yıl, tür), RolePolicy/ClubPermission (+tablo testi), e-posta alan adı doğrulayıcı, bilet kodu üretici (CSPRNG).",
+   "deps": [
+    "T-00"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "FirebaseResult",
+    "SoftDelete",
+    "BaseFields",
+    "AppClock",
+    "Limits",
+    "RolePolicy",
+    "EmailDomainValidator",
+    "TicketCodeGenerator",
+    "static lookups"
+   ],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "RolePolicy tablo testi (domain-model §3)",
+    "ticket code biçim/entropi",
+    "Istanbul gün sınırı",
+    "SoftDelete payload"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-09",
+   "phase": "A",
+   "title": "Modeller",
+   "goal": "Tüm koleksiyon modelleri (domain-model §2) + enum'lar + Timestamp dönüştürücü; json_serializable (explicit_to_json), Equatable, copyWith; membership/private/contact modeli.",
+   "deps": [
+    "T-08"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "UserModel",
+    "ClubModel",
+    "MembershipModel",
+    "PostModel",
+    "PollModel",
+    "CommentModel",
+    "EventModel",
+    "RsvpModel",
+    "NotificationModel",
+    "ReportModel",
+    "ActivityModel",
+    "UserSettingsModel",
+    "BlockModel",
+    "SupportTicketModel",
+    "CounterModel"
+   ],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "fromJson/toJson gidiş-dönüş",
+    "demo-data.json tüm belgeleri ayrıştırır",
+    "BaseFields varsayılanları"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-10",
+   "phase": "A",
+   "title": "Firebase servisleri, emülatör ve Rules iskeleti",
+   "goal": "FirestoreService (softDelete/restore, delete YOK), StorageService, AuthService, MessagingService, RemoteConfigService, CrashService, AppEnvironment (ENV=emulator|production), firebase.json emülatörleri, deny-all firestore.rules/storage.rules + Rules test düzeneği, demo seed yükleyici (tool/seed).",
+   "deps": [
+    "T-08",
+    "T-09"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "FirestoreService",
+    "StorageService",
+    "AuthService",
+    "MessagingService",
+    "RemoteConfigService",
+    "CrashService",
+    "AppEnvironment"
+   ],
+   "rules": [
+    "tümü (deny-all)"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-01",
+    "Q-03",
+    "Q-06"
+   ],
+   "tests": [
+    "servis birim testleri (Q-06)",
+    "emülatör bağlantısı",
+    "Rules: her yol varsayılan ret",
+    "seed → emülatör"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 0,
+    "sheets": 0,
+    "dialogs": 0,
+    "toasts": 0,
+    "actions": 0
+   }
+  },
+  {
+   "id": "T-11",
+   "phase": "A",
+   "title": "Uygulama iskeleti ve sistem ekranları",
+   "goal": "Bootstrap + hata yakalama (D-23), DI (GetIt+mixin), SessionViewModel (AuthStatus, rol çözümü), router (typed routes, AuthGuard, AppRedirect, StatefulShellRoute, geçişler), tema/dil/metin ölçeği tercihleri, çevrimdışı banner + zorunlu güncelleme/oturum katmanları, beş sekme kökü ve AppRedirect hedefleri (ONB-01, AUT-01, AUT-03, AUT-05) için geçici yer tutucu rotalar, SYS-01..04.",
+   "deps": [
+    "T-07",
+    "T-10"
+   ],
+   "screens": [
+    "SYS-01",
+    "SYS-02",
+    "SYS-03",
+    "SYS-04"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [
+    "DLG-26",
+    "DLG-27"
+   ],
+   "toasts": [
+    "TST-24",
+    "TST-25"
+   ],
+   "components": [
+    "GuApp",
+    "AppShellView",
+    "SessionViewModel",
+    "AppRedirect",
+    "ErrorBoundary"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "AppRedirect hedefi ONB-01 ve AUT-01 yer tutucu → T-13",
+    "AppRedirect hedefi AUT-03 ve AUT-05 yer tutucu → T-14",
+    "askıya alınmış hesap açılışında DLG-01 → T-13"
+   ],
+   "questions": [
+    "Q-12",
+    "Q-13"
+   ],
+   "tests": [
+    "AppRedirect tablo testi",
+    "rota envanteri (kabuk)",
+    "çevrimdışı banner",
+    "ErrorWidget.builder",
+    "SYS ekranları matris"
+   ],
+   "conditional": null,
+   "actionCount": 7,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 4,
+    "sheets": 0,
+    "dialogs": 2,
+    "toasts": 2,
+    "actions": 7
+   }
+  },
+  {
+   "id": "T-12",
+   "phase": "B",
+   "title": "Kimlik ve profil arka ucu",
+   "goal": "AuthRepository (kayıt + alan adı kısıtı, giriş + 5 deneme/30 sn kilit, doğrulama maili + 60 sn, şifre sıfırlama/değiştirme, çıkış), UserRepository (profil oluştur/güncelle, profileComplete), SettingsRepository, hesap durumu (askıda) çözümü; users/private/settings Rules + testleri.",
+   "deps": [
+    "T-11"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "AuthRepository",
+    "UserRepository",
+    "SettingsRepository"
+   ],
+   "rules": [
+    "users",
+    "users/private",
+    "settings"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-04"
+   ],
+   "tests": [
+    "Rules: users/private/settings matrisi",
+    "e-posta alan adı kuralı",
+    "kilit/60 sn sayaçları",
+    "ViewModel testleri"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 4,
+    "sheets": 0,
+    "dialogs": 2,
+    "toasts": 2,
+    "actions": 7
+   }
+  },
+  {
+   "id": "T-13",
+   "phase": "B",
+   "title": "Onboarding, giriş, kayıt, yasal metin",
+   "goal": "ONB-01 karşılama, AUT-01 giriş, AUT-02 kayıt (doğrulama, alan adı, KVKK/gizlilik onayı), AUT-06 yasal metinler (push ile), dil menüsü.",
+   "deps": [
+    "T-12"
+   ],
+   "screens": [
+    "ONB-01",
+    "AUT-01",
+    "AUT-02",
+    "AUT-06"
+   ],
+   "sheets": [
+    "SHT-01"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-01",
+    "DLG-02"
+   ],
+   "toasts": [
+    "TST-01"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "AUT-01 demo hesap bölümü UYGULANMAZ (K-02)",
+    "AUT-01 'Şifremi unuttum' → AUT-04 → T-14",
+    "AUT-02 kayıt sonrası e-posta doğrulama → AUT-03 → T-14"
+   ],
+   "questions": [],
+   "tests": [
+    "form doğrulama durumları",
+    "askıya alınmış hesap → DLG-01 + çıkış",
+    "tüm aksiyon anahtarları",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 45,
+   "exemptActions": 7,
+   "cumulative": {
+    "screens": 8,
+    "sheets": 1,
+    "dialogs": 4,
+    "toasts": 3,
+    "actions": 52
+   }
+  },
+  {
+   "id": "T-14",
+   "phase": "B",
+   "title": "E-posta doğrulama, şifre sıfırlama, profil tamamlama",
+   "goal": "AUT-03, AUT-04, AUT-05 (bölüm/sınıf/ilgi alanı/avatar), fotoğraf kaynağı, izin diyalogları, ilk girişte bildirim ön izni, çıkış, kaydedilmemiş değişiklik uyarısı.",
+   "deps": [
+    "T-13"
+   ],
+   "screens": [
+    "AUT-03",
+    "AUT-04",
+    "AUT-05"
+   ],
+   "sheets": [
+    "SHT-02",
+    "SHT-03",
+    "SHT-16"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-03",
+    "DLG-04",
+    "DLG-05",
+    "DLG-06",
+    "DLG-25"
+   ],
+   "toasts": [
+    "TST-02",
+    "TST-03",
+    "TST-04",
+    "TST-05",
+    "TST-X3",
+    "TST-32",
+    "TST-57"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "AUT-03 'Doğrulandı simüle et' UYGULANMAZ (K-02)",
+    "TST-57/avatar yükleme: Q-19'a göre",
+    "SHT-16 çoklu görsel sınırı (maxImages) parametresi hazır; TST-X5 sınırı FED-03 ile → T-21"
+   ],
+   "questions": [
+    "Q-19"
+   ],
+   "tests": [
+    "60 sn yeniden gönderme",
+    "izin reddi akışları",
+    "profileComplete → router yönlendirmesi",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 12,
+   "exemptActions": 1,
+   "cumulative": {
+    "screens": 11,
+    "sheets": 4,
+    "dialogs": 9,
+    "toasts": 10,
+    "actions": 64
+   }
+  },
+  {
+   "id": "T-15",
+   "phase": "C",
+   "title": "Kulüp, üyelik, şikayet ve engel arka ucu",
+   "goal": "ClubRepository, MembershipRepository (başvur/katıl/iptal/ayrıl + yeniden başvuru kuralı + private/contact + sayaç batch'i + activity), ReportRepository, BlockRepository; clubs/memberships/reports/blocks/activity Rules + testleri.",
+   "deps": [
+    "T-12"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "ClubRepository",
+    "MembershipRepository",
+    "ReportRepository",
+    "BlockRepository",
+    "ActivityRepository"
+   ],
+   "rules": [
+    "clubs",
+    "memberships",
+    "memberships/private",
+    "reports",
+    "blocks",
+    "activity"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-09",
+    "Q-10"
+   ],
+   "tests": [
+    "üyelik durum makinesi M1–M14 (başvuran tarafı)",
+    "sayaç ±1 getAfter",
+    "retryAfter 7 gün",
+    "e-posta sızıntı testi (private/contact)"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 11,
+    "sheets": 4,
+    "dialogs": 9,
+    "toasts": 10,
+    "actions": 64
+   }
+  },
+  {
+   "id": "T-16",
+   "phase": "C",
+   "title": "Kulüp detayı ve başvuru akışı",
+   "goal": "CLB-03 (hakkında, etkinlikler, gönderiler sekmesi iskeleti, kapaklı üst + durum çubuğu), CLB-04 başvuru gönderildi, CLB-05 başvuru durumu; başvuru sheet'i, kulüp menüsü, kulüp bildirim ayarları, şikayet, paylaş, harici bağlantı onayı; ClubCTA ve üyelik durumu görünümleri.",
+   "deps": [
+    "T-15"
+   ],
+   "screens": [
+    "CLB-03",
+    "CLB-04",
+    "CLB-05"
+   ],
+   "sheets": [
+    "SHT-05",
+    "SHT-06",
+    "SHT-07",
+    "SHT-10",
+    "SHT-15"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-07",
+    "DLG-08",
+    "DLG-09",
+    "DLG-12",
+    "DLG-32"
+   ],
+   "toasts": [
+    "TST-07",
+    "TST-08",
+    "TST-34",
+    "TST-35",
+    "TST-38",
+    "TST-39",
+    "TST-40",
+    "TST-X1",
+    "TST-X4",
+    "TST-X16"
+   ],
+   "components": [
+    "ClubCta",
+    "ClubHeader",
+    "ClubAboutSection",
+    "ApplicationStatusCard",
+    "ExternalLinkService"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "CLB-03 'Gönderiler' sekmesi içeriği → T-20 (FED-01)",
+    "'Üye listesi' → T-18",
+    "'Yönetim paneli' (MGT-01) → T-31",
+    "'Kulüp ayarları' (MGT-09) → T-36",
+    "DLG-09 → SHT-25 (başkanlık devri) → T-33",
+    "etkinlik satırı → EVT-02 → T-23",
+    "yazı oluştur → FED-03 → T-21",
+    "'Etkinlik oluştur' CTA → MGT-05 → T-34"
+   ],
+   "questions": [],
+   "tests": [
+    "ziyaretçi/pending/rejected/member/manager/advisor/super görünümleri",
+    "retryAfter geri sayım",
+    "anında katılım vs başvuru",
+    "durum çubuğu açık-ikon",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 30,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 14,
+    "sheets": 9,
+    "dialogs": 14,
+    "toasts": 20,
+    "actions": 94
+   }
+  },
+  {
+   "id": "T-17",
+   "phase": "C",
+   "title": "Kulüp listesi ve arama",
+   "goal": "CLB-01 (kategori çipleri, liste/ızgara geçişi, katıl düğmeleri, filtre), CLB-02 (son aramalar, popüler, istemci tarafı arama + 250 ms debounce; kulüp + etkinlik sonuçları), filtre sheet'i; ClubCard.",
+   "deps": [
+    "T-16"
+   ],
+   "screens": [
+    "CLB-01",
+    "CLB-02"
+   ],
+   "sheets": [
+    "SHT-04"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-06"
+   ],
+   "components": [
+    "ClubCard",
+    "ClubFilterState"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "CLB-01 → PRF-03 'Kulüplerim' → T-27",
+    "CLB-02 etkinlik sonuçları → EVT-02 → T-23"
+   ],
+   "questions": [],
+   "tests": [
+    "5 durum (states/*.webp)",
+    "filtre sayacı",
+    "arama debounce",
+    "TR büyük/küçük harf eşleşmesi (İ/ı)"
+   ],
+   "conditional": null,
+   "actionCount": 67,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 16,
+    "sheets": 10,
+    "dialogs": 14,
+    "toasts": 21,
+    "actions": 161
+   }
+  },
+  {
+   "id": "T-18",
+   "phase": "C",
+   "title": "Üye listesi ve kullanıcı profili",
+   "goal": "CLB-06 (rol süzgeçleri, arama, sıralama, danışman grubu; yönetici menüleri), CLB-07 (başkasının profili: ortak kulüp gizliliği UI katmanında, engelle/şikayet menüsü); SHT-27 kullanıcı menüsü (profili gör, engelle/engeli kaldır, kullanıcıyı şikayet et); MemberRow, UserRow.",
+   "deps": [
+    "T-16"
+   ],
+   "screens": [
+    "CLB-06",
+    "CLB-07"
+   ],
+   "sheets": [
+    "SHT-27"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-13"
+   ],
+   "toasts": [
+    "TST-09"
+   ],
+   "components": [
+    "MemberRow",
+    "UserRow",
+    "UserProfileHeader",
+    "UserMenuSheet"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "üye satırı menüsü SHT-21 → T-33",
+    "SHT-27 yorum satırları (Yorumu sil → DLG-11, Yorumu şikayet et) → T-20"
+   ],
+   "questions": [],
+   "tests": [
+    "üye olmayan erişimi → kulüp sayfasına yönlendirme",
+    "engelli kullanıcıların listeden süzülmesi",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 87,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 18,
+    "sheets": 11,
+    "dialogs": 15,
+    "toasts": 22,
+    "actions": 248
+   }
+  },
+  {
+   "id": "T-19",
+   "phase": "C",
+   "title": "Gönderi, yorum, oy ve kaydetme arka ucu",
+   "goal": "PostRepository (gönderi/duyuru/anket, beğeni, oy, sabitle + clubs.pinnedPostId, soft delete/restore), CommentRepository (commentCount batch), SavedPostRepository; posts/votes/comments/savedPosts/announcementCounters Rules + testleri.",
+   "deps": [
+    "T-15"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "PostRepository",
+    "CommentRepository",
+    "SavedPostRepository",
+    "AnnouncementCounterRepository"
+   ],
+   "rules": [
+    "posts",
+    "posts/votes",
+    "comments",
+    "savedPosts",
+    "announcementCounters"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-10",
+    "Q-19"
+   ],
+   "tests": [
+    "likeCount/commentCount ±1",
+    "oy değiştirilemez",
+    "duyuru limiti 2/gün (Istanbul günü)",
+    "soft delete + restore yetkileri"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 18,
+    "sheets": 11,
+    "dialogs": 15,
+    "toasts": 22,
+    "actions": 248
+   }
+  },
+  {
+   "id": "T-20",
+   "phase": "C",
+   "title": "Kulüp akışı ve gönderi detayı",
+   "goal": "FED-01 (CLB-03 içinde: tür süzgeçleri, sabitli gönderi, anket oyu), FED-02 (yorumlar, beğeni, kaydet, menü), gönderi menüsü, yorumlar sheet'i, görsel görüntüleyici, silme diyalogları; PostCard, PollBlock, ImageGrid, CommentRow.",
+   "deps": [
+    "T-19",
+    "T-18"
+   ],
+   "screens": [
+    "FED-01",
+    "FED-02"
+   ],
+   "sheets": [
+    "SHT-08",
+    "SHT-09",
+    "SHT-34"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-10",
+    "DLG-11"
+   ],
+   "toasts": [
+    "TST-10",
+    "TST-11",
+    "TST-12",
+    "TST-26",
+    "TST-45",
+    "TST-53"
+   ],
+   "components": [
+    "PostCard",
+    "PollBlock",
+    "ImageGrid",
+    "CommentRow",
+    "PostMenu"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "CLB-03 'Gönderiler' sekmesi artık gerçek (T-16 iskeleti dolar)",
+    "SHT-27 yorum satırları artık gerçek (yönetici yorum menüsü)",
+    "FED-01 'yazı oluştur' → FED-03 → T-21",
+    "SHT-08 'Düzenle' → FED-03 düzenleme modu → T-21"
+   ],
+   "questions": [],
+   "tests": [
+    "optimistik beğeni/kaydet geri alma",
+    "anket: süre bitti/oy verildi/sonuç göster",
+    "danışman salt okunur → TST-26",
+    "gizli/silinmiş gönderi → SYS-04",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 77,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 20,
+    "sheets": 14,
+    "dialogs": 17,
+    "toasts": 28,
+    "actions": 325
+   }
+  },
+  {
+   "id": "T-21",
+   "phase": "C",
+   "title": "Gönderi / duyuru / anket oluşturma",
+   "goal": "FED-03 (tür seçimi, başlık/metin, görsel ekleme, anket seçenekleri/süre, duyuru bildirim anahtarı + günlük hak çubuğu, taslak, önizleme, düzenleme), duyuru limiti akışı; SHT-18 yönetilen kulüp seçici (FED-03 kulüp değiştirme; MGT-01 ve PRF-01 yeniden kullanır).",
+   "deps": [
+    "T-20"
+   ],
+   "screens": [
+    "FED-03"
+   ],
+   "sheets": [
+    "SHT-18"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-24"
+   ],
+   "toasts": [
+    "TST-13",
+    "TST-14",
+    "TST-X5"
+   ],
+   "components": [
+    "ComposeForm",
+    "AnnouncementQuotaBar",
+    "ManagedClubPickerSheet"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "SHT-18 varsayılan davranışı (onSelect verilmezse) → MGT-01 → T-31"
+   ],
+   "questions": [
+    "Q-10",
+    "Q-19"
+   ],
+   "tests": [
+    "limit 2/gün: 3. duyuru reddedilir",
+    "bildirimsiz yayın sınırsız",
+    "kaydedilmemiş değişiklik uyarısı",
+    "görsel ≤ 4"
+   ],
+   "conditional": null,
+   "actionCount": 9,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 21,
+    "sheets": 15,
+    "dialogs": 18,
+    "toasts": 31,
+    "actions": 334
+   }
+  },
+  {
+   "id": "T-22",
+   "phase": "D",
+   "title": "Etkinlik ve katılım arka ucu",
+   "goal": "EventRepository (taslak/yayın/iptal, kopyala, soft delete yalnız taslak), RsvpRepository (katıl/bekleme/vazgeç/yeniden katıl, bilet kodu, yoklama, terfi); events/rsvps Rules + sayaç testleri; kontenjan yarışı transaction'ı.",
+   "deps": [
+    "T-15"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "EventRepository",
+    "RsvpRepository"
+   ],
+   "rules": [
+    "events",
+    "rsvps"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-02",
+    "Q-07"
+   ],
+   "tests": [
+    "kontenjan = 1, iki eşzamanlı katılım",
+    "bekleme sırası",
+    "goingCount/waitlistCount/attendedCount ±1",
+    "members-only görünürlük sorguları"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 21,
+    "sheets": 15,
+    "dialogs": 18,
+    "toasts": 31,
+    "actions": 334
+   }
+  },
+  {
+   "id": "T-23",
+   "phase": "D",
+   "title": "Etkinlik detayı ve bilet",
+   "goal": "EVT-02 (kapaklı üst + durum çubuğu, katıl/vazgeç/bekleme, hatırlatıcı, takvime ekle, paylaş, iptal edilmiş etkinlik), EVT-03 bilet (QR, canlı durum); EventCard bileşenleri.",
+   "deps": [
+    "T-22",
+    "T-16"
+   ],
+   "screens": [
+    "EVT-02",
+    "EVT-03"
+   ],
+   "sheets": [
+    "SHT-12",
+    "SHT-13",
+    "SHT-14"
+   ],
+   "menus": [
+    "EVT-MENU"
+   ],
+   "dialogs": [
+    "DLG-14",
+    "DLG-15",
+    "DLG-16"
+   ],
+   "toasts": [
+    "TST-15",
+    "TST-36",
+    "TST-37",
+    "TST-41",
+    "TST-42",
+    "TST-43",
+    "TST-X2",
+    "TST-X6",
+    "TST-X7",
+    "TST-X8"
+   ],
+   "components": [
+    "EventHeader",
+    "EventCta",
+    "TicketCard",
+    "EventCard"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35"
+   ],
+   "questions": [
+    "Q-07"
+   ],
+   "tests": [
+    "rsvp durum makinesi görünümleri",
+    "bilet durumları Geçerli/Okutuldu/İptal canlı",
+    "ICS çıktısı",
+    "yerel hatırlatıcı planlama (Q-07)",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 15,
+   "exemptActions": 1,
+   "cumulative": {
+    "screens": 23,
+    "sheets": 18,
+    "dialogs": 21,
+    "toasts": 41,
+    "actions": 349
+   }
+  },
+  {
+   "id": "T-24",
+   "phase": "D",
+   "title": "Etkinlik listesi ve etkinliklerim",
+   "goal": "EVT-01 (liste/takvim, tür çipleri, filtre, istemci birleştirme: herkese açık + üye olunan kulüp başına sorgular), EVT-04 (yaklaşan/geçmiş/bekleme); takvim bileşeni entegrasyonu; SHT-28 tarih seçici (etkinlik filtresi özel tarih; MGT-05 yeniden kullanır).",
+   "deps": [
+    "T-23",
+    "T-06"
+   ],
+   "screens": [
+    "EVT-01",
+    "EVT-04"
+   ],
+   "sheets": [
+    "SHT-11",
+    "SHT-28"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [
+    "EventListSection",
+    "EventFilterState",
+    "DatePickerSheet"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "5 durum",
+    "TR Pazartesi başlangıçlı takvim",
+    "geçmiş = bitiş < şimdi",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 63,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 25,
+    "sheets": 20,
+    "dialogs": 21,
+    "toasts": 41,
+    "actions": 412
+   }
+  },
+  {
+   "id": "T-25",
+   "phase": "E",
+   "title": "Bildirim arka ucu ve dağıtıcı",
+   "goal": "NotificationRepository, NotificationDispatcher arayüzü + Mod'a göre uygulama (ClientFanOutDispatcher | ServerSideDispatcher), FCM jeton kaydı/çıkışta temizleme, yerel hatırlatıcı (Q-07), kullanıcı tercihleri ve sessiz saat filtreleri (okuyan tarafta), notifications Rules + testleri.",
+   "deps": [
+    "T-22",
+    "T-19",
+    "T-12"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "NotificationRepository",
+    "NotificationDispatcher",
+    "PushTokenService",
+    "LocalReminderService"
+   ],
+   "rules": [
+    "notifications"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-02",
+    "Q-07"
+   ],
+   "tests": [
+    "bildirim üretim tablosu (domain-model §6) her tür",
+    "tercih/sessiz saat filtresi",
+    "Rules: tür-bazlı create (Mod C)",
+    "jeton temizleme"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 25,
+    "sheets": 20,
+    "dialogs": 21,
+    "toasts": 41,
+    "actions": 412
+   }
+  },
+  {
+   "id": "T-26",
+   "phase": "E",
+   "title": "Bildirim merkezi ve tercihleri",
+   "goal": "NTF-01 (gruplama, okundu, kaydır-sil + geri al, tümünü okundu, derin bağlantılar), NTF-02 (genel anahtarlar, hatırlatma zamanı, sessiz saatler, kulüp bazlı ayarlar), ön plan bildirim bandı; SHT-29 saat seçici (sessiz saatler/hatırlatma zamanı; MGT-05 yeniden kullanır).",
+   "deps": [
+    "T-25",
+    "T-16"
+   ],
+   "screens": [
+    "NTF-01",
+    "NTF-02"
+   ],
+   "sheets": [
+    "SHT-29"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-16",
+    "TST-17",
+    "TST-18",
+    "TST-19",
+    "TST-55"
+   ],
+   "components": [
+    "NotificationRow",
+    "NotificationGroup",
+    "QuietHoursPicker",
+    "TimePickerSheet"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "application_received → MGT-02/SHT-19 → T-32",
+    "new_report → ADM-04/SHT-26 → T-40",
+    "system/varsayılan bildirim → SET-04 → T-28"
+   ],
+   "questions": [],
+   "tests": [
+    "derin bağlantı tablosu (navigation §4.1) her tür",
+    "silinmiş hedef → SYS-04",
+    "okunmamış rozet 9+",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 44,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 27,
+    "sheets": 21,
+    "dialogs": 21,
+    "toasts": 46,
+    "actions": 456
+   }
+  },
+  {
+   "id": "T-27",
+   "phase": "E",
+   "title": "Profil",
+   "goal": "PRF-01 (özet, istatistikler, yönetilen kulüpler, ilgi alanları), PRF-02 (düzenle: ad, bölüm, sınıf, ilgi, biyografi, avatar), PRF-03 (aktif/bekleyen/geçmiş), PRF-04 (kaydedilenler).",
+   "deps": [
+    "T-16",
+    "T-20",
+    "T-14"
+   ],
+   "screens": [
+    "PRF-01",
+    "PRF-02",
+    "PRF-03",
+    "PRF-04"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-20",
+    "TST-21",
+    "TST-X9"
+   ],
+   "components": [
+    "ProfileHeader",
+    "MyClubRow"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "yönetilen kulüp → MGT-01 → T-31",
+    "PRF-01 ayarlar girişi → SET-01 → T-28"
+   ],
+   "questions": [],
+   "tests": [
+    "5 durum (PRF-03/04)",
+    "PRF-03 EN 320×1.3 taşma (K-05)",
+    "kaydedilmemiş değişiklik",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 58,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 31,
+    "sheets": 21,
+    "dialogs": 21,
+    "toasts": 49,
+    "actions": 514
+   }
+  },
+  {
+   "id": "T-28",
+   "phase": "E",
+   "title": "Ayarlar, engellenenler, hakkında, destek",
+   "goal": "SET-01 (tema, dil, metin boyutu, bildirim, engellenenler, hakkında, destek, şifre, çıkış, hesap sil girişi), SET-02, SET-04 (sürüm, lisanslar), SET-05 (SSS, destek talebi + ek, supportTickets).",
+   "deps": [
+    "T-26",
+    "T-18"
+   ],
+   "screens": [
+    "SET-01",
+    "SET-02",
+    "SET-04",
+    "SET-05"
+   ],
+   "sheets": [
+    "SHT-17",
+    "SHT-32"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-23",
+    "TST-44"
+   ],
+   "components": [],
+   "data": [
+    "SupportRepository"
+   ],
+   "rules": [
+    "supportTickets"
+   ],
+   "wires": [
+    "SET-01 'Hesabımı sil' → SET-03 → T-29"
+   ],
+   "questions": [
+    "Q-14",
+    "Q-19"
+   ],
+   "tests": [
+    "tema/dil/ölçek kalıcılığı",
+    "şifre değiştirme yeniden doğrulama",
+    "destek talebi biçimi #GU-XXXXXX",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 39,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 35,
+    "sheets": 23,
+    "dialogs": 21,
+    "toasts": 51,
+    "actions": 553
+   }
+  },
+  {
+   "id": "T-29",
+   "phase": "E",
+   "title": "Hesap silme (anonimleştirme)",
+   "goal": "SET-03 üç adımlı akış (uyarı, başkanlık ön koşulu, yeniden doğrulama + 'SİL'), anonimleştirme + soft delete işlem dizisi (parçalı), oturum kapatma, silinmiş kullanıcı davranışı.",
+   "deps": [
+    "T-28",
+    "T-15"
+   ],
+   "screens": [
+    "SET-03"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-22",
+    "TST-X10",
+    "TST-X11"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [
+    "users (status=deleted)",
+    "memberships (left/cancelled)"
+   ],
+   "wires": [
+    "başkan ise → devir akışı MGT-03/SHT-25 → T-33"
+   ],
+   "questions": [
+    "Q-11"
+   ],
+   "tests": [
+    "anonimleştirme alan listesi",
+    "başkan engeli",
+    "silinmiş kullanıcı yazamaz (Rules)",
+    "erişim çağrısı bütçesi",
+    "emülatör uçtan uca"
+   ],
+   "conditional": null,
+   "actionCount": 3,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 36,
+    "sheets": 23,
+    "dialogs": 21,
+    "toasts": 54,
+    "actions": 556
+   }
+  },
+  {
+   "id": "T-30",
+   "phase": "F",
+   "title": "Yönetim arka ucu",
+   "goal": "Başvuru karar/geri al (30 sn), üye çıkar, rol değiştir, başkanlık devri, kulüp ayarı güncelleme, etkinlik yayın/iptal/taslak, duyuru/sabitle, yoklama yazımları, activity günlüğü (aynı batch), danışman salt okunur kısıtı; ilgili Rules geçişleri M5–M13 + testleri.",
+   "deps": [
+    "T-15",
+    "T-22",
+    "T-19",
+    "T-25"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "ManagementRepository",
+    "AttendanceRepository"
+   ],
+   "rules": [
+    "memberships (yönetici geçişleri)",
+    "clubs (yönetim alanları)",
+    "events",
+    "rsvps (yoklama)",
+    "activity"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-09"
+   ],
+   "tests": [
+    "üyelik geçiş tablosu M5–M13 hiyerarşi dahil",
+    "30 sn geri al penceresi",
+    "devir tek batch",
+    "Rules: danışman yazamaz"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 36,
+    "sheets": 23,
+    "dialogs": 21,
+    "toasts": 54,
+    "actions": 556
+   }
+  },
+  {
+   "id": "T-31",
+   "phase": "F",
+   "title": "Yönetim paneli ve faaliyet geçmişi",
+   "goal": "MGT-01 (KPI, grafik, bekleyenler, yaklaşan etkinlikler, son hareketler, salt okunur bant, hızlı eylemler), MGT-10 (filtreler, sayfalama); yönetilen kulüp seçici SHT-18 (T-21'de yapıldı) burada MGT-01 girişine bağlanır; MgtHeader, ActivityRow.",
+   "deps": [
+    "T-30",
+    "T-27"
+   ],
+   "screens": [
+    "MGT-01",
+    "MGT-10"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-X12"
+   ],
+   "components": [
+    "MgtHeader",
+    "ActivityRow",
+    "MgtKpiGrid"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "CLB-03/PRF-01/NTF-01 giriş noktaları artık gerçek",
+    "MGT-01 hızlı eylem: Başvurular → MGT-02 → T-32",
+    "MGT-01 hızlı eylem: Üyeler → MGT-03 → T-33",
+    "MGT-01 hızlı eylem: Etkinlikler/Etkinlik oluştur → MGT-04, MGT-05 → T-34",
+    "MGT-01 hızlı eylem: Yoklama → MGT-06 → T-35",
+    "MGT-01 hızlı eylem: İçerik/Kulüp ayarları → MGT-08, MGT-09 → T-36"
+   ],
+   "questions": [],
+   "tests": [
+    "danışman: yazma devre dışı + TST-26",
+    "KPI sayıları sayaçlarla tutarlı",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 50,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 38,
+    "sheets": 23,
+    "dialogs": 21,
+    "toasts": 55,
+    "actions": 606
+   }
+  },
+  {
+   "id": "T-32",
+   "phase": "F",
+   "title": "Başvuru yönetimi",
+   "goal": "MGT-02 (sekmeler, arama, sıralama, tek dokunuş onay/red, çoklu seçim + toplu işlem, geri al), başvuru detayı, red nedeni, çakışma diyaloğu.",
+   "deps": [
+    "T-31"
+   ],
+   "screens": [
+    "MGT-02"
+   ],
+   "sheets": [
+    "SHT-19",
+    "SHT-20"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-17",
+    "DLG-18"
+   ],
+   "toasts": [
+    "TST-27",
+    "TST-28",
+    "TST-54",
+    "TST-X17"
+   ],
+   "components": [
+    "ApplicationRow"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "iki yönetici çakışması → DLG-18",
+    "geri al 30 sn",
+    "retryAfter yazımı",
+    "toplu onay sayaç tutarlılığı",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 33,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 39,
+    "sheets": 25,
+    "dialogs": 23,
+    "toasts": 59,
+    "actions": 639
+   }
+  },
+  {
+   "id": "T-33",
+   "phase": "F",
+   "title": "Üye yönetimi ve başkanlık devri",
+   "goal": "MGT-03 (rol süzgeçleri, arama, sıralama, CSV dışa aktarma, başkanlık devri girişi), üye işlemleri, rol seçici, çıkarma, rol değişimi, devir onayı ('DEVRET').",
+   "deps": [
+    "T-31"
+   ],
+   "screens": [
+    "MGT-03"
+   ],
+   "sheets": [
+    "SHT-21",
+    "SHT-22",
+    "SHT-25"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-19",
+    "DLG-20",
+    "DLG-21"
+   ],
+   "toasts": [
+    "TST-29",
+    "TST-46",
+    "TST-47",
+    "TST-49",
+    "TST-X18",
+    "TST-X20"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "CLB-06 üye menüsü (T-18), DLG-09 (T-16), SET-03 (T-29) giriş noktaları gerçek"
+   ],
+   "questions": [],
+   "tests": [
+    "hiyerarşi: board yalnız member çıkarır; president hariç herkesi; president çıkarılamaz",
+    "devir sonrası roller",
+    "CSV içeriği"
+   ],
+   "conditional": null,
+   "actionCount": 50,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 40,
+    "sheets": 28,
+    "dialogs": 26,
+    "toasts": 65,
+    "actions": 689
+   }
+  },
+  {
+   "id": "T-34",
+   "phase": "F",
+   "title": "Etkinlik yönetimi ve oluşturma",
+   "goal": "MGT-04 (yaklaşan/taslak/geçmiş/iptal), MGT-05 (form: tür, tarih/saat, mekân, kontenjan, görünürlük, kapak, hatırlatıcı; taslak/yayın), etkinlik menüsü, yayın/iptal/taslağa alma/kopyala/taslak silme.",
+   "deps": [
+    "T-31",
+    "T-24"
+   ],
+   "screens": [
+    "MGT-04",
+    "MGT-05"
+   ],
+   "sheets": [
+    "SHT-23",
+    "SHT-30",
+    "SHT-31"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-22",
+    "DLG-23",
+    "DLG-31"
+   ],
+   "toasts": [
+    "TST-30",
+    "TST-48",
+    "TST-X15",
+    "TST-X19"
+   ],
+   "components": [
+    "EventForm",
+    "CoverPickerContent"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "SHT-23 yönetici satırları: Katılımcılar/Yoklama/QR → MGT-06, MGT-07 → T-35",
+    "MGT-05 tarih (SHT-28, T-24) ve saat (SHT-29, T-26) seçicileri yeniden kullanır"
+   ],
+   "questions": [],
+   "tests": [
+    "form doğrulama (bitiş > başlangıç, kontenjan ≥ goingCount)",
+    "yayın bildirimi sayısı",
+    "taslak silme yalnız taslak",
+    "kopya +7 gün",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 20,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 42,
+    "sheets": 31,
+    "dialogs": 29,
+    "toasts": 69,
+    "actions": 709
+   }
+  },
+  {
+   "id": "T-35",
+   "phase": "F",
+   "title": "Katılımcılar, yoklama ve QR tarayıcı",
+   "goal": "MGT-06 (özet çipleri, yoklama %, arama, Katıldı anahtarı, bekleyeni kayıtlıya al, tümünü katıldı yap), MGT-07 (kamera, flaş, kamera çevir, manuel kod, izin yeniden dene, sonuç sheet'i, 2 sn oto-kapanma), canlı bilet güncellemesi.",
+   "deps": [
+    "T-34",
+    "T-23"
+   ],
+   "screens": [
+    "MGT-06",
+    "MGT-07"
+   ],
+   "sheets": [
+    "SHT-24"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [
+    "TST-31",
+    "TST-X13",
+    "TST-X14"
+   ],
+   "components": [
+    "AttendeeRow",
+    "ScannerOverlay"
+   ],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "MGT-07 demo tarama düğmeleri UYGULANMAZ (K-02/K-04)"
+   ],
+   "questions": [],
+   "tests": [
+    "QR içeriği gu:ticket:v1 ayrıştırma",
+    "Geçerli/Zaten okutulmuş/Geçersiz sonuçları",
+    "yoklama penceresi",
+    "kamera izni reddi",
+    "durum çubuğu açık-ikon"
+   ],
+   "conditional": null,
+   "actionCount": 68,
+   "exemptActions": 3,
+   "cumulative": {
+    "screens": 44,
+    "sheets": 32,
+    "dialogs": 29,
+    "toasts": 72,
+    "actions": 777
+   }
+  },
+  {
+   "id": "T-36",
+   "phase": "F",
+   "title": "İçerik yönetimi ve kulüp ayarları",
+   "goal": "MGT-08 (gönderi/duyuru/anket listeleri, sabitle, düzenle, sil), MGT-09 (logo/kapak, kısa/uzun açıklama, koşullar, sosyal bağlantılar, başvuru anahtarları, kilitli ad), kategori seçici.",
+   "deps": [
+    "T-31",
+    "T-21"
+   ],
+   "screens": [
+    "MGT-08",
+    "MGT-09"
+   ],
+   "sheets": [
+    "SHT-33"
+   ],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "kilitli ad → TST-20",
+    "başvuru kapatma → TST-54 (T-32'de tanımlı, yeniden kullanılır)",
+    "kaydedilmemiş değişiklik",
+    "sabitleme tek gönderi"
+   ],
+   "conditional": null,
+   "actionCount": 32,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 46,
+    "sheets": 33,
+    "dialogs": 29,
+    "toasts": 72,
+    "actions": 809
+   }
+  },
+  {
+   "id": "T-37",
+   "phase": "G",
+   "title": "Süper admin arka ucu ve betik",
+   "goal": "AdminRepository (kulüp oluştur/askıya al/aktifleştir, başkan ata, şikayet çöz (grup), kullanıcı askıya al/kaldır, istatistikler), tool/admin/set_superadmin.js, claim yenileme, ilgili Rules + testleri.",
+   "deps": [
+    "T-30"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [
+    "AdminRepository"
+   ],
+   "rules": [
+    "clubs (süper)",
+    "reports (çözüm)",
+    "users (askı)",
+    "private (collectionGroup)"
+   ],
+   "wires": [],
+   "questions": [
+    "Q-09"
+   ],
+   "tests": [
+    "claim olmadan hiçbir admin işlemi geçmez",
+    "grup çözümü tek batch",
+    "askıdaki kulüp/kullanıcı davranışı"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 46,
+    "sheets": 33,
+    "dialogs": 29,
+    "toasts": 72,
+    "actions": 809
+   }
+  },
+  {
+   "id": "T-38",
+   "phase": "G",
+   "title": "Admin genel bakış",
+   "goal": "ADM-01 (KPI, grafik, en aktif kulüpler, bekleyen şikayetler).",
+   "deps": [
+    "T-37"
+   ],
+   "screens": [
+    "ADM-01"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [
+    "ADM-01 hızlı eylem: Kulüpler → ADM-02 → T-39",
+    "ADM-01 şikayetler → ADM-04 → T-40",
+    "ADM-01 kullanıcılar → ADM-05 → T-41"
+   ],
+   "questions": [],
+   "tests": [
+    "sayılar kaynakla tutarlı",
+    "matris"
+   ],
+   "conditional": null,
+   "actionCount": 31,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 47,
+    "sheets": 33,
+    "dialogs": 29,
+    "toasts": 72,
+    "actions": 840
+   }
+  },
+  {
+   "id": "T-39",
+   "phase": "G",
+   "title": "Admin kulüpler ve kulüp oluşturma",
+   "goal": "ADM-02 (liste, arama, menü, askıya al/aktifleştir), ADM-03 (kulüp oluştur/düzenle: ad benzersizliği, kategori, ikon, palet/desen, başkan ata, danışman — G-1).",
+   "deps": [
+    "T-37",
+    "T-36"
+   ],
+   "screens": [
+    "ADM-02",
+    "ADM-03"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [
+    "DLG-28"
+   ],
+   "toasts": [
+    "TST-33",
+    "TST-50"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-09"
+   ],
+   "tests": [
+    "ad benzersizliği",
+    "başkan ata → üyelik + presidentId tutarlılığı",
+    "askı → kulüp kartı ve etkinlik gizleme"
+   ],
+   "conditional": null,
+   "actionCount": 47,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 49,
+    "sheets": 33,
+    "dialogs": 30,
+    "toasts": 74,
+    "actions": 887
+   }
+  },
+  {
+   "id": "T-40",
+   "phase": "G",
+   "title": "Admin şikayetler",
+   "goal": "ADM-04 (sekmeler, süzgeçler, gruplama), şikayet detayı, içerik kaldırma, kullanıcı askı diyaloğu, şikayet kapatma.",
+   "deps": [
+    "T-37"
+   ],
+   "screens": [
+    "ADM-04"
+   ],
+   "sheets": [
+    "SHT-26"
+   ],
+   "menus": [],
+   "dialogs": [
+    "DLG-29",
+    "DLG-30"
+   ],
+   "toasts": [
+    "TST-51",
+    "TST-52",
+    "TST-56"
+   ],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "aynı hedefin çoklu şikayeti tek grup",
+    "çözüm tüm açık belgeleri çözer",
+    "report_resolved bildirimi"
+   ],
+   "conditional": null,
+   "actionCount": 17,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 50,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 904
+   }
+  },
+  {
+   "id": "T-41",
+   "phase": "G",
+   "title": "Admin kullanıcılar",
+   "goal": "ADM-05 (arama: ad + e-posta, süzgeçler: yöneticiler/askıdakiler, askıya alma [DLG-30, T-40] / askıyı kaldırma [TST-52, T-40], kullanıcı profili CLB-07'ye geçiş).",
+   "deps": [
+    "T-37",
+    "T-40"
+   ],
+   "screens": [
+    "ADM-05"
+   ],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "e-posta araması collectionGroup",
+    "askıya alınan kullanıcı giriş yapamaz"
+   ],
+   "conditional": null,
+   "actionCount": 168,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-42",
+   "phase": "H",
+   "title": "Cloud Functions (Mod F)",
+   "goal": "functions/ (TypeScript): bildirim tetikleyicileri, FCM push (tercih + sessiz saat), zamanlanmış etkinlik hatırlatıcısı, bekleme listesi otomatik terfisi, (Q-11'e göre) hesap silme temizliği; emülatör testleri; deploy YALNIZCA kullanıcı onayıyla.",
+   "deps": [
+    "T-25",
+    "T-22",
+    "T-29"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-02",
+    "Q-07",
+    "Q-11"
+   ],
+   "tests": [
+    "her tetikleyici emülatörde",
+    "tercih/sessiz saat",
+    "idempotensi"
+   ],
+   "conditional": "Q-02 = Functions (Blaze)",
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-43",
+   "phase": "H",
+   "title": "Bütünleme: bağlama borçları, durumlar, tam matris",
+   "goal": "Tüm 'wires' girişlerinin gerçek olduğunu doğrula; yer tutucu/Placeholder/TODO taraması; 5 durumun tüm listelerde doğrulanması; tam cihaz matrisi (51 ekran + 34 sheet + 32 dialog); aksiyon envanteri tam (1072 − muaflar); ARB 1235 eşit/kullanılmayan yok; erişilebilirlik taraması.",
+   "deps": [
+    "T-41"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "check_design_coverage --all",
+    "tam matris",
+    "wiring borcu = 0"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-44",
+   "phase": "H",
+   "title": "Performans ve hata yönetimi doğrulaması",
+   "goal": "Soğuk açılış, liste kaydırma, kapak/desen SVG maliyeti, bellek, Crashlytics sahte hata ile doğrulama, ErrorWidget üretim davranışı, çevrimdışı senaryoları (Q-12).",
+   "deps": [
+    "T-43"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-12"
+   ],
+   "tests": [
+    "profil çıktısı (kullanıcıya)",
+    "çevrimdışı yazma engeli TST-24"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-45",
+   "phase": "H",
+   "title": "Güvenlik gözden geçirme",
+   "goal": "Rules tam matris + bütçe ölçümü, alan beyaz listeleri, sızıntı testleri (e-posta, gizli kaynak), bağımlılık taraması, gizli bilgi taraması, Mod C spam sınırlaması raporu; gu-firebase-security-reviewer ajanı.",
+   "deps": [
+    "T-43"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "firebase/test tam",
+    "secrets taraması"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-46",
+   "phase": "H",
+   "title": "Mağaza ve yayın hazırlığı",
+   "goal": "Uygulama ikonu/splash, izin metinleri (TR/EN), mağaza metinleri, gizlilik/KVKK bağlantıları, Apple 5.1.1(v) hesap silme netleştirme, sürümleme, imzalama, yayın kontrol listesi — kullanıcıyla birlikte; gerçek projeye deploy yalnızca onayla.",
+   "deps": [
+    "T-44",
+    "T-45"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [
+    "Q-03",
+    "Q-11",
+    "Q-18"
+   ],
+   "tests": [
+    "release build derlenir",
+    "kontrol listesi"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  },
+  {
+   "id": "T-47",
+   "phase": "H",
+   "title": "Teslim",
+   "goal": "README, kurulum ve çalıştırma kılavuzu, bilinen sınırlamalar (rules-spec §9), docs/progress.json son durum, katkı notları, son tam kalite kapısı.",
+   "deps": [
+    "T-46"
+   ],
+   "screens": [],
+   "sheets": [],
+   "menus": [],
+   "dialogs": [],
+   "toasts": [],
+   "components": [],
+   "data": [],
+   "rules": [],
+   "wires": [],
+   "questions": [],
+   "tests": [
+    "quality_gate tam yeşil"
+   ],
+   "conditional": null,
+   "actionCount": 0,
+   "exemptActions": 0,
+   "cumulative": {
+    "screens": 51,
+    "sheets": 34,
+    "dialogs": 32,
+    "toasts": 77,
+    "actions": 1072
+   }
+  }
+ ],
+ "wiring": [
+  {
+   "id": "W-01",
+   "declaredIn": "T-11",
+   "text": "AppRedirect hedefi ONB-01 ve AUT-01 yer tutucu → T-13",
+   "kind": "borç",
+   "resolveIn": [
+    "T-13"
+   ]
+  },
+  {
+   "id": "W-02",
+   "declaredIn": "T-11",
+   "text": "AppRedirect hedefi AUT-03 ve AUT-05 yer tutucu → T-14",
+   "kind": "borç",
+   "resolveIn": [
+    "T-14"
+   ]
+  },
+  {
+   "id": "W-03",
+   "declaredIn": "T-11",
+   "text": "askıya alınmış hesap açılışında DLG-01 → T-13",
+   "kind": "borç",
+   "resolveIn": [
+    "T-13"
+   ]
+  },
+  {
+   "id": "W-04",
+   "declaredIn": "T-13",
+   "text": "AUT-01 demo hesap bölümü UYGULANMAZ (K-02)",
+   "kind": "uygulanmaz",
+   "resolveIn": []
+  },
+  {
+   "id": "W-05",
+   "declaredIn": "T-13",
+   "text": "AUT-01 'Şifremi unuttum' → AUT-04 → T-14",
+   "kind": "borç",
+   "resolveIn": [
+    "T-14"
+   ]
+  },
+  {
+   "id": "W-06",
+   "declaredIn": "T-13",
+   "text": "AUT-02 kayıt sonrası e-posta doğrulama → AUT-03 → T-14",
+   "kind": "borç",
+   "resolveIn": [
+    "T-14"
+   ]
+  },
+  {
+   "id": "W-07",
+   "declaredIn": "T-14",
+   "text": "AUT-03 'Doğrulandı simüle et' UYGULANMAZ (K-02)",
+   "kind": "uygulanmaz",
+   "resolveIn": []
+  },
+  {
+   "id": "W-08",
+   "declaredIn": "T-14",
+   "text": "TST-57/avatar yükleme: Q-19'a göre",
+   "kind": "not",
+   "resolveIn": []
+  },
+  {
+   "id": "W-09",
+   "declaredIn": "T-14",
+   "text": "SHT-16 çoklu görsel sınırı (maxImages) parametresi hazır; TST-X5 sınırı FED-03 ile → T-21",
+   "kind": "borç",
+   "resolveIn": [
+    "T-21"
+   ]
+  },
+  {
+   "id": "W-10",
+   "declaredIn": "T-16",
+   "text": "CLB-03 'Gönderiler' sekmesi içeriği → T-20 (FED-01)",
+   "kind": "borç",
+   "resolveIn": [
+    "T-20"
+   ]
+  },
+  {
+   "id": "W-11",
+   "declaredIn": "T-16",
+   "text": "'Üye listesi' → T-18",
+   "kind": "borç",
+   "resolveIn": [
+    "T-18"
+   ]
+  },
+  {
+   "id": "W-12",
+   "declaredIn": "T-16",
+   "text": "'Yönetim paneli' (MGT-01) → T-31",
+   "kind": "borç",
+   "resolveIn": [
+    "T-31"
+   ]
+  },
+  {
+   "id": "W-13",
+   "declaredIn": "T-16",
+   "text": "'Kulüp ayarları' (MGT-09) → T-36",
+   "kind": "borç",
+   "resolveIn": [
+    "T-36"
+   ]
+  },
+  {
+   "id": "W-14",
+   "declaredIn": "T-16",
+   "text": "DLG-09 → SHT-25 (başkanlık devri) → T-33",
+   "kind": "borç",
+   "resolveIn": [
+    "T-33"
+   ]
+  },
+  {
+   "id": "W-15",
+   "declaredIn": "T-16",
+   "text": "etkinlik satırı → EVT-02 → T-23",
+   "kind": "borç",
+   "resolveIn": [
+    "T-23"
+   ]
+  },
+  {
+   "id": "W-16",
+   "declaredIn": "T-16",
+   "text": "yazı oluştur → FED-03 → T-21",
+   "kind": "borç",
+   "resolveIn": [
+    "T-21"
+   ]
+  },
+  {
+   "id": "W-17",
+   "declaredIn": "T-16",
+   "text": "'Etkinlik oluştur' CTA → MGT-05 → T-34",
+   "kind": "borç",
+   "resolveIn": [
+    "T-34"
+   ]
+  },
+  {
+   "id": "W-18",
+   "declaredIn": "T-17",
+   "text": "CLB-01 → PRF-03 'Kulüplerim' → T-27",
+   "kind": "borç",
+   "resolveIn": [
+    "T-27"
+   ]
+  },
+  {
+   "id": "W-19",
+   "declaredIn": "T-17",
+   "text": "CLB-02 etkinlik sonuçları → EVT-02 → T-23",
+   "kind": "borç",
+   "resolveIn": [
+    "T-23"
+   ]
+  },
+  {
+   "id": "W-20",
+   "declaredIn": "T-18",
+   "text": "üye satırı menüsü SHT-21 → T-33",
+   "kind": "borç",
+   "resolveIn": [
+    "T-33"
+   ]
+  },
+  {
+   "id": "W-21",
+   "declaredIn": "T-18",
+   "text": "SHT-27 yorum satırları (Yorumu sil → DLG-11, Yorumu şikayet et) → T-20",
+   "kind": "borç",
+   "resolveIn": [
+    "T-20"
+   ]
+  },
+  {
+   "id": "W-22",
+   "declaredIn": "T-20",
+   "text": "CLB-03 'Gönderiler' sekmesi artık gerçek (T-16 iskeleti dolar)",
+   "kind": "kapatır",
+   "resolveIn": []
+  },
+  {
+   "id": "W-23",
+   "declaredIn": "T-20",
+   "text": "SHT-27 yorum satırları artık gerçek (yönetici yorum menüsü)",
+   "kind": "kapatır",
+   "resolveIn": []
+  },
+  {
+   "id": "W-24",
+   "declaredIn": "T-20",
+   "text": "FED-01 'yazı oluştur' → FED-03 → T-21",
+   "kind": "borç",
+   "resolveIn": [
+    "T-21"
+   ]
+  },
+  {
+   "id": "W-25",
+   "declaredIn": "T-20",
+   "text": "SHT-08 'Düzenle' → FED-03 düzenleme modu → T-21",
+   "kind": "borç",
+   "resolveIn": [
+    "T-21"
+   ]
+  },
+  {
+   "id": "W-26",
+   "declaredIn": "T-21",
+   "text": "SHT-18 varsayılan davranışı (onSelect verilmezse) → MGT-01 → T-31",
+   "kind": "borç",
+   "resolveIn": [
+    "T-31"
+   ]
+  },
+  {
+   "id": "W-27",
+   "declaredIn": "T-23",
+   "text": "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35",
+   "kind": "borç",
+   "resolveIn": [
+    "T-34",
+    "T-35"
+   ]
+  },
+  {
+   "id": "W-28",
+   "declaredIn": "T-26",
+   "text": "application_received → MGT-02/SHT-19 → T-32",
+   "kind": "borç",
+   "resolveIn": [
+    "T-32"
+   ]
+  },
+  {
+   "id": "W-29",
+   "declaredIn": "T-26",
+   "text": "new_report → ADM-04/SHT-26 → T-40",
+   "kind": "borç",
+   "resolveIn": [
+    "T-40"
+   ]
+  },
+  {
+   "id": "W-30",
+   "declaredIn": "T-26",
+   "text": "system/varsayılan bildirim → SET-04 → T-28",
+   "kind": "borç",
+   "resolveIn": [
+    "T-28"
+   ]
+  },
+  {
+   "id": "W-31",
+   "declaredIn": "T-27",
+   "text": "yönetilen kulüp → MGT-01 → T-31",
+   "kind": "borç",
+   "resolveIn": [
+    "T-31"
+   ]
+  },
+  {
+   "id": "W-32",
+   "declaredIn": "T-27",
+   "text": "PRF-01 ayarlar girişi → SET-01 → T-28",
+   "kind": "borç",
+   "resolveIn": [
+    "T-28"
+   ]
+  },
+  {
+   "id": "W-33",
+   "declaredIn": "T-28",
+   "text": "SET-01 'Hesabımı sil' → SET-03 → T-29",
+   "kind": "borç",
+   "resolveIn": [
+    "T-29"
+   ]
+  },
+  {
+   "id": "W-34",
+   "declaredIn": "T-29",
+   "text": "başkan ise → devir akışı MGT-03/SHT-25 → T-33",
+   "kind": "borç",
+   "resolveIn": [
+    "T-33"
+   ]
+  },
+  {
+   "id": "W-35",
+   "declaredIn": "T-31",
+   "text": "CLB-03/PRF-01/NTF-01 giriş noktaları artık gerçek",
+   "kind": "kapatır",
+   "resolveIn": []
+  },
+  {
+   "id": "W-36",
+   "declaredIn": "T-31",
+   "text": "MGT-01 hızlı eylem: Başvurular → MGT-02 → T-32",
+   "kind": "borç",
+   "resolveIn": [
+    "T-32"
+   ]
+  },
+  {
+   "id": "W-37",
+   "declaredIn": "T-31",
+   "text": "MGT-01 hızlı eylem: Üyeler → MGT-03 → T-33",
+   "kind": "borç",
+   "resolveIn": [
+    "T-33"
+   ]
+  },
+  {
+   "id": "W-38",
+   "declaredIn": "T-31",
+   "text": "MGT-01 hızlı eylem: Etkinlikler/Etkinlik oluştur → MGT-04, MGT-05 → T-34",
+   "kind": "borç",
+   "resolveIn": [
+    "T-34"
+   ]
+  },
+  {
+   "id": "W-39",
+   "declaredIn": "T-31",
+   "text": "MGT-01 hızlı eylem: Yoklama → MGT-06 → T-35",
+   "kind": "borç",
+   "resolveIn": [
+    "T-35"
+   ]
+  },
+  {
+   "id": "W-40",
+   "declaredIn": "T-31",
+   "text": "MGT-01 hızlı eylem: İçerik/Kulüp ayarları → MGT-08, MGT-09 → T-36",
+   "kind": "borç",
+   "resolveIn": [
+    "T-36"
+   ]
+  },
+  {
+   "id": "W-41",
+   "declaredIn": "T-33",
+   "text": "CLB-06 üye menüsü (T-18), DLG-09 (T-16), SET-03 (T-29) giriş noktaları gerçek",
+   "kind": "kapatır",
+   "resolveIn": []
+  },
+  {
+   "id": "W-42",
+   "declaredIn": "T-34",
+   "text": "SHT-23 yönetici satırları: Katılımcılar/Yoklama/QR → MGT-06, MGT-07 → T-35",
+   "kind": "borç",
+   "resolveIn": [
+    "T-35"
+   ]
+  },
+  {
+   "id": "W-43",
+   "declaredIn": "T-34",
+   "text": "MGT-05 tarih (SHT-28, T-24) ve saat (SHT-29, T-26) seçicileri yeniden kullanır",
+   "kind": "not",
+   "resolveIn": []
+  },
+  {
+   "id": "W-44",
+   "declaredIn": "T-35",
+   "text": "MGT-07 demo tarama düğmeleri UYGULANMAZ (K-02/K-04)",
+   "kind": "uygulanmaz",
+   "resolveIn": []
+  },
+  {
+   "id": "W-45",
+   "declaredIn": "T-38",
+   "text": "ADM-01 hızlı eylem: Kulüpler → ADM-02 → T-39",
+   "kind": "borç",
+   "resolveIn": [
+    "T-39"
+   ]
+  },
+  {
+   "id": "W-46",
+   "declaredIn": "T-38",
+   "text": "ADM-01 şikayetler → ADM-04 → T-40",
+   "kind": "borç",
+   "resolveIn": [
+    "T-40"
+   ]
+  },
+  {
+   "id": "W-47",
+   "declaredIn": "T-38",
+   "text": "ADM-01 kullanıcılar → ADM-05 → T-41",
+   "kind": "borç",
+   "resolveIn": [
+    "T-41"
+   ]
+  }
+ ]
+}
