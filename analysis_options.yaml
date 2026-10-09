@@ -1,25 +1,40 @@
+# D-08: very_good_analysis + proje kuralları. Paketler (packages/*) bu dosyayı include eder.
 include: package:very_good_analysis/analysis_options.yaml
 
 analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
   exclude:
-    - "**.g.dart"
-    - "**.gen.dart"
-    - lib/product/generated/
-    - build/**
-    - android/**
-    - ios/**
+    - "**/*.g.dart"
+    - "**/*.gen.dart"
+    - "lib/l10n/app_localizations*.dart"
+    - "build/**"
+    - "android/**"
+    - "ios/**"
+    - "design/**"
+    - "reference/**"
+    - "docs/reference/**"
 
 linter:
   rules:
+    # --- Gerekçeli gevşetmeler (prompts/02-faz0-kurulum.md §4.1) ---
+    # İç uygulama; dışa açılan API yok. Belgeleme ekran/sınıf izleriyle (/// Design:) sınırlı tutulur.
+    public_member_api_docs: false
+    # Typed route tanımları, ARB çağrıları ve Türkçe metinler 80 sütunu aşar; dart format sarar.
+    lines_longer_than_80_chars: false
+    # pubspec bağımlılıkları amaca göre gruplanır (yerelleştirme / state / Firebase).
+    sort_pub_dependencies: false
+    # copyWith ve iç yardımcılarda konumsal bool kabul edilir (reference konvansiyonu).
+    avoid_positional_boolean_parameters: false
+    # ViewModel mutasyonları setter değil metotla yapılır (CLAUDE.md §2).
+    use_setters_to_change_properties: false
+
+    # --- Sertleştirmeler ---
     avoid_print: true
     prefer_single_quotes: true
     always_declare_return_types: true
     avoid_empty_else: true
     prefer_const_constructors: true
     sort_constructors_first: true
-    depend_on_referenced_packages: false
-    public_member_api_docs: false
-    lines_longer_than_80_chars: false
-    sort_pub_dependencies: false
-    use_setters_to_change_properties: false
-    avoid_positional_boolean_parameters: false

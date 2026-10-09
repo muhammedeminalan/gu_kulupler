@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-09T04:17:20.538Z",
+  "updated": "2026-10-09T05:23:14.672Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": false
@@ -131,12 +131,14 @@
   },
   "tasks": {
     "T-00": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
-      "notes": ""
+      "status": "done",
+      "startedAt": "2026-10-09T04:19:09.011Z",
+      "finishedAt": "2026-10-09T05:23:14.667Z",
+      "commits": [
+        "207fbc0"
+      ],
+      "gate": "12 adım yeşil · analyze 0 · test 15+1+1 · ARB 1235/1235 · kapsam n/a (iskelet)",
+      "notes": "İnceleme: mimari 1 kritik + 2 önemli, test 3 önemli — hepsi düzeltildi; CD-77/78/79; K-28 yeni"
     },
     "T-01": {
       "status": "pending",
@@ -893,7 +895,18 @@
       "date": "2026-10-08",
       "task": null,
       "text": "Kullanıcı 2026-10-09 gece: 'koda geçme, bu aşama (Faz 0 plan) bitsin; sabah uyanınca devam deyince devam et' — PLAN.md tamamlanır, gate plan / Faz 0 commit / T-00 sabah 'devam' komutuyla başlar"
+    },
+    {
+      "date": "2026-10-09",
+      "task": "T-00",
+      "text": "Kullanıcı 2026-10-09: 'tüm izinlerin yetkisini veriyorum kesintisiz çalış' — izin pencerelerinde durulmaz; push/deploy/gerçek Firebase/Blaze/kimlik bilgisi dışındaki her işlem onaysız yapılır"
     }
   ],
-  "knownIssuesAdded": []
+  "knownIssuesAdded": [
+    {
+      "date": "2026-10-09",
+      "task": "T-00",
+      "text": "K-28 ARB çoğul dallarında # — gen-l10n literal basar; # → {değişken} (T-00), check_arb_parity ARB15"
+    }
+  ]
 }

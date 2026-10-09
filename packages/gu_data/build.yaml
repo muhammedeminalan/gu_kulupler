@@ -1,0 +1,11 @@
+targets:
+  $default:
+    builders:
+      json_serializable:json_serializable:
+        generate_for:
+          - lib/**/*_model.dart
+        options:
+          # Modeller Firestore'a doğrudan Map olarak yazılır (D-09): iç içe modeller
+          # explicit_to_json olmadan ham Dart nesnesi olarak üretilir ve yazma patlar.
+          explicit_to_json: true
+          field_rename: none

@@ -9,3 +9,7 @@
 | 2026-10-08 | Faz 0 | Faz 0 çıktıları + pack dosyaları main'e tek commit (CD-73) | T-00 "git status temiz" ön koşulu | push yok |
 | 2026-10-09 | Faz 0 | Kullanıcı talimatı: koda geçilmeyecek; plan bitince durulacak, sabah "devam" ile T-00 | Kullanıcı sabah bakmak istiyor | gate plan + Faz 0 commit + T-00 ertelendi |
 | 2026-10-09 | Faz 0 | PLAN.md kesinleşti (3 tur, 444 bulgu); sabah özeti docs/reports/morning-brief.md; gate plan/commit/T-00 "devam" bekliyor | Kullanıcı talimatı | — |
+| 2026-10-09 | T-00 | Kök pubspec'te `resolution: workspace` kaldırıldı (pub kuralı; 02-faz0 §2.1 yanlış) | `flutter pub get` reddetti | PLAN/prompt metni değişmedi, T-00 planı §12 notu |
+| 2026-10-09 | T-00 | K-28: ARB çoğullarında `#` gen-l10n tarafından değiştirilmiyor → `{değişken}`e çevrildi, ARB15 kuralı eklendi | Test kanıtı (`# yorum`) | design-known-issues K-28 |
+| 2026-10-09 | T-00 | İnceleme: l10n extension dosyası ignore deseninden çıkarıldı (build_context_l10n_x.dart); settings.json ask listesinden git merge ve decisions.md kaldırıldı (CD-03); firebase_storage_mocks kökten çıktı; testler sıkılaştırıldı | Mimari + test denetçisi bulguları | CD-79 (tool self-test T-02) |
+| 2026-10-09 | T-00 | KVKK iletişim e-postası ARB literalinde (`legalKvkkB7` kvkk@gumushane.edu.tr) — D-01 kapsamı dışı, dokunulmadı | İnceleme notu | Final rapor "değiştirilecek değerler" listesine (CD-68) |

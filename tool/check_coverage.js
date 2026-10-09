@@ -6,8 +6,10 @@
  * Girdi: kök ve packages/<paket>/coverage/lcov.info (flutter test --coverage).
  * Eşikler: gu_data ≥ 90 · gu_ui ≥ 90 · lib/features/<f>/(provider|view_model) ≥ 90 · lib/features/<f>/view ≥ 80.
  * Hariç: *.g.dart, *.gen.dart, *.freezed.dart, firebase_options.dart, lib/l10n/app_localizations*.
- * lcov'da hiç görünmeyen (teste yüklenmemiş) kaynak dosyalar UYARI olarak listelenir.
- * Hiçbir grupta dosya yoksa (boş iskelet) başarıyla geçer.
+ * lcov'da hiç görünmeyen (teste yüklenmemiş) ve çalıştırılabilir kod içeren kaynak dosyalar UYARI olarak listelenir;
+ * grupta hiç ölçülen satır yokken böyle dosya varsa HATA (hiçbir test kodu yüklemiyor).
+ * Yalnızca yorum / library / import / export / part satırlarından oluşan dosyalar (barrel, boş iskelet)
+ * ölçülebilir değildir: grup "—" ile geçer (T-00 boş iskelet kuralı, prompts/02-faz0-kurulum.md §9.3).
  */
 const fs = require('fs');
 const path = require('path');
@@ -44,6 +46,14 @@ function readLcov(file, prefix) {
   return out;
 }
 
+/** Yorum, boş satır ve library/import/export/part dışında en az bir satır var mı? */
+function hasExecutableCode(file) {
+  return fs.readFileSync(file, 'utf8').split(/\r?\n/).some((ln) => {
+    const t = ln.trim();
+    return t && !t.startsWith('//') && !/^(library\b|import\s|export\s|part\s)/.test(t);
+  });
+}
+
 const sources = [['coverage/lcov.info', '']];
 for (const d of fs.existsSync(path.join(root, 'packages')) ? fs.readdirSync(path.join(root, 'packages')) : []) sources.push([`packages/${d}/coverage/lcov.info`, `packages/${d}`]);
 const cov = new Map();
@@ -61,9 +71,10 @@ for (const g of GROUPS) {
   const lf = members.reduce((a, c) => a + c.lf, 0), lh = members.reduce((a, c) => a + c.lh, 0);
   // lcov'da olmayan kaynaklar
   const srcs = core.walk(root, (f) => /\.dart$/.test(f)).map((f) => core.toPosix(path.relative(root, f))).filter((p) => g.test(p) && !EXCLUDE.test(p));
-  const missing = srcs.filter((p) => !cov.has(p) && fs.readFileSync(path.join(root, p), 'utf8').split('\n').length > 8);
+  const missing = srcs.filter((p) => !cov.has(p) && hasExecutableCode(path.join(root, p)));
   if (!members.length && !srcs.length) { rows.push({ group: g.name, min: g.min, pct: null, files: 0 }); continue; }
-  const pct = lf ? (100 * lh) / lf : (srcs.length ? 0 : null);
+  // lf == 0: ölçülen satır yok. Yüklenmemiş gerçek kod varsa %0 (hata), yalnızca barrel/boş dosya varsa n/a.
+  const pct = lf ? (100 * lh) / lf : (missing.length ? 0 : null);
   rows.push({ group: g.name, min: g.min, pct, files: members.length, lines: `${lh}/${lf}` });
   if (pct !== null && pct + 1e-9 < g.min) errs.push(`${g.name}: %${pct.toFixed(1)} < %${g.min} (${lh}/${lf} satır)`);
   if (found === 0 && srcs.length) errs.push(`${g.name}: ${srcs.length} kaynak dosya var ama kapsam raporu yok (flutter test --coverage çalışmadı)`);
