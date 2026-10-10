@@ -31,3 +31,12 @@ test('pack_data.patternFile · globToRe ile aynı joker anlamı', () => {
   const [entry] = data.patternFile(FIXTURES, 'pack_data/patterns.txt');
   assert.equal(entry.re.source, data.globToRe('AUT-01.demoAccount.*').source);
 });
+
+test('pack_data.enumMember · kimlik → enum üye adı (ToastId / SheetId / DialogId / MenuId)', () => {
+  assert.equal(data.enumMember('SHT-05'), 'sht05');
+  assert.equal(data.enumMember('DLG-32'), 'dlg32');
+  assert.equal(data.enumMember('TST-X12'), 'tstX12');
+  // MenuId (CD-113): registry.json#menus = SHT-01 + EVT-MENU
+  assert.equal(data.enumMember('EVT-MENU'), 'evtMenu');
+  assert.equal(data.kindOfId('EVT-MENU'), 'menu');
+});

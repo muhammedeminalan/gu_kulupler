@@ -14,6 +14,9 @@
  * Kontroller (kapsamdaki her kimlik için):
  *   iz      Ekran/sheet/dialog/menü: `/// Design: <ID>` sınıf izi (lib/ veya packages/<paket>/lib; katalog dosyaları hariç)
  *           Toast: ToastId enum üyesinin üstünde `/// Design: TST-nn`
+ *   katalog (T-07 / --all) KAT01–KAT04: ToastId · SheetId · DialogId · MenuId (CD-113; registry.json#menus) enum üyeleri ↔ registry
+ *           Katalog dosyaları = kimlik enum'ları + lib/product/feedback/catalogs/{toasts,dialogs}/ (ToastSpec/DialogSpec kayıtları):
+ *           buradaki `/// Design:` satırı sınıf izi, `ToastId.tstNN` / `DialogId.dlgNN` satırı kullanım sayılmaz
  *   test    test/ · packages/<paket>/test · integration_test altında kimliği (ya da ToastId.tstNN) anan bir test
  *   kullanım toast: `ToastId.tstNN` katalog dışında kullanılıyor (hata) · sheet/dialog: `SheetId.shtNN`/`DialogId.dlgNN` (uyarı; --all'da hata)
  *   aksiyon  (--actions / --all) GuKey.action('…') kümesi == screens-actions.json (muaflar hariç, `${…}` → `*`)
@@ -51,6 +54,11 @@ const isNav = (key) => key.startsWith(NAV_PREFIX + '.');
 
 const ID_RE = /\b(?:SYS|ONB|AUT|CLB|FED|EVT|NTF|PRF|SET|MGT|ADM)-\d{2}\b|\bEVT-MENU\b|\b(?:SHT|DLG)-\d{2}\b|\bTST-X?\d{1,2}\b/g;
 const SCREEN_RE = /^(SYS|ONB|AUT|CLB|FED|EVT|NTF|PRF|SET|MGT|ADM)-\d{2}$/;
+// Kimlik enum'ları (KAT01–KAT04) ve üye adı kalıbı: tst05 · shtX1 · dlg07 · evtMenu (pack_data.enumMember).
+const ENUM_NAMES = 'ToastId|SheetId|DialogId|MenuId';
+const MEMBER_NAME = '(?:tst|sht|dlg)[0-9X]\\w*|[a-z]{3}Menu';
+// ToastSpec / DialogSpec kayıt dosyaları: kimlik enum'ları gibi katalogdur (iz ve kullanım kanıtı sayılmaz).
+const CATALOG_DIR_RE = /^lib\/product\/feedback\/catalogs\/(?:toasts|dialogs)\//;
 
 const errors = [];
 const warns = [];
@@ -153,26 +161,28 @@ function scanCode() {
   const S = {
     traces: new Map(),        // ID → [{file,line}] (katalog dışı sınıf izleri)
     catalogTraces: new Map(), // ID → [{file,line}] (enum dosyalarındaki izler)
-    members: { ToastId: new Map(), SheetId: new Map(), DialogId: new Map() }, // üye adı → {file,line,traceIds[]}
+    members: { ToastId: new Map(), SheetId: new Map(), DialogId: new Map(), MenuId: new Map() }, // üye adı → {file,line,traceIds[]}
     enumFiles: new Set(),
     refs: new Map(),          // 'ToastId.tst05' → [{file,line}] (katalog dışı kullanım)
     keys: [],                 // {key,file,line}
     todos: [],                // TODO(T-xx)
     testText: '',             // tüm test metni (birleşik)
   };
-  const enumRe = /\benum\s+(ToastId|SheetId|DialogId)\b/;
+  const enumRe = new RegExp(`\\benum\\s+(${ENUM_NAMES})\\b`);
+  const memberRe = new RegExp(`^\\s*(${MEMBER_NAME})\\s*(?:[(,;]|$)`);
   for (const f of libFiles) {
     const rel = core.toPosix(path.relative(root, f));
     const text = fs.readFileSync(f, 'utf8');
     const rawLines = text.split(/\r?\n/);
     const isEnumFile = enumRe.test(text);
     if (isEnumFile) S.enumFiles.add(rel);
+    const isCatalogFile = isEnumFile || CATALOG_DIR_RE.test(rel);
     // izler (ham satırlar)
     rawLines.forEach((ln, i) => {
       const m = /^\s*\/\/\/\s*Design:\s*(.+?)\s*$/.exec(ln);
       if (!m) return;
       const ids = m[1].match(ID_RE) || [];
-      const bucket = isEnumFile ? S.catalogTraces : S.traces;
+      const bucket = isCatalogFile ? S.catalogTraces : S.traces;
       for (const id of ids) { if (!bucket.has(id)) bucket.set(id, []); bucket.get(id).push({ file: rel, line: i + 1 }); }
     });
     // TODO(T-xx)
@@ -184,7 +194,7 @@ function scanCode() {
         const em = enumRe.exec(ln);
         if (em && /\{/.test(ln)) { cur = em[1]; depth = 0; }
         if (!cur) return;
-        const mm = /^\s*((?:tst|sht|dlg)[0-9X]\w*)\s*(?:[(,;]|$)/.exec(ln);
+        const mm = memberRe.exec(ln);
         if (mm && depth <= 1) {
           const traceIds = [];
           for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
@@ -201,8 +211,8 @@ function scanCode() {
     // kod (yorumsuz) üzerinde: referanslar ve GuKey.action
     const lines = core.parse(text, {});
     const { text: code, offs } = core.joinCode(lines);
-    if (!isEnumFile) {
-      const rr = /\b(ToastId|SheetId|DialogId)\s*\.\s*((?:tst|sht|dlg)[0-9X]\w*)\b/g;
+    if (!isCatalogFile) {
+      const rr = new RegExp(`\\b(${ENUM_NAMES})\\s*\\.\\s*(${MEMBER_NAME})\\b`, 'g');
       let m;
       while ((m = rr.exec(code))) {
         const k = m[1] + '.' + m[2];
@@ -357,9 +367,12 @@ function checkCatalogs(S) {
     ['ToastId', regIds.toast.filter((i) => !excluded.has(i))],
     ['SheetId', regIds.sheet],
     ['DialogId', regIds.dialog],
+    // CD-113: kayıtlı menüler (registry.json#menus — SHT-01 açılır menü biçimi + EVT-MENU); registry'de menü yoksa enum aranmaz
+    ['MenuId', reg.menus || [], true],
   ];
-  for (const [en, ids] of defs) {
+  for (const [en, ids, optional] of defs) {
     const mem = S.members[en];
+    if (mem.size === 0 && optional && !ids.length) continue;
     if (mem.size === 0) { err('KAT01', en, `\`enum ${en}\` bulunamadı (lib/product/feedback/)`); continue; }
     const want = new Set(ids.map(data.enumMember));
     for (const id of ids) if (!mem.has(data.enumMember(id))) err('KAT02', id, `${en}.${data.enumMember(id)} üyesi yok`);

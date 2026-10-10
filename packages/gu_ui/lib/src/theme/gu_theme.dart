@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gu_ui/src/theme/gu_system_ui.dart';
 import 'package:gu_ui/src/tokens/gu_colors.dart';
 import 'package:gu_ui/src/tokens/gu_component_colors.dart';
 import 'package:gu_ui/src/tokens/gu_radius.dart';
@@ -188,20 +189,12 @@ abstract final class GuTheme {
 
   /// PLAN §7.12 `auto` satırı (token-map §11): şeffaf durum çubuğu; açık
   /// temada koyu ikon, koyu temada açık ikon; gezinme çubuğu `bgCanvas`
-  /// (iç ekran), ayırıcı `borderSoft`, kontrast zorlaması kapalı.
-  static SystemUiOverlayStyle _systemOverlayStyle(GuColors c) {
-    // TODO(T-07): GuSystemUi.styleFor(brightness, navBarColor: bgCanvas, navDivider: borderSoft) ile değiştirilir (PLAN §7.9.3, §7.12).
-    final isDark = c.brightness == Brightness.dark;
-    return SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-      systemNavigationBarColor: c.bgCanvas,
-      systemNavigationBarIconBrightness: isDark
-          ? Brightness.light
-          : Brightness.dark,
-      systemNavigationBarDividerColor: c.borderSoft,
-      systemNavigationBarContrastEnforced: false,
-    );
-  }
+  /// (iç ekran), ayırıcı `borderSoft`, kontrast zorlaması kapalı — tek
+  /// kaynak `GuSystemUi.styleFor`.
+  static SystemUiOverlayStyle _systemOverlayStyle(GuColors c) =>
+      GuSystemUi.styleFor(
+        c.brightness,
+        navBarColor: c.bgCanvas,
+        navDivider: c.borderSoft,
+      );
 }

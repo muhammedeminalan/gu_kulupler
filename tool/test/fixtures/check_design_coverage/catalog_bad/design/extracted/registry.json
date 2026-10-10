@@ -1,0 +1,50 @@
+{
+  "screens": [],
+  "sheets": [
+    {
+      "id": "SHT-01",
+      "titleKey": "sht.01.title",
+      "titleTr": "Dil",
+      "titleEn": "Language"
+    }
+  ],
+  "dialogs": [
+    {
+      "id": "DLG-01",
+      "titleKey": "dlg.01.title",
+      "titleTr": "Hesap",
+      "titleEn": "Account"
+    }
+  ],
+  "toasts": [
+    {
+      "id": "TST-01",
+      "kind": "error",
+      "textTr": "Hata",
+      "actionLabelTr": null,
+      "persistent": false,
+      "duration": null
+    },
+    {
+      "id": "TST-58",
+      "kind": "info",
+      "textTr": "Demo",
+      "actionLabelTr": null,
+      "persistent": false,
+      "duration": null
+    },
+    {
+      "id": "TST-X1",
+      "kind": "info",
+      "textTr": "Bilgi",
+      "actionLabelTr": null,
+      "persistent": false,
+      "duration": null
+    }
+  ],
+  "menus": [
+    "SHT-01",
+    "EVT-MENU"
+  ],
+  "tabRoot": {}
+}

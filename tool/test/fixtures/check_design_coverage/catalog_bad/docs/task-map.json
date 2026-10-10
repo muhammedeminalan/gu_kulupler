@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "totals": {
+    "tasks": 3,
+    "screens": 0,
+    "sheets": 1,
+    "dialogs": 1,
+    "toasts": 2,
+    "menus": 1,
+    "actions": 0,
+    "exemptActions": 0
+  },
+  "excluded": {
+    "toasts": {
+      "TST-58": "Yalnızca demo"
+    }
+  },
+  "owners": {
+    "screens": {},
+    "sheets": {
+      "SHT-01": "T-08"
+    },
+    "dialogs": {
+      "DLG-01": "T-08"
+    },
+    "toasts": {
+      "TST-01": "T-08",
+      "TST-X1": "T-08"
+    },
+    "menus": {
+      "EVT-MENU": "T-08"
+    }
+  },
+  "tasks": [
+    {
+      "id": "T-00",
+      "title": "Kurulum",
+      "goal": "Fixture",
+      "deps": [],
+      "screens": [],
+      "sheets": [],
+      "dialogs": [],
+      "toasts": [],
+      "menus": [],
+      "wires": []
+    },
+    {
+      "id": "T-07",
+      "title": "Kataloglar",
+      "goal": "KAT01–KAT04: ToastId, SheetId, DialogId, MenuId",
+      "deps": [
+        "T-00"
+      ],
+      "screens": [],
+      "sheets": [],
+      "dialogs": [],
+      "toasts": [],
+      "menus": [],
+      "wires": []
+    },
+    {
+      "id": "T-08",
+      "title": "Sahip task",
+      "goal": "Katalog dosyaları iz / kullanım kanıtı değildir",
+      "deps": [
+        "T-07"
+      ],
+      "screens": [],
+      "sheets": [
+        "SHT-01"
+      ],
+      "dialogs": [
+        "DLG-01"
+      ],
+      "toasts": [
+        "TST-01",
+        "TST-X1"
+      ],
+      "menus": [
+        "EVT-MENU"
+      ],
+      "wires": []
+    }
+  ]
+}

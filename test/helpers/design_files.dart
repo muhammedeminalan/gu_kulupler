@@ -42,6 +42,17 @@ RegExp globToRegExp(String glob) =>
 bool matchesAnyGlob(Iterable<String> globs, String value) =>
     globs.any((g) => globToRegExp(g).hasMatch(value));
 
+/// Enum kaynağındaki `/// Design: <ID>` izleri: üye adı → üstündeki kimlik
+/// (`tool/check_design_coverage.js` KAT04 ile aynı kural: iz, üyenin hemen
+/// üstündeki belge yorumu bloğundadır; kimlikten sonraki açıklama atlanır).
+Map<String, String> parseEnumDesignTraces(String source) => {
+  for (final m in RegExp(
+    r'^[ \t]*/// Design: (\S+)[^\n]*\n(?:[ \t]*///[^\n]*\n)*[ \t]*(\w+)\s*[,;(]',
+    multiLine: true,
+  ).allMatches(source))
+    m.group(2)!: m.group(1)!,
+};
+
 /// Kök `pubspec.yaml` `flutter: fonts:` bloğu → aile → `assets/fonts/*.ttf`
 /// yolları (sırasıyla). yaml paketi olmadan: blok, 2 boşluk girintili
 /// `fonts:` satırından bir sonraki aynı ya da daha az girintili satıra kadar
