@@ -171,7 +171,7 @@ Roller **kulüp bazlıdır** (`memberships.role`); `superadmin` global claim'dir
 | Sayaç | Artar | Azalır | Yazan | Aynı batch'te |
 |---|---|---|---|---|
 | `clubs.memberCount` | onay (`pending→active`), anında katılım | ayrılma, çıkarma, onay geri alma | karar veren yönetici / ayrılan kullanıcı | üyelik güncellemesi + `activity` |
-| `events.goingCount` | katılım (`going`) | vazgeçme, terfi hariç; `going→cancelled` | katılan/vazgeçen kullanıcı; terfi = yönetici (veya Mod F tetikleyici) | rsvp yazımı |
+| `events.goingCount` | katılım (`going`) | vazgeçme, terfi hariç; `going→cancelled` (yoklama `going→attended` **düşürmez**: sayaç kayıtlıyı = `going` ∪ `attended` sayar, CD-130) | katılan/vazgeçen kullanıcı; terfi = yönetici (veya Mod F tetikleyici) | rsvp yazımı |
 | `events.waitlistCount` | bekleme listesine katılım | bekleme listesinden ayrılma / terfi | aynı | rsvp |
 | `events.attendedCount` | `going→attended` | `attended→going` | yoklama alan yönetici | rsvp |
 | `posts.likeCount` | beğeni | beğeniyi geri alma | beğenen üye | `likes` alanı |
@@ -240,7 +240,7 @@ Tür → alıcı → ayar anahtarı (prototipte `TYPE_SETTING`) → tetikleyici.
 - **Bekleme sırası** ("{n}. sıra"): aynı etkinliğin `waitlist` rsvp'leri `waitlistAt`'e göre sıralanır; kullanıcının sırası = ondan önceki sayısı + 1.
 - **Hatırlatıcı** (SHT-13): `reminder ∈ {none,1h,1d}`; katılmadan ayarlanamaz (TST-X7). `autoReminder` etkinlik düzeyinde ek hatırlatmadır.
 - **Bilet** (EVT-03): `going/attended` durumunda gösterilir; QR içeriği `gu:ticket:v1:{eventId}:{ticketCode}`. Durum rozeti: **Geçerli** (`going`) · **Okutuldu** (`attended`, `scannedAt`) · **İptal** (rsvp `cancelled` veya etkinlik `cancelled`). Canlı akış: yönetici okutunca bilet ekranı anında "Okutuldu" olur.
-- **Yoklama** (MGT-06/07): QR okut → `eventId` ve kod ile rsvp aranır → sonuç **SHT-24**: *Geçerli* (`going→attended`, `scannedAt/By`, TST-31 yok; 2 sn sonra otomatik kapanır, tarama devam), *Zaten okutulmuş* (`attended`), *Geçersiz* (yok/iptal/başka etkinlik). Manuel "Katıldı" anahtarı ve "Tümünü katıldı yap" (DLG-17) aynı alanları yazar. Yoklama %: `attended / (going+attended)`.
+- **Yoklama** (MGT-06/07): QR okut → `eventId` ve kod ile rsvp aranır → sonuç **SHT-24**: *Geçerli* (`going→attended`, `scannedAt/By`, TST-31 yok; 2 sn sonra otomatik kapanır, tarama devam), *Zaten okutulmuş* (`attended`), *Geçersiz* (yok/iptal/başka etkinlik). Manuel "Katıldı" anahtarı ve "Tümünü katıldı yap" (DLG-17) aynı alanları yazar. Yoklama %: `attended / (going+attended)` (rsvp durum sayıları; sayaçlarla `attendedCount / goingCount`, CD-130).
 - **İptal** (DLG-23): etkinlik `cancelled` + neden zorunlu; kayıtlılara `event_cancelled`. Bilet **İptal** görünür; yeni katılım yok.
 - **Yayın** (DLG-22): `draft→published` (+`publishedAt`); "{n} üyeye bildirim gönder" işaretliyse `event_new`. Yayından çek = `published→draft` (TST-X19). **Kopyala**: yeni taslak, tarih +7 gün, başlık "(kopya)" (ARB metni).
 - Düzenleme: yayındaki etkinlikte `capacity`, mevcut `goingCount`'tan düşük olamaz.

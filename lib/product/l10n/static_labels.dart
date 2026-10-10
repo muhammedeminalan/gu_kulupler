@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 
 /// Statik tablo kimliği → yerelleştirilmiş görünen ad (PLAN §9.9).
@@ -116,34 +117,33 @@ abstract final class StaticLabels {
     };
   }
 
-  /// Sınıf / öğrenim düzeyi adı (`prep`, `1`–`4`, `5plus`, `master`, `phd`
-  /// → `yearPrep`, `year1`–`year4`, `year5plus`, `yearMaster`, `yearPhd`).
-  static String year(BuildContext context, String id) {
+  /// Sınıf / öğrenim düzeyi adı (`yearPrep`, `year1`–`year4`, `year5plus`,
+  /// `yearMaster`, `yearPhd`). `switch` tüketicidir: yeni bir [YearLevel]
+  /// değeri etiketsiz derlenmez.
+  static String year(BuildContext context, YearLevel year) {
     final l10n = AppLocalizations.of(context);
-    return switch (id) {
-      'prep' => l10n.yearPrep,
-      '1' => l10n.year1,
-      '2' => l10n.year2,
-      '3' => l10n.year3,
-      '4' => l10n.year4,
-      '5plus' => l10n.year5plus,
-      'master' => l10n.yearMaster,
-      'phd' => l10n.yearPhd,
-      _ => id,
+    return switch (year) {
+      YearLevel.prep => l10n.yearPrep,
+      YearLevel.first => l10n.year1,
+      YearLevel.second => l10n.year2,
+      YearLevel.third => l10n.year3,
+      YearLevel.fourth => l10n.year4,
+      YearLevel.fivePlus => l10n.year5plus,
+      YearLevel.master => l10n.yearMaster,
+      YearLevel.phd => l10n.yearPhd,
     };
   }
 
-  /// Etkinlik türü adı (`egitim`, `sosyal`, `gezi`, `yarisma`, `konferans`
-  /// → `eventTypeEgitim` … `eventTypeKonferans`).
-  static String eventType(BuildContext context, String id) {
+  /// Etkinlik türü adı (`eventTypeEgitim` … `eventTypeKonferans`). `switch`
+  /// tüketicidir: yeni bir [EventType] değeri etiketsiz derlenmez.
+  static String eventType(BuildContext context, EventType type) {
     final l10n = AppLocalizations.of(context);
-    return switch (id) {
-      'egitim' => l10n.eventTypeEgitim,
-      'sosyal' => l10n.eventTypeSosyal,
-      'gezi' => l10n.eventTypeGezi,
-      'yarisma' => l10n.eventTypeYarisma,
-      'konferans' => l10n.eventTypeKonferans,
-      _ => id,
+    return switch (type) {
+      EventType.training => l10n.eventTypeEgitim,
+      EventType.social => l10n.eventTypeSosyal,
+      EventType.trip => l10n.eventTypeGezi,
+      EventType.competition => l10n.eventTypeYarisma,
+      EventType.conference => l10n.eventTypeKonferans,
     };
   }
 }

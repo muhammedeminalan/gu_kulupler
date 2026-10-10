@@ -425,28 +425,26 @@ void main() {
 
   group('T-08 · StaticTables ↔ registry.json', () {
     test('years: 8 kod, sırayla birebir', () {
-      expect(StaticTables.years, _strings(_registry, 'years'));
-      expect(StaticTables.years, [
-        'prep',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5plus',
-        'master',
-        'phd',
-      ]);
+      expect(StaticTables.years, YearLevel.values);
+      expect(
+        [for (final year in StaticTables.years) year.json],
+        _strings(_registry, 'years'),
+      );
+      expect(
+        [for (final year in StaticTables.years) year.json],
+        ['prep', '1', '2', '3', '4', '5plus', 'master', 'phd'],
+      );
       expect(_planCount('Yıllar'), StaticTables.years.length);
     });
 
     test('eventTypes: 5 tür, sırayla birebir', () {
-      final codes = _strings(_registry, 'eventTypes');
-
-      expect(StaticTables.eventTypes, [
-        for (final code in codes) EventTypeModel(id: code),
-      ]);
+      expect(StaticTables.eventTypes, EventType.values);
       expect(
-        [for (final type in StaticTables.eventTypes) type.id],
+        [for (final type in StaticTables.eventTypes) type.json],
+        _strings(_registry, 'eventTypes'),
+      );
+      expect(
+        [for (final type in StaticTables.eventTypes) type.json],
         ['egitim', 'sosyal', 'gezi', 'yarisma', 'konferans'],
       );
       expect(_planCount('Etkinlik türleri'), StaticTables.eventTypes.length);
@@ -501,9 +499,11 @@ void main() {
         ];
       }
 
-      expect(jsonValues('YearLevel'), StaticTables.years);
+      expect(jsonValues('YearLevel'), [
+        for (final year in StaticTables.years) year.json,
+      ]);
       expect(jsonValues('EventType'), [
-        for (final type in StaticTables.eventTypes) type.id,
+        for (final type in StaticTables.eventTypes) type.json,
       ]);
     });
   });
@@ -515,8 +515,8 @@ void main() {
       'faculties': [for (final row in StaticTables.faculties) row.id],
       'departments': [for (final row in StaticTables.departments) row.id],
       'places': [for (final row in StaticTables.places) row.id],
-      'years': StaticTables.years,
-      'eventTypes': [for (final row in StaticTables.eventTypes) row.id],
+      'years': [for (final year in StaticTables.years) year.json],
+      'eventTypes': [for (final type in StaticTables.eventTypes) type.json],
       'popularSearches': StaticTables.popularSearches,
     };
 
@@ -593,7 +593,10 @@ void main() {
         throwsUnsupportedError,
       );
       expect(() => StaticTables.places.clear(), throwsUnsupportedError);
-      expect(() => StaticTables.years.add('6'), throwsUnsupportedError);
+      expect(
+        () => StaticTables.years.add(YearLevel.prep),
+        throwsUnsupportedError,
+      );
       expect(() => StaticTables.eventTypes.clear(), throwsUnsupportedError);
       expect(
         () => StaticTables.popularSearches[0] = 'x',
@@ -660,7 +663,11 @@ void main() {
             );
           }
           if (year != null) {
-            expect(StaticTables.years, contains(year), reason: id);
+            expect(
+              [for (final level in StaticTables.years) level.json],
+              contains(year),
+              reason: id,
+            );
           }
           for (final interest in user['interests']! as List<Object?>) {
             expect(StaticTables.interestIds, contains(interest), reason: id);
@@ -671,7 +678,7 @@ void main() {
 
     test('her etkinliğin type ve placeId değerleri tabloda', () {
       final events = _demoDocs('events');
-      final typeIds = {for (final type in StaticTables.eventTypes) type.id};
+      final typeIds = {for (final type in StaticTables.eventTypes) type.json};
 
       expect(events, hasLength(22));
       for (final event in events) {
@@ -707,7 +714,7 @@ void main() {
       );
       expect(
         {for (final event in events) event['type']},
-        {for (final type in StaticTables.eventTypes) type.id},
+        {for (final type in StaticTables.eventTypes) type.json},
       );
     });
   });
@@ -757,7 +764,12 @@ void main() {
       expect(imports, isNotEmpty);
       expect(
         imports,
-        everyElement(startsWith('package:gu_data/src/models/lookup/')),
+        everyElement(
+          anyOf(
+            startsWith('package:gu_data/src/models/lookup/'),
+            startsWith('package:gu_data/src/models/enums/'),
+          ),
+        ),
       );
     });
 

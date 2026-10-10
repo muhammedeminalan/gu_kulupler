@@ -1,5 +1,5 @@
-import 'package:gu_data/src/constants/role_codes.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
+import 'package:gu_data/src/models/enums/membership_status.dart';
 
 /// Kullanıcının **tek bir kulübe** erişim kipi (PLAN §9.1; domain-model §3
 /// "Rol çözümü"; prototip `sel.mode`).
@@ -205,42 +205,40 @@ abstract final class RolePolicy {
   /// çözer (Rules `mActive`: `status == 'active'`).
   ///
   /// Yalnızca `active` üyelik rol taşır; `pending`, `rejected`, `removed`,
-  /// `left`, `cancelled`, bilinmeyen dizgi ve belge yok (`null`) durumlarında
-  /// sonuç `null`'dır — kullanıcı o kulüpte öğrenci (`student`) sütunundan
+  /// `left`, `cancelled` ve belge yok (`null`) durumlarında sonuç
+  /// `null`'dır — kullanıcı o kulüpte öğrenci (`student`) sütunundan
   /// yetkilendirilir. Üyelik belgesindeki rolü [can]'e **doğrudan vermek
   /// hatadır**: başvuran (`pending`, `role: 'member'`) üye sayılır, arayüz
   /// kulüp içini açar ve Rules `permission-denied` döner. Oturum katmanı
   /// (`SessionState.roleIn`) rolü yalnızca bu fonksiyonla türetir.
   ///
-  /// - [status]: `memberships.status` dizgisi ([MembershipStatusCodes]).
+  /// - [status]: `memberships.status`; belge yoksa `null`.
   /// - [role]: `memberships.role`; `active` olup rolü okunamayan üyelik için
   ///   de sonuç `null`'dır (en az yetki).
-  static ClubRole? activeRole({String? status, ClubRole? role}) =>
-      status == MembershipStatusCodes.active ? role : null;
+  static ClubRole? activeRole({MembershipStatus? status, ClubRole? role}) =>
+      status == MembershipStatus.active ? role : null;
 
   /// Kullanıcının bir kulübe erişim kipini çözer (prototip `sel.mode`).
   ///
   /// - [isSuper]: süper admin claim'i; `true` ise üyelikten bağımsız olarak
   ///   [ClubAccess.superAdmin].
-  /// - [status]: üyelik belgesinin `status` dizgisi ([MembershipStatusCodes]);
-  ///   belge yoksa `null`.
+  /// - [status]: üyelik belgesinin durumu; belge yoksa `null`.
   /// - [role]: üyelik belgesinin rolü; belge yoksa `null`.
   ///
   /// `pending` → [ClubAccess.pending], `rejected` → [ClubAccess.rejected];
   /// `active` iken role göre ([activeRole]) [ClubAccess.member] /
   /// [ClubAccess.manager] (`board`, `president`) / [ClubAccess.advisor]. Diğer
-  /// her durum — belge yok, `left`, `cancelled`, `removed`, bilinmeyen dizgi,
-  /// `active` olup rolü verilmemiş üyelik — [ClubAccess.visitor]'dır (en az
-  /// yetki).
+  /// her durum — belge yok, `left`, `cancelled`, `removed`, `active` olup
+  /// rolü verilmemiş üyelik — [ClubAccess.visitor]'dır (en az yetki).
   static ClubAccess accessOf({
     required bool isSuper,
-    String? status,
+    MembershipStatus? status,
     ClubRole? role,
   }) {
     if (isSuper) return ClubAccess.superAdmin;
     return switch (status) {
-      MembershipStatusCodes.pending => ClubAccess.pending,
-      MembershipStatusCodes.rejected => ClubAccess.rejected,
+      MembershipStatus.pending => ClubAccess.pending,
+      MembershipStatus.rejected => ClubAccess.rejected,
       _ => switch (activeRole(status: status, role: role)) {
         ClubRole.member => ClubAccess.member,
         ClubRole.board || ClubRole.president => ClubAccess.manager,

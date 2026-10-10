@@ -1,6 +1,8 @@
 // T-08 · StaticLabels: StaticTables kimliği → ARB metni. Her kimlik için TR
 // ve EN etiket boş değil, doğru anahtardan geliyor ve tablo içinde tekil;
-// tabloda olmayan kimlik olduğu gibi döner (PLAN §9.9).
+// dizgi kimlikli tablolarda tabloda olmayan kimlik olduğu gibi döner; yıl ve
+// etkinlik türü enum alır (T-09, W-48) — bilinmeyen değer derlenmez
+// (PLAN §9.9).
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
@@ -10,11 +12,16 @@ import '../helpers/design_files.dart';
 import '../helpers/pump_app.dart';
 
 /// Bir statik tablo: kimlikler, etiket çözücü ve ARB anahtar öneki.
+///
+/// `enumKeyed` tabloların çözücüsü enum alır (`year`, `eventType`); testte
+/// kimlik (`json` kodu) enum değerine çevrilerek çağrılır. Bu tablolarda
+/// "bilinmeyen kimlik" yoktur.
 typedef _Table = ({
   String name,
   List<String> ids,
   String Function(BuildContext context, String id) resolve,
   String keyPrefix,
+  bool enumKeyed,
 });
 
 /// `k01` → `K01`, `prep` → `Prep`, `5plus` → `5plus`.
@@ -30,42 +37,51 @@ final List<_Table> _tables = [
     ids: [for (final row in StaticTables.categories) row.id],
     resolve: StaticLabels.category,
     keyPrefix: 'cat',
+    enumKeyed: false,
   ),
   (
     name: 'interest',
     ids: [for (final row in StaticTables.interests) row.id],
     resolve: StaticLabels.interest,
     keyPrefix: 'interest',
+    enumKeyed: false,
   ),
   (
     name: 'faculty',
     ids: [for (final row in StaticTables.faculties) row.id],
     resolve: StaticLabels.faculty,
     keyPrefix: 'faculty',
+    enumKeyed: false,
   ),
   (
     name: 'department',
     ids: [for (final row in StaticTables.departments) row.id],
     resolve: StaticLabels.department,
     keyPrefix: 'dept',
+    enumKeyed: false,
   ),
   (
     name: 'place',
     ids: [for (final row in StaticTables.places) row.id],
     resolve: StaticLabels.place,
     keyPrefix: 'place',
+    enumKeyed: false,
   ),
   (
     name: 'year',
-    ids: StaticTables.years,
-    resolve: StaticLabels.year,
+    ids: [for (final year in StaticTables.years) year.json],
+    resolve: (context, id) =>
+        StaticLabels.year(context, YearLevel.fromJson(id)),
     keyPrefix: 'year',
+    enumKeyed: true,
   ),
   (
     name: 'eventType',
-    ids: [for (final row in StaticTables.eventTypes) row.id],
-    resolve: StaticLabels.eventType,
+    ids: [for (final type in StaticTables.eventTypes) type.json],
+    resolve: (context, id) =>
+        StaticLabels.eventType(context, EventType.fromJson(id)),
     keyPrefix: 'eventType',
+    enumKeyed: true,
   ),
 ];
 
@@ -101,7 +117,7 @@ void main() {
       expect(_arbKey(table('department'), 'd24'), 'deptD24');
       expect(_arbKey(table('place'), 'pl10'), 'placePl10');
       expect(
-        [for (final id in StaticTables.years) _arbKey(table('year'), id)],
+        [for (final id in table('year').ids) _arbKey(table('year'), id)],
         [
           'yearPrep',
           'year1',
@@ -115,8 +131,8 @@ void main() {
       );
       expect(
         [
-          for (final type in StaticTables.eventTypes)
-            _arbKey(table('eventType'), type.id),
+          for (final id in table('eventType').ids)
+            _arbKey(table('eventType'), id),
         ],
         [
           'eventTypeEgitim',
@@ -184,7 +200,7 @@ void main() {
       ) async {
         final context = await _pumpContext(tester, Locale(lang));
 
-        for (final table in _tables) {
+        for (final table in _tables.where((t) => !t.enumKeyed)) {
           for (final unknown in ['', 'x', 'zz99', 'K01', ' k01', 'd25', '6']) {
             if (table.ids.contains(unknown)) continue;
             expect(
@@ -199,7 +215,7 @@ void main() {
       testWidgets('kimlik yalnızca kendi tablosunda çözülür', (tester) async {
         final context = await _pumpContext(tester, Locale(lang));
 
-        for (final table in _tables) {
+        for (final table in _tables.where((t) => !t.enumKeyed)) {
           for (final other in _tables) {
             if (identical(other, table)) continue;
             for (final id in other.ids) {
@@ -224,16 +240,19 @@ void main() {
       expect(StaticLabels.faculty(tr, 'f3'), 'Edebiyat Fakültesi');
       expect(StaticLabels.department(tr, 'd01'), 'Bilgisayar Mühendisliği');
       expect(StaticLabels.place(tr, 'pl08'), 'Spor Salonu');
-      expect(StaticLabels.year(tr, 'prep'), 'Hazırlık');
-      expect(StaticLabels.year(tr, '5plus'), '5+ sınıf');
-      expect(StaticLabels.eventType(tr, 'yarisma'), 'Yarışma');
+      expect(StaticLabels.year(tr, YearLevel.prep), 'Hazırlık');
+      expect(StaticLabels.year(tr, YearLevel.fivePlus), '5+ sınıf');
+      expect(StaticLabels.eventType(tr, EventType.competition), 'Yarışma');
 
       final en = await _pumpContext(tester, const Locale('en'));
       final arb = readJsonMap('lib/l10n/app_en.arb');
       expect(StaticLabels.category(en, 'k01'), arb['catK01']);
       expect(StaticLabels.category(en, 'k01'), isNot('Teknoloji'));
-      expect(StaticLabels.year(en, 'prep'), isNot('Hazırlık'));
-      expect(StaticLabels.eventType(en, 'yarisma'), isNot('Yarışma'));
+      expect(StaticLabels.year(en, YearLevel.prep), isNot('Hazırlık'));
+      expect(
+        StaticLabels.eventType(en, EventType.competition),
+        isNot('Yarışma'),
+      );
     });
 
     testWidgets('dil değişince aynı kimlik yeni dilin metnine çözülür', (
@@ -272,7 +291,7 @@ void main() {
         'eventType', () {
       final members = [
         for (final match in RegExp(
-          r'^ {2}static String (\w+)\(BuildContext context, String id\) \{$',
+          r'^ {2}static String (\w+)\(BuildContext context, \w+ \w+\) \{$',
           multiLine: true,
         ).allMatches(source))
           match.group(1)!,
@@ -284,7 +303,7 @@ void main() {
     test('her tablo satırı için tam bir switch kolu (fazla / eksik yok)', () {
       final keys = [
         for (final match in RegExp(
-          r"^ {6}'[^']+' => l10n\.(\w+),$",
+          r"^ {6}(?:'[^']+'|\w+\.\w+) => l10n\.(\w+),$",
           multiLine: true,
         ).allMatches(source))
           match.group(1)!,
@@ -304,7 +323,8 @@ void main() {
       expect(source, isNot(contains('_l10n')));
     });
 
-    test('gu_data ve Firebase içe aktarılmaz (yalnızca kimlik → metin)', () {
+    test('Firebase içe aktarılmaz; gu_data yalnızca barrel üzerinden gelir '
+        '(YearLevel / EventType tipleri)', () {
       final imports = [
         for (final match in RegExp(
           "^import '([^']+)';",
@@ -315,6 +335,7 @@ void main() {
 
       expect(imports, [
         'package:flutter/widgets.dart',
+        'package:gu_data/gu_data.dart',
         'package:gu_kulupler/l10n/app_localizations.dart',
       ]);
     });

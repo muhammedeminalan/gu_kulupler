@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T14:01:23.741Z",
+  "updated": "2026-10-10T15:05:09.383Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -221,11 +221,13 @@
       "notes": ""
     },
     "T-09": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-10T14:01:47.362Z",
+      "finishedAt": "2026-10-10T15:05:09.383Z",
+      "commits": [
+        "f51fa26"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-10": {
@@ -885,7 +887,9 @@
       "resolveIn": [
         "T-09"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-09",
+      "closedAt": "2026-10-10T14:43:10.535Z"
     },
     {
       "id": "W-49",
@@ -902,6 +906,29 @@
       "text": "Duyuru sayacı gün anahtarı cihaz saatinden (AppClock.nowUtc), Rules request.time + 3 sa gününden (CD-129): PostRepository.create permissionDenied alır ve nowUtc Istanbul gün sınırına Limits.clockSkewTolerance içindeyse komşu gün anahtarıyla bir kez yeniden dener; AnnouncementCounterRepository.getToday aynı pencerede komşu günü de okur; T-19 Rules testi 'gün sınırında yanlış gün ret / doğru gün geçer'",
       "resolveIn": [
         "T-19"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-51",
+      "declaredIn": "T-09",
+      "text": "İstemci belgesi null alanı hiç yazmaz (build.yaml include_if_null:false), seed/fixture açık null yazar (CD-130): Rules'ta null olabilen her alan data.get('x', null) ile okunur — users.avatarPath/department/year/suspendReason (T-12); clubs.logoPath/coverPath/pinnedPostId/advisor/suspendReason/lastMembershipRef/social.*, memberships.decidedAt/decidedBy/retryAfter/rejectReason/rejectNote, applicant.department/year, reports.targetClubId/action/resolvedAt/resolvedBy (T-15); posts.title/poll/lastCommentRef/hiddenBy/hiddenAt/editedAt, comments.hiddenBy/hiddenAt (T-19); events.placeId/placeText/capacity/cancelReason/coverPath/lastRsvpRef/publishedAt, rsvps.waitlistAt/scannedAt/scannedBy (T-22); notifications.refs.* (T-25). Doğrudan erişim (capacity==null || …, action==null) eksik anahtarda hata verir → istemcinin oluşturduğu sınırsız kontenjanlı etkinliğe katılım ve şikayet oluşturma permission-denied alır. Her task'ın Rules testleri belgeyi hem anahtarsız (istemci toJson) hem açık null (seed) biçiminde kurar",
+      "resolveIn": [
+        "T-12",
+        "T-15",
+        "T-19",
+        "T-22",
+        "T-25"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-52",
+      "declaredIn": "T-09",
+      "text": "Kullanıcı kararı gerekli (şema incelemesi, T-09; model sözleşmeye uygun, değiştirilmedi): (a) users.suspendReason süper adminin serbest metni ve users/{uid} her doğrulanmış kullanıcıya açık (rules-spec §3.1 R; D-29 açık alan listesinde yok) → users/{uid}/private/account'a taşınsın mı, yoksa rules-spec §9 kabul edilmiş sınırlama mı? (T-12 planında AskUserQuestion). (b) memberships.note onaydan sonra belgede kalır (M5 beyaz listesi dokunmaz) ve §3.4 R(c) ile kulübün her aktif üyesi okuyabilir → private/contact'a taşınsın / M5'te note:'' yazılsın / kabul edilmiş sınırlama (T-15 planında AskUserQuestion). Karar decisions.md + rules-spec + PLAN §9.6.1/§9.6.4'e işlenir",
+      "resolveIn": [
+        "T-12",
+        "T-15"
       ],
       "status": "open"
     }

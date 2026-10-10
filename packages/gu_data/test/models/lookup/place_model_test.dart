@@ -36,7 +36,7 @@ void main() {
     });
 
     test('başka satır sınıfıyla eşit değildir', () {
-      expect(const PlaceModel(id: 'x'), isNot(const EventTypeModel(id: 'x')));
+      expect(const PlaceModel(id: 'x'), isNot(const FacultyModel(id: 'x')));
     });
 
     test('toString alanı gösterir', () {

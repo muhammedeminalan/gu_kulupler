@@ -999,21 +999,14 @@ void main() {
   });
 
   group('T-08 · RolePolicy.activeRole (Rules mActive)', () {
-    const statuses = <String>[
-      MembershipStatusCodes.pending,
-      MembershipStatusCodes.active,
-      MembershipStatusCodes.rejected,
-      MembershipStatusCodes.removed,
-      MembershipStatusCodes.left,
-      MembershipStatusCodes.cancelled,
-    ];
+    const statuses = MembershipStatus.values;
 
     // Tablo: altı durum × (dört rol + rol yok) — yalnızca `active` rol taşır.
     for (final status in statuses) {
       for (final role in _actorRoles) {
-        final expected = status == MembershipStatusCodes.active ? role : null;
+        final expected = status == MembershipStatus.active ? role : null;
 
-        test('durum=$status, rol=${role?.name ?? '∅'} → '
+        test('durum=${status.json}, rol=${role?.name ?? '∅'} → '
             '${expected?.name ?? '∅'}', () {
           expect(RolePolicy.activeRole(status: status, role: role), expected);
         });
@@ -1027,25 +1020,12 @@ void main() {
       }
     });
 
-    test('bilinmeyen / yanlış yazılmış durum dizgisi rol vermez (en az '
-        'yetki)', () {
-      for (final status in ['', 'none', 'Active', 'ACTIVE', ' active', 'x']) {
-        for (final role in ClubRole.values) {
-          expect(
-            RolePolicy.activeRole(status: status, role: role),
-            isNull,
-            reason: '"$status" × ${role.name}',
-          );
-        }
-      }
-    });
-
     test('aktif olmayan üyelik hiçbir üye / yönetici iznini vermez: sonuç '
         'öğrenci (student) sütunudur', () {
       final student = _granted(null);
 
       for (final status in statuses) {
-        if (status == MembershipStatusCodes.active) continue;
+        if (status == MembershipStatus.active) continue;
         for (final role in ClubRole.values) {
           final resolved = RolePolicy.activeRole(status: status, role: role);
 
@@ -1062,7 +1042,7 @@ void main() {
     test('başvuran (pending, role: member — Rules M1) kulüp içini göremez, '
         'yorum yazamaz, oy veremez', () {
       final role = RolePolicy.activeRole(
-        status: MembershipStatusCodes.pending,
+        status: MembershipStatus.pending,
         role: ClubRole.member,
       );
 
@@ -1086,8 +1066,8 @@ void main() {
 
     test('çıkarılmış / ayrılmış yönetici yönetim iznini kaybeder', () {
       for (final status in [
-        MembershipStatusCodes.removed,
-        MembershipStatusCodes.left,
+        MembershipStatus.removed,
+        MembershipStatus.left,
       ]) {
         for (final role in [ClubRole.board, ClubRole.president]) {
           final resolved = RolePolicy.activeRole(status: status, role: role);
@@ -1113,7 +1093,7 @@ void main() {
     test('aktif üyelikte rol aynen döner ve matris sütununu verir', () {
       for (final role in ClubRole.values) {
         final resolved = RolePolicy.activeRole(
-          status: MembershipStatusCodes.active,
+          status: MembershipStatus.active,
           role: role,
         );
 
@@ -1130,7 +1110,7 @@ void main() {
         ClubAccess.advisor,
       };
 
-      for (final status in <String?>[null, ...statuses, 'x']) {
+      for (final status in <MembershipStatus?>[null, ...statuses]) {
         for (final role in _actorRoles) {
           final access = RolePolicy.accessOf(
             isSuper: false,
@@ -1156,35 +1136,35 @@ void main() {
 
   group('T-08 · RolePolicy.accessOf', () {
     // (durum, rol) → beklenen kip — açıkça yazılı; süper admin değil.
-    const expectations = <(String?, ClubRole?), ClubAccess>{
+    const expectations = <(MembershipStatus?, ClubRole?), ClubAccess>{
       // Üyelik belgesi yok.
       (null, null): ClubAccess.visitor,
       // Başvuru bekliyor / reddedildi (belgede rol 'member' yazılıdır).
-      (MembershipStatusCodes.pending, ClubRole.member): ClubAccess.pending,
-      (MembershipStatusCodes.pending, null): ClubAccess.pending,
-      (MembershipStatusCodes.rejected, ClubRole.member): ClubAccess.rejected,
-      (MembershipStatusCodes.rejected, null): ClubAccess.rejected,
+      (MembershipStatus.pending, ClubRole.member): ClubAccess.pending,
+      (MembershipStatus.pending, null): ClubAccess.pending,
+      (MembershipStatus.rejected, ClubRole.member): ClubAccess.rejected,
+      (MembershipStatus.rejected, null): ClubAccess.rejected,
       // Aktif üyelik: rol belirler.
-      (MembershipStatusCodes.active, ClubRole.member): ClubAccess.member,
-      (MembershipStatusCodes.active, ClubRole.board): ClubAccess.manager,
-      (MembershipStatusCodes.active, ClubRole.president): ClubAccess.manager,
-      (MembershipStatusCodes.active, ClubRole.advisor): ClubAccess.advisor,
+      (MembershipStatus.active, ClubRole.member): ClubAccess.member,
+      (MembershipStatus.active, ClubRole.board): ClubAccess.manager,
+      (MembershipStatus.active, ClubRole.president): ClubAccess.manager,
+      (MembershipStatus.active, ClubRole.advisor): ClubAccess.advisor,
       // Aktif ama rolü verilmemiş: en az yetki.
-      (MembershipStatusCodes.active, null): ClubAccess.visitor,
+      (MembershipStatus.active, null): ClubAccess.visitor,
       // Biten üyelikler: ziyaretçi (rol ne olursa olsun).
-      (MembershipStatusCodes.removed, ClubRole.member): ClubAccess.visitor,
-      (MembershipStatusCodes.removed, ClubRole.board): ClubAccess.visitor,
-      (MembershipStatusCodes.left, ClubRole.member): ClubAccess.visitor,
-      (MembershipStatusCodes.left, ClubRole.board): ClubAccess.visitor,
-      (MembershipStatusCodes.left, ClubRole.president): ClubAccess.visitor,
-      (MembershipStatusCodes.left, ClubRole.advisor): ClubAccess.visitor,
-      (MembershipStatusCodes.cancelled, ClubRole.member): ClubAccess.visitor,
-      (MembershipStatusCodes.cancelled, null): ClubAccess.visitor,
+      (MembershipStatus.removed, ClubRole.member): ClubAccess.visitor,
+      (MembershipStatus.removed, ClubRole.board): ClubAccess.visitor,
+      (MembershipStatus.left, ClubRole.member): ClubAccess.visitor,
+      (MembershipStatus.left, ClubRole.board): ClubAccess.visitor,
+      (MembershipStatus.left, ClubRole.president): ClubAccess.visitor,
+      (MembershipStatus.left, ClubRole.advisor): ClubAccess.visitor,
+      (MembershipStatus.cancelled, ClubRole.member): ClubAccess.visitor,
+      (MembershipStatus.cancelled, null): ClubAccess.visitor,
     };
 
     for (final MapEntry(key: (status, role), value: expected)
         in expectations.entries) {
-      test('durum=${status ?? '∅'}, rol=${role?.name ?? '∅'} → '
+      test('durum=${status?.json ?? '∅'}, rol=${role?.name ?? '∅'} → '
           '${expected.name}', () {
         expect(
           RolePolicy.accessOf(isSuper: false, status: status, role: role),
@@ -1213,7 +1193,7 @@ void main() {
         expect(
           RolePolicy.accessOf(
             isSuper: false,
-            status: MembershipStatusCodes.pending,
+            status: MembershipStatus.pending,
             role: role,
           ),
           ClubAccess.pending,
@@ -1221,7 +1201,7 @@ void main() {
         expect(
           RolePolicy.accessOf(
             isSuper: false,
-            status: MembershipStatusCodes.rejected,
+            status: MembershipStatus.rejected,
             role: role,
           ),
           ClubAccess.rejected,
@@ -1229,29 +1209,10 @@ void main() {
       }
     });
 
-    test('bilinmeyen durum dizgisi ziyaretçidir (en az yetki)', () {
-      for (final status in ['', 'none', 'Active', 'ACTIVE', ' active', 'x']) {
-        for (final role in _actorRoles) {
-          expect(
-            RolePolicy.accessOf(isSuper: false, status: status, role: role),
-            ClubAccess.visitor,
-            reason: '"$status" × $role',
-          );
-        }
-      }
-    });
-
     test('altı durum kodunun tamamı sınanır', () {
       expect(
         {for (final (status, _) in expectations.keys) ?status},
-        {
-          MembershipStatusCodes.pending,
-          MembershipStatusCodes.active,
-          MembershipStatusCodes.rejected,
-          MembershipStatusCodes.removed,
-          MembershipStatusCodes.left,
-          MembershipStatusCodes.cancelled,
-        },
+        MembershipStatus.values.toSet(),
       );
     });
 
@@ -1342,7 +1303,7 @@ void main() {
         final membership = doc! as Map<String, Object?>;
         final access = RolePolicy.accessOf(
           isSuper: false,
-          status: membership['status']! as String,
+          status: MembershipStatus.fromJson(membership['status']! as String),
           role: ClubRole.fromJson(membership['role']! as String),
         );
         counts[access] = (counts[access] ?? 0) + 1;
@@ -1417,8 +1378,8 @@ void main() {
       ];
 
       expect(imports, [
-        'package:gu_data/src/constants/role_codes.dart',
         'package:gu_data/src/models/enums/club_role.dart',
+        'package:gu_data/src/models/enums/membership_status.dart',
       ]);
     });
   });
