@@ -1,0 +1,8 @@
+{
+  "@@locale": "tr",
+  "searchNoResults": "'{q}' için sonuç bulunamadı",
+  "@searchNoResults": {
+    "description": "Key search.noResults",
+    "placeholders": { "q": { "type": "String" } }
+  }
+}

@@ -1,0 +1,7 @@
+# Fixture: kalıp dosyası biçimi (satır başına kalıp, `*` joker, `#` sonrası gerekçe).
+   # girintili yorum satırı da atlanır
+
+AUT-01.demoAccount.*   # Demo hesap — K-02 # ikinci diyez gerekçede kalır
+EVT-03.demoScan
+  MGT-*.switchClub  #   boşluklu gerekçe   
+CLB-01.status.*  # CRLF satırı

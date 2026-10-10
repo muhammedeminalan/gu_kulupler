@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "totals": { "tasks": 2, "screens": 2, "sheets": 0, "dialogs": 0, "toasts": 0, "menus": 0, "actions": 6, "exemptActions": 0 },
+  "excluded": { "toasts": {} },
+  "owners": {
+    "screens": { "CLB-01": "T-01", "EVT-01": "T-01" },
+    "sheets": {}, "dialogs": {}, "toasts": {}, "menus": {}
+  },
+  "tasks": [
+    { "id": "T-00", "title": "Kurulum", "goal": "Fixture", "deps": [], "screens": [], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] },
+    { "id": "T-01", "title": "Sekme kökleri", "goal": "Kalıp dosyası yok; NAV fazlası ve eksiği", "deps": ["T-00"], "screens": ["CLB-01", "EVT-01"], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] }
+  ]
+}

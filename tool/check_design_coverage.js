@@ -17,6 +17,14 @@
  *   test    test/ · packages/<paket>/test · integration_test altında kimliği (ya da ToastId.tstNN) anan bir test
  *   kullanım toast: `ToastId.tstNN` katalog dışında kullanılıyor (hata) · sheet/dialog: `SheetId.shtNN`/`DialogId.dlgNN` (uyarı; --all'da hata)
  *   aksiyon  (--actions / --all) GuKey.action('…') kümesi == screens-actions.json (muaflar hariç, `${…}` → `*`)
+ *            AKS01 eksik · AKS02 fazla · AKS03 muaf (demo) uygulanmış · AKS04 borçla ertelendi · AKS05 biçim · AKS06 bilinmeyen önek
+ * Kalıp dosyaları (pack_data.patternFile; satır başına kalıp, `*` joker, `#` sonrası gerekçe):
+ *   tool/design_exempt_actions.txt   uygulanmayan (demo/mock) aksiyonlar — beklenmez; kodda bulunursa AKS03 (CD-122(4), K-02)
+ *   tool/design_dynamic_actions.txt  envanterde olmayan koşullu/dinamik anahtarlar — kalıba uyan bulunmuş anahtar AKS02
+ *                                    sayılmaz; AKS01 değişmez (CD-86)
+ * Kabuk anahtarları `NAV.*` (K-17, CD-53, PLAN §19.10): yalnızca registry.tabRoot ekranlarında beklenir; bu ekranlarda
+ *   bulunan küme = `<ID>.*` ∪ `NAV.*`. Sekme kökü olmayan ekranda `NAV.*` beklenmez ve o ekran için AKS02 üretmez;
+ *   hiçbir sekme kökü envanterinde karşılığı olmayan `NAV.*` anahtarı ayrıca AKS02'dir.
  * Bağlama borcu (progress.json#pendingWiring): açık borç kaydındaki `actions` kalıpları eksik anahtarı aklar.
  */
 const fs = require('fs');
@@ -29,16 +37,17 @@ const root = core.projectRoot(argv);
 const has = (f) => argv.includes(f);
 const val = (f) => { const i = argv.indexOf(f); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : null; };
 
-// Uygulanmayan (demo/mock) aksiyonlar — docs/design-contract.md §2. Değiştirmek kullanıcıya sorulur.
-const EXEMPT_ACTIONS = [
-  { pattern: 'AUT-01.demoAccount.*', reason: 'Demo hesap hızlı girişi — K-02, gerçek giriş akışı var' },
-  { pattern: 'AUT-01.demoToggle', reason: 'Demo hesap bölümü aç/kapa — K-02' },
-  { pattern: 'AUT-03.demoVerify', reason: '"Doğrulandı simüle et" — gerçekte e-posta bağlantısı (K-02)' },
-  { pattern: 'EVT-03.demoScan', reason: 'Bilet ekranından sahte okutma — gerçek okutma MGT-07\'de (K-02)' },
-  { pattern: 'MGT-07.demoScan.*', reason: 'Sahte QR sonucu (valid|used|invalid) — gerçek kamera/manuel kod (K-02)' },
-];
-const EXEMPT_RES = EXEMPT_ACTIONS.map((e) => ({ ...e, re: data.globToRe(e.pattern) }));
+// Uygulanmayan (demo/mock) aksiyonlar — docs/design-contract.md §2; tek kaynak dosya (CD-122(4)). Değiştirmek kullanıcıya sorulur.
+const EXEMPT_FILE = 'tool/design_exempt_actions.txt';
+// Envanterde olmayan koşullu/dinamik anahtarlar (CD-86) — ekran task'ları kendi satırlarını ekler.
+const DYNAMIC_FILE = 'tool/design_dynamic_actions.txt';
+const EXEMPT_RES = data.patternFile(root, EXEMPT_FILE);
+const DYNAMIC_RES = data.patternFile(root, DYNAMIC_FILE);
 const isExempt = (key) => EXEMPT_RES.some((e) => e.re.test(key));
+const isDynamic = (key) => DYNAMIC_RES.some((e) => e.re.test(key));
+// Kabuk (alt sekme çubuğu) anahtarları — K-17, CD-53
+const NAV_PREFIX = 'NAV';
+const isNav = (key) => key.startsWith(NAV_PREFIX + '.');
 
 const ID_RE = /\b(?:SYS|ONB|AUT|CLB|FED|EVT|NTF|PRF|SET|MGT|ADM)-\d{2}\b|\bEVT-MENU\b|\b(?:SHT|DLG)-\d{2}\b|\bTST-X?\d{1,2}\b/g;
 const SCREEN_RE = /^(SYS|ONB|AUT|CLB|FED|EVT|NTF|PRF|SET|MGT|ADM)-\d{2}$/;
@@ -116,7 +125,7 @@ function checkMap() {
     exempt += e.actions.filter(isExempt).length;
   }
   if (total !== tot.actions) err('MAP10', '-', `aksiyon toplamı ${total} ≠ task-map ${tot.actions}`);
-  if (exempt !== tot.exemptActions) err('MAP11', '-', `muaf aksiyon ${exempt} ≠ task-map ${tot.exemptActions} (EXEMPT_ACTIONS değişti mi?)`);
+  if (exempt !== tot.exemptActions) err('MAP11', '-', `muaf aksiyon ${exempt} ≠ task-map ${tot.exemptActions} (${EXEMPT_FILE} değişti mi?)`);
   // 5) progress.json
   if (pj) {
     for (const t of tasks) if (!pj.tasks || !pj.tasks[t.id]) err('MAP12', t.id, 'progress.json#tasks içinde yok');
@@ -290,17 +299,21 @@ function checkActions(S, screenIds, mode) {
     byPrefix.get(m[1]).push(k);
   }
   // bilinmeyen kimlik öneki (yazım hatası)
-  const known = new Set([].concat(...Object.values(regIds)).concat(['NAV']));
+  const known = new Set([].concat(...Object.values(regIds)).concat([NAV_PREFIX]));
   for (const [pre, list] of byPrefix) {
     if (!known.has(pre)) for (const k of list) err('AKS06', k.key, `${k.file}:${k.line} bilinmeyen kimlik öneki "${pre}"`);
   }
+  const tabRoots = new Set(Object.values(reg.tabRoot || {}));
+  const navRes = (byPrefix.get(NAV_PREFIX) || []).map((k) => ({ ...k, re: data.globToRe(k.key) }));
   for (const sid of screenIds) {
     if (!SCREEN_RE.test(sid)) continue;
     const e = inv[sid];
     if (!e) continue;
-    const found = byPrefix.get(sid) || [];
-    const foundRes = found.map((k) => ({ ...k, re: data.globToRe(k.key) }));
-    const expected = e.actions.filter((a) => !isExempt(a));
+    // K-17/CD-53: sekme kökünde bulunan küme = ekran önekli anahtarlar ∪ kabuktaki NAV.* anahtarları
+    const isRoot = tabRoots.has(sid);
+    const foundRes = (byPrefix.get(sid) || []).map((k) => ({ ...k, re: data.globToRe(k.key) })).concat(isRoot ? navRes : []);
+    // sekme kökü olmayan ekranda NAV.* beklenmez
+    const expected = e.actions.filter((a) => !isExempt(a) && (isRoot || !isNav(a)));
     const missing = [];
     for (const a of expected) {
       if (foundRes.some((f) => f.re.test(a))) continue;
@@ -310,15 +323,31 @@ function checkActions(S, screenIds, mode) {
     }
     for (const a of missing) err('AKS01', a, `eksik aksiyon anahtarı — \`GuKey.action('${a}')\` (${sid})`);
     const extra = [];
+    let dynamic = 0;
     for (const f of foundRes) {
+      if (isNav(f.key)) continue; // NAV.* fazlalığı ekran başına değil, aşağıda sekme kökü envanterlerinin birleşimine göre
       if (e.actions.some((a) => f.re.test(a))) {
         if (e.actions.filter((a) => f.re.test(a)).every(isExempt)) err('AKS03', f.key, `${f.file}:${f.line} muaf (demo) aksiyon uygulanmış — K-02`);
         continue;
       }
+      if (isDynamic(f.key)) { dynamic++; continue; } // CD-86: tool/design_dynamic_actions.txt
       extra.push(f);
       err('AKS02', f.key, `${f.file}:${f.line} envanterde olmayan fazla anahtar (${sid})`);
     }
-    rows.push({ id: sid, expected: expected.length, found: expected.length - missing.length, missing: missing.length, extra: extra.length });
+    rows.push({ id: sid, expected: expected.length, found: expected.length - missing.length, missing: missing.length, extra: extra.length, dynamic });
+  }
+  // NAV.* fazla anahtar (CD-53): hiçbir sekme kökü envanterinde karşılığı yoksa (kapsamdan bağımsız, AKS05/AKS06 gibi)
+  if (navRes.length) {
+    const navInv = [...tabRoots].flatMap((r) => ((inv[r] && inv[r].actions) || []).filter(isNav));
+    for (const f of navRes) {
+      const hits = navInv.filter((a) => f.re.test(a));
+      if (hits.length) {
+        if (hits.every(isExempt)) err('AKS03', f.key, `${f.file}:${f.line} muaf (demo) aksiyon uygulanmış — K-02`);
+        continue;
+      }
+      if (isDynamic(f.key)) continue;
+      err('AKS02', f.key, `${f.file}:${f.line} hiçbir sekme kökü (registry.tabRoot: ${[...tabRoots].join(', ')}) envanterinde olmayan fazla NAV anahtarı`);
+    }
   }
   return rows;
 }

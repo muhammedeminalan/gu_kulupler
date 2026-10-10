@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "totals": { "tasks": 5, "screens": 5, "sheets": 0, "dialogs": 0, "toasts": 0, "menus": 0, "actions": 15, "exemptActions": 3 },
+  "excluded": { "toasts": {} },
+  "owners": {
+    "screens": { "CLB-01": "T-01", "EVT-01": "T-01", "CLB-02": "T-02", "AUT-01": "T-03", "FED-01": "T-04" },
+    "sheets": {}, "dialogs": {}, "toasts": {}, "menus": {}
+  },
+  "tasks": [
+    { "id": "T-00", "title": "Kurulum", "goal": "Fixture", "deps": [], "screens": [], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] },
+    { "id": "T-01", "title": "Sekme kökleri", "goal": "NAV.* sekme kökünde sayılır", "deps": ["T-00"], "screens": ["CLB-01", "EVT-01"], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] },
+    { "id": "T-02", "title": "Sekme kökü olmayan ekran", "goal": "NAV.* beklenmez", "deps": ["T-01"], "screens": ["CLB-02"], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] },
+    { "id": "T-03", "title": "Muaf aksiyon", "goal": "AKS03", "deps": ["T-00"], "screens": ["AUT-01"], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] },
+    { "id": "T-04", "title": "Eksik ve fazla", "goal": "AKS01, AKS02, AKS03", "deps": ["T-00"], "screens": ["FED-01"], "sheets": [], "dialogs": [], "toasts": [], "menus": [], "wires": [] }
+  ]
+}

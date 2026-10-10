@@ -1,0 +1,8 @@
+# Uygulanmayan (demo/mock) aksiyon anahtarları — docs/design-contract.md §2, CD-122(4).
+# Tek kaynak: tool/check_design_coverage.js ve test/helpers/action_inventory.dart bu dosyayı okur.
+# Biçim: satır başına bir kalıp (`*` joker), `#` sonrası gerekçe. Değiştirmek kullanıcıya sorulur.
+AUT-01.demoAccount.*   # Demo hesap hızlı girişi — K-02, gerçek giriş akışı var
+AUT-01.demoToggle      # Demo hesap bölümü aç/kapa — K-02
+AUT-03.demoVerify      # "Doğrulandı simüle et" — gerçekte e-posta bağlantısı (K-02)
+EVT-03.demoScan        # Bilet ekranından sahte okutma — gerçek okutma MGT-07'de (K-02)
+MGT-07.demoScan.*      # Sahte QR sonucu (valid|used|invalid) — gerçek kamera/manuel kod (K-02)

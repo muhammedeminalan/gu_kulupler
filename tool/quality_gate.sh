@@ -9,7 +9,7 @@
 #   ek: --check-format (biçimlendirmeyi uygulama, yalnızca doğrula) · --verbose (çıktıyı akıt)
 #   ortam: GU_GATE_STATIC_ONLY=1 (flutter/dart adımlarını atla) · GU_GATE_VERBOSE=1
 #
-# Adımlar: format → codegen → analyze → sınırlar → hardcode → hard-delete → ARB → tasarım kapsamı → test(+kapsam) → Rules.
+# Adımlar: format → codegen → analyze → araç öz-testi → sınırlar → hardcode → hard-delete → ARB → tasarım kapsamı → test(+kapsam) → Rules.
 # Başarısız adımın logunun son satırları gösterilir; tam log: tool/.cache/gate-logs/.
 # Not (Claude Code): Bash aracının varsayılan zaman aşımı 2 dk'dır; tam kapı için timeout=600000 ver ya da arka planda çalıştır.
 # bash 3.2 (macOS) uyumludur.
@@ -163,6 +163,12 @@ else
   skip "format/codegen/analyze" "GU_GATE_STATIC_ONLY=1"
 fi
 
+# Araç öz-testi (CD-79): tool/check_*.js kurallarının node:test regresyonu — her modda (static/fast/task/final)
+if ls tool/test/*.test.js >/dev/null 2>&1; then
+  step arac-testi 0 node --test tool/test/*.test.js
+else
+  skip arac-testi "tool/test/*.test.js yok"
+fi
 step sinirlar 0 node tool/check_boundaries.js
 step hardcode 0 node tool/check_hardcode.js
 step hard-delete 0 node tool/check_no_hard_delete.js

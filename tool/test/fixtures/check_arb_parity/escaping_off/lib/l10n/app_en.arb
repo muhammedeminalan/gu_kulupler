@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "searchNoResults": "No results for '{q}'",
+  "@searchNoResults": {
+    "placeholders": { "q": { "type": "String" } }
+  }
+}

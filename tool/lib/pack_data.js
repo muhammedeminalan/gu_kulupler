@@ -40,4 +40,24 @@ function enumMember(id) { return id.slice(0, 3).toLowerCase() + id.slice(4); }
 /** '*' joker → RegExp (tam eşleşme) */
 function globToRe(g) { return new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'); }
 
-module.exports = { readJson, registry, inventory, taskMap, progress, writeProgress, kindOfId, enumMember, globToRe };
+/**
+ * Kalıp dosyası okuyucu (tool/design_exempt_actions.txt, tool/design_dynamic_actions.txt; biçim tool/arb_dynamic_keys.txt ile aynı):
+ * satır başına bir kalıp (`*` joker), ilk `#` sonrası gerekçe; boş ve yalnızca yorum satırları atlanır.
+ * Dosya yoksa boş dizi.
+ * @returns {{pattern: string, reason: string, re: RegExp}[]}
+ */
+function patternFile(root, rel) {
+  const p = path.join(root, rel);
+  if (!fs.existsSync(p)) return [];
+  const out = [];
+  for (const raw of fs.readFileSync(p, 'utf8').split(/\r?\n/)) {
+    const i = raw.indexOf('#');
+    const pattern = (i >= 0 ? raw.slice(0, i) : raw).trim();
+    if (!pattern) continue;
+    const reason = i >= 0 ? raw.slice(i + 1).trim() : '';
+    out.push({ pattern, reason, re: globToRe(pattern) });
+  }
+  return out;
+}
+
+module.exports = { readJson, registry, inventory, taskMap, progress, writeProgress, kindOfId, enumMember, globToRe, patternFile };

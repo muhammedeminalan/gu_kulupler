@@ -1,0 +1,4 @@
+# Fixture: dinamik/koşullu anahtar kalıpları — biçim tool/design_dynamic_actions.txt ile aynı.
+
+CLB-01.myClub.*        # Fixture: üye olunan kulüp kartı yalnızca üyelikte görünür
+FED-01.comment.*       # Fixture: envanterde olup kodda olmayan anahtarı (AKS01) aklamaz

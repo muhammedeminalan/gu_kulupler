@@ -1,0 +1,4 @@
+# Fixture: muaf (demo) aksiyon kalıpları — biçim tool/design_exempt_actions.txt ile aynı.
+AUT-01.demoAccount.*   # Demo hesap hızlı girişi — K-02
+AUT-01.demoToggle      # Demo bölümü aç/kapa — K-02
+FED-01.demoOnly        # Yalnızca fixture kalıbı: muafların dosyadan okunduğunu kanıtlar

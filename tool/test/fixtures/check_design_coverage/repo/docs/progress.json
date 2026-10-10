@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "tasks": {
+    "T-00": { "status": "done" },
+    "T-01": { "status": "in_progress" },
+    "T-02": { "status": "in_progress" },
+    "T-03": { "status": "in_progress" },
+    "T-04": { "status": "in_progress" }
+  },
+  "pendingWiring": []
+}

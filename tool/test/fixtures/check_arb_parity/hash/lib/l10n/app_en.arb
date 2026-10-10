@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "memberCount": "{count, plural, =0{No members} one{{count} member} other{{count} members}}",
+  "@memberCount": {
+    "placeholders": { "count": { "type": "int" } }
+  }
+}
