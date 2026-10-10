@@ -106,6 +106,7 @@ main() → runZonedGuarded(() async {
 
 - `--dart-define=ENV=emulator|production` (varsayılan: `kDebugMode ? emulator : production` **değil** — açık verilmezse `production` ve debug'da uyarı; yanlışlıkla gerçek projeye yazma riskini azaltmak için emülatör **açıkça** seçilir).
 - Emülatör host'ları: Android emülatör `10.0.2.2`, iOS simülatör/masaüstü `localhost`; gerçek cihaz için `--dart-define=EMULATOR_HOST=<LAN-IP>`. Portlar `firebase.json`'dan (Auth 9099, Firestore 8080, Storage 9199, Functions 5001, UI 4000).
+- **Emülatör güvenlik kuralları (CD-131):** (a) release derlemesi emülatöre bağlanmaz — `ENV=emulator` + `kReleaseMode` açılışta `StateError` (bağlantı şifresizdir; sessizce production'a düşürülmez); (b) `EMULATOR_HOST` yalnızca `localhost`, `.local` adı ya da özel IPv4 (127/8, 10/8, 172.16/12, 192.168/16); tanınmayan `ENV` ve emülatör dışında verilen `EMULATOR_HOST` hatadır; (c) emülatörde servisler varsayılan uygulamayı değil `gu-emulator` adlı ikinci Firebase uygulamasını kullanır (`demo-gu-kulupler` kimliği, sahte API anahtarı — gerçek projenin anahtarı taşınmaz); (d) servis örnekleri yalnızca `AppEnvironment.auth` / `.firestore` / `.storage` üzerinden alınır ve `configure()` tamamlanmadan `StateError` verir (`FirebaseAuth.instance` vb. başka dosyada yasak).
 - Gerçek proje kimlikleri `firebase_options.dart`'tadır (flutterfire). **Bu dosya zaten repoda olabilir; yeniden üretme.**
 - ⟦Q-03⟧ tek proje mi iki proje mi: iki proje seçilirse `--dart-define=ENV=dev|prod` ve iki `firebase_options`.
 

@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// GÜ Kulüpler — Storage Security Rules.
+// Sözleşme: docs/firestore-rules-spec.md §7 · hedef dosya: docs/PLAN.md §11.5 · testler: firebase/test/storage/.
+//
+// T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
+// okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
+// (`isManagerOf`, `eventClubId` — firestore.get/exists) ilk kullanan task'ta eklenir (T-16 / T-22).
+//
+// Değişmez kurallar (tool/check_no_hard_delete.js HD20–HD22):
+//  - `allow update, delete: if false;` her yolda kalır (D-10): dosya silinmez, üzerine yazılmaz;
+//    değişiklik = yeni dosya adı + Firestore yol alanı (avatarPath, logoPath, coverPath, images[].path).
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Yardımcı fonksiyonlar (PLAN §11.5) ──────────────────────────────────────────────────────
+    function signedInVerified() {
+      return request.auth != null && request.auth.token.email_verified == true
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+    }
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.get('superadmin', false) == true;
+    }
+    function imageOk() {
+      return request.resource.contentType.matches('image/.*')
+          && request.resource.size < 5 * 1024 * 1024;   // limit: imageMaxBytes
+    }
+
+    // users/{uid}/{file} — avatar · T-14
+    match /users/{uid}/{file} {
+      allow read: if false;
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // clubs/{clubId}/{file} — logo ve kapak · T-16 (T-36)
+    match /clubs/{clubId}/{file} {
+      allow read: if false;
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // events/{eventId}/{file} — etkinlik kapağı · T-22 (CD-47)
+    match /events/{eventId}/{file} {
+      allow read: if false;
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // posts/{postId}/{file} — gönderi görseli · T-21 (CD-39: metadata.clubId)
+    match /posts/{postId}/{file} {
+      allow read: if false;
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // support/{ticketNo}/{file} — destek eki · T-28
+    match /support/{ticketNo}/{file} {
+      allow read: if false;
+      allow create: if false;
+      allow update, delete: if false;
+    }
+
+    // ── Varsayılan ret: yukarıda açılmayan her yol kapalıdır ───────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

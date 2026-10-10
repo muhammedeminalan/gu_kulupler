@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:gu_kulupler/core/env/app_environment.dart';
 import 'package:gu_kulupler/firebase_options.dart';
 
 Future<void> main() async {
@@ -7,6 +8,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // ENV=emulator ise Auth/Firestore/Storage yerel emülatöre bağlanır;
+  // Firebase'e dokunan her şeyden önce çağrılır (architecture §4–§5).
+  await AppEnvironment.configure();
   runApp(const GuApp());
 }
 

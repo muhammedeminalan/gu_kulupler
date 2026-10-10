@@ -1,0 +1,281 @@
+{
+  "_doc": "Rules test bağlamları (PLAN §11.1 sütunları, §11.6). Tek kaynak: firebase/test/helpers/contexts.js bağlamı, fixtures.js veriyi buradan kurar; Dart RolePolicy parite testi `clubRole` + `isSuper` alanlarını okur. `club` = bağlamların üyelik taşıdığı kulüp; `otherClub` = otherManager bağlamının kulübü. `clubRole` = `club` içindeki AKTİF üyeliğin rolü (yoksa null — RolePolicy.activeRole). `activeUser` = Rules activeUser() sonucu.",
+  "projectId": "demo-gu-kulupler",
+  "club": "c01",
+  "otherClub": "c02",
+  "contexts": [
+    "anon",
+    "unver",
+    "student",
+    "former",
+    "pending",
+    "member",
+    "board",
+    "president",
+    "advisor",
+    "super",
+    "otherManager",
+    "susp"
+  ],
+  "variants": {
+    "outsideDomain": "unver",
+    "deleted": "susp"
+  },
+  "aliases": {
+    "superadmin": "super",
+    "otherMgr": "otherManager"
+  },
+  "formerStatuses": [
+    "left",
+    "cancelled",
+    "rejected",
+    "removed"
+  ],
+  "definitions": {
+    "anon": {
+      "uid": null,
+      "token": null,
+      "user": null,
+      "membership": null,
+      "activeUser": false,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "request.auth == null"
+    },
+    "unver": {
+      "uid": "u_unver",
+      "token": {
+        "email": "unver@ogr.gumushane.edu.tr",
+        "email_verified": false
+      },
+      "user": null,
+      "membership": null,
+      "activeUser": false,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "oturum var, e-posta doğrulanmamış → emailOk() false"
+    },
+    "outsideDomain": {
+      "uid": "u_outside",
+      "token": {
+        "email": "outside@gmail.com",
+        "email_verified": true
+      },
+      "user": null,
+      "membership": null,
+      "activeUser": false,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "unver alt varyantı: doğrulanmış ama izinli alan adı dışında → emailOk() false"
+    },
+    "student": {
+      "uid": "u_student",
+      "token": {
+        "email": "student@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": null,
+      "activeUser": true,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "activeUser(); c01 içinde üyelik belgesi yok (visitor)"
+    },
+    "former": {
+      "uid": "u_former",
+      "token": {
+        "email": "former@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "left",
+        "role": "member"
+      },
+      "activeUser": true,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "c01 içinde status ∈ formerStatuses belgesi var (varsayılan left)"
+    },
+    "pending": {
+      "uid": "u_pending",
+      "token": {
+        "email": "pending@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "pending",
+        "role": "member"
+      },
+      "activeUser": true,
+      "clubRole": null,
+      "isSuper": false
+    },
+    "member": {
+      "uid": "u_member",
+      "token": {
+        "email": "member@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "member"
+      },
+      "activeUser": true,
+      "clubRole": "member",
+      "isSuper": false
+    },
+    "board": {
+      "uid": "u_board",
+      "token": {
+        "email": "board@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "board"
+      },
+      "activeUser": true,
+      "clubRole": "board",
+      "isSuper": false
+    },
+    "president": {
+      "uid": "u_president",
+      "token": {
+        "email": "president@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "president"
+      },
+      "activeUser": true,
+      "clubRole": "president",
+      "isSuper": false
+    },
+    "advisor": {
+      "uid": "u_advisor",
+      "token": {
+        "email": "advisor@gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "advisor"
+      },
+      "activeUser": true,
+      "clubRole": "advisor",
+      "isSuper": false,
+      "note": "personel alan adı; memberCount dışı"
+    },
+    "super": {
+      "uid": "u_super",
+      "token": {
+        "email": "super@gumushane.edu.tr",
+        "email_verified": true,
+        "superadmin": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": null,
+      "activeUser": true,
+      "clubRole": null,
+      "isSuper": true,
+      "note": "superadmin claim (D-28); kulüp üyeliği yok"
+    },
+    "otherManager": {
+      "uid": "u_mgr2",
+      "token": {
+        "email": "mgr2@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "active",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c02",
+        "status": "active",
+        "role": "president"
+      },
+      "activeUser": true,
+      "clubRole": null,
+      "isSuper": false,
+      "note": "başka kulübün (c02) başkanı; c01 içinde belge yok — çapraz kulüp sızıntı vakaları"
+    },
+    "susp": {
+      "uid": "u_susp",
+      "token": {
+        "email": "susp@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "suspended",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "member"
+      },
+      "activeUser": false,
+      "clubRole": "member",
+      "isSuper": false,
+      "note": "emailOk() true, activeUser() false; üyelik belgesi active kalır"
+    },
+    "deleted": {
+      "uid": "u_deleted",
+      "token": {
+        "email": "deleted@ogr.gumushane.edu.tr",
+        "email_verified": true
+      },
+      "user": {
+        "status": "deleted",
+        "profileComplete": true
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "member"
+      },
+      "activeUser": false,
+      "clubRole": "member",
+      "isSuper": false,
+      "note": "susp alt varyantı: yalnızca M14 hücrelerinde ayrışır"
+    }
+  }
+}

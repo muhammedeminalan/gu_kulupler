@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T15:05:09.383Z",
+  "updated": "2026-10-10T16:26:38.310Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -231,11 +231,13 @@
       "notes": ""
     },
     "T-10": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-10T15:05:38.336Z",
+      "finishedAt": "2026-10-10T16:26:38.310Z",
+      "commits": [
+        "75c199d"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-11": {
@@ -929,6 +931,24 @@
       "resolveIn": [
         "T-12",
         "T-15"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-53",
+      "declaredIn": "T-10",
+      "text": "Emülatör ortamı açık noktaları (CD-131): (a) AppEnvironment.configure() içindeki ikinci Firebase uygulaması (gu-emulator, sahte API anahtarı) gerçek cihaz/simülatörde denenmedi — uygulamayı çalıştırmak varsayılan uygulama üzerinden gerçek projeye (Crashlytics/Installations) trafik doğurur; doğrulama kullanıcı testine/final rapora yazılır. (b) Android debug derlemesinde emülatör düz HTTP kullanır: android/app/src/debug/AndroidManifest.xml usesCleartextTraffic gerekip gerekmediği T-11'de karara bağlanır. (c) ENV=emulator iken Remote Config ve Crashlytics varsayılan (gerçek) uygulamayı kullanır: T-11 bootstrap'inde emülatörde fetchAndActivate ve Crashlytics toplama atlanır mı kararı. (d) ProjectDependency servis örneklerini yalnızca AppEnvironment.auth/.firestore/.storage üzerinden alır; configure() hatası yakalanıp devam edilmez",
+      "resolveIn": [
+        "T-11"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-54",
+      "declaredIn": "T-10",
+      "text": "FirestoreService.doc() kimliği tek yol parçası olmalıdır (boş ya da '/' içeren kimlik ArgumentError fırlatır; FieldValidators.requiredId yalnızca boşluğa bakar): rota parametresi/QR gibi dış girdiden gelen kimlikleri repository doc() öncesinde doğrular ve geçersiz kimliği FirebaseFailure(invalidArgument) olarak döndürür (ViewModel'e istisna sızmaz). Ayrıca fromJson hatasının FirestoreError.parse'a çevrilmesi repository'nin işidir (servis modele çevirmez). T-12 ortak repository yardımcısında kurulur, sonraki repository'ler onu kullanır (CD-131)",
+      "resolveIn": [
+        "T-12"
       ],
       "status": "open"
     }

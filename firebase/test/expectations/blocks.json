@@ -1,0 +1,11 @@
+{
+  "collection": "blocks",
+  "row": 15,
+  "match": "/blocks/{blockId}",
+  "owner": "T-15",
+  "fixture": "base",
+  "docPath": "blocks/u_member_u_student",
+  "newDocPath": "blocks/{uid}_u_board",
+  "listPath": "blocks",
+  "cases": []
+}

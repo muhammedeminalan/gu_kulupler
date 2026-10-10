@@ -1,0 +1,11 @@
+{
+  "collection": "supportTickets",
+  "row": 17,
+  "match": "/supportTickets/{ticketId}",
+  "owner": "T-28",
+  "fixture": "base",
+  "docPath": "supportTickets/t01",
+  "newDocPath": "supportTickets/t_new",
+  "listPath": "supportTickets",
+  "cases": []
+}

@@ -1,0 +1,18 @@
+{
+  "name": "gu-kulupler-firebase",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GÜ Kulüpler — Firestore/Storage Security Rules testleri (yalnızca emülatör).",
+  "license": "UNLICENSED",
+  "engines": { "node": ">=20.0.0" },
+  "scripts": {
+    "test": "firebase emulators:exec --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand\"",
+    "test:watch": "firebase emulators:exec --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand --watch\"",
+    "emulators": "firebase emulators:start --only auth,firestore,storage --project demo-gu-kulupler --import=./.emulator-data --export-on-exit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase": "12.19.0",
+    "jest": "30.5.2"
+  }
+}

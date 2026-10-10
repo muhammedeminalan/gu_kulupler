@@ -1,0 +1,11 @@
+{
+  "collection": "reports",
+  "row": 12,
+  "match": "/reports/{reportId}",
+  "owner": "T-15",
+  "fixture": "base",
+  "docPath": "reports/u_member_post_p01",
+  "newDocPath": "reports/{uid}_post_p01",
+  "listPath": "reports",
+  "cases": []
+}

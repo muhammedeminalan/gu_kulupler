@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedInVerified() {
+      return request.auth != null && request.auth.token.email_verified == true
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+    }
+    function imageOk() {
+      return request.resource.contentType.matches('image/.*')
+          && request.resource.size < 5 * 1024 * 1024;   // limit: imageMaxBytes
+    }
+    match /users/{uid}/{file} {
+      allow read: if signedInVerified();
+      allow create: if signedInVerified() && imageOk();
+      allow update, delete: if false;
+    }
+  }
+}

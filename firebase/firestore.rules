@@ -1,0 +1,220 @@
+rules_version = '2';
+
+// GÜ Kulüpler — Firestore Security Rules.
+// Sözleşme: docs/firestore-rules-spec.md · matris: docs/PLAN.md §11.1 · testler: firebase/test/rules/.
+//
+// T-10: VARSAYILAN RET iskeleti. Her koleksiyon ve alt koleksiyon için açık bir `match` bloğu vardır
+// (adlar packages/gu_data/lib/src/constants/firestore_collections.dart ile birebir —
+// firebase/test/rules/delete_denied.test.js karşılaştırır); bloklar sahibi task'ta açılır (blok
+// başlıklarındaki T-xx). O güne kadar hiçbir istemci hiçbir belgeyi okuyamaz ve yazamaz.
+//
+// Değişmez kurallar (tool/check_no_hard_delete.js HD20–HD22, tool/check_rules_parity.js RP01–RP06):
+//  - `allow delete: if false;` her blokta kalır — süper admin dahil (D-10). Silme = soft delete (update).
+//  - `allow write` yazılmaz (delete'i de kapsar); create ve update ayrı ayrı açılır.
+//  - 0 ve 1 dışındaki her sayısal literal ve her `duration.value(...)` satırı `// limit: <Limits adı>`
+//    etiketi taşır; e-posta deseni EmailDomainPolicy.rulesRegex() ile aynıdır.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Yardımcı fonksiyonlar (docs/firestore-rules-spec.md §2) ─────────────────────────────────
+
+    // ---- kimlik ----
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isSuper() { return signedIn() && request.auth.token.get('superadmin', false) == true; }
+    function emailOk() {
+      return signedIn() && request.auth.token.email_verified == true
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+    }
+    function userPath(id) { return /databases/$(database)/documents/users/$(id); }
+    function me() { return get(userPath(uid())).data; }
+    // aktif = e-posta doğrulanmış + kullanıcı belgesi var + askıda/silinmiş değil + profil tamam
+    function activeUser() {
+      return emailOk() && exists(userPath(uid())) && me().status == 'active' && me().profileComplete == true;
+    }
+
+    // ---- üyelik ----
+    function mPath(c, u) { return /databases/$(database)/documents/memberships/$(c + '_' + u); }
+    function hasM(c) { return exists(mPath(c, uid())); }
+    function myM(c) { return get(mPath(c, uid())).data; }
+    function mActive(c) { return hasM(c) && myM(c).status == 'active'; }
+    function isMember(c) { return mActive(c) && myM(c).role in ['member', 'board', 'president']; }
+    function isManager(c) { return mActive(c) && myM(c).role in ['board', 'president']; }
+    function isPres(c) { return mActive(c) && myM(c).role == 'president'; }
+    function isAdvisor(c) { return mActive(c) && myM(c).role == 'advisor'; }
+    // gönderi, üye listesi, members-only etkinlik
+    function seesInside(c) { return isSuper() || mActive(c); }
+    // yönetim paneli (danışman salt okunur)
+    function seesMgmt(c) { return isSuper() || isManager(c) || isAdvisor(c); }
+
+    // ---- ortak alanlar (BaseFieldsPayload / SoftDelete ile aynı anahtarlar) ----
+    function baseCreate() {
+      return request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.isDeleted == false
+          && request.resource.data.get('deletedAt', null) == null
+          && request.resource.data.get('deletedBy', null) == null;
+    }
+    function touches(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys.concat(['updatedAt']))
+          && request.resource.data.updatedAt == request.time;
+    }
+    function isSoftDelete(extra) {
+      return resource.data.isDeleted == false && request.resource.data.isDeleted == true
+          && request.resource.data.deletedBy == uid() && request.resource.data.deletedAt == request.time
+          && touches(['isDeleted', 'deletedAt', 'deletedBy'].concat(extra));
+    }
+    function isRestore(extra) {
+      return resource.data.isDeleted == true && request.resource.data.isDeleted == false
+          && request.resource.data.deletedAt == null && request.resource.data.deletedBy == null
+          && touches(['isDeleted', 'deletedAt', 'deletedBy'].concat(extra));
+    }
+    // delta doğrulama (±1) — `getAfter` aynı batch içindeki yazımı görür
+    function counterDelta(path, field, d) { return getAfter(path).data[field] == get(path).data[field] + d; }
+
+    // ── Koleksiyonlar (PLAN §11.1 — 18 satır) ───────────────────────────────────────────────────
+
+    // 1 · users/{uid} — T-12 (askı T-37, hesap silme T-29)
+    match /users/{uid} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+
+      // 2 · users/{uid}/private/account — T-12
+      match /private/{docId} {
+        allow read: if false;
+        allow create, update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // 3 · clubs/{clubId} — T-15 (yönetim T-30, süper admin T-37)
+    match /clubs/{clubId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 4 · memberships/{clubId}_{userId} — T-15 (M1–M4, M7, M8) · T-30 (M5–M12) · T-37 (M13) · T-29 (M14)
+    match /memberships/{membershipId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+
+      // 5 · memberships/{id}/private/contact — T-15
+      match /private/{docId} {
+        allow read: if false;
+        allow create, update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // 6 · posts/{postId} — T-19
+    match /posts/{postId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+
+      // 7 · posts/{postId}/votes/{uid} — T-19
+      match /votes/{voterId} {
+        allow read: if false;
+        allow create, update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // 8 · comments/{commentId} — T-19
+    match /comments/{commentId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 9 · events/{eventId} — T-22 (yönetici geçişleri T-30)
+    match /events/{eventId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 10 · rsvps/{eventId}_{userId} — T-22 (yoklama T-30)
+    match /rsvps/{rsvpId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 11 · notifications/{notificationId} — T-25
+    match /notifications/{notificationId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37)
+    match /reports/{reportId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 13 · activity/{activityId} — T-15 (yönetici türleri T-30)
+    match /activity/{activityId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 14 · settings/{uid} — T-12
+    match /settings/{uid} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 15 · blocks/{blockerId}_{blockedId} — T-15
+    match /blocks/{blockId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 16 · savedPosts/{userId}_{postId} — T-19
+    match /savedPosts/{savedPostId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 17 · supportTickets/{ticketId} — T-28
+    match /supportTickets/{ticketId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 18 · announcementCounters/{clubId}_{yyyyMMdd} — T-19
+    match /announcementCounters/{counterId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // ── Koleksiyon grupları ─────────────────────────────────────────────────────────────────────
+
+    // collectionGroup('private') — ADM-05 e-posta araması, yalnızca süper admin (T-37).
+    match /{path=**}/private/{docId} {
+      allow read: if false;
+    }
+
+    // collectionGroup('votes') — kullanılmaz; açıkça kapalı.
+    match /{path=**}/votes/{voterId} {
+      allow read: if false;
+    }
+
+    // ── Varsayılan ret (docs/firestore-rules-spec.md §1.1): yukarıda açılmayan her yol kapalıdır ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

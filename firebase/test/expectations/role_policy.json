@@ -1,0 +1,104 @@
+{
+  "_doc": "ClubPermission × rol tablosu — docs/domain-model.md §3 (tek kaynak). Değer = izni olan sütunlar. Dart `RolePolicy.can(permission, role, isSuper)` parite testi (packages/gu_data/test/core/role_policy_parity_test.dart) ve firebase/test/parity.test.js bu dosyayı okur. `student` = kulüpte aktif üyeliği olmayan activeUser (role: null); `superadmin` = claim (isSuper: true, role: null).",
+  "roles": [
+    "student",
+    "member",
+    "board",
+    "president",
+    "advisor",
+    "superadmin"
+  ],
+  "permissions": {
+    "viewPublic": [
+      "student",
+      "member",
+      "board",
+      "president",
+      "advisor",
+      "superadmin"
+    ],
+    "apply": [
+      "student"
+    ],
+    "viewInside": [
+      "member",
+      "board",
+      "president",
+      "advisor",
+      "superadmin"
+    ],
+    "comment": [
+      "member",
+      "board",
+      "president"
+    ],
+    "vote": [
+      "member",
+      "board",
+      "president"
+    ],
+    "createPost": [
+      "board",
+      "president"
+    ],
+    "sendAnnouncementPush": [
+      "board",
+      "president"
+    ],
+    "manageEvents": [
+      "board",
+      "president"
+    ],
+    "takeAttendance": [
+      "board",
+      "president"
+    ],
+    "decideApplications": [
+      "board",
+      "president"
+    ],
+    "removeMember": [
+      "board",
+      "president",
+      "superadmin"
+    ],
+    "moderateContent": [
+      "board",
+      "president",
+      "superadmin"
+    ],
+    "editClubSettings": [
+      "board",
+      "president"
+    ],
+    "assignRoles": [
+      "president",
+      "superadmin"
+    ],
+    "transferPresidency": [
+      "president",
+      "superadmin"
+    ],
+    "viewManagement": [
+      "board",
+      "president",
+      "advisor",
+      "superadmin"
+    ],
+    "createClub": [
+      "superadmin"
+    ],
+    "suspendClub": [
+      "superadmin"
+    ],
+    "assignPresident": [
+      "superadmin"
+    ],
+    "moderateReports": [
+      "superadmin"
+    ],
+    "suspendUser": [
+      "superadmin"
+    ]
+  }
+}

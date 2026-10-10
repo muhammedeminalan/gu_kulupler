@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function emailOk() {
+      return request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gmail\\.com)');
+    }
+    function touches(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+    function isSoftDelete(extra) {
+      return touches(['isDeleted', 'deletedAt', 'deletedBy'].concat(extra));
+    }
+    function isRestore(extra) {
+      return touches(['isDeleted', 'deletedAt'].concat(extra));
+    }
+    match /users/{userId} {
+      allow read: if emailOk();
+      allow create: if request.resource.data.name.size() <= 61            // limit: nameMax
+          && request.resource.data.note.size() <= 300
+          && request.resource.data.text.size() <= 1000                    // limit: postTextMaks
+          && request.resource.data.bio.size() >= 0                        // limit: nameMin
+          && request.resource.data.instagram.matches('^@?[a-z]{1,30}$');  // limit: instagramHandlePattern
+      allow update: if isSoftDelete([]) || isRestore([])
+          || request.resource.data.retryAfter == request.time + duration.value(8, 'd')   // limit: reapplyCooldown
+          || request.resource.data.endsAt == request.time + duration.value(1, 'd')
+          || request.resource.data.endsAt == request.time + duration.value(2, 'd');      // limit: pollDurationsDays
+      // budget: chunk=7
+      allow delete: if false;
+    }
+  }
+}

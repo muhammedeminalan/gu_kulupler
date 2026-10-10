@@ -1,0 +1,11 @@
+{
+  "collection": "comments",
+  "row": 8,
+  "match": "/comments/{commentId}",
+  "owner": "T-19",
+  "fixture": "base",
+  "docPath": "comments/cm01",
+  "newDocPath": "comments/cm_new",
+  "listPath": "comments",
+  "cases": []
+}

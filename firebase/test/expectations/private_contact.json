@@ -1,0 +1,12 @@
+{
+  "collection": "memberships/private",
+  "row": 5,
+  "match": "/memberships/{membershipId}/private/{docId}",
+  "owner": "T-15",
+  "fixture": "base",
+  "docPath": "memberships/c01_u_member/private/contact",
+  "newDocPath": "memberships/{club}_{uid}/private/contact",
+  "listPath": "memberships/c01_u_member/private",
+  "group": "private",
+  "cases": []
+}

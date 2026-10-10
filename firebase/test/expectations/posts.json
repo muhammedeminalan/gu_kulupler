@@ -1,0 +1,11 @@
+{
+  "collection": "posts",
+  "row": 6,
+  "match": "/posts/{postId}",
+  "owner": "T-19",
+  "fixture": "base",
+  "docPath": "posts/p01",
+  "newDocPath": "posts/p_new",
+  "listPath": "posts",
+  "cases": []
+}

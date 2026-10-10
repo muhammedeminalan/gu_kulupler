@@ -1,0 +1,11 @@
+{
+  "collection": "rsvps",
+  "row": 10,
+  "match": "/rsvps/{rsvpId}",
+  "owner": "T-22",
+  "fixture": "base",
+  "docPath": "rsvps/e_public_u_member",
+  "newDocPath": "rsvps/e_public_{uid}",
+  "listPath": "rsvps",
+  "cases": []
+}
