@@ -2,7 +2,9 @@
 // CLAUDE.md §5). `lib/**` + `packages/*/lib/**` (üretilen dosyalar hariç):
 //   P01 push biçimleri (`context.push*(`, `.push(context)`, `.push<`,
 //       `pushReplacement*`, `GoRouter.of(context).push`) — izinli tek biçim
-//       `LegalRoute(…).push<void>(context)` ve yalnızca 4 dosyada
+//       `LegalRoute(…).push<void>(context)` ve yalnızca 4 dosyada; ayrıca
+//       gu_ui overlay primitifinin rota itmesi `Navigator.of(…).push<T>(`
+//       (sheet / dialog / menü rota değildir — PLAN §13.6, CD-113; T-07)
 //   P02 view dosyalarında `Navigator.` (overlay çerçeveleri hariç)
 //   P03 view dosyalarında `GetIt.I` / `GetIt.instance`
 //   P04 `CustomTransitionPage(` yalnızca `gu_page_transitions.dart`
@@ -71,6 +73,22 @@ bool _isLegalPush(String source, Match match) {
   return before.substring(cut + 1).contains('LegalRoute(');
 }
 
+/// [match] gu_ui overlay primitifinin (`gu_overlay_route.dart` vb.) kendi
+/// rotasını itmesi mi: `Navigator.of(…).push<T>(` ve dosya
+/// `packages/gu_ui/lib/src/overlay/` altında. go_router `push` biçimleri
+/// (`context.push`, `.push(context)`) burada da yasaktır.
+bool _isOverlayRoutePush(String rel, String source, Match match) {
+  if (!rel.startsWith('packages/gu_ui/lib/src/overlay/')) return false;
+  if (!source.startsWith('.push<', match.start)) return false;
+  final before = source.substring(0, match.start);
+  final cut = [
+    before.lastIndexOf(';'),
+    before.lastIndexOf('{'),
+    before.lastIndexOf('}'),
+  ].reduce((a, b) => a > b ? a : b);
+  return before.substring(cut + 1).contains('Navigator.of(');
+}
+
 /// Tek dosyanın ihlalleri (saf; sentetik metinle test edilir).
 List<_Violation> _scanSource(String rel, String source) {
   final out = <_Violation>[];
@@ -81,7 +99,7 @@ List<_Violation> _scanSource(String rel, String source) {
 
   for (final m in _pushRe.allMatches(code)) {
     final legal = _legalPushFiles.contains(rel) && _isLegalPush(code, m);
-    if (legal) continue;
+    if (legal || _isOverlayRoutePush(rel, code, m)) continue;
     final line = lineOf(m.start);
     out.add((file: rel, line: line, rule: 'P01', text: lines[line - 1].trim()));
   }
@@ -191,6 +209,45 @@ void b(BuildContext context) {
       expect(
         _scanSource('lib/features/auth/view/login_view.dart', other),
         hasLength(1),
+      );
+    });
+
+    test('T-07 · P01: overlay rotası itme yalnızca gu_ui/src/overlay', () {
+      const src = '''
+Future<T?> open<T>(BuildContext context, Route<T> route) =>
+    Navigator.of(context, rootNavigator: true).push<T>(route);
+''';
+      expect(
+        _scanSource(
+          'packages/gu_ui/lib/src/overlay/gu_overlay_route.dart',
+          src,
+        ),
+        isEmpty,
+      );
+      for (final file in [
+        'lib/product/feedback/feedback_service.dart',
+        'lib/core/di/project_dependency.dart',
+        'packages/gu_ui/lib/src/widgets/primitives/gu_button.dart',
+      ]) {
+        expect(
+          _scanSource(file, src).map((e) => e.rule),
+          contains('P01'),
+          reason: file,
+        );
+      }
+      // go_router push biçimleri overlay klasöründe de yasak.
+      const router = '''
+void a(BuildContext context) {
+  context.push('/x');
+  ClubRoute(id: 'c01').push<void>(context);
+}
+''';
+      expect(
+        _scanSource(
+          'packages/gu_ui/lib/src/overlay/gu_sheet_frame.dart',
+          router,
+        ).map((e) => e.rule),
+        ['P01', 'P01'],
       );
     });
 

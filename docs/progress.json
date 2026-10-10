@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T11:44:40.489Z",
+  "updated": "2026-10-10T12:35:57.414Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -201,11 +201,13 @@
       "notes": ""
     },
     "T-07": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-10T11:45:15.195Z",
+      "finishedAt": "2026-10-10T12:35:57.413Z",
+      "commits": [
+        "9309f74"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-08": {

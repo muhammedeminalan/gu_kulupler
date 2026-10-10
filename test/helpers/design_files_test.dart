@@ -55,6 +55,28 @@ QQ-07.demoScan.*#bitişik yorum
       expect(matchesAnyGlob(const [], 'B.x'), isFalse);
     });
 
+    test('parseEnumDesignTraces: üye → üstündeki kimlik', () {
+      const source = '''
+/// Başlıktaki `/// Design: QQ-nn` anlatımı iz değildir.
+enum QqId {
+  /// Design: QQ-01 — Başlık
+  qq01,
+
+  /// Design: QQ-X2
+  ///
+  /// Ek açıklama.
+  qqX2('x'),
+
+  /// İzsiz üye.
+  qq03;
+
+  String get designId => name;
+}
+''';
+      expect(parseEnumDesignTraces(source), {'qq01': 'QQ-01', 'qqX2': 'QQ-X2'});
+      expect(parseEnumDesignTraces('enum A { a, b }'), isEmpty);
+    });
+
     test('pubspecFontFamilies: kök pubspec 2 aile, 4 + 3 yüz', () {
       final families = pubspecFontFamilies(readText('pubspec.yaml'));
       expect(families.keys, ['Montserrat', 'Inter']);

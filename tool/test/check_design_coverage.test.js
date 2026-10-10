@@ -6,12 +6,18 @@
 //   T-01 CLB-01 + EVT-01 (sekme kökleri) temiz · T-02 CLB-02 (kök değil, envanterinde NAV var) temiz ·
 //   T-03 AUT-01 muaf uygulanmış · T-04 FED-01 eksik + fazla + fixture'a özgü muaf
 // fixtures/check_design_coverage/bare   kalıp dosyaları yok; kabukta NAV eksiği ve fazlası
+// fixtures/check_design_coverage/catalog      T-07 katalogları (ToastId · SheetId · DialogId · MenuId — CD-113) temiz;
+//   T-08 sahip task: katalog dosyalarındaki iz / kullanım kanıt sayılmaz (EVT-MENU izi yok, TST-X1 yalnızca katalogda)
+// fixtures/check_design_coverage/catalog_bad  MenuId: evtMenu eksik, sht01 izi yanlış, clbMenu fazla
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { fixture, runTool, runJson } = require('./helpers');
 
 const REPO = fixture('check_design_coverage', 'repo');
 const BARE = fixture('check_design_coverage', 'bare');
+const CATALOG = fixture('check_design_coverage', 'catalog');
+const CATALOG_BAD = fixture('check_design_coverage', 'catalog_bad');
+const rules = (json) => json.errors.map((e) => `${e.rule} ${e.id}`).sort();
 const cov = (root, ...args) => runJson('check_design_coverage.js', ['--root', root, ...args]);
 const aks = (json) => json.errors.filter((e) => /^AKS/.test(e.rule)).map((e) => `${e.rule} ${e.id}`).sort();
 const rowOf = (json, id) => json.actions.find((r) => r.id === id);
@@ -91,4 +97,40 @@ test('check_design_coverage · dinamik kalıp AKS01\'i aklamaz', () => {
   const { json } = cov(REPO, '--task', 'T-04', '--actions');
   assert.ok(json.errors.some((e) => e.rule === 'AKS01' && e.id === 'FED-01.comment.p01'));
   assert.equal(rowOf(json, 'FED-01').missing, 1);
+});
+
+test('check_design_coverage · KAT: MenuId registry.json#menus ile denetlenir (CD-113)', () => {
+  const map = runTool('check_design_coverage.js', ['--root', CATALOG, '--map']);
+  assert.equal(map.code, 0, map.stderr);
+  // T-07 kapsamında kimlik yok; katalog denetimi (ToastId · SheetId · DialogId · MenuId) temiz
+  const ok = cov(CATALOG, '--task', 'T-07');
+  assert.deepEqual(ok.json.errors, []);
+  assert.equal(ok.code, 0);
+  // evtMenu üyesi yok → KAT02; clbMenu registry'de yok → KAT03; sht01 üstündeki iz SHT-02 → KAT04
+  const bad = cov(CATALOG_BAD, '--task', 'T-07');
+  assert.equal(bad.code, 1);
+  assert.deepEqual(rules(bad.json), ['KAT02 EVT-MENU', 'KAT03 clbMenu', 'KAT04 SHT-01']);
+  assert.match(bad.json.errors.find((e) => e.rule === 'KAT02').msg, /MenuId\.evtMenu üyesi yok/);
+  assert.match(bad.json.errors.find((e) => e.rule === 'KAT04').msg, /menu_id\.dart:\d+ MenuId\.sht01/);
+});
+
+test('check_design_coverage · KAT01: registry\'de menü yoksa `enum MenuId` aranmaz', () => {
+  // repo fixture'ı: registry.menus boş, MenuId yok → --all katalog denetiminde MenuId için KAT01 üretilmez
+  const repo = cov(REPO, '--all');
+  const kat01 = repo.json.errors.filter((e) => e.rule === 'KAT01').map((e) => e.id).sort();
+  assert.deepEqual(kat01, ['DialogId', 'SheetId', 'ToastId']);
+});
+
+test('check_design_coverage · katalog dosyaları (enum + catalogs/toasts|dialogs) iz ve kullanım kanıtı değildir', () => {
+  const { code, json } = cov(CATALOG, '--task', 'T-08');
+  assert.equal(code, 1);
+  // EVT-MENU: menu_id.dart ve catalogs/dialogs içindeki `/// Design:` satırları sınıf izi sayılmaz → IZ01
+  // TST-X1: yalnızca catalogs/toasts/toast_catalog.dart içinde geçiyor → ölü toast (KUL01)
+  assert.deepEqual(rules(json), ['IZ01 EVT-MENU', 'KUL01 TST-X1']);
+  const row = (id) => json.rows.find((r) => r.id === id);
+  assert.deepEqual([row('TST-01').trace, row('TST-01').usage], [true, true]);
+  assert.deepEqual([row('TST-X1').trace, row('TST-X1').usage], [true, false]);
+  assert.deepEqual([row('SHT-01').trace, row('SHT-01').usage], [true, true]);
+  assert.deepEqual([row('DLG-01').trace, row('DLG-01').usage], [true, true]);
+  assert.deepEqual(json.warnings, []);
 });

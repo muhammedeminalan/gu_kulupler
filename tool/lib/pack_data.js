@@ -34,8 +34,12 @@ function kindOfId(id) {
   return 'screen';
 }
 
-/** SHT-05 → sht05 · TST-X12 → tstX12 */
-function enumMember(id) { return id.slice(0, 3).toLowerCase() + id.slice(4); }
+/** SHT-05 → sht05 · TST-X12 → tstX12 · EVT-MENU → evtMenu (MenuId, CD-113) */
+function enumMember(id) {
+  const menu = /^([A-Z]{3})-MENU$/.exec(id);
+  if (menu) return menu[1].toLowerCase() + 'Menu';
+  return id.slice(0, 3).toLowerCase() + id.slice(4);
+}
 
 /** '*' joker → RegExp (tam eşleşme) */
 function globToRe(g) { return new RegExp('^' + g.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'); }

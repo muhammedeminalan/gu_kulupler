@@ -27,6 +27,20 @@ const isAny = (p) => inLib(p) && !isTokenish(p);
 const isViewish = (p) => inLib(p) && (/^lib\/features\/[^/]+\/view\//.test(p) || /^lib\/product\/(widget|navigation)\//.test(p) || /^packages\/gu_ui\/lib\//.test(p) || /_(view|widget|sheet|dialog)\.dart$/.test(p));
 const isOverlayDir = (p) => /^packages\/gu_ui\/lib\/src\/overlay\//.test(p) || /^lib\/product\/feedback\//.test(p);
 const isLogger = (p) => /(^|\/)app_logger\.dart$/.test(p);
+// HC12c (CD-113): overlay açan çağıranlar — feature kodu ve alan-bilen ortak widget'lar.
+const isFeedbackCaller = (p) => inLib(p) && (/^lib\/features\//.test(p) || /^lib\/product\/widget\//.test(p));
+// gu_ui primitifleri + Flutter'ın eşdeğer global fonksiyonları (tek giriş FeedbackService — CLAUDE.md §7).
+const OVERLAY_CALL_RE = /(?<![\w.$])(?:showGuSheet|showGuDialog|showGuPopMenu|showGuOverlay|showModalBottomSheet|showBottomSheet|showDialog|showGeneralDialog|showAdaptiveDialog|showCupertinoDialog|showCupertinoModalPopup|showMenu)\s*(?:<[^;(){}]*>)?\s*\(/;
+// Çağrı mı, aynı adlı metot bildirimi mi? Bildirimde addan önce dönüş tipi gelir (`Future<void> showMenu(`, `bool? showDialog(`,
+// `void showMenu(`); çağrıda ifade başı, `=>`, üçlü `? ` ya da bir anahtar sözcük (`await`, `return` …).
+const CALL_PREFIX_WORDS = /^(?:await|return|yield|throw|else|do|in|case|when|is|as)$/;
+function isCallSite(m, lines, text) {
+  const before = text.slice(Math.max(0, m.index - 200), m.index).replace(/\s+$/, '');
+  if (/=>$/.test(before)) return true;
+  if (/[\w$>\]]\?$/.test(before) || /[>\]]$/.test(before)) return false;
+  const word = /([A-Za-z_$][\w$]*)$/.exec(before);
+  return !word || CALL_PREFIX_WORDS.test(word[1]);
+}
 
 const LETTER = /[A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû]/;
 const stripInterp = (s) => s.replace(/\$\{[^}]*\}/g, '').replace(/\$[A-Za-z_]\w*/g, '');
@@ -74,6 +88,7 @@ const rules = [
   { id: 'HC11', msg: 'print/debugPrint → AppLogger', scope: (p) => inLib(p) && !isLogger(p), re: /(?<![\w.])(?:print|debugPrint)\s*\(/ },
   { id: 'HC12', msg: 'Navigator.push* yasak → go_router (guard\'lı rota: go)', scope: inLib, re: /\bNavigator\.(?:push|pushNamed|pushReplacement|pushReplacementNamed|pushAndRemoveUntil|pushNamedAndRemoveUntil|popAndPushNamed)\b/ },
   { id: 'HC12b', msg: 'Navigator.of/pop yalnızca overlay çerçevelerinde (gu_ui/overlay, product/feedback); başka yerde context.pop()/FeedbackService', scope: (p) => inLib(p) && !isOverlayDir(p), re: /\bNavigator\.(?:of|pop|maybePop|canPop)\b/ },
+  { id: 'HC12c', msg: 'Overlay primitifi doğrudan çağrılamaz (showGuSheet/showGuDialog/showGuPopMenu/showModalBottomSheet/showDialog/showMenu …) → FeedbackService.showSheet/showDialog/showMenu (CD-113)', scope: isFeedbackCaller, re: OVERLAY_CALL_RE, test: isCallSite },
   { id: 'HC13', msg: 'View/widget katmanında GetIt yasak → mixin (AppProviderMixin/ProjectDependencyMixin)', scope: (p) => inLib(p) && (isViewish(p) || /^packages\/gu_ui\//.test(p)), re: /\bGetIt\b/ },
   { id: 'HC14', msg: 'Düz StatefulWidget/State yasak → ConsumerStatefulWidget/ConsumerState', scope: isApp, re: /\bextends\s+(?:StatefulWidget|State<)/ },
   { id: 'HC15', msg: 'Sayısal ölçü parametresi → token (GuSizes/GuSpacing/…)', scope: isUi, re: new RegExp('\\b(?:width|height|size|minWidth|minHeight|maxWidth|maxHeight|radius|thickness|elevation|blurRadius|spreadRadius|strokeWidth|dimension|iconSize|top|bottom|left|right)\\s*:\\s*' + NUM + '[\\d.]*'), test: (m) => core.hasNonZeroNumber(m[0].replace(/^[^:]*:/, '')) },
