@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
+import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/l10n/app_localizations_en.dart';
 import 'package:gu_kulupler/l10n/app_localizations_tr.dart';
-import 'package:gu_kulupler/l10n/build_context_l10n_x.dart';
 
 /// K-22 / K-23 düzeltmelerinin gen-l10n çıktısı üzerinden doğrulanması (CD-51, CD-75).
 void main() {

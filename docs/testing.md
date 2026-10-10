@@ -35,7 +35,7 @@ firebase/test/            # Rules testleri (Node, emülatör)
 functions/test/           # Mod F ise
 ```
 
-`pumpApp` varsayılanları: TR, açık tema, ölçek 1.0, 390×844, Android; `GetIt` her testte `reset()` + fake kaydı; `ProviderScope` override'ları. `route`/`wrapInShell` T-11'de, `GuSkeleton.debugAnimate = false` T-06'da eklenir; `FakeAppClock` T-08'de (CD-122). Aksiyon envanterinin muaf ve dinamik kalıpları `tool/design_exempt_actions.txt` / `tool/design_dynamic_actions.txt` (JS ve Dart tek kaynak).
+`pumpApp` varsayılanları: TR, açık tema, ölçek 1.0, 390×844, Android; `GetIt` her testte `reset()` + fake kaydı; `ProviderScope` override'ları. `pumpApp(wrapInShell:, shellTab:)` (çocuk gerçek `AppShellView` içinde sekme kökü) ve `pumpAppRouter` (bir `GoRouter` ya da uygulamanın gerçek router'ı; rota testleri `test/fakes/test_router.dart` `TestRouter` ile) T-11'de, `GuSkeleton.debugAnimate = false` T-06'da eklendi; `FakeAppClock` T-08'de (CD-122). Aksiyon envanterinin muaf ve dinamik kalıpları `tool/design_exempt_actions.txt` / `tool/design_dynamic_actions.txt` (JS ve Dart tek kaynak).
 
 ## 3. Test türleri ve asgari içerik
 

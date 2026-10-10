@@ -7,8 +7,9 @@
 //   tool/design_dynamic_actions.txt  envanterde olmayan koşullu anahtarlar;
 //                                    bulunursa fazla sayılmaz (CD-86)
 // `NAV.*` (kabuk) yalnızca `includeShell: true` iken ve ekran
-// `registry.tabRoot` ise beklenir/sayılır (K-17, CD-53; T-11'de
-// `pumpApp(wrapInShell:)` ile bağlanır); aksi halde yok sayılır.
+// `registry.tabRoot` ise beklenir/sayılır (K-17, CD-53; ekran
+// `pumpApp(wrapInShell: true)` ile gerçek kabukta çizilir); aksi halde yok
+// sayılır.
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';

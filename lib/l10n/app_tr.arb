@@ -947,6 +947,10 @@
   "@authVerifyTitle": {
     "description": "Key auth.verify.title"
   },
+  "badgeOverflow": "9+",
+  "@badgeOverflow": {
+    "description": "Key badge.overflow"
+  },
   "blockedDesc": "Engellediğin kişilerin gönderi ve yorumlarını görmezsin; onlar da seninle etkileşime geçemez.",
   "@blockedDesc": {
     "description": "Key blocked.desc"
@@ -1657,6 +1661,35 @@
   "contentTitle": "İçerik yönetimi",
   "@contentTitle": {
     "description": "Key content.title"
+  },
+  "dateTimeAt": "{date}, {time}",
+  "@dateTimeAt": {
+    "description": "Key time.dateTimeAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "debugMenuDemoAccounts": "Demo hesaplar",
+  "@debugMenuDemoAccounts": {
+    "description": "Key debugMenu.demoAccounts"
+  },
+  "debugMenuSignInError": "Giriş yapılamadı ({code}). Emülatör ve demo veri (seed) çalışıyor mu?",
+  "@debugMenuSignInError": {
+    "description": "Key debugMenu.signInError",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "debugMenuSystemScreens": "Sistem ekranları",
+  "@debugMenuSystemScreens": {
+    "description": "Key debugMenu.systemScreens"
   },
   "deleteAccountConfirmCta": "Hesabımı kalıcı olarak sil",
   "@deleteAccountConfirmCta": {
@@ -4942,6 +4975,15 @@
   "@sysSplashTitle": {
     "description": "Key sys.splash.title"
   },
+  "sysSplashVersion": "v{version}",
+  "@sysSplashVersion": {
+    "description": "Key sys.splash.version",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "themeDark": "Koyu",
   "@themeDark": {
     "description": "Key theme.dark"
@@ -4991,6 +5033,18 @@
   "@ticketTitle": {
     "description": "Key ticket.title"
   },
+  "timeDayAt": "{day} {time}",
+  "@timeDayAt": {
+    "description": "Key time.dayAt",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timeDays": "{count, plural, one{{count} gün} other{{count} gün}}",
   "@timeDays": {
     "description": "Key time.days",
@@ -5030,7 +5084,7 @@
     "description": "Key time.hours",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "num"
       }
     }
   },

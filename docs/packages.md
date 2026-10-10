@@ -27,8 +27,8 @@
 | `get_it` | DI | `lib/core/di` | — |
 | `equatable` | state eşitliği | State sınıfları | — |
 | `shared_preferences` | tema/dil/metin ölçeği, ilk açılış bayrağı, son aramalar | SHT-01/17, ONB-01, CLB-02 | — |
-| `connectivity_plus` | çevrimdışı banner (SYS-03) | kök katman | — |
-| `package_info_plus` | sürüm/build | SET-04 | — |
+| `connectivity_plus` | çevrimdışı banner (SYS-03), yazma kapısı (`ConnectivityService`) | kök katman; TST-24, TST-25 | — |
+| `package_info_plus` | sürüm/build (`AppInfoService`) | DLG-26, SET-04 | — |
 | `url_launcher` | e-posta/Instagram/web, Google Takvim, Ayarlar | CLB-03, DLG-32, SHT-14 | — |
 | `share_plus` | .ics / bağlantı paylaşma | SHT-14, SHT-15 | — |
 | `path_provider` | .ics geçici dosyası | SHT-14 | — |

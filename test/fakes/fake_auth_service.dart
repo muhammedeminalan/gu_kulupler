@@ -38,6 +38,11 @@ final class FakeAuthService extends FakeBase implements AuthService {
   /// [idTokenClaims] sonucu (`{'superadmin': true}` gibi).
   Map<String, Object?> claims = <String, Object?>{};
 
+  /// Verilirse [idTokenClaims] sonuç dönmeden önce bunu bekler: claim
+  /// okuması sürerken araya giren olayların (yarış) sırası testte elle
+  /// kurulur.
+  Completer<void>? claimsGate;
+
   @override
   Stream<AuthUserInfo?> authStateChanges() =>
       Stream<AuthUserInfo?>.multi((listener) {
@@ -124,6 +129,7 @@ final class FakeAuthService extends FakeBase implements AuthService {
     bool forceRefresh = false,
   }) async {
     record('idTokenClaims', [forceRefresh]);
+    if (claimsGate case final gate?) await gate.future;
     return _session((_) => Map<String, Object?>.of(claims));
   }
 

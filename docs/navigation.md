@@ -143,6 +143,8 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 - **Oturum/rol değişince** `refreshListenable` yeniden değerlendirir (rol düşürülürse yönetim ekranındaki kullanıcı atılır).
 - Zorunlu güncelleme (DLG-26) ve oturum sona erdi (DLG-27) rota değil kök katman diyaloğudur; ikincisi sonrası `/login`.
 - Yönlendirme mantığı **saf fonksiyon** (`AppRedirect.resolve(SessionState, Uri)`) olarak yazılır; tablo testiyle (her satır) kanıtlanır.
+- **Açılış beklemesi:** `/splash`'ten çıkış logo animasyonu bitene kadar bekletilir (`SplashHold`, `architecture.md §4` "en az animasyon süresi"). Bekleme saf fonksiyonun dışındadır: `AppRedirect.goRouterRedirect` bekleme sürerken `/splash` için yönlendirme döndürmez; bekleme kalkınca `refreshListenable` tabloyu yeniden uygular.
+- **Sistem ekranları** (`/error`, `/offline`, `/not-found`) oturum guard'ından muaftır: SYS-02 oturum çözülemediğinde (açılış zaman aşımı `Limits.splashTimeout` / oturum hatası) açılır; "Yeniden dene" oturumu yeniden çözer ve `?from=` yoluna (geçerli bir uygulama yoluysa; değilse `/clubs`) `go` eder — nereye varılacağına yine bu tablo karar verir.
 
 ## 4. Sekmeler arası bağlantı (Q-20) ve derin bağlantılar
 
