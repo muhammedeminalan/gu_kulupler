@@ -1,6 +1,10 @@
 // Kök test sarmalayıcısı (PLAN §16.2, testing.md §2).
 //
-// `route:` / `wrapInShell:` T-11'de (router + `AppShellView`) eklenir.
+// `pumpApp(wrapInShell: true)` çocuğu gerçek `AppShellView` içinde, seçilen
+// sekmenin kökü olarak çizer (`NAV.tab.*` anahtarları; `expectActionInventory(
+// includeShell: true)`). `pumpAppRouter` bir `GoRouter`'ı aynı sarmalayıcıyla
+// çizer; verilmezse uygulamanın gerçek router'ı (`appRouterProvider`) kurulur
+// (rota / yönlendirme testleri — `test/fakes/test_router.dart`).
 // `GuSkeleton.debugAnimate` test boyunca `false`'tur (CD-122(2)).
 // gu_ui'nin alt küme kopyası: `packages/gu_ui/test/helpers/pump_app.dart`
 // (paket sınırı, CD-122(3)).
@@ -12,9 +16,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/app_router.dart';
+import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
 import 'package:gu_ui/gu_ui.dart';
-// T-06: `GuSkeleton` barrel'a eklenince bu satır kalkar (gu_ui.dart yeter).
 
 import '../fakes/register_fakes.dart';
 
@@ -50,7 +57,75 @@ extension PumpApp on WidgetTester {
     List<Override> overrides = const [],
     EdgeInsets viewPadding = EdgeInsets.zero,
     double keyboardInset = 0,
+    bool wrapInShell = false,
+    GuTab shellTab = GuTab.clubs,
+  }) {
+    final keyed = KeyedSubtree(key: kPumpAppChildKey, child: child);
+    GoRouter? shellRouter;
+    if (wrapInShell) {
+      shellRouter = shellRouterFor(keyed, shellTab);
+      addTearDown(shellRouter.dispose);
+    }
+    return _pumpRoot(
+      locale: locale,
+      theme: theme,
+      textScale: textScale,
+      size: size,
+      platform: platform,
+      overrides: overrides,
+      viewPadding: viewPadding,
+      keyboardInset: keyboardInset,
+      home: wrapInShell ? null : keyed,
+      routerOf: shellRouter == null ? null : (_) => shellRouter!,
+    );
+  }
+
+  /// Bir router'ı uygulama bağlamında çizer (`MaterialApp.router`).
+  ///
+  /// [routerOf] verilmezse uygulamanın gerçek router'ı (`appRouterProvider`)
+  /// kurulur. Verilirse her yeniden kurulumda çağrılır: **aynı** örneği
+  /// döndürmelidir (`(ref) => router ??= GoRouter(…)`). Diğer parametreler
+  /// [pumpApp] ile aynıdır.
+  Future<void> pumpAppRouter({
+    GoRouter Function(WidgetRef ref)? routerOf,
+    Locale locale = const Locale('tr'),
+    ThemeMode theme = ThemeMode.light,
+    double textScale = 1.0,
+    Size size = const Size(390, 844),
+    TargetPlatform platform = TargetPlatform.android,
+    List<Override> overrides = const [],
+    EdgeInsets viewPadding = EdgeInsets.zero,
+    double keyboardInset = 0,
+  }) => _pumpRoot(
+    locale: locale,
+    theme: theme,
+    textScale: textScale,
+    size: size,
+    platform: platform,
+    overrides: overrides,
+    viewPadding: viewPadding,
+    keyboardInset: keyboardInset,
+    routerOf: routerOf ?? (ref) => ref.watch(appRouterProvider),
+  );
+
+  /// [pumpApp] ve [pumpAppRouter]'ın ortak gövdesi: [home] ya da [routerOf]
+  /// (ikisinden biri) ile `MaterialApp` kurar.
+  Future<void> _pumpRoot({
+    required Locale locale,
+    required ThemeMode theme,
+    required double textScale,
+    required Size size,
+    required TargetPlatform platform,
+    required List<Override> overrides,
+    required EdgeInsets viewPadding,
+    required double keyboardInset,
+    Widget? home,
+    GoRouter Function(WidgetRef ref)? routerOf,
   }) async {
+    assert(
+      (home == null) != (routerOf == null),
+      'home ya da routerOf (yalnızca biri) verilmeli',
+    );
     await GetIt.I.reset();
     registerDefaultFakes();
     addTearDown(GetIt.I.reset);
@@ -65,6 +140,18 @@ extension PumpApp on WidgetTester {
     GuSkeleton.debugAnimate = false;
     addTearDown(() => GuSkeleton.debugAnimate = true);
 
+    final lightTheme = GuTheme.light().copyWith(platform: platform);
+    final darkTheme = GuTheme.dark().copyWith(platform: platform);
+    Widget mediaBuilder(BuildContext context, Widget? navigator) => MediaQuery(
+      data: testMediaQuery(
+        MediaQuery.of(context),
+        textScale: textScale,
+        viewPadding: viewPadding,
+        keyboardInset: keyboardInset,
+      ),
+      child: navigator!,
+    );
+
     await pumpWidget(
       TestPlatformScope(
         key: UniqueKey(),
@@ -73,31 +160,66 @@ extension PumpApp on WidgetTester {
           overrides: overrides,
           child: RepaintBoundary(
             key: kPumpAppBoundaryKey,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: GuTheme.light().copyWith(platform: platform),
-              darkTheme: GuTheme.dark().copyWith(platform: platform),
-              themeMode: theme,
-              locale: locale,
-              supportedLocales: AppLocalizations.supportedLocales,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              builder: (context, navigator) => MediaQuery(
-                data: testMediaQuery(
-                  MediaQuery.of(context),
-                  textScale: textScale,
-                  viewPadding: viewPadding,
-                  keyboardInset: keyboardInset,
-                ),
-                child: navigator!,
-              ),
-              home: KeyedSubtree(key: kPumpAppChildKey, child: child),
-            ),
+            child: routerOf == null
+                ? MaterialApp(
+                    debugShowCheckedModeBanner: false,
+                    theme: lightTheme,
+                    darkTheme: darkTheme,
+                    themeMode: theme,
+                    locale: locale,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    builder: mediaBuilder,
+                    home: home,
+                  )
+                : Consumer(
+                    builder: (context, ref, _) => MaterialApp.router(
+                      debugShowCheckedModeBanner: false,
+                      theme: lightTheme,
+                      darkTheme: darkTheme,
+                      themeMode: theme,
+                      locale: locale,
+                      supportedLocales: AppLocalizations.supportedLocales,
+                      localizationsDelegates:
+                          AppLocalizations.localizationsDelegates,
+                      builder: mediaBuilder,
+                      routerConfig: routerOf(ref),
+                    ),
+                  ),
           ),
         ),
       ),
     );
   }
 }
+
+/// [child]'ı [tab] sekmesinin kökü olarak gösteren kabuk router'ı: gerçek
+/// `AppShellView` + beş dal (diğer dalların kökü boştur). Dal gezginleri
+/// router'ın kendi anahtarlarını kullanır: aynı testte art arda `pumpApp`
+/// (cihaz matrisi) uygulamanın küresel gezgin anahtarlarını ağaçlar arasında
+/// taşımaz. Kabuğun geri kuralı `TestRouter.pumpShell` ile test edilir.
+GoRouter shellRouterFor(Widget child, GuTab tab) => GoRouter(
+  initialLocation: tab.rootPath,
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) =>
+          AppShellView(navigationShell: navigationShell),
+      branches: [
+        for (final branch in GuTab.values)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: branch.rootPath,
+                builder: (context, state) =>
+                    branch == tab ? child : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+      ],
+    ),
+  ],
+);
 
 /// [base] üzerine test `MediaQuery` alanları: `textScaler`, `viewPadding`,
 /// klavye `viewInsets.bottom` ve ondan türeyen `padding`

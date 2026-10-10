@@ -36,3 +36,33 @@ abstract final class GuPageTransitions {
   static Page<T> platform<T>({required LocalKey key, required Widget child}) =>
       MaterialPage<T>(key: key, child: child);
 }
+
+/// Rotanın sayfasını **platform geçişiyle** kurar (D-06): gövde `build`'den
+/// gelir, sayfa `MaterialPage`'dir (`GuTheme.pageTransitionsTheme` — iOS
+/// kenardan geri kaydırma, Android predictive back).
+///
+/// Solma istisnası ([FadePageMixin]) dışındaki **her** rota sınıfı bunu
+/// kullanır. Sayfa go_router'ın varsayılanına bırakılmaz: go_router uygulama
+/// türünü `package:material_ui`'nin `MaterialApp`'ına bakarak seçer; bu
+/// uygulama `package:flutter/material.dart` kullandığından varsayılan sayfa
+/// geçişsiz (`NoTransitionPage`) olurdu.
+mixin PlatformPageMixin on GoRouteData {
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      GuPageTransitions.platform<void>(
+        key: state.pageKey,
+        child: build(context, state),
+      );
+}
+
+/// Rotanın sayfasını **solmayla** kurar (navigation.md §5 istisnaları: açılış,
+/// oturum öncesi rotalar); gövde `build`'den gelir.
+mixin FadePageMixin on GoRouteData {
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      GuPageTransitions.fade<void>(
+        context: context,
+        key: state.pageKey,
+        child: build(context, state),
+      );
+}

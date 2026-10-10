@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import 'overflow_detector.dart';
@@ -185,6 +186,8 @@ abstract final class DeviceMatrix {
     bool keyboard = false,
     bool safeAreas = false,
     String? mode,
+    bool wrapInShell = false,
+    GuTab shellTab = GuTab.clubs,
   }) async {
     final all = [
       ...cases(mode: mode),
@@ -203,6 +206,8 @@ abstract final class DeviceMatrix {
           overrides: overrides,
           viewPadding: c.viewPadding,
           keyboardInset: c.keyboardInset,
+          wrapInShell: wrapInShell,
+          shellTab: shellTab,
         );
         await tester.pump(GuMotion.base);
         OverflowDetector.assertNone(c.name);

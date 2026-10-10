@@ -78,6 +78,15 @@ abstract final class GuMotion {
   /// CSS-derived · `.splash .logo{animation:splash 1.2s var(--ease-emphasized)}` css:392.
   static const Duration splash = Duration(milliseconds: 1200);
 
+  /// CSS-derived · `@keyframes splash` %0 `scale(.7)` (opaklık 0) css:423.
+  static const double splashStartScale = 0.7;
+
+  /// CSS-derived · `@keyframes splash` %60 `scale(1.05)` (opaklık 1) css:423.
+  static const double splashPeakScale = 1.05;
+
+  /// CSS-derived · `@keyframes splash` tepe karesinin yeri (%60) css:423.
+  static const double splashPeakAt = 0.6;
+
   /// CSS-derived · `.splash-overlay{animation:splashOut .3s 1.3s …}` css:425.
   static const Duration splashOut = Duration(milliseconds: 300);
 

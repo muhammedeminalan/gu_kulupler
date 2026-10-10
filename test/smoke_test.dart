@@ -1,15 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
-import 'package:gu_kulupler/main.dart';
 
+// `GuApp`'in pump testi `test/core/bootstrap/gu_app_test.dart`'tadır (T-11).
 void main() {
   group('T-00 · depo iskeleti', () {
-    testWidgets('GuApp istisnasız pump edilir', (tester) async {
-      await tester.pumpWidget(const GuApp());
-      expect(tester.takeException(), isNull);
-      expect(find.byType(GuApp), findsOneWidget);
-    });
-
     test('AppConstants tek kaynak (D-01, K-D, K-N)', () {
       expect(AppConstants.appName, 'GÜ Kulüpler');
       expect(AppConstants.appNameDative, startsWith(AppConstants.appName));

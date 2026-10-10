@@ -259,6 +259,22 @@ void main() {
       expectKeyframes('splash');
     });
 
+    test('splash ölçekleri = @keyframes splash %0 / %60 / %100 (css:423)', () {
+      expect(
+        GuMotion.splashStartScale,
+        css.fn('@keyframes splash 0%', 'transform', 'scale'),
+      );
+      expect(
+        GuMotion.splashPeakScale,
+        css.fn('@keyframes splash 60%', 'transform', 'scale'),
+      );
+      expect(css.fn('@keyframes splash 100%', 'transform', 'scale'), 1);
+      // Tepe karesinin yeri adım seçicisinin kendisidir (%60).
+      expect(GuMotion.splashPeakAt, 0.6);
+      expect(css.raw('@keyframes splash 0%', 'opacity'), '0');
+      expect(css.raw('@keyframes splash 60%', 'opacity'), '1');
+    });
+
     test('splashOut 300 ms, gecikme 1300 ms (css:425)', () {
       final a = animationOf('.splash-overlay');
       expect(a, ['splashOut', a[1], a[2], 'var(--ease-standard)', 'forwards']);

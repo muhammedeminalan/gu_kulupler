@@ -1,4 +1,6 @@
 // T-10 · FakeAuthService sözleşmesi (PLAN §16.3).
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
@@ -121,6 +123,26 @@ void main() {
         isA<FirebaseSuccess<AuthUserInfo, AuthError>>(),
       );
       expect(fake.callsTo('signIn'), hasLength(2));
+    });
+
+    test('claimsGate verilirse idTokenClaims onu bekler (çağrı hemen '
+        'kaydedilir)', () async {
+      final gate = Completer<void>();
+      final fake = FakeAuthService()
+        ..claims = {'superadmin': true}
+        ..claimsGate = gate;
+      await fake.signIn(email: _email, password: _password);
+      var completed = false;
+      final pending = fake.idTokenClaims().whenComplete(() => completed = true);
+      await pumpEventQueue();
+      expect(fake.callsTo('idTokenClaims'), hasLength(1));
+      expect(completed, isFalse);
+
+      gate.complete();
+      expect(
+        await pending,
+        isA<FirebaseSuccess<Map<String, Object?>, AuthError>>(),
+      );
     });
 
     test('idTokenClaims claims kopyasını döner; tokenErrors denetleyiciden '

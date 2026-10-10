@@ -1,4 +1,5 @@
-// T-07 · DialogId ↔ registry.json#dialogs (KAT01–KAT04) + boş DialogCatalog.
+// T-07 · DialogId ↔ registry.json#dialogs (KAT01–KAT04) + DialogCatalog
+// kayıtları (her satırı sahibi olan task ekler).
 // Beklentiler registry'den okunur; literal tasarım kimliği yazılmaz (TEST01).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/dialogs/dialog_spec.dart';
@@ -37,10 +38,14 @@ void main() {
   });
 
   group('T-07 · DialogCatalog', () {
-    test('T-07 kaydı boş: satırları sahibi olan task ekler', () {
-      expect(DialogCatalog.ids, isEmpty);
+    test('satırları sahibi olan task ekler: T-11 → DLG-26, DLG-27', () {
+      expect(DialogCatalog.ids.toSet(), {DialogId.dlg26, DialogId.dlg27});
       for (final id in DialogId.values) {
-        expect(DialogCatalog.of(id), isNull, reason: id.designId);
+        expect(
+          DialogCatalog.of(id),
+          DialogCatalog.ids.contains(id) ? isNotNull : isNull,
+          reason: id.designId,
+        );
       }
     });
   });

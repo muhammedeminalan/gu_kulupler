@@ -65,11 +65,31 @@ final class DialogSpec {
 
 /// `DialogId → DialogSpec` kaydı.
 ///
-/// T-07'de boştur: her dialogun satırını sahibi olan task ekler
+/// Her dialogun satırını sahibi olan task ekler
 /// (`docs/task-map.json#owners.dialogs`). Kaydı olmayan kimlik
 /// `showDialog(builder:)` ile açılır.
 abstract final class DialogCatalog {
-  static final Map<DialogId, DialogSpec> _specs = <DialogId, DialogSpec>{};
+  static final Map<DialogId, DialogSpec> _specs = <DialogId, DialogSpec>{
+    /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
+    DialogId.dlg26: DialogSpec(
+      title: (l10n, _) => l10n.dlg26Title,
+      body: (l10n, _) => l10n.dlg26Body,
+      primary: (l10n) => l10n.dlg26Update,
+      icon: GuIcons.download,
+      dismissible: false,
+      primaryAction: 'update',
+    ),
+
+    /// Design: DLG-27 — Oturumun sona erdi (`dialogs.js:45`; kapatılamaz).
+    DialogId.dlg27: DialogSpec(
+      title: (l10n, _) => l10n.dlg27Title,
+      body: (l10n, _) => l10n.dlg27Body,
+      primary: (l10n) => l10n.authLoginCta,
+      icon: GuIcons.lock,
+      dismissible: false,
+      primaryAction: 'login',
+    ),
+  };
 
   /// [id] kaydı; yoksa `null`.
   static DialogSpec? of(DialogId id) => _specs[id];

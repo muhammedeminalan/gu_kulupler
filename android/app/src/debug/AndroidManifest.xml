@@ -4,4 +4,19 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Firebase emülatörü düz HTTP konuşur (10.0.2.2 / LAN adresi); Android
+         targetSdk 28+ şifresiz trafiği varsayılan olarak engeller. İzin
+         YALNIZCA debug derlemesindedir: ENV=emulator release derlenemez
+         (AppEnvironment.parse) ve main/profile manifest'leri bu özniteliği
+         taşımaz (W-53, CD-131). -->
+    <application android:usesCleartextTraffic="true">
+        <!-- Crashlytics yerel SDK'sı süreç başında, Dart'tan önce ve
+             varsayılan (gerçek) Firebase uygulamasıyla açılır. Debug
+             derlemede otomatik toplama kapalı başlar ki temiz kurulumun ilk
+             açılışında gerçek projeye istek gitmesin; toplamayı yalnızca
+             Dart açar (AppBootstrap.configureCrashlytics — W-53, CD-132). -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false"/>
+    </application>
 </manifest>

@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T16:26:38.310Z",
+  "updated": "2026-10-10T18:03:24.204Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-11",
   "statusValues": [
     "pending",
     "planning",
@@ -241,8 +241,8 @@
       "notes": ""
     },
     "T-11": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-10T16:27:07.724Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -560,7 +560,7 @@
     {
       "id": "W-03",
       "declaredIn": "T-11",
-      "text": "askıya alınmış hesap açılışında DLG-01 → T-13",
+      "text": "askıya alınmış hesap: oturumu kapat (SessionViewModel.onSuspended() → signOut) + DLG-01 → T-13",
       "resolveIn": [
         "T-13"
       ],
@@ -941,7 +941,10 @@
       "resolveIn": [
         "T-11"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-11",
+      "closedAt": "2026-10-10T18:03:24.198Z",
+      "closeNote": "T-11: (b) debug manifest usesCleartextTraffic eklendi; (c) ENV=emulator iken EmulatorRemoteConfigService/EmulatorCrashService kaydedilir, Crashlytics toplama emülatörde ve debug'da kapalı; (d) ProjectDependency yalnızca AppEnvironment.auth/.firestore/.storage kullanır, configure() hatası yutulmaz. Kalan: (a) ikinci Firebase uygulamasının gerçek cihaz/simülatörde doğrulanması kullanıcı testine bırakıldı (docs/plans/T-11.md Notlar; final rapor)"
     },
     {
       "id": "W-54",
@@ -951,6 +954,18 @@
         "T-12"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-55",
+      "declaredIn": "T-11",
+      "text": "DLG-26 'Güncelle' mağaza bağlantısı: AppGateViewModel.openStore() UrlLauncherService ile mağaza sayfasını açar (UrlLauncherService T-13'te doğar)",
+      "resolveIn": [
+        "T-13"
+      ],
+      "status": "open",
+      "actions": [
+        "DLG-26.update"
+      ]
     }
   ],
   "notImplemented": [

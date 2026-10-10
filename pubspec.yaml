@@ -38,6 +38,10 @@ dependencies:
   cached_network_image: ^4.0.3
   shared_preferences: ^2.5.6
 
+  # --- Cihaz servisleri (CD-08; her biri ilk kullanıldığı task'ta eklenir) ---
+  connectivity_plus: ^7.3.1 # T-11: çevrimdışı durumu (Q-12)
+  package_info_plus: ^10.2.2 # T-11: sürüm / build (DLG-26, SET-04)
+
   # --- Firebase (Mod C: firebase_messaging / cloud_functions yok — Q-02) ---
   firebase_core: ^4.15.0
   firebase_auth: ^6.7.0

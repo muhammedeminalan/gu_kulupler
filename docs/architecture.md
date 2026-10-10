@@ -66,19 +66,25 @@ test/ (token testi, widget testleri, golden)
 lib/
 ├── main.dart                         # ProviderScope + bootstrap
 ├── core/
-│   ├── bootstrap/app_bootstrap.dart  # WidgetsFlutterBinding, hata yakalayıcılar, Firebase, DI, prefs, Remote Config
+│   ├── bootstrap/app_bootstrap.dart  # WidgetsFlutterBinding, hata yakalayıcılar, yön kilidi, Firebase, DI, prefs
+│   ├── bootstrap/gu_app.dart         # GuApp: MaterialApp.router + kök katman zinciri (§4)
 │   ├── di/project_dependency.dart · project_dependency_mixin.dart · app_provider_mixin.dart
 │   ├── env/app_environment.dart      # ENV=emulator|production (--dart-define), emülatör host'ları
-│   ├── error/app_error_handler.dart · app_logger.dart
-│   └── session/session_view_model.dart · session_state.dart   # kimlik/rol çözümü (§6)
+│   ├── error/app_error_handler.dart · error_boundary.dart · app_logger.dart
+│   ├── connectivity/connectivity_view_model.dart · connectivity_state.dart · connectivity_gate.dart   # çevrimdışı durumu + yazma kapısı (§9)
+│   ├── format/app_date_formats.dart  # tarih / saat / sayı biçimleri (intl; Istanbul duvar saati)
+│   ├── l10n/build_context_l10n_x.dart # context.l10n köprüsü
+│   └── session/session_view_model.dart · session_state.dart · auth_status.dart   # kimlik/rol çözümü (§6)
 ├── product/
-│   ├── navigation/app_router.dart · route_guards.dart · routes/*.dart · shell/app_shell_view.dart
+│   ├── navigation/app_router.dart · app_redirect.dart · route_guards.dart · app_navigator.dart · navigator_keys.dart · session_refresh_listenable.dart · splash_hold.dart · gu_page_transitions.dart · routes/*.dart · shell/app_shell_view.dart
 │   ├── feedback/feedback_service.dart · sheet_id.dart · dialog_id.dart · toast_id.dart · catalogs/{sheets,dialogs,toasts}/…
-│   ├── widget/ …                     # alan-bilen kompozitler
+│   ├── widget/ …                     # alan-bilen kompozitler; widget/system/: OfflineBanner, MaintenanceBanner, SystemBannerSlot, AppGate (kök katmanlar)
 │   ├── mixin/ …
+│   ├── service/ …                    # Firebase dışı cihaz servisleri (CD-08): arayüz + uygulama aynı dosyada; fake'ler test/fakes/
+│   ├── format/relative_time_formatter.dart · count_badge_label.dart   # göreli zaman, gün etiketi, süre; sayaç rozeti "9+" (ARB)
 │   └── init/ …                       # tema/dil/metin ölçeği tercihleri, uygulama başlangıç bayrakları
 ├── features/
-│   ├── system/ (splash, error, offline, not_found)
+│   ├── system/ (splash, error, offline, not_found; debug_menu/ — yalnızca AppEnvironment.debugMenuEnabled)
 │   ├── onboarding/   auth/   clubs/   feed/   events/   notifications/
 │   ├── profile/   settings/   management/   admin/   search/
 │   └── <feature>/{provider|view_model, view/{mixin, widget}}
@@ -99,14 +105,14 @@ main() → runZonedGuarded(() async {
   runApp(ProviderScope(overrides: [...], child: const GuApp()));
 }, AppErrorHandler.onZoneError);
 ```
-- `GuApp` = `MaterialApp.router` (`theme`, `darkTheme`, `themeMode`, `locale`, `localizationsDelegates`, `routerConfig`, `builder` → metin ölçeği + `GuSystemUi` + çevrimdışı banner + zorunlu güncelleme katmanı).
-- **Splash (SYS-01):** ilk karede native splash → `SplashView` (1.2 sn ölçek+solma) → oturum çözümü bitince yönlendirme. Splash süresi **en az** animasyon süresi, **en çok** zaman aşımı (20 sn, sonra SYS-02).
+- `GuApp` (`lib/core/bootstrap/gu_app.dart`) = `MaterialApp.router` (`theme`, `darkTheme`, `themeMode`, `locale`, `localizationsDelegates`, `routerConfig`) + `builder` zinciri, en dıştan içe **tek sıra**: `GuTextScale` → `GuSystemUi` (+ kök metin stili `DefaultTextStyle(bodyM)`, `.gu-root`) → `GuToastHost` → `GuContentColumn` → `OfflineBanner` (SYS-03 bandı; yalnızca uygulama kabuğunda) → `MaintenanceBanner` (CD-48) → `AppGate` (DLG-26 zorunlu güncelleme → DLG-27 oturum sona erdi; `FeedbackService` ile kök gezgine) → `DebugMenuCornerButton` (yalnızca `AppEnvironment.debugMenuEnabled`). Tema / dil / metin ölçeği `AppPreferencesViewModel`'den; cihaz dili `en*` → İngilizce, diğer her şey → Türkçe. Sıra `test/core/bootstrap/gu_app_test.dart` ile doğrulanır.
+- **Splash (SYS-01):** ilk karede native splash → `SplashView` (1.2 sn ölçek+solma) → oturum çözümü bitince yönlendirme. Splash süresi **en az** animasyon süresi, **en çok** zaman aşımı (20 sn, sonra SYS-02). "En az": açılış beklemesi (`SplashHold`, `lib/product/navigation/splash_hold.dart`) kalkana kadar `AppRedirect.goRouterRedirect` `/splash`'ten çıkarmaz; logo animasyonu bitince `SplashView` beklemeyi kaldırır ve `SessionRefreshListenable` yönlendirmeyi yeniden değerlendirtir. "En çok": `Limits.splashTimeout` dolarsa ya da oturum hata verirse `SplashView` SYS-02'ye gider (`ErrorRoute`).
 
 ## 5. Ortam (`AppEnvironment`)
 
 - `--dart-define=ENV=emulator|production` (varsayılan: `kDebugMode ? emulator : production` **değil** — açık verilmezse `production` ve debug'da uyarı; yanlışlıkla gerçek projeye yazma riskini azaltmak için emülatör **açıkça** seçilir).
 - Emülatör host'ları: Android emülatör `10.0.2.2`, iOS simülatör/masaüstü `localhost`; gerçek cihaz için `--dart-define=EMULATOR_HOST=<LAN-IP>`. Portlar `firebase.json`'dan (Auth 9099, Firestore 8080, Storage 9199, Functions 5001, UI 4000).
-- **Emülatör güvenlik kuralları (CD-131):** (a) release derlemesi emülatöre bağlanmaz — `ENV=emulator` + `kReleaseMode` açılışta `StateError` (bağlantı şifresizdir; sessizce production'a düşürülmez); (b) `EMULATOR_HOST` yalnızca `localhost`, `.local` adı ya da özel IPv4 (127/8, 10/8, 172.16/12, 192.168/16); tanınmayan `ENV` ve emülatör dışında verilen `EMULATOR_HOST` hatadır; (c) emülatörde servisler varsayılan uygulamayı değil `gu-emulator` adlı ikinci Firebase uygulamasını kullanır (`demo-gu-kulupler` kimliği, sahte API anahtarı — gerçek projenin anahtarı taşınmaz); (d) servis örnekleri yalnızca `AppEnvironment.auth` / `.firestore` / `.storage` üzerinden alınır ve `configure()` tamamlanmadan `StateError` verir (`FirebaseAuth.instance` vb. başka dosyada yasak).
+- **Emülatör güvenlik kuralları (CD-131):** (a) release derlemesi emülatöre bağlanmaz — `ENV=emulator` + `kReleaseMode` açılışta `StateError` (bağlantı şifresizdir; sessizce production'a düşürülmez); (b) `EMULATOR_HOST` yalnızca `localhost`, `.local` adı ya da özel IPv4 (127/8, 10/8, 172.16/12, 192.168/16); tanınmayan `ENV` ve emülatör dışında verilen `EMULATOR_HOST` hatadır; (c) emülatörde servisler varsayılan uygulamayı değil `gu-emulator` adlı ikinci Firebase uygulamasını kullanır (`demo-gu-kulupler` kimliği, sahte API anahtarı — gerçek projenin anahtarı taşınmaz); (d) servis örnekleri yalnızca `AppEnvironment.auth` / `.firestore` / `.storage` üzerinden alınır ve `configure()` tamamlanmadan `StateError` verir (`FirebaseAuth.instance` vb. başka dosyada yasak). (e) Remote Config ve Crashlytics'in emülatörü yoktur ve SDK'ları varsayılan (gerçek) uygulamayı kullanır: `ENV=emulator` iken `ProjectDependency` yerel uygulamalar kaydeder (`EmulatorRemoteConfigService` — kod içi varsayılanlar; `EmulatorCrashService` — yalnızca konsol) ve `AppBootstrap` Crashlytics toplamayı kapatır (debug derlemede de kapalıdır). Yerel Crashlytics SDK'sı Dart'tan önce açıldığı için otomatik toplama platform dosyalarında **kapalı başlar** (Android debug manifest `firebase_crashlytics_collection_enabled=false`, iOS `Info.plist` `FirebaseCrashlyticsCollectionEnabled=false`); toplamayı yalnızca `AppBootstrap.configureCrashlytics` açar (release + production'da `true` yazar). Android'de şifresiz trafik izni yalnızca `android/app/src/debug/AndroidManifest.xml`'dedir (W-53).
 - Gerçek proje kimlikleri `firebase_options.dart`'tadır (flutterfire). **Bu dosya zaten repoda olabilir; yeniden üretme.**
 - ⟦Q-03⟧ tek proje mi iki proje mi: iki proje seçilirse `--dart-define=ENV=dev|prod` ve iki `firebase_options`.
 

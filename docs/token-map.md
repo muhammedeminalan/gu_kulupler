@@ -280,6 +280,7 @@ Kaynak: `reg.MOTION = {fast:120, base:200, slow:320, easeStandard:'cubic-bezier(
 | `shake` | 400 ms, standard; `translateX` −8/+8/−5/+5 → `shakeOffsets = [0, -8, 8, -5, 5, 0]` (`GuMotion.shakeOffsets` tek kaynak; ayrı `GuSizes` sabiti yok — T-01) | `.shake` css:334; `@keyframes shake` css:421; JS sıfırlama 450 ms ui:112 (CSS 400 esastır) |
 | `scan` | 2200 ms, `Curves.easeInOut`, sonsuz, `top 8% ↔ 90%` | `.scanline` css:335; `@keyframes scan` css:422 |
 | `splash` | 1200 ms, emphasized; `scale .7 → 1.05 (%60) → 1`, opaklık 0 → 1 | `.splash .logo` css:392; `@keyframes splash` css:423; shell.js:74 `GU.splashUntil = Date.now() + 1200` |
+| `splashStartScale` / `splashPeakScale` / `splashPeakAt` (**ek**, T-11) | 0.7 / 1.05 / 0.6 (tepe karesi %60; opaklık %0 → %60 arası 0 → 1) | `@keyframes splash{0%{opacity:0;transform:scale(.7)}60%{opacity:1;transform:scale(1.05)}100%{transform:scale(1)}}` css:423 — SYS-01 `SplashView` logo animasyonu |
 | `splashOut` | 300 ms, gecikme `splashOutDelay = 1300` ms, standard | `.splash-overlay{animation:splashOut .3s 1.3s –}` css:425 |
 | `highlight` | 1500 ms, standard | `.card.is-highlight` css:208; `@keyframes highlight` css:426 |
 | `fill` | 600 ms, standard (anket dolumu + donut dasharray) | `.poll-opt .poll-fill{transition:width .6s}` css:329; `Donut` `transition:stroke-dasharray .6s` ui:93 |

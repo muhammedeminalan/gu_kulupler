@@ -947,6 +947,10 @@
   "@authVerifyTitle": {
     "description": "Key auth.verify.title"
   },
+  "badgeOverflow": "9+",
+  "@badgeOverflow": {
+    "description": "Key badge.overflow"
+  },
   "blockedDesc": "You won't see posts or comments from blocked users, and they can't interact with you.",
   "@blockedDesc": {
     "description": "Key blocked.desc"
@@ -1657,6 +1661,35 @@
   "contentTitle": "Content management",
   "@contentTitle": {
     "description": "Key content.title"
+  },
+  "dateTimeAt": "{date}, {time}",
+  "@dateTimeAt": {
+    "description": "Key time.dateTimeAt",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "debugMenuDemoAccounts": "Demo accounts",
+  "@debugMenuDemoAccounts": {
+    "description": "Key debugMenu.demoAccounts"
+  },
+  "debugMenuSignInError": "Sign-in failed ({code}). Are the emulator and the demo data (seed) running?",
+  "@debugMenuSignInError": {
+    "description": "Key debugMenu.signInError",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "debugMenuSystemScreens": "System screens",
+  "@debugMenuSystemScreens": {
+    "description": "Key debugMenu.systemScreens"
   },
   "deleteAccountConfirmCta": "Permanently delete my account",
   "@deleteAccountConfirmCta": {
@@ -4942,6 +4975,15 @@
   "@sysSplashTitle": {
     "description": "Key sys.splash.title"
   },
+  "sysSplashVersion": "v{version}",
+  "@sysSplashVersion": {
+    "description": "Key sys.splash.version",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "themeDark": "Dark",
   "@themeDark": {
     "description": "Key theme.dark"
@@ -4991,6 +5033,18 @@
   "@ticketTitle": {
     "description": "Key ticket.title"
   },
+  "timeDayAt": "{day} {time}",
+  "@timeDayAt": {
+    "description": "Key time.dayAt",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timeDays": "{count, plural, one{{count} day} other{{count} days}}",
   "@timeDays": {
     "description": "Key time.days",
@@ -5030,7 +5084,7 @@
     "description": "Key time.hours",
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "num"
       }
     }
   },
