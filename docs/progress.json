@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T12:35:57.414Z",
+  "updated": "2026-10-10T13:53:25.251Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-08",
   "statusValues": [
     "pending",
     "planning",
@@ -211,8 +211,8 @@
       "notes": ""
     },
     "T-08": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-10T12:36:24.850Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -873,6 +873,33 @@
       "text": "ADM-01 kullanıcılar → ADM-05 → T-41",
       "resolveIn": [
         "T-41"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-48",
+      "declaredIn": "T-08",
+      "text": "T-08 geçici tipleri enum'a çevir (CD-129): StaticTables.years → List<YearLevel>, StaticTables.eventTypes → List<EventType>, EventTypeModel + testi kaldır (PLAN §9.1 beş lookup sınıfı), RolePolicy.activeRole/accessOf status parametresi String → MembershipStatus, StaticLabels.year/eventType ve static_tables/static_labels testleri enum'a",
+      "resolveIn": [
+        "T-09"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-49",
+      "declaredIn": "T-08",
+      "text": "Bildirim belge kimliği olay başına tekil olmalı (CD-129): FirestoreIds.notification(type, refId, userId) tekrarlanabilen olaylarda (onayla→geri al→yeniden onayla, rol değişimi/devir, çıkar→geri al→çıkar, yeniden başvuru, yeniden yayın, terfi) aynı kimliği üretir; ikinci set Rules'ta update sayılır ve yalnızca sahibine açıktır → kritik batch permission-denied. T-25 planında kimlik şeması (kritik batch içi tek alıcılı türlerde olay ayırt edicili refId ya da doc().id; application_received refId = clubId + priorCount) kesinleşir; Rules §3.9 testine 'aynı tür/ref/alıcı ikinci olay geçer' vakası; T-30 yönetici geçişleri aynı şemayı kullanır",
+      "resolveIn": [
+        "T-25"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-50",
+      "declaredIn": "T-08",
+      "text": "Duyuru sayacı gün anahtarı cihaz saatinden (AppClock.nowUtc), Rules request.time + 3 sa gününden (CD-129): PostRepository.create permissionDenied alır ve nowUtc Istanbul gün sınırına Limits.clockSkewTolerance içindeyse komşu gün anahtarıyla bir kez yeniden dener; AnnouncementCounterRepository.getToday aynı pencerede komşu günü de okur; T-19 Rules testi 'gün sınırında yanlış gün ret / doğru gün geçer'",
+      "resolveIn": [
+        "T-19"
       ],
       "status": "open"
     }

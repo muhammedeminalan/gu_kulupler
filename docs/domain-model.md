@@ -163,7 +163,8 @@ Roller **kulüp bazlıdır** (`memberships.role`); `superadmin` global claim'dir
 
 - **Danışman:** panelde her şeyi görür; yazma aksiyonları **devre dışı** görünür ve dokununca **TST-26** ("Danışman yetkisi salt okunurdur") çıkar; panelin üstünde kalıcı "Salt okunur" bandı. Danışman yorum/oy veremez, kendi gönderisi olmaz.
 - **Süper admin** kulüp içeriğini **görür** (`viewInside`), moderasyon ve çıkarma yapar; ancak kulüp adına gönderi/etkinlik oluşturmaz.
-- Rol çözümü: `SessionViewModel.accessTo(clubId)` → `visitor · pending · rejected · member · manager · advisor · super` (prototipteki `sel.mode`).
+- Rol çözümü: `SessionViewModel.accessTo(clubId)` → `visitor · pending · rejected · member · manager · advisor · super` (prototipteki `sel.mode`); kod karşılığı `RolePolicy.accessOf`. Yalnızca `active` üyelik rol taşır: üyelik belgesindeki `role` (başvuruda da `member` yazılıdır) `RolePolicy.can`'e doğrudan değil, `RolePolicy.activeRole(status, role)` üzerinden verilir (Rules `mActive`).
+- **Çıkarma ve rol atama hedefi** yalnızca `member` ve `board` üyedir: başkan önce devreder; danışman `memberCount`'a dahil olmadığı için çıkarılamaz ve rolü atamayla değiştirilemez — danışman ataması/kaldırması süper adminin ayrı işlemidir (`RolePolicy.canRemove` / `canAssignRole`, Rules M9 / M10 / M13).
 
 ## 4. Sayaçlar ve tutarlılık
 
@@ -247,8 +248,10 @@ Tür → alıcı → ayar anahtarı (prototipte `TYPE_SETTING`) → tetikleyici.
 
 ## 9. Sabit sınırlar (`Limits`, tek yer)
 
-Şifre ≥ 8 + büyük harf + rakam · giriş: 5 hatalı denemede 30 sn kilit (istemci) · doğrulama maili tekrar gönderme 60 sn · ilgi alanı 1–5 · biyografi 140 · ad 2–60 · gönderi metni 1000 · duyuru başlığı 80 · yorum 500 (400'den sonra sayaç) · görsel ≤ 4 (dosya ≤ 5 MB) · anket: 2–4 seçenek, süre 1/3/7 gün · kısa açıklama 160 · uzun açıklama 1000 · başvuru notu 300 · etkinlik başlığı 80, açıklaması 1000 · destek mesajı 500 · yeniden başvuru bekleme **7 gün** · duyuru **2/gün** · son aramalar 6 · arama debounce 250 ms · sayfa boyutu 20 · "Geri al" penceresi 6 sn (toast), yönetici karar geri alma 30 sn (Rules) · toast 4 sn (Geri al'lı 6 sn) · QR başarı oto-kapanma 2 sn · splash 1.2 sn.
-`GuLimits` değerleri ARB metinleriyle (`{n}` parametreleri) tutarlı olmalı.
+Şifre ≥ 8 + büyük harf + rakam · giriş: 5 hatalı denemede 30 sn kilit (istemci) · doğrulama maili tekrar gönderme 60 sn · ilgi alanı 1–5 · biyografi 140 · ad 2–60 · gönderi metni 1000 · duyuru başlığı 80 · yorum 500 (400'den sonra sayaç) · görsel ≤ 4 (dosya ≤ 5 MB) · anket: 2–4 seçenek, süre 1/3/7 gün · kısa açıklama 160 · uzun açıklama 1000 · başvuru notu 300 · etkinlik başlığı 80, açıklaması 1000 · destek mesajı 500 · yeniden başvuru bekleme **7 gün** · duyuru **2/gün** · son aramalar 6 · arama debounce 250 ms · sayfa boyutu 20 · yönetici karar geri alma 30 sn (Rules).
+`Limits` değerleri ARB metinleriyle (`{n}` parametreleri) tutarlı olmalı.
+
+Sunum süreleri `Limits`'te **değildir** (CD-24, CD-58; PLAN §9.8): toast 4 sn → `GuMotion.toastDefault` · "Geri al"lı toast (geri alma penceresi) 6 sn → `GuMotion.toastUndo` · splash animasyonu 1.2 sn → `GuMotion.splash` · QR başarı (SHT-24) oto-kapanma 2 sn → `AppDurations.qrSuccessAutoClose` (`lib/core/constants/app_durations.dart`, T-35).
 
 ## 10. Statik tablolar (Firestore dışı, `gu_data/constants`)
 

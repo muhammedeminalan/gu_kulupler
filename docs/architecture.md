@@ -123,7 +123,7 @@ SessionState {
   Set<String> blockedUserIds;
 }
 ```
-- `ClubRole roleIn(clubId)` ve `ClubAccess accessTo(clubId)` (visitor/pending/rejected/member/manager/advisor) **buradan** türetilir; ekranlar kendi başlarına rol hesaplamaz.
+- `ClubRole roleIn(clubId)` ve `ClubAccess accessTo(clubId)` (visitor/pending/rejected/member/manager/advisor) **buradan** türetilir; ekranlar kendi başlarına rol hesaplamaz. Türetim `gu_data` `RolePolicy.activeRole(status, role)` (yalnızca `active` üyelik rol taşır) ve `RolePolicy.accessOf(...)` ile yapılır; üyelik belgesindeki `role` `RolePolicy.can`'e doğrudan verilmez (CD-129).
 - **Router yönlendirme tablosu** (`redirect`):
 
 | Durum | Hedef |
