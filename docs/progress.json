@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-09T11:31:02.895Z",
+  "updated": "2026-10-10T09:55:53.357Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -151,11 +151,13 @@
       "notes": ""
     },
     "T-02": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-09T11:35:42.968Z",
+      "finishedAt": "2026-10-10T09:55:53.357Z",
+      "commits": [
+        "a927b6d"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-03": {
@@ -917,6 +919,11 @@
       "date": "2026-10-09",
       "task": "T-01",
       "text": "Kullanıcı 2026-10-09 (güncelleme): main'e doğrudan commit/push YOK. Her task feat/T-xx dalında; kapı yeşil → dal push → gh PR aç → Claude PR'ı GitHub üzerinden merge eder (onay beklemez) → yerel main origin'den güncellenir; sonraki task güncel main'den dallanır. Faz/doküman commit'leri de dalda + PR"
+    },
+    {
+      "date": "2026-10-10",
+      "task": "T-02",
+      "text": "hızlı mod (kullanıcı 2026-10-10): inceleme ajanı yalnızca kritik task'larda (veri/Rules/güvenlik); basit UI'da tek tur; golden kapsamı ekran başına açık+koyu, widget durum/toast golden yok; planlar kısa"
     }
   ],
   "knownIssuesAdded": [

@@ -4853,6 +4853,8 @@ Dayanak: D-33, `docs/testing.md` (tamamı), CLAUDE.md §10, Q-06 (`fake_cloud_fi
 
 ### 16.2 `test/helpers` — API imzaları (T-02)
 
+> **T-02 uygulama notu (CD-122):** `pumpApp(route:, wrapInShell:)` T-11'de; `GuSkeleton.debugAnimate` T-06'da; `fake_app_clock.dart` T-08'de (arayüz orada doğar); gu_ui kendi alt küme yardımcılarını taşır (`packages/gu_ui/test/helpers/pump_app.dart`, `golden_helper.dart`); `expectActionInventory(role:)` ekranın `roles` alanını doğrular, `includeShell:` T-11'de `wrapInShell` ile bağlanır; muaf/dinamik kalıplar `tool/design_*_actions.txt`.
+
 | Dosya | API |
 |---|---|
 | `pump_app.dart` | `extension PumpApp on WidgetTester { Future<void> pumpApp(Widget child, {Locale locale = const Locale('tr'), ThemeMode theme = ThemeMode.light, double textScale = 1.0, Size size = const Size(390, 844), TargetPlatform platform = TargetPlatform.android, List<Override> overrides = const [], EdgeInsets viewPadding = EdgeInsets.zero, double keyboardInset = 0, bool wrapInShell = false}); }` — `GetIt.I.reset()` + `registerDefaultFakes()` (`test/fakes/register_fakes.dart`) her çağrıda; `ProviderScope(overrides)`; `GuTheme.light/dark`; `localizationsDelegates`; `MediaQuery(textScaler: TextScaler.linear(textScale), size, viewPadding, viewInsets: EdgeInsets.only(bottom: keyboardInset))`; `GuSkeleton.debugAnimate = false`. |
@@ -5015,6 +5017,7 @@ Dosya adları tek kaynak bu tablodur (CD-12: `integration_test/` T-14'te `auth_f
 | 1 | `format` | `dart format lib test integration_test packages` (var olan dizinler); `--check-format` ile `--output=none --set-exit-if-changed` | hayır | full, task, fast, static, final | `GU_GATE_STATIC_ONLY=1` |
 | 2 | `codegen` | `bash tool/codegen.sh` (flutter pub get → `dart run build_runner build --delete-conflicting-outputs` kök + build_runner içeren her `packages/*` → `flutter gen-l10n`) | **evet** | full, task, final | fast ve static modda atlanır; `tool/codegen.sh` yoksa atlanır |
 | 3 | `analyze` | `flutter analyze --fatal-infos --fatal-warnings .` kökte + her `packages/*/` içinde | **evet** | full, task, fast, static, final | codegen kırmızıysa atlanır; `GU_GATE_STATIC_ONLY=1` |
+| 3b | `arac-testi` | `node --test tool/test/*.test.js` (araç betiklerinin öz-testleri; T-02, CD-79/CD-122(9)) | hayır | hepsi | `tool/test/` yoksa |
 | 4 | `sinirlar` | `node tool/check_boundaries.js` (B01–B06; T-00'dan itibaren B07–B08 — CD-06) | hayır | hepsi | — |
 | 5 | `hardcode` | `node tool/check_hardcode.js` (lib/**, packages/*/lib/**, assets/**/*.svg) | hayır | hepsi | — |
 | 6 | `hard-delete` | `node tool/check_no_hard_delete.js` (lib, packages/*/lib, tool, functions/src, firebase/*.rules) | hayır | hepsi | — |

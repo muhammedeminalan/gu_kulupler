@@ -16,6 +16,8 @@ analyzer:
     - "design/**"
     - "reference/**"
     - "docs/reference/**"
+    # Araç öz-testi fixture'ları (CD-79): kasıtlı ihlalli sahte repo ağaçları, çözülemeyen paket import'ları
+    - "tool/test/fixtures/**"
 
 linter:
   rules:

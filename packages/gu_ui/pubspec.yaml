@@ -17,4 +17,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Test yardımcısı `test/helpers/pump_app.dart` (Global*Localizations; CD-122(3)).
+  flutter_localizations:
+    sdk: flutter
   very_good_analysis: ^10.3.0

@@ -1,0 +1,11 @@
+{
+  "screens": [
+    { "id": "CLB-01", "tab": "clubs", "titleKey": "clb.list.title", "titleTr": "Kulüpler", "titleEn": "Clubs" },
+    { "id": "EVT-01", "tab": "events", "titleKey": "evt.list.title", "titleTr": "Etkinlikler", "titleEn": "Events" }
+  ],
+  "sheets": [],
+  "dialogs": [],
+  "toasts": [],
+  "menus": [],
+  "tabRoot": { "clubs": "CLB-01", "events": "EVT-01" }
+}

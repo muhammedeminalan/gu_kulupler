@@ -1,0 +1,5 @@
+# Envanterde (screens-actions.json, 390×844 yakalaması) olmayan ama prototipin koşullu/dinamik ürettiği
+# aksiyon anahtarları — CD-86, CD-122(5). Listedeki kalıba uyan anahtar AKS02 (fazla anahtar) sayılmaz.
+# Tek kaynak: tool/check_design_coverage.js ve test/helpers/action_inventory.dart bu dosyayı okur.
+# Biçim: satır başına bir kalıp (`*` joker), `#` sonrası gerekçe = kaynak dosya:satır + görünürlük koşulu.
+# Her ekran task'ı kendi satırlarını aynı commit'te ekler.

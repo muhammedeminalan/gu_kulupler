@@ -1,0 +1,4 @@
+{
+  "CLB-01": { "path": "/clubs", "roles": "all", "user": "u_test", "params": {}, "actions": ["CLB-01.search", "NAV.tab.clubs", "NAV.tab.events"], "actionCount": 3 },
+  "EVT-01": { "path": "/events", "roles": "all", "user": "u_test", "params": {}, "actions": ["EVT-01.open.e01", "NAV.tab.clubs", "NAV.tab.events"], "actionCount": 3 }
+}

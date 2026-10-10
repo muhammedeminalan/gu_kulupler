@@ -24,15 +24,18 @@ test/
     overflow_detector.dart# FlutterError.onError → "overflowed" yakalar ve testi düşürür
     action_inventory.dart # ekrandaki GuKey.action kümesi ↔ screens-actions.json
     design_ids.dart       # registry.json'dan ID listeleri
+    design_files.dart     # repo kökünden JSON/metin okuyucu
+    test_l10n.dart        # tester.l10n, l10nFor(locale), loadL10n
+    test_container.dart   # createContainer({overrides})
   features/ … core/ … product/ …
 packages/gu_data/test/    # model, servis, repository, soft delete, RolePolicy
-packages/gu_ui/test/      # token, widget, golden (goldens/ altında)
+packages/gu_ui/test/      # token, widget, golden (goldens/ altında); helpers/: pump_app.dart (alt küme: GetIt/Riverpod/AppLocalizations yok) · golden_helper.dart (goldenForWidget) · css_measure.dart · design_sources.dart — CD-122(3)
 integration_test/         # birkaç uçtan uca akış (emülatör): auth, başvuru→onay, etkinlik→bilet→yoklama, hesap silme
 firebase/test/            # Rules testleri (Node, emülatör)
 functions/test/           # Mod F ise
 ```
 
-`pumpApp` varsayılanları: TR, açık tema, ölçek 1.0, 390×844, Android; `GetIt` her testte `reset()` + fake kaydı; `ProviderScope` override'ları.
+`pumpApp` varsayılanları: TR, açık tema, ölçek 1.0, 390×844, Android; `GetIt` her testte `reset()` + fake kaydı; `ProviderScope` override'ları. `route`/`wrapInShell` T-11'de, `GuSkeleton.debugAnimate = false` T-06'da eklenir; `FakeAppClock` T-08'de (CD-122). Aksiyon envanterinin muaf ve dinamik kalıpları `tool/design_exempt_actions.txt` / `tool/design_dynamic_actions.txt` (JS ve Dart tek kaynak).
 
 ## 3. Test türleri ve asgari içerik
 
@@ -69,7 +72,7 @@ Her **ekran**, her **sheet ve dialog** için (görünüm sınıfı bazında, 51 
 | büyük | 430 × 932 | |
 | tablet | 768 × 1024 | Q-13: dikey kilit + ortalanmış 480 dp sütun; tabletle taşma/uzama yok |
 
-× tema {açık, koyu} × dil {TR, EN} × metin ölçeği {1.0, 1.3, 1.6} = **72 kombinasyon/ekran**. Hızlı kapı (`--fast`): 320 + 390 × açık × TR × {1.0, 1.6}; tam matris CI/commit öncesi `quality_gate.sh` tam modunda. Seçim `test/helpers/device_matrix.dart` içinde `const String.fromEnvironment('GU_MATRIX', defaultValue: 'full')` ile yapılır; kapı `flutter test --dart-define=GU_MATRIX=fast|full` verir (varsayılan `full`).
+× tema {açık, koyu} × dil {TR, EN} × metin ölçeği {1.0, 1.3, 1.6} = **48 kombinasyon/ekran** (4 × 2 × 2 × 3; CD-42 — eski "72" hesap hatası). Klavye (1) ve güvenli alan (4) varyantları bu sayının dışında, yalnızca 390×844 × açık × TR × 1.0. Hızlı kapı (`--fast`): 320 + 390 × açık × TR × {1.0, 1.6}; tam matris CI/commit öncesi `quality_gate.sh` tam modunda. Seçim `test/helpers/device_matrix.dart` içinde `const String.fromEnvironment('GU_MATRIX', defaultValue: 'full')` ile yapılır; kapı `flutter test --dart-define=GU_MATRIX=fast|full` verir (varsayılan `full`).
 - `overflow_detector` "A RenderFlex overflowed" mesajını **hata** sayar; ayrıca `tester.takeException() == null`.
 - Klavye açık varyantı (formlu ekranlar): `viewInsets.bottom = 320` ile içerik kaydırılabilir ve odaktaki alan görünür.
 - Güvenli alan varyantları: üst 47/59 (çentik), alt 34 (home indicator), Android sistem çubuğu.

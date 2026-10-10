@@ -1,0 +1,2 @@
+// Fixture: model.
+class ClubModel {}
