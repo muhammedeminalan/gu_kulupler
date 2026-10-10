@@ -114,8 +114,8 @@ Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resour
 | M6 | `pending → rejected` (Reddet) | `isManager` | `status,decidedAt,decidedBy,retryAfter,rejectReason,rejectNote` | `retryAfter == request.time + duration.value(7,'d')`; `rejectReason in [quota,criteria,missing,other]`; `rejectNote.size()<=200` | — |
 | M7 | `pending → cancelled` (İsteği iptal) | belge sahibi | `status` | — | — |
 | M8 | `active → left` (Ayrıl) | belge sahibi | `status` | `role in [member,board]` (**başkan/danışman ayrılamaz**) | `memberCount −1` + `activity member_left` |
-| M9 | `active → removed` (Çıkar) | hiyerarşi: `isPres(c)` herkesi (başkan hariç), `isManager(c)` yalnızca `role=='member'`, `isSuper()` herkesi (başkan hariç) | `status,decidedAt,decidedBy,retryAfter,rejectReason:'other',rejectNote` | `resource.role != 'president'` | `−1` + `removed_from_club` bildirimi + `activity` |
-| M10 | `role` değişimi (SHT-22) | `isPres(c)` veya `isSuper()` | `role` | yeni rol ∈ `member,board`; `president` rolüne **yalnızca devirle**; hedef `active` | `role_changed` bildirimi + `activity` |
+| M9 | `active → removed` (Çıkar) | hiyerarşi: `isPres(c)` `member` ve `board` üyeyi, `isManager(c)` yalnızca `role=='member'`, `isSuper()` `member` ve `board` üyeyi (başkan ve danışman hariç) | `status,decidedAt,decidedBy,retryAfter,rejectReason:'other',rejectNote` | `resource.role in ['member','board']` (başkan: önce devir M11; danışman `memberCount` dışıdır, yalnızca M13 — CD-129) | `−1` + `removed_from_club` bildirimi + `activity` |
+| M10 | `role` değişimi (SHT-22) | `isPres(c)` veya `isSuper()` | `role` | yeni rol ∈ `member,board`; `president` rolüne **yalnızca devirle**; hedef `active` ve mevcut rolü ∈ `member,board` (`resource.role in ['member','board']`; danışman rolü yalnızca M13 — CD-129) | `role_changed` bildirimi + `activity` |
 | M11 | Devir (SHT-25) | `isPres(c)` veya `isSuper()` | iki belge + `clubs.presidentId` (tek batch) | eski başkan `president→board`, yeni `member\|board→president` (`active`); `clubs.presidentId == yeni` | `role_changed` ×2 |
 | M12 | **Geri al** (`active/rejected → pending`) | kararı veren (`resource.data.decidedBy == uid()`) | `status,decidedAt:null,decidedBy:null,retryAfter:null,rejectReason:null,rejectNote:null` | `request.time < resource.data.decidedAt + duration.value(30,'s')` (kararın **sunucu zamanı** ile) | aktifse `−1` |
 | M13 | Danışman ata/kaldır (ADM-03 / G-1) | `isSuper()` | `role:'advisor'` belgesi create/`status` | `memberCount`'a dahil değil | — |
@@ -165,6 +165,7 @@ Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resour
 - **R:** `userId == uid()` (silinmişler dahil → Geri al). Sorgu: `where userId == uid`.
 - **U (sahibi):** `read` (`false→true`, toplu okundu), soft delete / restore.
 - **C:** Mod F: **yalnız Functions** (Admin SDK Rules'u atlar) ⇒ istemci için `allow create: if false`. Mod C: `ClientFanOutDispatcher` — izinli, **tür-bazlı** koşullarla: `userId != uid()` ise `type` yazanın yetkisiyle uyumlu olmalı: `application_received` (yazan = `refs.applicantId == uid()`, hedef kulüp yöneticisi), `application_approved/rejected/removed_from_club/role_changed` (yazan `isManager(refs.clubId)` veya `isSuper()`), `announcement/event_new/event_cancelled/waitlist_promoted` (yazan `isManager(refs.clubId)`), `report_resolved/new_report/system` (`isSuper()`; `new_report` ayrıca şikayeti açan), alan beyaz listesi, `read==false`. Alıcının gerçekten üye olup olmadığı **doğrulanmaz** (bütçe) — kabul edilmiş sınırlama §9.
+- **Kimlik tekilliği (CD-129; T-25):** belge kimliği deterministiktir (`{type}_{refId}_{userId}`, `FirestoreIds.notification`). Var olan belgeye ikinci `set` **update** sayılır ve update yalnızca sahibine açıktır; bu yüzden tekrarlanabilen olaylarda (onayla → geri al → yeniden onayla, rol değişimi + devir, çıkar → geri al → çıkar, yeniden başvuru, yeniden yayın, terfi) `refId` **olay başına tekil** üretilir — aksi halde yazım, içinde olduğu kritik batch ile birlikte reddedilir. Kimlik şeması T-25 planında kesinleşir; Rules testi: "aynı tür/ref/alıcı için ikinci olay yazılabilir".
 - **D:** `false`.
 
 ### 3.10 `reports/{reporterId}_{targetType}_{targetId}`
@@ -189,6 +190,7 @@ Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resour
 ### 3.16 `announcementCounters/{clubId}_{yyyyMMdd}`
 - **R:** `seesMgmt(clubId)` (FED-03 hak çubuğu).
 - **C/U:** yalnız `isManager(clubId)` ve **aynı batch'te** `type=='announcement' && pushSent==true` olan gönderi yazımıyla; `count == önceki+1` (yoksa `1`), `count <= 2`; belge ID günü = `request.time + duration.value(3,'h')` Istanbul günü (`yyyyMMdd`); `day` alanı buna eşit. **D:** `false`.
+- **Saat kayması (CD-129; T-19):** gün eşitliği **toleranssızdır** (CD-32 toleransı yalnızca `retryAfter` ve `poll.endsAt` içindir). İstemci günü cihaz saatinden hesaplar; cihaz saati kaymışsa Istanbul gün sınırının yakınında yanlış gün anahtarı üretir ve yazım reddedilir. İstemci, `permission-denied` alır ve cihaz saati gün sınırına `clockSkewTolerance` (5 dk) içindeyse komşu gün anahtarıyla **bir kez** yeniden dener. Rules testi: "gün sınırında yanlış gün ret / doğru gün geçer".
 
 ### 3.17 Her şeyin altı
 `match /{document=**} { allow read, write: if false; }` — yukarıda adı geçmeyen koleksiyon/alt koleksiyon kapalıdır.

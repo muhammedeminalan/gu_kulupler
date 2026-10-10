@@ -1,3 +1,5 @@
+import 'package:gu_data/gu_data.dart';
+
 /// Ürün adı ve dış adresler için TEK kaynak (D-01, K-D, K-N, CD-75, CD-76).
 ///
 /// Başka hiçbir dosyada ürün adı, alan adı, URL ya da destek adresi literal
@@ -10,12 +12,11 @@ abstract final class AppConstants {
   /// Türkçe yönelme hâli ("…’e hoş geldin"); ad değişince `appName` ile birlikte güncellenir.
   static const String appNameDative = 'GÜ Kulüpler’e';
 
-  /// İzinli e-posta alan adları (D-27). T-08'de `gu_data` `EmailDomainPolicy`
-  /// tek kaynak olur ve bu alan ona delege eder (CD-76).
-  static const List<String> allowedEmailDomains = <String>[
-    'ogr.gumushane.edu.tr',
-    'gumushane.edu.tr',
-  ];
+  /// İzinli e-posta alan adları (D-27). Tek kaynak `gu_data`
+  /// `EmailDomainPolicy.allowedDomains`'tir; bu alan ona delege eder, ikinci
+  /// kopya tutulmaz (CD-76).
+  static const List<String> allowedEmailDomains =
+      EmailDomainPolicy.allowedDomains;
 
   /// Paylaşım bağlantısı kökü (K-09 yer tutucu; yalnızca kopyala/paylaş, App Links yok).
   static const String shareBaseUrl = 'https://kulupler.gumushane.edu.tr';
