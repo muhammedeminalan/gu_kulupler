@@ -1,7 +1,7 @@
 // Kök test sarmalayıcısı (PLAN §16.2, testing.md §2).
 //
-// `route:` / `wrapInShell:` T-11'de (router + `AppShellView`),
-// `GuSkeleton.debugAnimate = false` T-06'da eklenir (CD-122(2)).
+// `route:` / `wrapInShell:` T-11'de (router + `AppShellView`) eklenir.
+// `GuSkeleton.debugAnimate` test boyunca `false`'tur (CD-122(2)).
 // gu_ui'nin alt küme kopyası: `packages/gu_ui/test/helpers/pump_app.dart`
 // (paket sınırı, CD-122(3)).
 import 'dart:math' as math;
@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_ui/gu_ui.dart';
+// T-06: `GuSkeleton` barrel'a eklenince bu satır kalkar (gu_ui.dart yeter).
 
 import '../fakes/register_fakes.dart';
 
@@ -59,6 +60,10 @@ extension PumpApp on WidgetTester {
       ..physicalSize = size * kPumpAppDevicePixelRatio;
     addTearDown(view.reset);
     TestPlatformScope.apply(platform);
+    // Sonsuz shimmer `pumpAndSettle`'ı kilitler, golden'ı kararsız yapar
+    // (CD-122(2)).
+    GuSkeleton.debugAnimate = false;
+    addTearDown(() => GuSkeleton.debugAnimate = true);
 
     await pumpWidget(
       TestPlatformScope(
