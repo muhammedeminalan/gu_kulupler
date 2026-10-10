@@ -4,7 +4,8 @@
 // (`package:gu_kulupler`) içe aktaramaz → GetIt, Riverpod ve
 // `AppLocalizations` yok; yerel ayar yalnızca Global* Material/Widgets/
 // Cupertino delegeleriyle kurulur. `OverflowDetector`/`DeviceMatrix` yalnızca
-// köktedir.
+// köktedir. Varlıklar (`assets/icons` vb.) dosya tabanlı `GuTestAssetBundle`
+// ile `DefaultAssetBundle` olarak sağlanır (CD-23, T-03).
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_ui/gu_ui.dart';
+
+import 'test_asset_bundle.dart';
 
 /// `pumpApp` çocuğunu saran `KeyedSubtree` anahtarı (çocuğun bağlamı).
 const Key kPumpAppChildKey = ValueKey<String>('pumpApp.child');
@@ -27,7 +30,8 @@ const List<Locale> kPumpAppLocales = [Locale('tr'), Locale('en')];
 
 extension GuPumpApp on WidgetTester {
   /// [child]'ı `GuTheme.light()/dark()` + TR/EN Global delegeleri +
-  /// `MediaQuery` (metin ölçeği, güvenli alan, klavye) içinde çizer.
+  /// `MediaQuery` (metin ölçeği, güvenli alan, klavye) + dosya tabanlı
+  /// `DefaultAssetBundle` ([GuTestAssetBundle]) içinde çizer.
   ///
   /// Varsayılanlar: TR, açık tema, ölçek 1.0, 390×844, Android. Görünüm
   /// boyutu ve platform test sonunda geri alınır (`tester.view.reset`,
@@ -52,26 +56,29 @@ extension GuPumpApp on WidgetTester {
       TestPlatformScope(
         key: UniqueKey(),
         platform: platform,
-        child: RepaintBoundary(
-          key: kPumpAppBoundaryKey,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: GuTheme.light().copyWith(platform: platform),
-            darkTheme: GuTheme.dark().copyWith(platform: platform),
-            themeMode: theme,
-            locale: locale,
-            supportedLocales: kPumpAppLocales,
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            builder: (context, navigator) => MediaQuery(
-              data: testMediaQuery(
-                MediaQuery.of(context),
-                textScale: textScale,
-                viewPadding: viewPadding,
-                keyboardInset: keyboardInset,
+        child: DefaultAssetBundle(
+          bundle: GuTestAssetBundle.instance,
+          child: RepaintBoundary(
+            key: kPumpAppBoundaryKey,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: GuTheme.light().copyWith(platform: platform),
+              darkTheme: GuTheme.dark().copyWith(platform: platform),
+              themeMode: theme,
+              locale: locale,
+              supportedLocales: kPumpAppLocales,
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              builder: (context, navigator) => MediaQuery(
+                data: testMediaQuery(
+                  MediaQuery.of(context),
+                  textScale: textScale,
+                  viewPadding: viewPadding,
+                  keyboardInset: keyboardInset,
+                ),
+                child: navigator!,
               ),
-              child: navigator!,
+              home: KeyedSubtree(key: kPumpAppChildKey, child: child),
             ),
-            home: KeyedSubtree(key: kPumpAppChildKey, child: child),
           ),
         ),
       ),

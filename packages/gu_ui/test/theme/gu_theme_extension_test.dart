@@ -288,7 +288,7 @@ void main() {
 
   group('T-01 · barrel (lib/gu_ui.dart)', () {
     test(
-      'lib/src/{tokens,theme,extensions,utils} dosyalarının tümü alfabetik export edilir (utils: T-02)',
+      'lib/src altındaki dosyaların tümü alfabetik export edilir (utils: T-02; icons, widgets/display: T-03)',
       () {
         final barrel = File('lib/gu_ui.dart').readAsStringSync();
         final exports = RegExp(
@@ -297,10 +297,9 @@ void main() {
         ).allMatches(barrel).map((m) => m.group(1)!).toList();
 
         final files = <String>[
-          for (final dir in ['extensions', 'theme', 'tokens', 'utils'])
-            for (final f in Directory('lib/src/$dir').listSync())
-              if (f is File && f.path.endsWith('.dart'))
-                'src/$dir/${f.uri.pathSegments.last}',
+          for (final f in Directory('lib/src').listSync(recursive: true))
+            if (f is File && f.path.endsWith('.dart'))
+              f.uri.pathSegments.skip(1).join('/'),
         ]..sort();
 
         expect(files, isNotEmpty);
