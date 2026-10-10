@@ -1,0 +1,12 @@
+{
+  "collection": "posts/votes",
+  "row": 7,
+  "match": "/posts/{postId}/votes/{voterId}",
+  "owner": "T-19",
+  "fixture": "base",
+  "docPath": "posts/p01/votes/u_member",
+  "newDocPath": "posts/p01/votes/{uid}",
+  "listPath": "posts/p01/votes",
+  "group": "votes",
+  "cases": []
+}

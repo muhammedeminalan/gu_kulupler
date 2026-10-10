@@ -1,13 +1,14 @@
 import 'package:gu_data/src/core/auth_error.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/remote_config_error.dart';
 import 'package:gu_data/src/core/storage_error.dart';
 
 /// Bir Firebase çağrısının sonucu (D-34, PLAN §10.1).
 ///
 /// [T] başarı verisinin, [E] çağrıyı yapan servisin hata sözlüğünün tipidir
-/// (`FirestoreError`, `StorageError`, `AuthError`). Servisler istisna
-/// fırlatmaz; her çağrı [FirebaseSuccess] ya da [FirebaseFailure] döner ve
-/// çağıran `switch` ile iki dalı da ele alır:
+/// (`FirestoreError`, `StorageError`, `AuthError`, `RemoteConfigError`).
+/// Servisler istisna fırlatmaz; her çağrı [FirebaseSuccess] ya da
+/// [FirebaseFailure] döner ve çağıran `switch` ile iki dalı da ele alır:
 ///
 /// ```dart
 /// state = switch (result) {
@@ -102,3 +103,6 @@ typedef StorageResult<T> = FirebaseResult<T, StorageError>;
 
 /// `AuthService` sonuç tipi.
 typedef AuthResult<T> = FirebaseResult<T, AuthError>;
+
+/// `RemoteConfigService` sonuç tipi.
+typedef RemoteConfigResult<T> = FirebaseResult<T, RemoteConfigError>;

@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedInVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function imageOk() {
+      return request.resource.size < 4 * 1024 * 1024;   // limit: imageMaxBytes
+    }
+    match /users/{uid}/{file} {
+      allow read: if signedInVerified();
+      allow create: if signedInVerified() && imageOk();
+      allow update, delete: if false;
+    }
+  }
+}

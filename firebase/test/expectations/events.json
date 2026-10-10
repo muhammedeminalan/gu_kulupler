@@ -1,0 +1,11 @@
+{
+  "collection": "events",
+  "row": 9,
+  "match": "/events/{eventId}",
+  "owner": "T-22",
+  "fixture": "base",
+  "docPath": "events/e_public",
+  "newDocPath": "events/e_new",
+  "listPath": "events",
+  "cases": []
+}

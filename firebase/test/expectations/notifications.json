@@ -1,0 +1,11 @@
+{
+  "collection": "notifications",
+  "row": 11,
+  "match": "/notifications/{notificationId}",
+  "owner": "T-25",
+  "fixture": "base",
+  "docPath": "notifications/n01",
+  "newDocPath": "notifications/n_new",
+  "listPath": "notifications",
+  "cases": []
+}

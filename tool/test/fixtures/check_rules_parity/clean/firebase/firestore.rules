@@ -1,0 +1,47 @@
+rules_version = '2';
+// Temiz fixture: her RP kuralının GEÇEN biçimi. Yorumdaki sayılar (300, 7 gün) sayılmaz.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function uid() { return request.auth.uid; }
+    function emailOk() {
+      return request.auth != null && request.auth.token.email_verified == true
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+    }
+    function touches(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys.concat(['updatedAt']))
+          && request.resource.data.updatedAt == request.time;
+    }
+    function isSoftDelete(extra) {
+      return resource.data.isDeleted == false && request.resource.data.isDeleted == true
+          && touches(['isDeleted', 'deletedAt', 'deletedBy'].concat(extra));
+    }
+    function isRestore(extra) {
+      return resource.data.isDeleted == true && request.resource.data.isDeleted == false
+          && touches(['deletedBy', 'isDeleted', 'deletedAt'].concat(extra));
+    }
+    function nameOk(n) {
+      return n is string && n.size() >= 2 && n.size() <= 60;   // limit: nameMin, nameMax
+    }
+    function pollEndOk(t) {
+      return t == request.time + duration.value(1, 'd')        // limit: pollDurationsDays
+          || t == request.time + duration.value(3, 'd')        // limit: pollDurationsDays
+          || t == request.time + duration.value(168, 'h');     // limit: pollDurationsDays
+    }
+
+    match /users/{userId} {
+      allow read: if emailOk();
+      allow create: if emailOk() && userId == uid() && nameOk(request.resource.data.name)
+          && request.resource.data.items.size() > 0
+          && request.resource.data.attachments.size() <= 1    // limit: supportAttachmentsMax
+          && request.resource.data.text.size() <= 1000        // limit: postTextMax
+          && request.resource.data.instagram.matches('^@?[A-Za-z0-9._]{1,30}$')   // limit: instagramHandlePattern
+          && request.resource.data.quietFrom.matches('^([01]\\d|2[0-3]):[0-5]\\d$');  // limit: timeOfDayPattern
+      allow update: if isSoftDelete([]) || isRestore([]) || pollEndOk(request.resource.data.endsAt)
+          || request.resource.data.retryAfter == request.time + duration.value(7, 'd')    // limit: reapplyCooldown
+          || request.resource.data.retryAfter > request.time - duration.value(5, 'm')    // limit: clockSkewToleranceMinutes
+          || request.time < resource.data.decidedAt + duration.value(30, 's');           // limit: managerUndoWindow
+      // budget: chunk=5
+      allow delete: if false;
+    }
+  }
+}

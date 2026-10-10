@@ -1,0 +1,11 @@
+{
+  "collection": "activity",
+  "row": 13,
+  "match": "/activity/{activityId}",
+  "owner": "T-15",
+  "fixture": "base",
+  "docPath": "activity/a01",
+  "newDocPath": "activity/a_new",
+  "listPath": "activity",
+  "cases": []
+}

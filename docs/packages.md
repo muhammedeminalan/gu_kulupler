@@ -67,7 +67,8 @@ Opsiyonel (yalnızca uyumlu sürüm bulunursa, aksi halde kullanılmaz): `riverp
 
 | Yer | Araç |
 |---|---|
-| `firebase/` | `firebase-tools` (kullanıcı makinesinde), `@firebase/rules-unit-testing`, `jest` veya Node test runner; `package.json` `firebase/test/` içinde |
+| `firebase/` | `firebase-tools` (kullanıcı makinesinde; emülatör için Java 11+), `@firebase/rules-unit-testing` 5.0.2, `firebase` 12.19.0, `jest` 30.5.2 (sürümler sabit); `package.json` **`firebase/` kökünde** (CD-40), testler `firebase/test/`; `npm test` = `firebase emulators:exec --only auth,firestore,storage --project demo-gu-kulupler "jest --runInBand"` (kalite kapısı `rules` adımı: `(cd firebase && npm test)`) |
+| `tool/seed/` | bağımlılık yok (`package.json` yok): `seed_emulator.js` Node yerleşik `fetch` ile emülatör REST uçlarına yazar; yalnızca yerel emülatör + `demo-` önekli proje |
 | `functions/` (Mod F) | TypeScript, Node 20, `firebase-functions` v2, `firebase-admin`, `vitest`/`jest`; ESLint `google` |
 | `tool/admin/` | `firebase-admin` (yalnızca `set_superadmin.js`; servis hesabı anahtarı **repoda yok**) |
 

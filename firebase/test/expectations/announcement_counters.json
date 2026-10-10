@@ -1,0 +1,11 @@
+{
+  "collection": "announcementCounters",
+  "row": 18,
+  "match": "/announcementCounters/{counterId}",
+  "owner": "T-19",
+  "fixture": "base",
+  "docPath": "announcementCounters/c01_20261008",
+  "newDocPath": "announcementCounters/c01_20261009",
+  "listPath": "announcementCounters",
+  "cases": []
+}

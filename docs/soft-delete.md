@@ -48,6 +48,7 @@ Future<FirestoreResult<void>> restore(DocumentReference ref, {WriteBatch? batch}
 
 - Repository'ler alan dilinde sunar: `postRepository.softDeletePost(postId)`, `restorePost`. `deletePost` adlı metot **yoktur**.
 - Toplu işlemler (hesap anonimleştirme, rapor grubu çözümü) `WriteBatch`/`Transaction` içinde `softDelete`'i kullanır; **sayaçlar aynı batch'te** (domain-model §4).
+- Batch kipinde (`batch:` verilerek) çağrılan `softDelete` / `restore` başarısız olursa (boş `actorId` dahil) batch **geçersiz** sayılır: `commitBatch` hiçbir yazımı uygulamaz ve o hatayı döner — sayaç tek başına düşmez (CD-131). `commitBatch` gövdesi eşzamanlıdır; bu çağrıların sonucu gövdede beklenmez.
 - **Geri al (toast):** `restore` aynı belgeyi `isDeleted:false` yapar; kural gereği yalnızca silen (`deletedBy`) veya süper admin yapabilir.
 
 ## 4. Okuma kuralı

@@ -1,0 +1,11 @@
+{
+  "collection": "clubs",
+  "row": 3,
+  "match": "/clubs/{clubId}",
+  "owner": "T-15",
+  "fixture": "base",
+  "docPath": "clubs/c01",
+  "newDocPath": "clubs/c_new",
+  "listPath": "clubs",
+  "cases": []
+}

@@ -1,0 +1,11 @@
+{
+  "collection": "settings",
+  "row": 14,
+  "match": "/settings/{uid}",
+  "owner": "T-12",
+  "fixture": "base",
+  "docPath": "settings/u_student",
+  "newDocPath": "settings/{uid}",
+  "listPath": "settings",
+  "cases": []
+}

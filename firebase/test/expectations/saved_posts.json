@@ -1,0 +1,11 @@
+{
+  "collection": "savedPosts",
+  "row": 16,
+  "match": "/savedPosts/{savedPostId}",
+  "owner": "T-19",
+  "fixture": "base",
+  "docPath": "savedPosts/u_member_p01",
+  "newDocPath": "savedPosts/{uid}_p01",
+  "listPath": "savedPosts",
+  "cases": []
+}

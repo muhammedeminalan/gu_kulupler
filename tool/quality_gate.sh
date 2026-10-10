@@ -9,7 +9,7 @@
 #   ek: --check-format (biçimlendirmeyi uygulama, yalnızca doğrula) · --verbose (çıktıyı akıt)
 #   ortam: GU_GATE_STATIC_ONLY=1 (flutter/dart adımlarını atla) · GU_GATE_VERBOSE=1
 #
-# Adımlar: format → codegen → analyze → araç öz-testi → sınırlar → hardcode → hard-delete → ARB → tasarım kapsamı → test(+kapsam) → Rules.
+# Adımlar: format → codegen → analyze → araç öz-testi → sınırlar → hardcode → hard-delete → Rules paritesi → ARB → tasarım kapsamı → test(+kapsam) → Rules.
 # Başarısız adımın logunun son satırları gösterilir; tam log: tool/.cache/gate-logs/.
 # Not (Claude Code): Bash aracının varsayılan zaman aşımı 2 dk'dır; tam kapı için timeout=600000 ver ya da arka planda çalıştır.
 # bash 3.2 (macOS) uyumludur.
@@ -172,6 +172,8 @@ fi
 step sinirlar 0 node tool/check_boundaries.js
 step hardcode 0 node tool/check_hardcode.js
 step hard-delete 0 node tool/check_no_hard_delete.js
+# Rules ↔ Dart paritesi (RP01–RP06, PLAN §11.6): statik, emülatörsüz — her modda
+step rules-parite 0 node tool/check_rules_parity.js
 
 if [ -f lib/l10n/app_tr.arb ] || [ -f lib/l10n/app_en.arb ]; then
   if [ "$FINAL" = 1 ]; then step arb 0 node tool/check_arb_parity.js --strict --unused; else step arb 0 node tool/check_arb_parity.js --strict; fi

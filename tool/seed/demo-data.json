@@ -4,7 +4,8 @@
     "version": "1.0.0",
     "generatedAt": "2026-10-08T16:24:30.347Z",
     "today": "2026-10-07T21:00:00.000Z",
-    "note": "All data is fictional. *_rel_days = days relative to today."
+    "note": "All data is fictional. *_rel_days = days relative to today.",
+    "demoPassword": "Demo1234!"
   },
   "categories": [
     {

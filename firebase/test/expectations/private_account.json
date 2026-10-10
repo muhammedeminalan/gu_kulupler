@@ -1,0 +1,12 @@
+{
+  "collection": "users/private",
+  "row": 2,
+  "match": "/users/{uid}/private/{docId}",
+  "owner": "T-12",
+  "fixture": "base",
+  "docPath": "users/u_student/private/account",
+  "newDocPath": "users/{uid}/private/account",
+  "listPath": "users/u_student/private",
+  "group": "private",
+  "cases": []
+}
