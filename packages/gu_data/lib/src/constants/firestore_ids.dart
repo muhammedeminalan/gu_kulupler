@@ -9,7 +9,7 @@ import 'package:gu_data/src/constants/limits.dart';
 /// yoktur. Tek ayrıştırıcı [parseTicketQr]'dir (QR yükü dış girdidir).
 ///
 /// Üreticiler saf dizge birleştirmedir; parçaların boş olmaması çağıranın
-/// sorumluluğudur (model validator'ları, T-09). Sabit belge adları
+/// sorumluluğudur (`FieldValidators.requiredId`). Sabit belge adları
 /// (`account`, `contact`) `FirestoreCollections` içindedir.
 abstract final class FirestoreIds {
   // ── Bileşik belge ID'leri ────────────────────────────────────────────

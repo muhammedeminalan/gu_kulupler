@@ -1,6 +1,7 @@
+import 'package:gu_data/src/models/enums/event_type.dart';
+import 'package:gu_data/src/models/enums/year_level.dart';
 import 'package:gu_data/src/models/lookup/category_model.dart';
 import 'package:gu_data/src/models/lookup/department_model.dart';
-import 'package:gu_data/src/models/lookup/event_type_model.dart';
 import 'package:gu_data/src/models/lookup/faculty_model.dart';
 import 'package:gu_data/src/models/lookup/interest_model.dart';
 import 'package:gu_data/src/models/lookup/place_model.dart';
@@ -156,27 +157,12 @@ abstract final class StaticTables {
 
   // ── Yıllar ve etkinlik türleri ───────────────────────────────────────
 
-  /// Sınıf / öğrenim düzeyi kodları (8), tasarım sırasıyla; `users.year` bu
-  /// değerlerden birini taşır.
-  static const List<String> years = [
-    'prep',
-    '1',
-    '2',
-    '3',
-    '4',
-    '5plus',
-    'master',
-    'phd',
-  ];
+  /// Sınıf / öğrenim düzeyleri (8), tasarım sırasıyla (enum bildirim sırası);
+  /// `users.year` bu değerlerden birini taşır.
+  static const List<YearLevel> years = YearLevel.values;
 
-  /// Etkinlik türleri (5), tasarım sırasıyla.
-  static const List<EventTypeModel> eventTypes = [
-    EventTypeModel(id: 'egitim'),
-    EventTypeModel(id: 'sosyal'),
-    EventTypeModel(id: 'gezi'),
-    EventTypeModel(id: 'yarisma'),
-    EventTypeModel(id: 'konferans'),
-  ];
+  /// Etkinlik türleri (5), tasarım sırasıyla (enum bildirim sırası).
+  static const List<EventType> eventTypes = EventType.values;
 
   // ── Arama ────────────────────────────────────────────────────────────
 

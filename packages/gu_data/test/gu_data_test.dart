@@ -195,10 +195,8 @@ void main() {
         const DepartmentModel(id: 'd01', facultyId: 'f1'),
         StaticTables.departments.first,
       );
-      expect(
-        const EventTypeModel(id: 'egitim'),
-        StaticTables.eventTypes.first,
-      );
+      expect(StaticTables.eventTypes.first, EventType.training);
+      expect(StaticTables.years.first, YearLevel.prep);
       expect(const FacultyModel(id: 'f1'), StaticTables.faculties.first);
       expect(
         const InterestModel(id: 'i01', categoryId: 'k01'),
@@ -362,7 +360,7 @@ void main() {
     test('üyelik belgesi dizgileri → rol → erişim kipi → izin', () {
       ClubAccess access(String status, String role) => RolePolicy.accessOf(
         isSuper: false,
-        status: status,
+        status: MembershipStatus.fromJson(status),
         role: ClubRole.fromJson(role),
       );
 
