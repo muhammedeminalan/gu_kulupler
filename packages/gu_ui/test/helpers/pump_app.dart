@@ -36,6 +36,7 @@ extension GuPumpApp on WidgetTester {
   /// Varsayılanlar: TR, açık tema, ölçek 1.0, 390×844, Android. Görünüm
   /// boyutu ve platform test sonunda geri alınır (`tester.view.reset`,
   /// [TestPlatformScope]). Her çağrı ağacı baştan kurar (`UniqueKey`).
+  /// `GuSkeleton.debugAnimate` test boyunca `false`'tur (shimmer durağan).
   Future<void> pumpApp(
     Widget child, {
     Locale locale = const Locale('tr'),
@@ -51,6 +52,10 @@ extension GuPumpApp on WidgetTester {
       ..physicalSize = size * kPumpAppDevicePixelRatio;
     addTearDown(view.reset);
     TestPlatformScope.apply(platform);
+    // Sonsuz shimmer `pumpAndSettle`'ı kilitler, golden'ı kararsız yapar
+    // (CD-122(2)).
+    GuSkeleton.debugAnimate = false;
+    addTearDown(() => GuSkeleton.debugAnimate = true);
 
     await pumpWidget(
       TestPlatformScope(
