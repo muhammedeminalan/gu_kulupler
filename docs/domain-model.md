@@ -25,24 +25,25 @@ Tür kısaltmaları: `s` string, `i` int, `b` bool, `ts` Timestamp, `L<T>` liste
 |---|---|---|
 | `name` | s (2–60) | Anonimleştirmede `"Silinmiş kullanıcı"` |
 | `nameLower` | s | `name.toLowerCase()` (tr yerel ayarlı, ADM-05 ad araması) |
-| `avatarSeed` | s | Avatar rengi/harfi tohumu (tasarım) |
+| `avatarSeed` | s (1–64) | Avatar rengi/harfi tohumu (tasarım) |
 | `avatarPath?` | s | Storage yolu (Q-19) |
 | `department?` | s | `d01…d24` |
 | `year?` | s | `prep,1,2,3,4,5plus,master,phd` |
 | `interests` | L<s> (1–5) | `i01…i16` |
 | `bio` | s (≤140) | |
-| `status` | s | `active` · `suspended` · `deleted` |
-| `suspendReason?` | s | |
+| `status` | s | `active` · `suspended` · `deleted` (askı gerekçesi bu belgede **değildir** — §2.2, CD-133) |
 | `staff` | b | Akademik/idari personel (öğrenci ilgi alanı yok) — yalnızca seed/admin yazar |
-| `profileComplete` | b | AUT-05 bitince `true` |
+| `profileComplete` | b | AUT-05 bitince `true` (bölüm + sınıf + ≥ 1 ilgi alanı dolu; Rules uygular, geri alınamaz — CD-133) |
 | + `BaseFields` | | |
 
 - **E-posta burada değildir** (D-29). Kullanıcı kendi e-postasını `FirebaseAuth.currentUser.email`'den okur.
+- **Askı gerekçesi (`suspendReason`) burada değildir** (CD-133): bu belge doğrulanmış her kullanıcıya açıktır, gerekçe ise süper adminin serbest metnidir → `private/account` (§2.2).
 - Süper admin **alan değildir**; ID token claim'idir (D-28).
 
 ### 2.2 `users/{uid}/private/account`  (tek doküman, id `account`)
-`email` (s), `emailLower` (s), `fcmTokens` (L<M{token,platform,updatedAt}>), `lastLoginAt?`, + `BaseFields`.
+`email` (s), `emailLower` (s), `fcmTokens` (L<M{token,platform,updatedAt}>, ≤ 10; `token` 1–4096), `lastLoginAt?`, `suspendReason?` (s, 1–300; yalnızca `users.status == 'suspended'` iken dolu — CD-133), + `BaseFields`.
 Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta araması → `collectionGroup('private')`).
+`suspendReason` istisnadır: **yalnızca süper admin yazar** (askıya alma / etkinleştirme, `users.status` ile aynı batch); sahibi **okur ama yazamaz**, başka hiç kimse okuyamaz.
 
 ### 2.3 `clubs/{clubId}`
 | Alan | Tür | Not |

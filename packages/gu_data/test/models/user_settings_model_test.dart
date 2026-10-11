@@ -217,4 +217,79 @@ void main() {
       check(prefs.copyWith(muted: false), (m) => m.muted, false);
     });
   });
+
+  group('T-12 · UserSettingsPatch', () {
+    // Her alan dolu.
+    const fullPatch = UserSettingsPatch(
+      announcements: false,
+      eventReminders: false,
+      newEvents: false,
+      applicationResults: false,
+      management: false,
+      system: false,
+      reminderTime: ReminderOption.oneDay,
+      quiet: true,
+      quietFrom: '23:00',
+      quietTo: '07:00',
+    );
+
+    test('boş yama hiçbir alan yazmaz', () {
+      expect(const UserSettingsPatch().toJson(), isEmpty);
+      expect(const UserSettingsPatch().isEmpty, isTrue);
+      expect(fullPatch.isEmpty, isFalse);
+    });
+
+    test('dolu yama tam olarak 10 genel tercihi yazar; clubs ve updatedAt '
+        'yazılmaz, hatırlatma JSON değeriyle', () {
+      expect(fullPatch.toJson(), {
+        'announcements': false,
+        'eventReminders': false,
+        'newEvents': false,
+        'applicationResults': false,
+        'management': false,
+        'system': false,
+        'reminderTime': '1d',
+        'quiet': true,
+        'quietFrom': '23:00',
+        'quietTo': '07:00',
+      });
+    });
+
+    test('yalnızca verilen alanlar yazılır (false değer dahil)', () {
+      expect(const UserSettingsPatch(quiet: false).toJson(), {'quiet': false});
+      expect(
+        const UserSettingsPatch(reminderTime: ReminderOption.oneHour).toJson(),
+        {'reminderTime': '1h'},
+      );
+    });
+
+    test('yama anahtarları UserSettingsModel anahtarlarının alt kümesidir', () {
+      expect(
+        full.toJson().keys.toSet(),
+        containsAll(fullPatch.toJson().keys),
+      );
+    });
+
+    test('her alan eşitliğe girer; props 10 alan taşır', () {
+      expect(fullPatch.props, hasLength(10));
+      expect(
+        const UserSettingsPatch(quiet: true),
+        const UserSettingsPatch(quiet: true),
+      );
+      for (final other in const [
+        UserSettingsPatch(announcements: true),
+        UserSettingsPatch(eventReminders: true),
+        UserSettingsPatch(newEvents: true),
+        UserSettingsPatch(applicationResults: true),
+        UserSettingsPatch(management: true),
+        UserSettingsPatch(system: true),
+        UserSettingsPatch(reminderTime: ReminderOption.oneHour),
+        UserSettingsPatch(quiet: true),
+        UserSettingsPatch(quietFrom: '01:00'),
+        UserSettingsPatch(quietTo: '01:00'),
+      ]) {
+        expect(other, isNot(const UserSettingsPatch()), reason: '$other');
+      }
+    });
+  });
 }

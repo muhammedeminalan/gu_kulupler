@@ -52,12 +52,21 @@ Map<String, List<_Case>> _table() => {
     ('1', FieldValidators.name('A'), _short),
     // Tek kod noktası, iki UTF-16 birimi: alt sınır kod noktasıyla ölçülür.
     ('tek emoji', FieldValidators.name('👍'), _short),
+    // Alt sınır kırpılmış metinde aranır (Rules `name.trim().size() >= 2`).
+    ('yalnızca boşluk', FieldValidators.name('   '), _empty),
+    ('boşluk + tek harf', FieldValidators.name(' A '), _short),
     ('61', FieldValidators.name(_x(61)), _long),
   ],
   'nameLower': [
     ('2', FieldValidators.nameLower('al'), null),
     ('1', FieldValidators.nameLower('a'), _short),
+    ('boşluk + tek harf', FieldValidators.nameLower(' a '), _short),
     ('61', FieldValidators.nameLower(_x(61)), _long),
+  ],
+  'avatarSeed': [
+    ('64', FieldValidators.avatarSeed(_x(64)), null),
+    ('boş', FieldValidators.avatarSeed(''), _empty),
+    ('65', FieldValidators.avatarSeed(_x(65)), _long),
   ],
   'bio': [
     ('boş', FieldValidators.bio(''), null),
@@ -110,6 +119,11 @@ Map<String, List<_Case>> _table() => {
   'fcmTokenCount': [
     ('10', FieldValidators.fcmTokenCount(10), null),
     ('11', FieldValidators.fcmTokenCount(11), _long),
+  ],
+  'fcmToken': [
+    ('4096', FieldValidators.fcmToken(_x(4096)), null),
+    ('boş', FieldValidators.fcmToken(''), _empty),
+    ('4097', FieldValidators.fcmToken(_x(4097)), _long),
   ],
   'platform': [
     ('ios', FieldValidators.platform('ios'), null),

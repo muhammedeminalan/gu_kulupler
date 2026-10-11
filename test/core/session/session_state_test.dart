@@ -1,5 +1,5 @@
-// T-11 · SessionState: props / copyWith tüm alanlar (PLAN §12.16) ve rol
-// türetimi (`RolePolicy`, CD-129).
+// T-11 / T-12 · SessionState: props / copyWith tüm alanlar (PLAN §12.16;
+// `suspendReason` T-12, CD-133) ve rol türetimi (`RolePolicy`, CD-129).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
@@ -17,14 +17,15 @@ void main() {
       'c01': MembershipModelFixtures.c01Mehmet,
     };
 
-    test('props tüm alanları içerir (alan sayısı = 10)', () {
-      expect(a.props.length, 10);
+    test('props tüm alanları içerir (alan sayısı = 11)', () {
+      expect(a.props.length, 11);
     });
 
     test('varsayılanlar: oturum çözülmedi, kullanıcıya bağlı alan yok', () {
       expect(a.status, AuthStatus.unknown);
       expect(a.uid, isNull);
       expect(a.user, isNull);
+      expect(a.suspendReason, isNull);
       expect(a.isSuperAdmin, isFalse);
       expect(a.memberships, isEmpty);
       expect(a.blockedUserIds, isEmpty);
@@ -41,6 +42,8 @@ void main() {
       expect(a.copyWith(uid: 'u1'), isNot(a));
       expect(a.copyWith(user: user).user, user);
       expect(a.copyWith(user: user), isNot(a));
+      expect(a.copyWith(suspendReason: 'gerekçe').suspendReason, 'gerekçe');
+      expect(a.copyWith(suspendReason: 'gerekçe'), isNot(a));
       expect(a.copyWith(isSuperAdmin: true).isSuperAdmin, isTrue);
       expect(a.copyWith(isSuperAdmin: true), isNot(a));
       expect(a.copyWith(memberships: memberships).memberships, memberships);
@@ -62,6 +65,7 @@ void main() {
         status: AuthStatus.active,
         uid: 'u1',
         user: user,
+        suspendReason: 'gerekçe',
         isSuperAdmin: true,
         memberships: memberships,
         blockedUserIds: {'u9'},
@@ -73,15 +77,21 @@ void main() {
       expect(b.copyWith(), b);
     });
 
-    test('clearUid / clearUser alanı boşaltır ve verilen değerden önce '
-        'gelir', () {
-      final b = a.copyWith(uid: 'u1', user: user);
+    test('clearUid / clearUser / clearSuspendReason alanı boşaltır ve verilen '
+        'değerden önce gelir', () {
+      final b = a.copyWith(uid: 'u1', user: user, suspendReason: 'gerekçe');
       expect(b.copyWith(clearUid: true).uid, isNull);
       expect(b.copyWith(clearUid: true).user, user);
       expect(b.copyWith(clearUser: true).user, isNull);
       expect(b.copyWith(clearUser: true).uid, 'u1');
+      expect(b.copyWith(clearSuspendReason: true).suspendReason, isNull);
+      expect(b.copyWith(clearSuspendReason: true).user, user);
       expect(b.copyWith(uid: 'u2', clearUid: true).uid, isNull);
       expect(b.copyWith(user: user, clearUser: true).user, isNull);
+      expect(
+        b.copyWith(suspendReason: 'x', clearSuspendReason: true).suspendReason,
+        isNull,
+      );
     });
   });
 

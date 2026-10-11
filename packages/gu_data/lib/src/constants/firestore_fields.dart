@@ -70,7 +70,7 @@ abstract final class FirestoreFields {
   /// `supportTickets` (her biri kendi enum'uyla).
   static const String status = 'status';
 
-  /// Askıya alma nedeni: `users`, `clubs`.
+  /// Askıya alma nedeni: `users/{uid}/private/account` (CD-133), `clubs`.
   static const String suspendReason = 'suspendReason';
 
   /// Akademik/idari personel bayrağı (yalnızca seed/admin betiği yazar).

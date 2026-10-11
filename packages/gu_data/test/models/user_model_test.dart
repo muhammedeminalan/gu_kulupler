@@ -26,7 +26,6 @@ void main() {
     interests: const ['i01', 'i05'],
     bio: 'Dağcılık ve fotoğraf.',
     status: UserStatus.suspended,
-    suspendReason: 'Topluluk kuralları ihlali',
     staff: true,
     profileComplete: true,
     createdAt: createdAt,
@@ -57,6 +56,19 @@ void main() {
       expect(json.keys.toSet(), planJsonKeys('9.6.1'));
       expect(json.values, isNot(contains(full.uid)));
       expect(json.values.whereType<FieldValue>(), isEmpty);
+    });
+
+    test('askı gerekçesi herkese açık belgede yoktur: yazılmaz, okunan '
+        'belgede olsa da modele girmez (CD-133)', () {
+      expect(full.toJson().containsKey(FirestoreFields.suspendReason), isFalse);
+
+      final model = UserModel.fromJson({
+        ...full.toJson(),
+        FirestoreFields.suspendReason: 'Eski şemadan kalan gerekçe',
+      }, id: full.uid);
+
+      expect(model, full);
+      expect(model.props, isNot(contains('Eski şemadan kalan gerekçe')));
     });
 
     test('null alanlar toJson çıktısına girmez', () {
@@ -101,7 +113,6 @@ void main() {
       expect(model.interests, isEmpty);
       expect(model.bio, '');
       expect(model.status, UserStatus.active);
-      expect(model.suspendReason, isNull);
       expect(model.staff, isFalse);
       expect(model.profileComplete, isFalse);
       expect(model.createdAt, isNull);
@@ -152,9 +163,9 @@ void main() {
   });
 
   group('T-09 · UserModel · copyWith ve eşitlik', () {
-    test('parametresiz copyWith aynı modeli verir; props 18 alan taşır', () {
+    test('parametresiz copyWith aynı modeli verir; props 17 alan taşır', () {
       expect(full.copyWith(), full);
-      expect(full.props, hasLength(18));
+      expect(full.props, hasLength(17));
     });
 
     test('her alan copyWith ile değişir ve eşitliğe girer', () {
@@ -179,11 +190,6 @@ void main() {
         (m) => m.status,
         UserStatus.deleted,
       );
-      check(
-        full.copyWith(suspendReason: 'Spam'),
-        (m) => m.suspendReason,
-        'Spam',
-      );
       check(full.copyWith(staff: false), (m) => m.staff, false);
       check(
         full.copyWith(profileComplete: false),
@@ -205,7 +211,6 @@ void main() {
       check(full.copyWith(clearAvatarPath: true), (m) => m.avatarPath);
       check(full.copyWith(clearDepartment: true), (m) => m.department);
       check(full.copyWith(clearYear: true), (m) => m.year);
-      check(full.copyWith(clearSuspendReason: true), (m) => m.suspendReason);
       check(full.copyWith(clearCreatedAt: true), (m) => m.createdAt);
       check(full.copyWith(clearUpdatedAt: true), (m) => m.updatedAt);
       check(full.copyWith(clearDeletedAt: true), (m) => m.deletedAt);

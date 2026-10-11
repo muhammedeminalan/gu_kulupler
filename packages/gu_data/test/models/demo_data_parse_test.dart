@@ -314,8 +314,8 @@ void main() {
   });
 
   group('T-09 · demo veri · PLAN §9.12 dönüşüm kuralları', () {
-    test('users: nameLower Türkçe küçük harf; askıdakiler neden taşır; '
-        'e-posta account alt belgesinde', () {
+    test('users: nameLower Türkçe küçük harf; e-posta ve askı gerekçesi '
+        'account alt belgesinde (D-29, CD-133)', () {
       UserModel user(String id) => UserModel.fromJson(
         DemoDataFixture.toFirestoreJson(FirestoreCollections.users, id),
         id: id,
@@ -334,21 +334,32 @@ void main() {
           if (user(id).status == UserStatus.suspended) user(id),
       ];
       expect([for (final u in suspended) u.uid], ['u_suspended', 'u007']);
-      expect(
-        suspended.map((u) => u.suspendReason),
-        everyElement(DemoDataFixture.seedSuspendReason),
-      );
-      expect(
-        user('u_ayse').suspendReason,
-        isNull,
+
+      UserAccountModel accountOf(String id) => UserAccountModel.fromJson(
+        DemoDataFixture.toFirestoreJson(FirestoreCollections.accountDoc, id),
       );
 
-      final account = UserAccountModel.fromJson(
-        DemoDataFixture.toFirestoreJson(
-          FirestoreCollections.accountDoc,
-          'u_ayse',
-        ),
-      );
+      // Gerekçe herkese açık users belgesine yazılmaz; yalnızca askıdaki
+      // kullanıcıların account belgesinde doludur.
+      for (final id in DemoDataFixture.ids(FirestoreCollections.users)) {
+        expect(
+          DemoDataFixture.toFirestoreJson(
+            FirestoreCollections.users,
+            id,
+          ).containsKey(FirestoreFields.suspendReason),
+          isFalse,
+          reason: id,
+        );
+        expect(
+          accountOf(id).suspendReason,
+          user(id).status == UserStatus.suspended
+              ? DemoDataFixture.seedSuspendReason
+              : isNull,
+          reason: id,
+        );
+      }
+
+      final account = accountOf('u_ayse');
       expect(account.email, 'ayse.demir@ogr.gumushane.edu.tr');
       expect(account.emailLower, account.email.toLowerCase());
       expect(account.fcmTokens, isEmpty);

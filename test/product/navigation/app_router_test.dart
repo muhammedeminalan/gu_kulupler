@@ -28,6 +28,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_auth_service.dart';
 import '../../fakes/fake_session_states.dart';
+import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
 import '../../fakes/test_router.dart';
 import '../../helpers/design_files.dart';
@@ -196,46 +197,57 @@ void main() {
   });
 
   group('T-11 · AppRouter · gerçek SessionViewModel ile uçtan uca', () {
-    testWidgets('ilk açılış → tanıtım → giriş → kabuk → çıkış', (tester) async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpAppRouter();
-      await tester.pumpAndSettle();
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(MaterialApp)),
-      );
-      final router = container.read(appRouterProvider);
-      String location() =>
-          router.routerDelegate.currentConfiguration.uri.toString();
-      final auth = GetIt.I<AuthService>() as FakeAuthService;
-      final session = container.read(sessionViewModelProvider.notifier);
+    testWidgets(
+      'ilk açılış → tanıtım → giriş → doğrulama → profil → kabuk → çıkış',
+      (tester) async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAppRouter();
+        await tester.pumpAndSettle();
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        final router = container.read(appRouterProvider);
+        String location() =>
+            router.routerDelegate.currentConfiguration.uri.toString();
+        final auth = GetIt.I<AuthService>() as FakeAuthService;
+        final users = GetIt.I<UserRepository>() as FakeUserRepository;
+        final session = container.read(sessionViewModelProvider.notifier);
 
-      // Oturum yok, tanıtım görülmedi (R2).
-      expect(location(), '/onboarding');
+        // Oturum yok, tanıtım görülmedi (R2).
+        expect(location(), '/onboarding');
 
-      // ONB-01 "Başla" (CD-52) → R3.
-      await session.markOnboardingSeen();
-      await tester.pumpAndSettle();
-      expect(location(), '/login');
+        // ONB-01 "Başla" (CD-52) → R3.
+        await session.markOnboardingSeen();
+        await tester.pumpAndSettle();
+        expect(location(), '/login');
 
-      // Doğrulanmamış hesapla giriş → R4.
-      await auth.signIn(email: 'a@ogr.gumushane.edu.tr', password: 'Parola1');
-      await tester.pumpAndSettle();
-      expect(location(), '/verify');
+        // Doğrulanmamış hesapla giriş → R4.
+        await auth.signIn(email: 'a@ogr.gumushane.edu.tr', password: 'Parola1');
+        await tester.pumpAndSettle();
+        expect(location(), '/verify');
 
-      // "Doğruladım": reload + resolve → R7.
-      auth.emailVerified = true;
-      await auth.reload();
-      await session.resolve();
-      await tester.pumpAndSettle();
-      expect(location(), '/clubs');
-      expect(find.byType(AppShellView), findsOneWidget);
+        // "Doğruladım": reload + resolve; profil belgesi henüz yok → R5.
+        auth.emailVerified = true;
+        await auth.reload();
+        await session.resolve();
+        await tester.pumpAndSettle();
+        expect(location(), '/setup-profile');
+        expect(find.byType(AppShellView), findsNothing);
 
-      // Çıkış → dönüş adresiyle giriş (R3).
-      await session.signOut();
-      await tester.pumpAndSettle();
-      expect(location(), '/login?from=%2Fclubs');
-      expect(find.byType(AppShellView), findsNothing);
-    });
+        // AUT-05 bitti: profil tamam → refreshUser → R7.
+        users.putActive(auth.uid);
+        await session.refreshUser();
+        await tester.pumpAndSettle();
+        expect(location(), '/clubs');
+        expect(find.byType(AppShellView), findsOneWidget);
+
+        // Çıkış → dönüş adresiyle giriş (R3).
+        await session.signOut();
+        await tester.pumpAndSettle();
+        expect(location(), '/login?from=%2Fclubs');
+        expect(find.byType(AppShellView), findsNothing);
+      },
+    );
 
     testWidgets('açılışta doğrulanmış oturum varsa doğrudan kabuk', (
       tester,
@@ -247,6 +259,7 @@ void main() {
       final auth = GetIt.I<AuthService>() as FakeAuthService
         ..emailVerified = true
         ..claims = {RoleCodes.superadmin: true};
+      (GetIt.I<UserRepository>() as FakeUserRepository).putActive(auth.uid);
       await auth.signIn(email: 'a@gumushane.edu.tr', password: 'Parola1');
       await tester.pumpAndSettle();
       final container = ProviderScope.containerOf(

@@ -68,8 +68,7 @@ final class DebugMenuViewModel extends _$DebugMenuViewModel
       isError: false,
       clearErrorCode: true,
     );
-    // TODO(T-12): `authRepository.signIn(...)`.
-    final result = await authService.signIn(
+    final result = await authRepository.signIn(
       email: account.email,
       password: DebugDemoAccounts.password,
     );

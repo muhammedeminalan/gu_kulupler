@@ -44,7 +44,8 @@ enum FieldError {
 /// Metin uzunluğu Rules `size()` ile her yorumda uyumlu olsun diye temkinli
 /// ölçülür: üst sınır UTF-16 birimiyle (`String.length`), alt sınır kod
 /// noktasıyla (`runes`). Girdi kırpılmaz; yalnızca boşluktan oluşan zorunlu
-/// metin [FieldError.empty] sayılır.
+/// metin [FieldError.empty] sayılır. Ad alanlarında ([name], [nameLower]) alt
+/// sınır kırpılmış metinde aranır (Rules `trim().size()`).
 ///
 /// Burada **olmayan** sütun girdileri (CD-130): enum üyeliği (tip sistemi),
 /// Storage yolları (`StoragePaths.is…`, T-10), sunucu zamanı alanları,
@@ -55,8 +56,9 @@ abstract final class FieldValidators {
   // ── Ortak ────────────────────────────────────────────────────────────
 
   /// "Boş değil" kuralı: belge kimliği parçaları (`clubId`, `userId`,
-  /// `postId`, `eventId`, `authorId`, `reporterId` …), `avatarSeed`,
-  /// `coverSeed`, `iconName`, `presidentId`.
+  /// `postId`, `eventId`, `authorId`, `reporterId` …),
+  /// `applicant.avatarSeed`, `coverSeed`, `iconName`, `presidentId`
+  /// (`users.avatarSeed` → [avatarSeed]).
   ///
   /// `FirestoreIds` üreticileri saf birleştirmedir; boş parçayla `_u1` gibi
   /// kimlik üretmemek için parçalar önce bununla denetlenir.
@@ -68,22 +70,39 @@ abstract final class FieldValidators {
   static FieldError? counter(int value) =>
       value < 0 ? FieldError.outOfRange : null;
 
-  /// Yönetici gerekçesi: `users.suspendReason`, `clubs.suspendReason`,
-  /// `events.cancelReason` (1 – `Limits.adminReasonMax`).
+  /// Yönetici gerekçesi: `account.suspendReason` (kullanıcı askısı, CD-133),
+  /// `clubs.suspendReason`, `events.cancelReason`
+  /// (1 – `Limits.adminReasonMax`).
   static FieldError? adminReason(String value) =>
       _text(value, min: 1, max: Limits.adminReasonMax);
 
   // ── users · private/account · private/contact ────────────────────────
 
   /// `users.name`, `clubs.advisor.name` (`Limits.nameMin` –
-  /// `Limits.nameMax`).
-  static FieldError? name(String value) =>
-      _text(value, min: Limits.nameMin, max: Limits.nameMax);
+  /// `Limits.nameMax`). Alt sınır baştaki / sondaki boşluklar sayılmadan
+  /// aranır (`' a'` kısadır); Rules `name.trim().size() >= 2`.
+  static FieldError? name(String value) => _text(
+    value,
+    min: Limits.nameMin,
+    max: Limits.nameMax,
+    trimForMin: true,
+  );
 
-  /// `users.nameLower` (2 – 60). `name` ile eşitliğe bakmaz: değeri çağıran
-  /// `trLower()` ile üretir (CD-11).
-  static FieldError? nameLower(String value) =>
-      _text(value, min: Limits.nameMin, max: Limits.nameMax);
+  /// `users.nameLower` (2 – 60; alt sınır [name] gibi kırpılmış metinde).
+  /// `name` ile eşitliğe bakmaz: değeri çağıran `trLower()` ile üretir
+  /// (CD-11).
+  static FieldError? nameLower(String value) => _text(
+    value,
+    min: Limits.nameMin,
+    max: Limits.nameMax,
+    trimForMin: true,
+  );
+
+  /// `users.avatarSeed`: boş değil, en çok `Limits.avatarSeedMax`.
+  static FieldError? avatarSeed(String value) {
+    if (value.isEmpty) return FieldError.empty;
+    return value.length > Limits.avatarSeedMax ? FieldError.tooLong : null;
+  }
 
   /// `users.bio` (≤ `Limits.bioMax`).
   static FieldError? bio(String value) => _text(value, max: Limits.bioMax);
@@ -129,6 +148,12 @@ abstract final class FieldValidators {
   /// `account.fcmTokens` uzunluğu (≤ `Limits.fcmTokensMax`).
   static FieldError? fcmTokenCount(int count) =>
       count > Limits.fcmTokensMax ? FieldError.tooLong : null;
+
+  /// `fcmTokens[].token`: boş değil, en çok `Limits.fcmTokenMax`.
+  static FieldError? fcmToken(String value) {
+    if (value.isEmpty) return FieldError.empty;
+    return value.length > Limits.fcmTokenMax ? FieldError.tooLong : null;
+  }
 
   /// `fcmTokens[].platform`: `Limits.platforms` içinde.
   static FieldError? platform(String value) => _known(value, Limits.platforms);
@@ -392,9 +417,17 @@ abstract final class FieldValidators {
 
   // ── Yardımcılar ──────────────────────────────────────────────────────
 
-  static FieldError? _text(String value, {required int max, int min = 0}) {
+  /// [trimForMin] verilirse alt sınır kırpılmış metnin kod noktalarıyla
+  /// ölçülür (üst sınır her zaman ham metinle).
+  static FieldError? _text(
+    String value, {
+    required int max,
+    int min = 0,
+    bool trimForMin = false,
+  }) {
     if (min > 0 && value.trim().isEmpty) return FieldError.empty;
-    if (value.runes.length < min) return FieldError.tooShort;
+    final measured = trimForMin ? value.trim() : value;
+    if (measured.runes.length < min) return FieldError.tooShort;
     return value.length > max ? FieldError.tooLong : null;
   }
 

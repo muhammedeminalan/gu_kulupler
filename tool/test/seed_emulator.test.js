@@ -106,11 +106,13 @@ test('seed · §9.12 kuralları: kullanıcı, kulüp, üyelik', () => {
   assert.equal('email' in docs.users.u_ayse, false, 'e-posta users belgesine yazılmaz (D-29)');
   const suspended = Object.entries(docs.users).filter(([, u]) => u.status === 'suspended');
   assert.deepEqual(suspended.map(([uid]) => uid), ['u_suspended', 'u007']);
-  for (const [, u] of suspended) assert.equal(u.suspendReason, 'Topluluk kurallarının ihlali.');
+  // Askı gerekçesi herkese açık `users` belgesinde değil `private/account`'tadır (CD-133).
+  assert.ok(Object.values(docs.users).every((u) => !('suspendReason' in u)));
+  for (const [uid] of suspended) assert.equal(docs.account[uid].suspendReason, 'Topluluk kurallarının ihlali.');
   assert.deepEqual(docs.account.u_ayse, {
     email: 'ayse.demir@ogr.gumushane.edu.tr', emailLower: 'ayse.demir@ogr.gumushane.edu.tr',
     createdAt: new Date(raw.users.u_ayse.createdAt), updatedAt: new Date(raw.users.u_ayse.createdAt),
-    isDeleted: false, deletedAt: null, deletedBy: null, fcmTokens: [], lastLoginAt: null,
+    isDeleted: false, deletedAt: null, deletedBy: null, fcmTokens: [], lastLoginAt: null, suspendReason: null,
   });
   assert.deepEqual(Object.keys(docs.blocks), ['u_mehmet_u042']);
 

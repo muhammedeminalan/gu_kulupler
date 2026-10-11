@@ -84,8 +84,9 @@ final class FirebaseFailure<T, E> extends FirebaseResult<T, E> {
   /// **asla** gösterilmez.
   final String? message;
 
-  /// Ek bilgi; yalnızca `FirestoreError.ruleViolation` / `conflict` ile
-  /// doludur (`FirestoreFailureDetail`).
+  /// Ek bilgi; yalnızca `FirestoreError.ruleViolation` / `conflict`
+  /// (`FirestoreFailureDetail`) ve `AuthError.lockedOut` / `resendCooldown`
+  /// (`AuthFailureDetail`) ile doludur.
   final Object? detail;
 
   @override

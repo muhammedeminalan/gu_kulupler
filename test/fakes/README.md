@@ -8,6 +8,8 @@ Mock kütüphanesi yok (packages.md §3, testing.md §1.2). Her fake:
 - kendi `*_test.dart` dosyasına sahiptir (arayüz sözleşmesi);
 - varsayılan kaydı `register_fakes.dart` → `registerDefaultFakes()` içine aynı commit'te eklenir (`pumpApp` her çağrıda `GetIt.I.reset()` + `registerDefaultFakes()`).
 
+Kuralları olan bir katmanın fake'i o kuralları **yeniden yazmaz**: gerçek sınıfı bellekteki alt katman fake'i üzerinde çalıştırır ve üstüne çağrı günlüğü + `failNext` ekler — `FakeFirestoreService` (gerçek servis + `FakeFirebaseFirestore`), `FakeAuthRepository` (gerçek `FirebaseAuthRepository` + `FakeAuthService` + `FakeAppClock`: giriş kilidi, 60 sn bekleme, alan adı / şifre ön denetimi gerçek koddur). `registerDefaultFakes` `AuthService` ve `AuthRepository` için **aynı** `FakeAuthService`'i paylaştırır. Doğrulanmış oturumun `active` çözülmesi için `FakeUserRepository.putActive(uid)` ile profil kurulur (belge yoksa oturum `profileIncomplete` çözülür — T-12).
+
 Dosya adı `fake_<ad>.dart`, sınıf `Fake<Ad>`. Saat/rastgelelik fake'leri (`FakeAppClock`, T-08) arayüzü doğduğu task'ta yazılır (CD-122(1)).
 
 Sayfalı liste döndüren fake'ler "sonraki sayfa var" demek için `PageCursor.fake()` üretir (`gu_data`; belgeli kurucu `@internal`'dır, paket dışından çağrılamaz). İmleç opaktır: kaldığı yer fake içinde kimlikle tutulur (`Expando<int>`); kalıp `page_cursor_fake_test.dart` içindedir (PLAN §16.3, CD-129).

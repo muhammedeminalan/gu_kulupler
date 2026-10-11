@@ -29,6 +29,7 @@ void main() {
     emailLower: 'ayse.yilmaz@ogr.gumushane.edu.tr',
     fcmTokens: [token],
     lastLoginAt: lastLoginAt,
+    suspendReason: 'Topluluk kuralları ihlali',
     createdAt: createdAt,
     updatedAt: updatedAt,
     isDeleted: true,
@@ -86,6 +87,8 @@ void main() {
       expect(json[FirestoreFields.createdAt], Timestamp.fromDate(createdAt));
       expect(json[FirestoreFields.updatedAt], Timestamp.fromDate(updatedAt));
       expect(json[FirestoreFields.deletedAt], Timestamp.fromDate(deletedAt));
+      // Askı gerekçesi bu (gizli) belgede tutulur (CD-133).
+      expect(json[FirestoreFields.suspendReason], 'Topluluk kuralları ihlali');
       // DateTime eşitliği anı ve isUtc'yi birlikte karşılaştırır: okunan
       // zamanlar (gömülü belirteçteki dahil) UTC'dir.
       expect(UserAccountModel.fromJson(json), full);
@@ -100,6 +103,7 @@ void main() {
 
       expect(model.fcmTokens, isEmpty);
       expect(model.lastLoginAt, isNull);
+      expect(model.suspendReason, isNull);
       expect(model.createdAt, isNull);
       expect(model.updatedAt, isNull);
       expect(model.isDeleted, isFalse);
@@ -122,9 +126,9 @@ void main() {
   });
 
   group('T-09 · UserAccountModel · copyWith ve eşitlik', () {
-    test('parametresiz copyWith aynı modeli verir; props 9 alan taşır', () {
+    test('parametresiz copyWith aynı modeli verir; props 10 alan taşır', () {
       expect(full.copyWith(), full);
-      expect(full.props, hasLength(9));
+      expect(full.props, hasLength(10));
     });
 
     test('her alan copyWith ile değişir ve eşitliğe girer', () {
@@ -146,6 +150,11 @@ void main() {
         const <FcmTokenModel>[],
       );
       check(full.copyWith(lastLoginAt: later), (m) => m.lastLoginAt, later);
+      check(
+        full.copyWith(suspendReason: 'Spam'),
+        (m) => m.suspendReason,
+        'Spam',
+      );
       check(full.copyWith(createdAt: later), (m) => m.createdAt, later);
       check(full.copyWith(updatedAt: later), (m) => m.updatedAt, later);
       check(full.copyWith(isDeleted: false), (m) => m.isDeleted, false);
@@ -161,6 +170,7 @@ void main() {
       ) => expectFieldChange(full, changed, read, null);
 
       check(full.copyWith(clearLastLoginAt: true), (m) => m.lastLoginAt);
+      check(full.copyWith(clearSuspendReason: true), (m) => m.suspendReason);
       check(full.copyWith(clearCreatedAt: true), (m) => m.createdAt);
       check(full.copyWith(clearUpdatedAt: true), (m) => m.updatedAt);
       check(full.copyWith(clearDeletedAt: true), (m) => m.deletedAt);

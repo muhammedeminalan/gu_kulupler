@@ -41,6 +41,10 @@ void main() {
         same(GetIt.I<ConnectivityService>()),
       );
       expect(consumer.appInfoService, same(GetIt.I<AppInfoService>()));
+      // T-12 · repository'ler
+      expect(consumer.authRepository, same(GetIt.I<AuthRepository>()));
+      expect(consumer.userRepository, same(GetIt.I<UserRepository>()));
+      expect(consumer.settingsRepository, same(GetIt.I<SettingsRepository>()));
     });
 
     test("getter'lar tembeldir: reset + yeni kayıt sonrası yeni örnek "

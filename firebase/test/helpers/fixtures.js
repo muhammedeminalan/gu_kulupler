@@ -45,7 +45,6 @@ function userDoc(uid, user) {
     interests: ['i01'],
     bio: '',
     status: user.status,
-    suspendReason: user.status === 'suspended' ? 'Topluluk kurallarının ihlali.' : null,
     staff: false,
     profileComplete: user.profileComplete,
   });
@@ -53,6 +52,16 @@ function userDoc(uid, user) {
 
 function emailDoc(email) {
   return base({ email, emailLower: email.toLowerCase() });
+}
+
+/** `users/{uid}/private/account`: askı gerekçesi burada tutulur (CD-133), `users` belgesinde değil. */
+function accountDoc(email, user) {
+  return {
+    ...emailDoc(email),
+    fcmTokens: [],
+    lastLoginAt: null,
+    suspendReason: user.status === 'suspended' ? 'Topluluk kurallarının ihlali.' : null,
+  };
 }
 
 function settingsDoc() {
@@ -157,7 +166,7 @@ function identityDocs({ formerStatus }) {
     if (!def.uid) continue;
     if (def.user) {
       docs[`users/${def.uid}`] = userDoc(def.uid, def.user);
-      docs[`users/${def.uid}/private/account`] = { ...emailDoc(def.token.email), fcmTokens: [], lastLoginAt: null };
+      docs[`users/${def.uid}/private/account`] = accountDoc(def.token.email, def.user);
       docs[`settings/${def.uid}`] = settingsDoc();
     }
     if (def.membership) {
@@ -317,11 +326,39 @@ async function seedDocs(docs) {
   }
 }
 
-/** Adlı veri kümesini yazar; bilinmeyen ad hatadır. */
-async function seedFixture(name, options) {
+/** Adlı veri kümesini üretir (yazmaz); bilinmeyen ad hatadır. */
+function buildFixture(name, options) {
   const build = FIXTURES[name];
   if (!build) throw new Error(`bilinmeyen fixture: ${name} (geçerli: ${Object.keys(FIXTURES).join(', ')})`);
-  const docs = build(options);
+  return build(options);
+}
+
+/**
+ * Veri kümesini bir vakaya göre düzenler (kopya döner; girdi değişmez).
+ * @param {Record<string, object>} docs belge yolu → veri
+ * @param {{without?: string[], patch?: Record<string, object>, unset?: Record<string, string[]>}} [edit]
+ *   `without` kurulmayacak belgeler (create vakası: hedef belge YOK olmalı; zaten yoksa sorun değil) ·
+ *   `patch` yol → üzerine yazılacak alanlar (`staff: true`) ·
+ *   `unset` yol → kaldırılacak anahtarlar (istemci biçimi: null alan hiç yazılmaz — W-51, CD-130).
+ *   `patch` / `unset` yolu veri kümesinde yoksa hatadır (yazım hatası sessizce "yeşil" olmasın).
+ */
+function editDocs(docs, edit = {}) {
+  const without = new Set(edit.without || []);
+  const out = Object.fromEntries(Object.entries(docs).filter(([path]) => !without.has(path)));
+  for (const [path, fields] of Object.entries(edit.patch || {})) {
+    if (!out[path]) throw new Error(`editDocs.patch: veri kümesinde olmayan belge: ${path}`);
+    out[path] = { ...out[path], ...fields };
+  }
+  for (const [path, keys] of Object.entries(edit.unset || {})) {
+    if (!out[path]) throw new Error(`editDocs.unset: veri kümesinde olmayan belge: ${path}`);
+    out[path] = Object.fromEntries(Object.entries(out[path]).filter(([key]) => !keys.includes(key)));
+  }
+  return out;
+}
+
+/** Adlı veri kümesini (isteğe bağlı `edit` ile düzenleyerek) yazar; yazılan belgeleri döndürür. */
+async function seedFixture(name, options, edit) {
+  const docs = editDocs(buildFixture(name, options), edit);
   await seedDocs(docs);
   return docs;
 }
@@ -337,4 +374,16 @@ async function readDoc(path) {
   return snapshot.exists() ? snapshot.data() : null;
 }
 
-module.exports = { CLUB, OTHER_CLUB, FIXTURES, baseDocs, targetDoc, seedDocs, seedFixture, seedBase, readDoc };
+module.exports = {
+  CLUB,
+  OTHER_CLUB,
+  FIXTURES,
+  baseDocs,
+  targetDoc,
+  buildFixture,
+  editDocs,
+  seedDocs,
+  seedFixture,
+  seedBase,
+  readDoc,
+};

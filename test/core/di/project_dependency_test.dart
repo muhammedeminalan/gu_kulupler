@@ -1,5 +1,7 @@
 // T-11 · ProjectDependency: GetIt kayıtları, emülatörde yerel Remote Config /
 // çökme servisleri (W-53), reset (D-04; PLAN §4.4).
+// T-12 · kimlik ve profil repository'leri: kayıt, kayıtlı servislere bağlılık
+// ve `ProjectDependencyMixin` getter'ları.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -183,6 +185,87 @@ void main() {
         ),
         throwsA(isA<ArgumentError>()),
       );
+    });
+  });
+
+  group('T-12 · ProjectDependency · repository kayıtları', () {
+    test('Auth / User / Settings repository gerçek uygulamalarıyla '
+        'kaydedilir; mixin getter’ları aynı örnekleri döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(GetIt.I<AuthRepository>(), isA<FirebaseAuthRepository>());
+      expect(GetIt.I<UserRepository>(), isA<FirebaseUserRepository>());
+      expect(GetIt.I<SettingsRepository>(), isA<FirebaseSettingsRepository>());
+
+      final consumer = _Consumer();
+      expect(consumer.authRepository, same(GetIt.I<AuthRepository>()));
+      expect(consumer.userRepository, same(GetIt.I<UserRepository>()));
+      expect(consumer.settingsRepository, same(GetIt.I<SettingsRepository>()));
+    });
+
+    test(
+      'repository’ler kayıtlı servislerin ve saatin üstünde çalışır',
+      () async {
+        final clock = FakeAppClock(DateTime.utc(2026, 10, 12));
+        await ProjectDependency.setup(
+          navigatorKey: navigatorKey,
+          toastController: toastController,
+          isEmulator: true,
+          overrides: platformFakes(appClock: clock),
+        );
+        const email = 'ayse@ogr.gumushane.edu.tr';
+        final consumer = _Consumer();
+
+        // AuthRepository → kayıtlı AuthService + AppClock (bekleme saati).
+        final registered = await consumer.authRepository.register(
+          email: email,
+          password: 'Parola123',
+        );
+        expect(auth.callsTo('register'), hasLength(1));
+        expect(consumer.authRepository.currentUser, auth.currentUser);
+        expect(
+          consumer.authRepository.resendCooldownRemaining,
+          Limits.verificationResendCooldown,
+        );
+        clock.advance(Limits.verificationResendCooldown);
+        expect(consumer.authRepository.resendCooldownRemaining, isNull);
+
+        // User / Settings repository → kayıtlı FirestoreService.
+        final uid = registered.dataOrNull!.uid;
+        final created = await consumer.userRepository.createProfile(
+          uid: uid,
+          email: email,
+          name: 'Ayşe Işık',
+          nameLower: 'ayşe ışık',
+          avatarSeed: uid,
+        );
+        expect(created.isSuccess, isTrue);
+        expect((await firestore.db.doc('users/$uid').get()).exists, isTrue);
+        // Profil batch'i ayar belgesini de yazdı; okuma aynı veritabanından.
+        final settings = await consumer.settingsRepository.getSettings(uid);
+        expect(
+          settings.dataOrNull?.copyWith(clearUpdatedAt: true),
+          UserSettingsModel.defaults(uid),
+        );
+      },
+    );
+
+    test('reset repository kayıtlarını da siler', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      await ProjectDependency.reset();
+      expect(GetIt.I.isRegistered<AuthRepository>(), isFalse);
+      expect(GetIt.I.isRegistered<UserRepository>(), isFalse);
+      expect(GetIt.I.isRegistered<SettingsRepository>(), isFalse);
+      expect(() => _Consumer().authRepository, throwsStateError);
     });
   });
 

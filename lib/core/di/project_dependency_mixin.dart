@@ -17,8 +17,22 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 /// metodudur; Remote Config yalnızca `AppGateViewModel` kurucusuna verilir;
 /// çökme raporlama yalnızca `lib/core/error/` içindedir.
 mixin ProjectDependencyMixin {
-  /// Kimlik doğrulama servisi.
+  /// Kimlik doğrulama servisi (ham). Kimlik işlemleri [authRepository]
+  /// üzerinden yapılır; servis yalnızca oturum kimliğini okumak içindir.
   AuthService get authService => GetIt.I<AuthService>();
+
+  // ── Repository'ler (her backend task'ı kendisininkini ekler) ─────────
+
+  /// Kimlik işlemleri: kayıt, giriş, doğrulama, şifre, oturum akışı (T-12).
+  AuthRepository get authRepository => GetIt.I<AuthRepository>();
+
+  /// Kullanıcı profili ve gizli hesap belgesi (T-12).
+  UserRepository get userRepository => GetIt.I<UserRepository>();
+
+  /// Bildirim ayarları (T-12).
+  SettingsRepository get settingsRepository => GetIt.I<SettingsRepository>();
+
+  // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.
   FeedbackService get feedback => GetIt.I<FeedbackService>();

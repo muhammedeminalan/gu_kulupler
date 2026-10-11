@@ -44,7 +44,8 @@ abstract final class DemoDataFixture {
   /// Depo köküne göre demo veri dosyası.
   static const String sourcePath = 'tool/seed/demo-data.json';
 
-  /// Askıdaki kullanıcılara yazılan neden (PLAN §9.12 `SEED_SUSPEND_REASON`).
+  /// Askıdaki kullanıcıların `account` belgesine yazılan neden (PLAN §9.12
+  /// `SEED_SUSPEND_REASON`; CD-133).
   static const String seedSuspendReason = 'Topluluk kurallarının ihlali.';
 
   /// Danışman adından ayrılan ünvanlar (PLAN §9.12 `SEED_TITLES`), sırayla
@@ -232,9 +233,6 @@ final class _Converter {
           'interests': user['interests'],
           'bio': user['bio'],
           'status': user['status'],
-          'suspendReason': user['status'] == 'suspended'
-              ? DemoDataFixture.seedSuspendReason
-              : null,
           'staff': user['staff'],
           'profileComplete': user['profileComplete'],
           ..._base(_time(user, 'createdAt')),
@@ -242,10 +240,18 @@ final class _Converter {
       }(),
   };
 
+  /// Askı gerekçesi herkese açık `users` belgesine değil buraya yazılır
+  /// (CD-133).
   Map<String, Map<String, Object?>> _accounts() => {
     for (final MapEntry(key: uid, :value) in users.entries)
       uid: _emailDoc(_map(value), _time(_map(value), 'createdAt'))
-        ..addAll({'fcmTokens': <Object?>[], 'lastLoginAt': null}),
+        ..addAll({
+          'fcmTokens': <Object?>[],
+          'lastLoginAt': null,
+          'suspendReason': _map(value)['status'] == 'suspended'
+              ? DemoDataFixture.seedSuspendReason
+              : null,
+        }),
   };
 
   Map<String, Object?> _emailDoc(
