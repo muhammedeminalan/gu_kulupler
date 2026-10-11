@@ -51,6 +51,7 @@ final class FirebaseAuthRepository implements AuthRepository {
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
+    required String name,
   }) async {
     final address = email.trim();
     if (_rejectAddress(address) case final error?) {
@@ -59,7 +60,11 @@ final class FirebaseAuthRepository implements AuthRepository {
     if (!_passwordPolicy.hasMatch(password)) {
       return const FirebaseFailure(AuthError.weakPassword);
     }
-    final result = await _auth.register(email: address, password: password);
+    final result = await _auth.register(
+      email: address,
+      password: password,
+      displayName: name.trim(),
+    );
     if (result case FirebaseSuccess(data: final user)) {
       final sent = await _auth.sendEmailVerification();
       if (sent.isSuccess) _markVerificationSent(user.uid);

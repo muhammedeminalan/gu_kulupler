@@ -403,6 +403,157 @@ void main() {
     });
   });
 
+  group('T-13 · AuthService · görünen ad (CD-134)', () {
+    const name = 'Ayşe Yılmaz';
+
+    test('AuthUserInfo: displayName varsayılanı null; eşitliğe girer', () {
+      const plain = AuthUserInfo(
+        uid: 'u1',
+        email: _email,
+        emailVerified: false,
+      );
+      const named = AuthUserInfo(
+        uid: 'u1',
+        email: _email,
+        emailVerified: false,
+        displayName: name,
+      );
+
+      expect(plain.displayName, isNull);
+      expect(plain, isNot(named));
+      expect(named.props, ['u1', _email, false, name]);
+    });
+
+    test('register(displayName): ad kimlik hesabına yazılır, dönen bilgide '
+        've currentUser içinde görünür', () async {
+      auth = MockFirebaseAuth(verifyEmailAutomatically: false);
+      service = FirebaseAuthService(auth);
+
+      final info = (await service.register(
+        email: _email,
+        password: _password,
+        displayName: '  $name ',
+      )).dataOrNull!;
+
+      expect(info.displayName, name, reason: 'boşluklar kırpılır');
+      expect(auth.currentUser!.displayName, name);
+      expect(service.currentUser, info);
+    });
+
+    test('register: ad verilmezse ya da boşsa görünen ad yazılmaz', () async {
+      for (final displayName in [null, '', '   ']) {
+        final user = StubUser(emailVerified: false);
+        service = FirebaseAuthService(StubFirebaseAuth(createdUser: user));
+
+        final result = await service.register(
+          email: _email,
+          password: _password,
+          displayName: displayName,
+        );
+
+        expect(result.isSuccess, isTrue, reason: '"$displayName"');
+        expect(result.dataOrNull!.displayName, isNull);
+        expect(user.displayNameUpdates, isEmpty, reason: '"$displayName"');
+      }
+    });
+
+    test('register: hesap açıldıktan sonra ad yazılamazsa sonuç yine '
+        'başarıdır; ad null kalır', () async {
+      final user = StubUser(
+        error: authException('network-request-failed'),
+        emailVerified: false,
+      );
+      service = FirebaseAuthService(StubFirebaseAuth(createdUser: user));
+
+      final result = await service.register(
+        email: _email,
+        password: _password,
+        displayName: name,
+      );
+
+      expect(
+        result.dataOrNull,
+        const AuthUserInfo(uid: 'u_ayse', email: _email, emailVerified: false),
+      );
+      expect(user.displayNameUpdates, [name]);
+    });
+
+    test(
+      'register: hesap açılamazsa ad yazılmaz; hata ve ham mesaj taşınır',
+      () async {
+        service = FirebaseAuthService(
+          StubFirebaseAuth(
+            error: authException('email-already-in-use', message: 'ham'),
+          ),
+        );
+
+        final result = await service.register(
+          email: _email,
+          password: _password,
+          displayName: name,
+        );
+
+        expect(result.errorOrNull, AuthError.emailAlreadyInUse);
+        expect((result as FirebaseFailure).message, 'ham');
+      },
+    );
+
+    // Gövdede `pump` dışında `await` yok (bkz. "zaman aşımı" grubu).
+    testWidgets('register: ad yazımı askıda kalırsa zaman aşımı kaydı '
+        'başarısız göstermez', (tester) async {
+      final user = StubUser(emailVerified: false);
+      final stubbed = FirebaseAuthService(StubFirebaseAuth(createdUser: user));
+      AuthResult<AuthUserInfo>? result;
+      unawaited(
+        stubbed
+            .register(email: _email, password: _password, displayName: name)
+            .then((r) => result = r),
+      );
+
+      await tester.pump(Limits.authTimeout - const Duration(milliseconds: 1));
+      expect(result, isNull);
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(result!.dataOrNull!.uid, 'u_ayse');
+      expect(result!.dataOrNull!.displayName, isNull);
+      expect(user.displayNameUpdates, [name]);
+    });
+
+    test('currentUser ve oturum akışı görünen adı taşır; boş ad null '
+        'okunur', () async {
+      final stub = StubFirebaseAuth(currentUser: StubUser(displayName: name));
+      service = FirebaseAuthService(stub);
+      final states = <AuthUserInfo?>[];
+      final subscription = service.authStateChanges().listen(states.add);
+
+      stub.stateEvents
+        ..add(StubUser(displayName: ' $name '))
+        ..add(StubUser(displayName: '  '))
+        ..add(StubUser());
+      await pumpEventQueue();
+      await subscription.cancel();
+
+      expect(service.currentUser!.displayName, name);
+      expect(states.map((info) => info!.displayName), [name, null, null]);
+    });
+
+    test('signIn ve reload sunucudaki görünen adı döndürür', () async {
+      await signedIn(
+        MockUser(uid: 'u_ayse', email: _email, displayName: name),
+      );
+
+      expect((await service.reload()).dataOrNull!.displayName, name);
+      await service.signOut();
+      expect(
+        (await service.signIn(
+          email: _email,
+          password: _password,
+        )).dataOrNull!.displayName,
+        name,
+      );
+    });
+  });
+
   group('T-10 · AuthService · zaman aşımı', () {
     // Gövdede `pump` dışında `await` yok: sahte zaman bölgesinde gerçek
     // mikro görev kuyruğuna düşen bir bekleme testi askıda bırakır.

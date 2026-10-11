@@ -50,7 +50,8 @@ void main() {
         isNot(contains(design)),
       );
       const owners = {
-        'lib/product/navigation/routes/auth_routes.dart': 4,
+        // T-13: ONB-01 / AUT-01 gerçek view'a bağlandı; kalan AUT-03, AUT-05.
+        'lib/product/navigation/routes/auth_routes.dart': 2,
         'lib/product/navigation/routes/clubs_routes.dart': 1,
         'lib/product/navigation/routes/events_routes.dart': 1,
         'lib/product/navigation/routes/notifications_routes.dart': 1,

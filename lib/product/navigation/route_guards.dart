@@ -4,6 +4,7 @@ import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/legal_tab.dart';
 
 /// Bir rotaya kimin girebileceği — navigation.md §2 / PLAN §13.3 "Guard"
 /// sütununun kod hali.
@@ -376,11 +377,10 @@ abstract final class RoleGuard {
 
 /// Yol parametresi denetimi — PLAN §13.4 satır R12 (K-06).
 abstract final class RouteParamGuard {
-  /// `/legal/:tip` için geçerli değerler (AUT-06 sekmeleri).
-  static const Set<String> legalTabs = <String>{
-    'kosullar',
-    'gizlilik',
-    'kvkk',
+  /// `/legal/:tip` için geçerli değerler: AUT-06 sekmelerinin ([LegalTab])
+  /// adları.
+  static final Set<String> legalTabs = <String>{
+    for (final tab in LegalTab.values) tab.name,
   };
 
   /// [location] geçersiz bir yol parametresi taşıyorsa SYS-04'e yönlendirir.

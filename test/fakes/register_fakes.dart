@@ -11,6 +11,7 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../helpers/fake_app_clock.dart';
 import 'fake_app_info_service.dart';
@@ -24,6 +25,7 @@ import 'fake_firestore_service.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_settings_repository.dart';
 import 'fake_storage_service.dart';
+import 'fake_url_launcher_service.dart';
 import 'fake_user_repository.dart';
 
 /// Varsayılan [FakeAppClock] anı: 12 Ekim 2026 Pazartesi 19:30 Istanbul
@@ -57,5 +59,7 @@ void registerDefaultFakes() {
       FakeAuthRepository(clock, service: authService),
     )
     ..registerSingleton<UserRepository>(FakeUserRepository())
-    ..registerSingleton<SettingsRepository>(FakeSettingsRepository());
+    ..registerSingleton<SettingsRepository>(FakeSettingsRepository())
+    // T-13 · dış bağlantı servisi
+    ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService());
 }

@@ -2,6 +2,7 @@
 // hedefleri): router'daki yollar ↔ navigation.md §2 sınıf / yol tablosu ↔
 // guard tablosu (PLAN §13.3, §13.5). Her ekran task'ı kendi satırını ekler;
 // T-43'te 57 rota sınıfı / 51 ekran tamamlanır.
+// T-13 · `RegisterRoute` (`/login/register`) ve `LegalRoute` (`/legal/:tip`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -14,7 +15,7 @@ import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
 import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
-/// T-11'de bildirilen rota sınıfları ve yolları.
+/// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -22,9 +23,11 @@ const Map<GoRouteData, String> _routes = {
   OfflineRoute(): '/offline',
   NotFoundRoute(): '/not-found',
   DebugMenuRoute(): '/debug',
-  // Oturum öncesi yönlendirme hedefleri (yer tutucu view)
+  // Oturum öncesi (T-13: ONB-01, AUT-01, AUT-02, AUT-06; T-14: yer tutucu)
   OnboardingRoute(): '/onboarding',
   LoginRoute(): '/login',
+  RegisterRoute(): '/login/register',
+  LegalRoute(tip: LegalTab.kvkk): '/legal/:tip',
   VerifyEmailRoute(): '/verify',
   SetupProfileRoute(): '/setup-profile',
   // Kabuk: beş sekme kökü
@@ -64,14 +67,47 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = T-11 kapsamındaki 14 yol', () {
+    test('router yolları = kapsamdaki 16 yol (T-11: 14, T-13: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(14));
+      expect(_routes, hasLength(16));
     });
 
     test('rota sınıfının `location` değeri kilitli yoldur', () {
       for (final MapEntry(key: route, value: path) in _routes.entries) {
+        if (route is LegalRoute) continue; // parametreli: aşağıda
         expect(route.location, path, reason: '${route.runtimeType}');
+      }
+    });
+
+    test('T-13 · LegalRoute: `tip` yol parametresidir; her sekmenin yolu '
+        'guard tablosundaki kalıba uyar', () {
+      expect(LegalTab.values.map((tab) => tab.name), [
+        'kvkk',
+        'gizlilik',
+        'kosullar',
+      ]);
+      expect(RouteParamGuard.legalTabs, {
+        for (final tab in LegalTab.values) tab.name,
+      });
+      for (final tab in LegalTab.values) {
+        final location = LegalRoute(tip: tab).location;
+        expect(location, '/legal/${tab.name}');
+        expect(
+          RouteAccessTable.match(Uri.parse(location)).pattern,
+          RouteAccessTable.legalPattern,
+        );
+        expect(RouteParamGuard.check(Uri.parse(location)), isNull);
+
+        // Kayıt formundan açılış sorguda taşınır; yol ve guard değişmez.
+        final fromRegister = Uri.parse(
+          LegalRoute(tip: tab, from: LegalOrigin.register).location,
+        );
+        expect(fromRegister.toString(), '/legal/${tab.name}?from=register');
+        expect(
+          RouteAccessTable.match(fromRegister).pattern,
+          RouteAccessTable.legalPattern,
+        );
+        expect(RouteParamGuard.check(fromRegister), isNull);
       }
     });
 
@@ -103,8 +139,13 @@ void main() {
           contains(path),
           reason: path,
         );
+        // Parametreli kalıp somut bir yolla eşlenir.
+        final sample = path.replaceFirst(
+          ':${RouteAccessTable.legalTabParameter}',
+          LegalTab.kvkk.name,
+        );
         expect(
-          RouteAccessTable.match(Uri.parse(path)).pattern,
+          RouteAccessTable.match(Uri.parse(sample)).pattern,
           path,
           reason: path,
         );
@@ -177,9 +218,22 @@ void main() {
         '/debug',
         '/onboarding',
         '/login',
+        '/legal/:tip',
         '/verify',
         '/setup-profile',
       });
+    });
+
+    test('T-13 · AUT-02 `/login` altındadır (geri → AUT-01); AUT-06 kök '
+        'düzeydedir', () {
+      final login = AppRouter.routes.whereType<GoRoute>().singleWhere(
+        (route) => route.path == '/login',
+      );
+      expect(
+        [for (final child in login.routes.whereType<GoRoute>()) child.path],
+        [RegisterRoute.segment],
+      );
+      expect(const RegisterRoute().location, '/login/register');
     });
   });
 }

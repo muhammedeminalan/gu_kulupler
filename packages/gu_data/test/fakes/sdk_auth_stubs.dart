@@ -23,6 +23,7 @@ final class StubUser implements User {
     this.uid = 'u_ayse',
     this.email = 'ayse@ogr.gumushane.edu.tr',
     this.emailVerified = true,
+    this.displayName,
   });
 
   /// Her çağrının fırlattığı hata; `null` ise çağrı tamamlanmaz.
@@ -36,6 +37,12 @@ final class StubUser implements User {
 
   @override
   final bool emailVerified;
+
+  @override
+  final String? displayName;
+
+  /// [updateDisplayName] çağrısına verilen adlar, sırasıyla.
+  final List<String?> displayNameUpdates = [];
 
   /// [reauthenticateWithCredential] çağrısına verilen son kimlik bilgisi.
   AuthCredential? lastCredential;
@@ -60,6 +67,12 @@ final class StubUser implements User {
   Future<void> updatePassword(String newPassword) => _outcome(error);
 
   @override
+  Future<void> updateDisplayName(String? displayName) {
+    displayNameUpdates.add(displayName);
+    return _outcome(error);
+  }
+
+  @override
   Future<IdTokenResult> getIdTokenResult([bool forceRefresh = false]) =>
       _outcome(error);
 
@@ -71,14 +84,19 @@ final class StubUser implements User {
 /// [stateEvents] ile oturum akışı olayları elle üretilir.
 final class StubFirebaseAuth implements FirebaseAuth {
   /// [error] verilmezse çağrılar askıda kalır; [currentUser] oturumdaki
-  /// kullanıcıdır.
-  StubFirebaseAuth({this.error, this.currentUser});
+  /// kullanıcıdır. [createdUser] verilirse
+  /// [createUserWithEmailAndPassword] onunla **başarıyla** döner (hesap
+  /// açıldıktan sonraki adımların hatası ayrı sınanır).
+  StubFirebaseAuth({this.error, this.currentUser, this.createdUser});
 
   /// Her çağrının fırlattığı hata; `null` ise çağrı tamamlanmaz.
   final Object? error;
 
   @override
   final User? currentUser;
+
+  /// [createUserWithEmailAndPassword] başarı sonucunun kullanıcısı.
+  final User? createdUser;
 
   /// [authStateChanges] akışının denetleyicisi.
   final StreamController<User?> stateEvents = StreamController<User?>();
@@ -93,7 +111,10 @@ final class StubFirebaseAuth implements FirebaseAuth {
   Future<UserCredential> createUserWithEmailAndPassword({
     required String email,
     required String password,
-  }) => _outcome(error);
+  }) => switch (createdUser) {
+    final user? => Future.value(StubUserCredential(user)),
+    null => _outcome(error),
+  };
 
   @override
   Future<void> signOut() => _outcome(error);
@@ -106,6 +127,18 @@ final class StubFirebaseAuth implements FirebaseAuth {
 
   @override
   Stream<User?> authStateChanges() => stateEvents.stream;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Yalnızca [user] taşıyan oturum açma sonucu.
+final class StubUserCredential implements UserCredential {
+  /// [user] ile sonuç kurar.
+  StubUserCredential(this.user);
+
+  @override
+  final User? user;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

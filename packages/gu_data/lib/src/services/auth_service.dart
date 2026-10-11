@@ -16,6 +16,7 @@ final class AuthUserInfo extends Equatable {
     required this.uid,
     required this.email,
     required this.emailVerified,
+    this.displayName,
   });
 
   /// Firebase Auth kullanıcı kimliği (`users/{uid}` belge kimliği).
@@ -27,8 +28,18 @@ final class AuthUserInfo extends Equatable {
   /// E-posta doğrulanmış mı? [AuthService.reload] sonrasında güncellenir.
   final bool emailVerified;
 
+  /// Kimlik hesabındaki görünen ad; yazılmadıysa `null` (boş metin de `null`
+  /// okunur).
+  ///
+  /// Kayıt formundaki adı profil belgesi oluşana kadar **taşır** (CD-134):
+  /// `users/{uid}` yalnızca e-postası doğrulanmış oturumda yazılabildiğinden
+  /// ad kayıt anında kimlik hesabına yazılır ([AuthService.register]) ve
+  /// doğrulama sonrasında, başka bir cihazda bile, buradan okunur. Profil
+  /// oluştuktan sonra adın kaynağı `UserModel.name`'dir; bu alan güncellenmez.
+  final String? displayName;
+
   @override
-  List<Object?> get props => [uid, email, emailVerified];
+  List<Object?> get props => [uid, email, emailVerified, displayName];
 }
 
 /// Kimlik (Firebase Auth) erişiminin tek kapısı (PLAN §10.2, D-34).
@@ -61,9 +72,15 @@ abstract interface class AuthService {
   Stream<AuthError> get tokenErrors;
 
   /// E-posta ve şifreyle yeni hesap açar; oturum açılmış olarak döner.
+  ///
+  /// [displayName] doluysa (boşluklar kırpılır) hesap açıldıktan sonra kimlik
+  /// hesabının görünen adı olarak yazılır ve dönen bilgide
+  /// [AuthUserInfo.displayName] olur (CD-134). Ad yazılamazsa sonuç yine
+  /// başarıdır — hesap açılmıştır; ad `null` kalır.
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
+    String? displayName,
   });
 
   /// E-posta ve şifreyle oturum açar.
@@ -132,14 +149,29 @@ final class FirebaseAuthService implements AuthService {
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
-  }) => _guard(
-    () async => _info(
-      (await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      )).user,
-    ),
-  );
+    String? displayName,
+  }) async {
+    final created = await _guard(
+      () async => _user(
+        (await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        )).user,
+      ),
+    );
+    switch (created) {
+      case FirebaseFailure(:final error, :final message):
+        return FirebaseFailure(error, message: message);
+      case FirebaseSuccess(data: final user):
+        final name = displayName?.trim() ?? '';
+        if (name.isEmpty) return FirebaseSuccess(_infoOf(user));
+        // Hesap açıldı: ad yazılamasa da kayıt başarıdır (sonuç bilerek
+        // okunmaz; ayrı zaman aşımı hesabın açılışını başarısız göstermez).
+        await _guard(() => user.updateDisplayName(name));
+        // SDK güncel kullanıcıyı yeni bir örnekle değiştirir.
+        return FirebaseSuccess(_infoOrNull(_auth.currentUser) ?? _infoOf(user));
+    }
+  }
 
   @override
   Future<AuthResult<AuthUserInfo>> signIn({
@@ -255,17 +287,27 @@ final class FirebaseAuthService implements AuthService {
     _ => error.toString(),
   };
 
-  static AuthUserInfo? _infoOrNull(User? user) => user == null
-      ? null
-      : AuthUserInfo(
-          uid: user.uid,
-          email: user.email,
-          emailVerified: user.emailVerified,
-        );
+  static AuthUserInfo? _infoOrNull(User? user) =>
+      user == null ? null : _infoOf(user);
+
+  static AuthUserInfo _infoOf(User user) => AuthUserInfo(
+    uid: user.uid,
+    email: user.email,
+    emailVerified: user.emailVerified,
+    displayName: _nameOrNull(user.displayName),
+  );
+
+  /// Boş ya da yalnızca boşluk olan ad "yok" sayılır.
+  static String? _nameOrNull(String? name) {
+    final trimmed = name?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   /// SDK başarılı dönüp kullanıcı vermediyse oturum yoktur.
-  static AuthUserInfo _info(User? user) =>
-      _infoOrNull(user) ?? (throw const _NoSessionException());
+  static AuthUserInfo _info(User? user) => _infoOf(_user(user));
+
+  /// SDK başarılı dönüp kullanıcı vermediyse oturum yoktur.
+  static User _user(User? user) => user ?? (throw const _NoSessionException());
 
   static const String _userNotFound = 'user-not-found';
   static const String _operationNotAllowed = 'operation-not-allowed';

@@ -11,6 +11,7 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_auth_service.dart';
 import '../../fakes/register_fakes.dart';
@@ -45,6 +46,11 @@ void main() {
       expect(consumer.authRepository, same(GetIt.I<AuthRepository>()));
       expect(consumer.userRepository, same(GetIt.I<UserRepository>()));
       expect(consumer.settingsRepository, same(GetIt.I<SettingsRepository>()));
+      // T-13 · dış bağlantı servisi
+      expect(
+        consumer.urlLauncherService,
+        same(GetIt.I<UrlLauncherService>()),
+      );
     });
 
     test("getter'lar tembeldir: reset + yeni kayıt sonrası yeni örnek "

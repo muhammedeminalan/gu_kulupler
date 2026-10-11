@@ -10,15 +10,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/product/feedback/dialog_id.dart';
+import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
+import '../../fakes/fake_feedback_service.dart';
+import '../../fakes/fake_url_launcher_service.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
 import '../../helpers/test_container.dart';
@@ -169,7 +175,7 @@ void main() {
     });
 
     test('status suspended → suspended + gerekçe (private/account, CD-133); '
-        'oturum kapatılmaz (W-03, T-13)', () async {
+        'ardından oturum kapatılır (W-03) ve durum signedOut olur', () async {
       final profile = users
           .putActive('u1')
           .copyWith(
@@ -180,7 +186,51 @@ void main() {
         suspendReason: _reason,
       );
       auth.currentUser = _user();
+      final states = <SessionState>[];
+      final container = createContainer()
+        ..listen(sessionViewModelProvider, (_, next) => states.add(next));
+      await pumpEventQueue();
+      // Gerekçe oturum kapanmadan önce okunur (belge yalnızca sahibine açık).
+      expect(
+        states,
+        contains(
+          SessionState(
+            status: AuthStatus.suspended,
+            uid: 'u1',
+            user: profile,
+            suspendReason: _reason,
+          ),
+        ),
+      );
+      expect(users.callsTo('getPrivateAccount').single.args, ['u1']);
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+      expect(auth.currentUser, isNull);
+    });
+
+    test('askıdaki oturum kapatılamazsa durum suspended kalır (R6 kullanıcıyı '
+        'girişte tutar)', () async {
+      final profile = users
+          .putActive('u1')
+          .copyWith(
+            status: UserStatus.suspended,
+          );
+      users.users['u1'] = profile;
+      users.accounts['u1'] = users.accounts['u1']!.copyWith(
+        suspendReason: _reason,
+      );
+      final gate = Completer<void>();
+      users.getUserGate = gate;
+      auth.currentUser = _user();
       final container = await resolved();
+      // Claim okundu; sıradaki kimlik çağrısı `signOut`.
+      auth.failNext(AuthError.network);
+      gate.complete();
+      await pumpEventQueue();
+      expect(auth.callsTo('signOut'), hasLength(1));
       expect(
         stateOf(container),
         SessionState(
@@ -190,8 +240,6 @@ void main() {
           suspendReason: _reason,
         ),
       );
-      expect(users.callsTo('getPrivateAccount').single.args, ['u1']);
-      expect(auth.callsTo('signOut'), isEmpty);
     });
 
     test('gerekçe okunamazsa askı gerekçesiz uygulanır', () async {
@@ -204,14 +252,21 @@ void main() {
       final gate = Completer<void>();
       users.getUserGate = gate;
       auth.currentUser = _user();
-      final container = await resolved();
+      final states = <SessionState>[];
+      final container = createContainer()
+        ..listen(sessionViewModelProvider, (_, next) => states.add(next));
+      await pumpEventQueue();
       users.failNext(FirestoreError.permissionDenied);
       gate.complete();
       await pumpEventQueue();
       expect(users.callsTo('getPrivateAccount'), hasLength(1));
-      expect(stateOf(container).status, AuthStatus.suspended);
-      expect(stateOf(container).suspendReason, isNull);
-      expect(stateOf(container).isError, isFalse);
+      final suspended = states.singleWhere(
+        (state) => state.status == AuthStatus.suspended,
+      );
+      expect(suspended.suspendReason, isNull);
+      expect(suspended.isError, isFalse);
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.signedOut);
     });
 
     test('yeniden etkinleştirilen hesapta gerekçe temizlenir', () async {
@@ -220,8 +275,16 @@ void main() {
       users.accounts['u1'] = users.accounts['u1']!.copyWith(
         suspendReason: _reason,
       );
+      // Oturum kapatılamadı: askıdaki oturum cihazda kaldı.
+      final gate = Completer<void>();
+      users.getUserGate = gate;
       auth.currentUser = _user();
       final container = await resolved();
+      auth.failNext(AuthError.network);
+      gate.complete();
+      users.getUserGate = null;
+      await pumpEventQueue();
+      expect(stateOf(container).status, AuthStatus.suspended);
       expect(stateOf(container).suspendReason, _reason);
 
       users.users['u1'] = profile;
@@ -316,7 +379,11 @@ void main() {
       expect(stateOf(container).status, AuthStatus.signedOut);
 
       // AUT-02: kayıt → doğrulanmamış oturum.
-      await auth.register(email: _email, password: _password);
+      await auth.register(
+        email: _email,
+        password: _password,
+        name: 'Ayşe Yılmaz',
+      );
       await pumpEventQueue();
       final uid = auth.service.uid;
       expect(stateOf(container).status, AuthStatus.unverified);
@@ -457,9 +524,14 @@ void main() {
       final container = await resolved();
       expect(stateOf(container).isResolving, isTrue);
 
-      auth.tokenErrorController.add(AuthError.userDisabled);
+      // Oturum kapatılamasın: askı durumu yerinde kalsın ve eski çözümün onu
+      // ezip ezmediği görülsün.
+      auth
+        ..failNext(AuthError.network)
+        ..tokenErrorController.add(AuthError.userDisabled);
       await pumpEventQueue();
       expect(stateOf(container).status, AuthStatus.suspended);
+      expect(auth.callsTo('signOut'), hasLength(1));
 
       // Önbellekteki jetonla claim okuması başarıyla döner.
       claimsGate.complete();
@@ -469,6 +541,31 @@ void main() {
         const SessionState(status: AuthStatus.suspended, uid: 'u1'),
       );
       expect(auth.callsTo('isSuperAdmin'), hasLength(1));
+      expect(users.callsTo('getUser'), isEmpty);
+    });
+
+    test('yarış: claim beklenirken hesap devre dışı kalır ve oturum kapanırsa '
+        'geç gelen çözüm signedOut durumunu ezmez', () async {
+      final claimsGate = Completer<void>();
+      users.putActive('u1');
+      auth
+        ..currentUser = _user()
+        ..superAdminGate = claimsGate;
+      final container = await resolved();
+
+      auth.tokenErrorController.add(AuthError.userDisabled);
+      await pumpEventQueue();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+
+      claimsGate.complete();
+      await pumpEventQueue();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
       expect(users.callsTo('getUser'), isEmpty);
     });
   });
@@ -550,14 +647,23 @@ void main() {
       );
     });
 
-    test('claim okunurken hesap devre dışıysa → suspended', () async {
+    test('claim okunurken hesap devre dışıysa → suspended, sonra oturum '
+        'kapatılır', () async {
       users.putActive('u1');
       auth
         ..currentUser = _user()
         ..failNext(AuthError.userDisabled);
-      final container = await resolved();
-      expect(stateOf(container).status, AuthStatus.suspended);
-      expect(stateOf(container).isResolving, isFalse);
+      final states = <SessionState>[];
+      final container = createContainer()
+        ..listen(sessionViewModelProvider, (_, next) => states.add(next));
+      await pumpEventQueue();
+      final suspended = states.singleWhere(
+        (state) => state.status == AuthStatus.suspended,
+      );
+      expect(suspended.isResolving, isFalse);
+      expect(users.callsTo('getUser'), isEmpty);
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.signedOut);
     });
 
     test('oturum akışı hata verirse isError', () async {
@@ -589,13 +695,21 @@ void main() {
       expect(stateOf(container), before);
     });
 
-    test('yenilemede hesap askıya alınmışsa → suspended', () async {
+    test('yenilemede hesap askıya alınmışsa → suspended, sonra oturum '
+        'kapatılır', () async {
       final container = await resolvedActive();
       users.users['u1'] = users.users['u1']!.copyWith(
         status: UserStatus.suspended,
       );
+      final statuses = <AuthStatus>[];
+      container.listen(
+        sessionViewModelProvider.select((state) => state.status),
+        (_, next) => statuses.add(next),
+      );
       await notifierOf(container).refreshUser();
-      expect(stateOf(container).status, AuthStatus.suspended);
+      await pumpEventQueue();
+      expect(statuses, [AuthStatus.suspended, AuthStatus.signedOut]);
+      expect(auth.callsTo('signOut'), hasLength(1));
     });
 
     test('oturum yokken belge okunmaz', () async {
@@ -640,12 +754,18 @@ void main() {
       },
     );
 
-    test('userDisabled → suspended', () async {
+    test('userDisabled → suspended, sonra oturum kapatılır', () async {
       final container = await resolvedActive();
+      final statuses = <AuthStatus>[];
+      container.listen(
+        sessionViewModelProvider.select((state) => state.status),
+        (_, next) => statuses.add(next),
+      );
       auth.tokenErrorController.add(AuthError.userDisabled);
       await pumpEventQueue();
-      expect(stateOf(container).status, AuthStatus.suspended);
-      expect(stateOf(container).uid, 'u1');
+      expect(statuses, [AuthStatus.suspended, AuthStatus.signedOut]);
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(stateOf(container).uid, isNull);
     });
 
     test('oturumu geçersiz kılmayan hata durumu değiştirmez', () async {
@@ -791,6 +911,97 @@ void main() {
       await pumpEventQueue();
       expect(auth.watchAuthStateController.hasListener, isFalse);
       expect(auth.tokenErrorController.hasListener, isFalse);
+    });
+  });
+
+  group('T-13 · SessionViewModel · askı bildirimi (W-03, DLG-01)', () {
+    FakeFeedbackService feedback() =>
+        GetIt.I<FeedbackService>() as FakeFeedbackService;
+    FakeUrlLauncherService launcher() =>
+        GetIt.I<UrlLauncherService>() as FakeUrlLauncherService;
+
+    /// Askıdaki `u1` oturumuyla çözülmüş kapsayıcı (oturum kapatılmış).
+    Future<ProviderContainer> resolvedSuspended() {
+      users.users['u1'] = users
+          .putActive('u1')
+          .copyWith(status: UserStatus.suspended);
+      auth.currentUser = _user();
+      return resolved();
+    }
+
+    test('askı bildirimi kendiliğinden gösterilmez: yönlendirme sürerken '
+        'itilen dialog sayfayla birlikte düşerdi', () async {
+      final container = await resolvedSuspended();
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      expect(feedback().dialogs, isEmpty);
+    });
+
+    test('showPendingSuspendedNotice bekleyen bildirimi bir kez gösterir '
+        '(DLG-01)', () async {
+      final container = await resolvedSuspended();
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, [DialogId.dlg01]);
+
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, [DialogId.dlg01]);
+      expect(launcher().opened, isEmpty);
+    });
+
+    test('"Destekle iletişime geç" destek adresine e-posta açar', () async {
+      final container = await resolvedSuspended();
+      feedback().nextDialogResult = true;
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(launcher().opened, [AppConstants.supportMailUri]);
+    });
+
+    test('bekleyen bildirim yokken çağrı etkisizdir', () async {
+      final container = await resolvedActive();
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, isEmpty);
+    });
+
+    test('durum suspended olduğu anda bildirim hazırdır (durumu dinleyen '
+        'giriş ekranı aynı anda isteyebilir)', () async {
+      users.users['u1'] = users
+          .putActive('u1')
+          .copyWith(status: UserStatus.suspended);
+      auth.currentUser = _user();
+      final container = createContainer();
+      container.listen(
+        sessionViewModelProvider.select((state) => state.status),
+        (_, next) {
+          if (next == AuthStatus.suspended) {
+            unawaited(notifierOf(container).showPendingSuspendedNotice());
+          }
+        },
+      );
+      await pumpEventQueue();
+      expect(feedback().dialogs, [DialogId.dlg01]);
+      expect(stateOf(container).status, AuthStatus.signedOut);
+    });
+
+    test('jeton hatasıyla (userDisabled) gelen askı da bildirimi sıraya alır; '
+        'art arda iki olay oturumu bir kez kapatır', () async {
+      final container = await resolvedActive();
+      auth.tokenErrorController
+        ..add(AuthError.userDisabled)
+        ..add(AuthError.userDisabled);
+      await pumpEventQueue();
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.signedOut);
+
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, [DialogId.dlg01]);
+    });
+
+    test('onSuspended oturumu kapatır ve bildirimi sıraya alır', () async {
+      final container = await resolvedActive();
+      await notifierOf(container).onSuspended();
+      await pumpEventQueue();
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, [DialogId.dlg01]);
     });
   });
 }

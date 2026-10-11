@@ -37,6 +37,14 @@ final class ScriptedAuthService implements AuthService {
   /// [idTokenClaims] sonucu.
   Map<String, Object?> claims = {};
 
+  /// Sunucudaki görünen ad: [register] yazar; [signIn] ve [reload] oturuma
+  /// yansıtır.
+  String? displayName;
+
+  /// [register] çağrılarına verilen görünen adlar, sırasıyla (`null` =
+  /// verilmedi).
+  final List<String?> registeredNames = [];
+
   /// [method] metodunun sonraki [times] çağrısı [error] ile biter.
   void failNext(String method, AuthError error, {int times = 1}) =>
       _failures.putIfAbsent(method, () => []).addAll(List.filled(times, error));
@@ -62,7 +70,14 @@ final class ScriptedAuthService implements AuthService {
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
-  }) async => _run('register:$email', () => _open(email, verified: false));
+    String? displayName,
+  }) async {
+    registeredNames.add(displayName);
+    return _run('register:$email', () {
+      this.displayName = displayName;
+      return _open(email, verified: false);
+    });
+  }
 
   @override
   Future<AuthResult<AuthUserInfo>> signIn({
@@ -86,6 +101,7 @@ final class ScriptedAuthService implements AuthService {
       uid: user.uid,
       email: user.email,
       emailVerified: emailVerified,
+      displayName: displayName,
     ),
   );
 
@@ -112,6 +128,7 @@ final class ScriptedAuthService implements AuthService {
         uid: uid,
         email: email,
         emailVerified: verified,
+        displayName: displayName,
       );
 
   /// Çağrıyı kaydeder; betiklenmiş hata varsa onu, yoksa [body] sonucunu

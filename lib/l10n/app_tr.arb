@@ -13,6 +13,15 @@
   "@a11yDismiss": {
     "description": "Key a11y.dismiss"
   },
+  "a11yLanguage": "Dil: {name}",
+  "@a11yLanguage": {
+    "description": "Key a11y.language",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "a11yMainNav": "Ana gezinme",
   "@a11yMainNav": {
     "description": "Key a11y.mainNav"
@@ -683,6 +692,15 @@
   "@authEmail": {
     "description": "Key auth.email"
   },
+  "authEmailPlaceholder": "ad.soyad@{domain}",
+  "@authEmailPlaceholder": {
+    "description": "Key auth.emailPlaceholder",
+    "placeholders": {
+      "domain": {
+        "type": "String"
+      }
+    }
+  },
   "authErrDomain": "Yalnızca üniversite e-postası kullanılabilir",
   "@authErrDomain": {
     "description": "Key auth.err.domain"
@@ -702,6 +720,18 @@
   "authErrMismatch": "Şifreler uyuşmuyor",
   "@authErrMismatch": {
     "description": "Key auth.err.mismatch"
+  },
+  "authErrNameLength": "Ad Soyad {min}–{max} karakter olmalı",
+  "@authErrNameLength": {
+    "description": "Key auth.err.nameLength",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
   },
   "authErrPassword": "Şifre en az 8 karakter, bir büyük harf ve bir rakam içermeli",
   "@authErrPassword": {
@@ -3224,6 +3254,18 @@
   "@legalKvkkTitle": {
     "description": "Key legal.kvkk.title"
   },
+  "legalSectionHeading": "{n}. {title}",
+  "@legalSectionHeading": {
+    "description": "Key legal.sectionHeading",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "legalTitle": "Yasal metinler",
   "@legalTitle": {
     "description": "Key legal.title"
@@ -4257,6 +4299,26 @@
   "sht01Title": "Dil",
   "@sht01Title": {
     "description": "Key sht.01.title"
+  },
+  "sht01Tr": "Türkçe",
+  "@sht01Tr": {
+    "description": "Key sht.01.tr"
+  },
+  "sht01En": "English",
+  "@sht01En": {
+    "description": "Key sht.01.en"
+  },
+  "sht01MenuItem": "{name} — {code}",
+  "@sht01MenuItem": {
+    "description": "Key sht.01.menuItem",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      }
+    }
   },
   "sht02Empty": "Bölüm bulunamadı",
   "@sht02Empty": {

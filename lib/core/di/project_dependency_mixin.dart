@@ -5,6 +5,7 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 /// ViewModel'lerin GetIt'teki servis ve repository'lere **tek** erişim yolu
 /// (D-04; PLAN §6.1, §12.1). View dosyasında `GetIt.I` yasaktır (HC13).
@@ -53,4 +54,7 @@ mixin ProjectDependencyMixin {
 
   /// Kurulu uygulamanın sürüm / derleme bilgisi.
   AppInfoService get appInfoService => GetIt.I<AppInfoService>();
+
+  /// Dış bağlantılar: `mailto:`, web, mağaza (T-13).
+  UrlLauncherService get urlLauncherService => GetIt.I<UrlLauncherService>();
 }

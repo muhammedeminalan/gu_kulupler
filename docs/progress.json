@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-11T20:29:43.034Z",
+  "updated": "2026-10-11T21:54:23.743Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-13",
   "statusValues": [
     "pending",
     "planning",
@@ -261,8 +261,8 @@
       "notes": ""
     },
     "T-13": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-11T20:30:28.270Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -550,7 +550,10 @@
       "resolveIn": [
         "T-13"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-13",
+      "closedAt": "2026-10-11T21:54:16.748Z",
+      "closeNote": "ONB-01 (OnboardingView) ve AUT-01 (LoginView) gerçek ekran; R2/R3 hedefleri gerçek rotalar — uçtan uca test/flows/auth_flow_test.dart"
     },
     {
       "id": "W-02",
@@ -568,7 +571,10 @@
       "resolveIn": [
         "T-13"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-13",
+      "closedAt": "2026-10-11T21:54:16.777Z",
+      "closeNote": "SessionViewModel.onSuspended(): signOut + DLG-01 sıraya alınır; showPendingSuspendedNotice() giriş ekranı yerleşince gösterir (CD-134 madde 17)"
     },
     {
       "id": "W-05",
@@ -969,10 +975,13 @@
       "resolveIn": [
         "T-13"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "DLG-26.update"
-      ]
+      ],
+      "closedIn": "T-13",
+      "closedAt": "2026-10-11T21:54:16.801Z",
+      "closeNote": "AppGateViewModel.openStore() → urlLauncherService.open(AppConstants.storeUri(platform)); App Store kimliği yer tutucu (TODO(T-46))"
     },
     {
       "id": "W-56",
@@ -990,6 +999,15 @@
       "text": "AUT-05 yazım sırası (T-12 Rules sözleşmesi; PLAN §9.6.1 interests satırı): users U (sahibi) birleşmiş belgede interests.size() >= 1 ister (staff hariç). createProfile interests: [] yazdığından, profil tamamlanmadan tek alanlı güncelleme (yalnızca avatarPath / avatarSeed) permission-denied alır — PLAN §12.5 SetupProfileViewModel.submit sırası (önce updateAvatar, sonra updateProfile) bu yüzden çalışmaz: interests içeren yama (ad, bölüm, sınıf, ilgi alanları, profileComplete) avatarPath yazımından ÖNCE ya da onunla AYNI yamada gitmeli. UserRepository.updateAvatar T-14'te yazılır (Storage users/ kuralı ile birlikte). Kanıt: firebase/test/rules/repository_payloads.test.js 'profil tamamlanmadan … reddedilir'",
       "resolveIn": [
         "T-14"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-58",
+      "declaredIn": "T-13",
+      "text": "AppConstants.appStoreId yer tutucu (DLG-26 'Güncelle' → App Store sayfası): App Store Connect kaydı açılınca gerçek kimlik yazılır; androidApplicationId yayın paket adıyla doğrulanır → T-46",
+      "resolveIn": [
+        "T-46"
       ],
       "status": "open"
     }
@@ -1078,6 +1096,11 @@
       "date": "2026-10-09",
       "task": "T-01",
       "text": "K-58 text-wrap:pretty Flutter karşılığı yok; kabul"
+    },
+    {
+      "date": "2026-10-11",
+      "task": "T-13",
+      "text": "K-59 .hscroll kısayol dolgusu .py8/.pb16 değiştiricilerini ezer (css:102, 105) — AUT-06 çip şeridi 3 px; diğer şeritler kendi task'ında referans görüntüden ölçülür"
     }
   ]
 }

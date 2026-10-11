@@ -41,7 +41,7 @@ class SpecDialog extends StatelessWidget {
         GuButton(
           key: FeedbackKeys.of(id.designId, spec.primaryAction),
           label: spec.primary(l10n),
-          variant: spec.destructive
+          variant: spec.isPrimaryDanger
               ? GuButtonVariant.danger
               : GuButtonVariant.primary,
           onPressed: () => Navigator.of(context).pop(true),
