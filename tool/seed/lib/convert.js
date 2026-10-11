@@ -8,7 +8,7 @@
 // Zamanlar JS `Date` olarak döner (yazıcı bunları Firestore `timestampValue`'ya çevirir).
 const { trLower } = require('./tr_lower');
 
-/** Askıdaki kullanıcılara yazılan neden (PLAN §9.12). */
+/** Askıdaki kullanıcıların `private/account` belgesine yazılan neden (PLAN §9.12, CD-133). */
 const SEED_SUSPEND_REASON = 'Topluluk kurallarının ihlali.';
 
 /** Danışman adından ayrılan ünvanlar; sırayla denenir. */
@@ -125,12 +125,17 @@ function convert(raw, { now, randomHex }) {
       interests: orNull(user.interests),
       bio: orNull(user.bio),
       status: user.status,
-      suspendReason: user.status === 'suspended' ? SEED_SUSPEND_REASON : null,
       staff: orNull(user.staff),
       profileComplete: orNull(user.profileComplete),
       ...base(createdAt),
     };
-    accountDocs[uid] = { ...emailDoc(user, createdAt), fcmTokens: [], lastLoginAt: null };
+    // Askı gerekçesi herkese açık `users` belgesine değil buraya yazılır (CD-133).
+    accountDocs[uid] = {
+      ...emailDoc(user, createdAt),
+      fcmTokens: [],
+      lastLoginAt: null,
+      suspendReason: user.status === 'suspended' ? SEED_SUSPEND_REASON : null,
+    };
     for (const blocked of user.blocked) {
       blockDocs[`${uid}_${blocked}`] = { blockerId: uid, blockedId: blocked, ...base(now) };
     }

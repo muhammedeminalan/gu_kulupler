@@ -75,6 +75,22 @@ final class StubQuery implements CollectionReference<Json> {
   Query<Json> limit(int limit) => this;
 
   @override
+  Query<Json> where(
+    Object field, {
+    Object? isEqualTo,
+    Object? isNotEqualTo,
+    Object? isLessThan,
+    Object? isLessThanOrEqualTo,
+    Object? isGreaterThan,
+    Object? isGreaterThanOrEqualTo,
+    Object? arrayContains,
+    Iterable<Object?>? arrayContainsAny,
+    Iterable<Object?>? whereIn,
+    Iterable<Object?>? whereNotIn,
+    bool? isNull,
+  }) => this;
+
+  @override
   Query<Json> startAfterDocument(DocumentSnapshot<Object?> documentSnapshot) =>
       this;
 
@@ -180,6 +196,30 @@ final class StubFirestore implements FirebaseFirestore {
     transactionMaxAttempts = maxAttempts;
     return _outcome(error);
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Batch commit'i [error] ile biten, okumaları ve tekil yazımları [inner]
+/// veritabanına giden çift: "belge zaten var, Rules ikinci yazımı reddediyor"
+/// durumunu kurar (`fake_cloud_firestore` kural çalıştırmaz).
+final class FailingBatchFirestore implements FirebaseFirestore {
+  /// [inner] gerçek veriyi tutar; her `batch().commit()` [error] fırlatır.
+  FailingBatchFirestore(this.inner, {required this.error});
+
+  /// Okumaların gittiği veritabanı.
+  final FirebaseFirestore inner;
+
+  /// Batch commit'inin fırlattığı hata.
+  final Object error;
+
+  @override
+  CollectionReference<Json> collection(String collectionPath) =>
+      inner.collection(collectionPath);
+
+  @override
+  WriteBatch batch() => StubWriteBatch(error: error);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

@@ -110,6 +110,12 @@ abstract final class ProjectDependency {
     final storageService =
         overrides.storageService ??
         FirebaseStorageService(AppEnvironment.storage);
+    // Repository'ler (T-12): servislerin üstünde alan kuralları. Giriş kilidi
+    // ve yeniden gönderme beklemesi bu tek örnekte (bellekte) yaşar.
+    final appClock = overrides.appClock ?? const SystemAppClock();
+    final authRepository = FirebaseAuthRepository(authService, appClock);
+    final userRepository = FirebaseUserRepository(firestoreService);
+    final settingsRepository = FirebaseSettingsRepository(firestoreService);
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -120,12 +126,14 @@ abstract final class ProjectDependency {
       // Çökme raporlama ilk kayıttır: sonraki adımların günlüğü ona düşer.
       ..registerSingleton<CrashService>(crashService)
       ..registerSingleton<RemoteConfigService>(remoteConfigService)
-      ..registerSingleton<AppClock>(
-        overrides.appClock ?? const SystemAppClock(),
-      )
+      ..registerSingleton<AppClock>(appClock)
       ..registerSingleton<AuthService>(authService)
       ..registerSingleton<FirestoreService>(firestoreService)
       ..registerSingleton<StorageService>(storageService)
+      // T-12 · kimlik ve profil repository'leri
+      ..registerSingleton<AuthRepository>(authRepository)
+      ..registerSingleton<UserRepository>(userRepository)
+      ..registerSingleton<SettingsRepository>(settingsRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

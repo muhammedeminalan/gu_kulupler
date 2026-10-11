@@ -1,7 +1,8 @@
-// T-11 · SessionViewModel: oturum akışından durum çözümü (unknown →
-// signedOut / unverified / active / suspended), claim, tanıtım bayrağı,
-// oturum sona erdi, hesap değişimi ve yarış koruması (PLAN §12.2;
-// architecture §6; CD-52).
+// T-11 / T-12 · SessionViewModel: oturum akışından ve `users/{uid}`
+// belgesinden durum çözümü (unknown → signedOut / unverified /
+// profileIncomplete / active / suspended; silinmiş hesap → signedOut), claim,
+// kullanıcı belgesi yenileme, tanıtım bayrağı, oturum sona erdi, hesap
+// değişimi ve yarış koruması (PLAN §12.2; architecture §6; CD-52, CD-133).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -17,25 +18,29 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
-import '../../fakes/fake_auth_service.dart';
+import '../../fakes/fake_auth_repository.dart';
+import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
 import '../../helpers/test_container.dart';
 
 const _email = 'mehmet@ogr.gumushane.edu.tr';
 const _password = 'Parola123';
+const _reason = 'Topluluk kurallarının ihlali.';
 
 AuthUserInfo _user({String uid = 'u1', bool verified = true}) =>
     AuthUserInfo(uid: uid, email: _email, emailVerified: verified);
 
 void main() {
-  late FakeAuthService auth;
+  late FakeAuthRepository auth;
+  late FakeUserRepository users;
   late FakeAppPreferencesStore store;
 
   setUp(() async {
     await GetIt.I.reset();
     registerDefaultFakes();
     addTearDown(GetIt.I.reset);
-    auth = GetIt.I<AuthService>() as FakeAuthService;
+    auth = GetIt.I<AuthRepository>() as FakeAuthRepository;
+    users = GetIt.I<UserRepository>() as FakeUserRepository;
     store = GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore;
     final original = debugPrint;
     debugPrint = (message, {wrapWidth}) {};
@@ -49,13 +54,20 @@ void main() {
     return container;
   }
 
+  /// Doğrulanmış, profili tamam `u1` oturumuyla çözülmüş kapsayıcı.
+  Future<ProviderContainer> resolvedActive() {
+    users.putActive('u1');
+    auth.currentUser = _user();
+    return resolved();
+  }
+
   SessionState stateOf(ProviderContainer container) =>
       container.read(sessionViewModelProvider);
 
   SessionViewModel notifierOf(ProviderContainer container) =>
       container.read(sessionViewModelProvider.notifier);
 
-  group('T-11 · SessionViewModel · ilk çözüm', () {
+  group('T-12 · SessionViewModel · ilk çözüm', () {
     test('ilk state eşzamanlıdır: unknown + depodaki tanıtım bayrağı', () {
       store.values[AppPreferenceKeys.onboardingSeen] = true;
       final container = createContainer();
@@ -65,53 +77,55 @@ void main() {
       );
     });
 
-    test('oturum yok → signedOut', () async {
-      final container = await resolved();
-      expect(
-        stateOf(container),
-        const SessionState(status: AuthStatus.signedOut),
-      );
-      expect(auth.callsTo('idTokenClaims'), isEmpty);
-    });
+    test(
+      'oturum yok → signedOut (claim ve kullanıcı belgesi okunmaz)',
+      () async {
+        final container = await resolved();
+        expect(
+          stateOf(container),
+          const SessionState(status: AuthStatus.signedOut),
+        );
+        expect(auth.callsTo('isSuperAdmin'), isEmpty);
+        expect(users.calls, isEmpty);
+      },
+    );
 
-    test('e-posta doğrulanmamış → unverified (claim okunmaz)', () async {
+    test('e-posta doğrulanmamış → unverified (claim ve kullanıcı belgesi '
+        'okunmaz)', () async {
+      users.putActive('u1');
       auth.currentUser = _user(verified: false);
       final container = await resolved();
       expect(
         stateOf(container),
         const SessionState(status: AuthStatus.unverified, uid: 'u1'),
       );
-      expect(auth.callsTo('idTokenClaims'), isEmpty);
+      expect(auth.callsTo('isSuperAdmin'), isEmpty);
+      expect(users.calls, isEmpty);
     });
 
-    test('doğrulanmış → active; claim sunucudan zorlanmadan okunur', () async {
+    test('doğrulanmış + profili tamam → active ve kullanıcı belgesi; ilk '
+        'çözümde jeton sunucudan yenilenir (D-28)', () async {
+      final profile = users.putActive('u1');
       auth.currentUser = _user();
       final container = await resolved();
       expect(
         stateOf(container),
-        const SessionState(status: AuthStatus.active, uid: 'u1'),
+        SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
       );
-      expect(auth.callsTo('idTokenClaims').single.args, [false]);
+      expect(auth.callsTo('isSuperAdmin').single.args, [true]);
+      expect(users.callsTo('getUser').single.args, ['u1']);
     });
 
-    test('`superadmin: true` claim → isSuperAdmin', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: true};
-      final container = await resolved();
+    test('süper admin claim’i → isSuperAdmin', () async {
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
       expect(stateOf(container).isSuperAdmin, isTrue);
       expect(stateOf(container).status, AuthStatus.active);
     });
 
-    test('claim yalnızca `true` (bool) ise sayılır', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: 'true'};
-      final container = await resolved();
-      expect(stateOf(container).isSuperAdmin, isFalse);
-    });
-
-    test('çözüm sürerken isResolving doğrudur, durum henüz değişmez', () async {
+    test('çözüm sürerken isResolving doğrudur; durum belge okunana kadar '
+        'değişmez (doğrulanmış oturum `active` görünüp geri dönmez)', () async {
+      final profile = users.putActive('u1');
       auth.currentUser = _user();
       final container = createContainer();
       final seen = <SessionState>[];
@@ -121,30 +135,215 @@ void main() {
         fireImmediately: true,
       );
       await pumpEventQueue();
-      expect(seen, const [
-        SessionState(),
-        SessionState(uid: 'u1', isResolving: true),
-        SessionState(status: AuthStatus.active, uid: 'u1'),
+      expect(seen, [
+        const SessionState(),
+        const SessionState(uid: 'u1', isResolving: true),
+        SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
       ]);
     });
   });
 
-  group('T-11 · SessionViewModel · durum geçişleri', () {
-    test('signedOut → unverified → active → signedOut', () async {
+  group('T-12 · SessionViewModel · kullanıcı belgesi', () {
+    test('belge yok → profileIncomplete (profil akışı oluşturur)', () async {
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.profileIncomplete, uid: 'u1'),
+      );
+    });
+
+    test('profileComplete değil → profileIncomplete + belge', () async {
+      await users.createProfile(
+        uid: 'u1',
+        email: _email,
+        name: 'Mehmet Kaya',
+        nameLower: 'mehmet kaya',
+        avatarSeed: 'u1',
+      );
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(stateOf(container).status, AuthStatus.profileIncomplete);
+      expect(stateOf(container).user, users.users['u1']);
+      expect(stateOf(container).user!.profileComplete, isFalse);
+    });
+
+    test('status suspended → suspended + gerekçe (private/account, CD-133); '
+        'oturum kapatılmaz (W-03, T-13)', () async {
+      final profile = users
+          .putActive('u1')
+          .copyWith(
+            status: UserStatus.suspended,
+          );
+      users.users['u1'] = profile;
+      users.accounts['u1'] = users.accounts['u1']!.copyWith(
+        suspendReason: _reason,
+      );
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(
+        stateOf(container),
+        SessionState(
+          status: AuthStatus.suspended,
+          uid: 'u1',
+          user: profile,
+          suspendReason: _reason,
+        ),
+      );
+      expect(users.callsTo('getPrivateAccount').single.args, ['u1']);
+      expect(auth.callsTo('signOut'), isEmpty);
+    });
+
+    test('gerekçe okunamazsa askı gerekçesiz uygulanır', () async {
+      users.users['u1'] = users
+          .putActive('u1')
+          .copyWith(
+            status: UserStatus.suspended,
+          );
+      // `getUser` hatayı tüketmez (kapıda bekler); `getPrivateAccount` alır.
+      final gate = Completer<void>();
+      users.getUserGate = gate;
+      auth.currentUser = _user();
+      final container = await resolved();
+      users.failNext(FirestoreError.permissionDenied);
+      gate.complete();
+      await pumpEventQueue();
+      expect(users.callsTo('getPrivateAccount'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.suspended);
+      expect(stateOf(container).suspendReason, isNull);
+      expect(stateOf(container).isError, isFalse);
+    });
+
+    test('yeniden etkinleştirilen hesapta gerekçe temizlenir', () async {
+      final profile = users.putActive('u1');
+      users.users['u1'] = profile.copyWith(status: UserStatus.suspended);
+      users.accounts['u1'] = users.accounts['u1']!.copyWith(
+        suspendReason: _reason,
+      );
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(stateOf(container).suspendReason, _reason);
+
+      users.users['u1'] = profile;
+      await notifierOf(container).resolve();
+      expect(
+        stateOf(container),
+        SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
+      );
+    });
+
+    for (final (title, status, isDeleted) in [
+      ('status deleted', UserStatus.deleted, false),
+      ('isDeleted', UserStatus.active, true),
+    ]) {
+      test(
+        'silinmiş kullanıcı ($title) → oturum kapatılır, signedOut',
+        () async {
+          users.users['u1'] = users
+              .putActive('u1')
+              .copyWith(status: status, isDeleted: isDeleted);
+          auth
+            ..isSuperAdminResult = true
+            ..currentUser = _user();
+          final container = await resolved();
+          expect(auth.callsTo('signOut'), hasLength(1));
+          expect(auth.currentUser, isNull);
+          expect(
+            stateOf(container),
+            const SessionState(status: AuthStatus.signedOut),
+          );
+        },
+      );
+    }
+
+    test('silinmiş kullanıcının oturumu kapatılamazsa hesap uygulamada '
+        'kalmaz: unknown + isError (açık oturum yenilenirken de)', () async {
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
+      users.users['u1'] = users.users['u1']!.copyWith(
+        status: UserStatus.deleted,
+        isDeleted: true,
+      );
+      auth.failNext(AuthError.network);
+
+      await notifierOf(container).refreshUser();
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(
+        stateOf(container),
+        const SessionState(uid: 'u1', isError: true),
+      );
+    });
+
+    test('belge okunamazsa isError, durum değişmez; resolve() ile '
+        'toparlanır', () async {
+      final profile = users.putActive('u1');
+      users.failNext(FirestoreError.unavailable);
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(
+        stateOf(container),
+        const SessionState(uid: 'u1', isError: true),
+      );
+
+      await notifierOf(container).resolve();
+      expect(
+        stateOf(container),
+        SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
+      );
+    });
+
+    test('belge okunurken oturum düşmüşse (unauthenticated) → '
+        'sessionExpired + kök kapı (DLG-27)', () async {
+      users
+        ..putActive('u1')
+        ..failNext(FirestoreError.unauthenticated);
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(stateOf(container).sessionExpired, isTrue);
+      expect(stateOf(container).isResolving, isFalse);
+      expect(stateOf(container).isError, isFalse);
+      expect(
+        container.read(appGateViewModelProvider).isSessionExpired,
+        isTrue,
+      );
+    });
+  });
+
+  group('T-12 · SessionViewModel · durum geçişleri', () {
+    test('signedOut → unverified → profileIncomplete → active → '
+        'signedOut', () async {
       final container = await resolved();
       expect(stateOf(container).status, AuthStatus.signedOut);
 
+      // AUT-02: kayıt → doğrulanmamış oturum.
       await auth.register(email: _email, password: _password);
       await pumpEventQueue();
+      final uid = auth.service.uid;
       expect(stateOf(container).status, AuthStatus.unverified);
-      expect(stateOf(container).uid, auth.uid);
+      expect(stateOf(container).uid, uid);
 
-      // Kullanıcı bağlantıya tıkladı; "Doğruladım" → reload + resolve.
-      auth.emailVerified = true;
-      await auth.reload();
-      await notifierOf(container).resolve();
+      // AUT-03 "Doğruladım": reload + refreshUser; profil belgesi henüz yok.
+      auth.service.emailVerified = true;
+      await auth.reloadUser();
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).status, AuthStatus.profileIncomplete);
+      expect(stateOf(container).user, isNull);
+
+      // AUT-05: profil oluşturulur ve tamamlanır.
+      await users.createProfile(
+        uid: uid,
+        email: _email,
+        name: 'Mehmet Kaya',
+        nameLower: 'mehmet kaya',
+        avatarSeed: uid,
+      );
+      await users.updateProfile(
+        uid,
+        const UserProfilePatch(interests: ['i01'], profileComplete: true),
+      );
+      await notifierOf(container).refreshUser();
       expect(stateOf(container).status, AuthStatus.active);
-      expect(stateOf(container).uid, auth.uid);
+      expect(stateOf(container).user, users.users[uid]);
 
       expect(await notifierOf(container).signOut(), isTrue);
       await pumpEventQueue();
@@ -155,9 +354,10 @@ void main() {
       expect(auth.callsTo('signOut'), hasLength(1));
     });
 
-    test('giriş (doğrulanmış) → active', () async {
+    test('giriş (doğrulanmış, profili tamam) → active', () async {
       final container = await resolved();
-      auth.emailVerified = true;
+      users.putActive(auth.service.uid);
+      auth.service.emailVerified = true;
       await auth.signIn(email: _email, password: _password);
       await pumpEventQueue();
       expect(stateOf(container).status, AuthStatus.active);
@@ -165,15 +365,14 @@ void main() {
 
     test('oturum dışarıdan düşerse signedOut olur ve kullanıcı alanları '
         'temizlenir', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: true};
-      final container = await resolved();
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
       expect(stateOf(container).isSuperAdmin, isTrue);
+      expect(stateOf(container).user, isNotNull);
 
       auth
         ..currentUser = null
-        ..authStateController.add(null);
+        ..watchAuthStateController.add(null);
       await pumpEventQueue();
       expect(
         stateOf(container),
@@ -181,18 +380,17 @@ void main() {
       );
     });
 
-    test('başka hesaba geçişte önceki hesabın claim’i taşınmaz', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: true};
-      final container = await resolved();
+    test('başka hesaba geçişte önceki hesabın claim’i ve belgesi '
+        'taşınmaz', () async {
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
       expect(stateOf(container).isSuperAdmin, isTrue);
 
       final other = _user(uid: 'u2', verified: false);
       auth
         ..currentUser = other
-        ..claims = {}
-        ..authStateController.add(other);
+        ..isSuperAdminResult = false
+        ..watchAuthStateController.add(other);
       await pumpEventQueue();
       expect(
         stateOf(container),
@@ -200,15 +398,39 @@ void main() {
       );
     });
 
-    test('yarış: eski çözümün sonucu yenisini ezmez', () async {
+    test('yarış: art arda oturum olayında eski çözümün sonucu yenisini '
+        'ezmez', () async {
       final container = await resolved();
+      users.putActive('u1');
       final user = _user();
       auth
         ..currentUser = user
-        ..claims = {RoleCodes.superadmin: true}
+        ..isSuperAdminResult = true
         // Giriş olayının çözümü claim beklerken oturum kapanır.
-        ..authStateController.add(user)
-        ..authStateController.add(null);
+        ..watchAuthStateController.add(user)
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+    });
+
+    test('yarış: kullanıcı belgesi beklenirken oturum kapanırsa geç gelen '
+        'belge oturumu `active` yapmaz', () async {
+      final gate = Completer<void>();
+      users
+        ..putActive('u1')
+        ..getUserGate = gate;
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(stateOf(container).isResolving, isTrue);
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      gate.complete();
       await pumpEventQueue();
       expect(
         stateOf(container),
@@ -217,8 +439,7 @@ void main() {
     });
 
     test('signOut başarısızsa `false` döner ve oturum açık kalır', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       auth.failNext(AuthError.network);
       expect(await notifierOf(container).signOut(), isFalse);
       await pumpEventQueue();
@@ -229,9 +450,10 @@ void main() {
     test('yarış: claim beklenirken hesap devre dışı kalırsa geç gelen çözüm '
         'askıyı `active` ile ezmez', () async {
       final claimsGate = Completer<void>();
+      users.putActive('u1');
       auth
         ..currentUser = _user()
-        ..claimsGate = claimsGate;
+        ..superAdminGate = claimsGate;
       final container = await resolved();
       expect(stateOf(container).isResolving, isTrue);
 
@@ -246,13 +468,15 @@ void main() {
         stateOf(container),
         const SessionState(status: AuthStatus.suspended, uid: 'u1'),
       );
-      expect(auth.callsTo('idTokenClaims'), hasLength(1));
+      expect(auth.callsTo('isSuperAdmin'), hasLength(1));
+      expect(users.callsTo('getUser'), isEmpty);
     });
   });
 
-  group('T-11 · SessionViewModel · çözüm hataları', () {
+  group('T-12 · SessionViewModel · claim okuma hataları', () {
     test('bilinmeyen hata → isError, durum değişmez; resolve() ile '
         'toparlanır', () async {
+      final profile = users.putActive('u1');
       auth
         ..currentUser = _user()
         ..failNext(AuthError.unknown);
@@ -261,31 +485,58 @@ void main() {
         stateOf(container),
         const SessionState(uid: 'u1', isError: true),
       );
+      expect(users.callsTo('getUser'), isEmpty);
 
       await notifierOf(container).resolve();
       expect(
         stateOf(container),
-        const SessionState(status: AuthStatus.active, uid: 'u1'),
+        SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
       );
     });
 
-    test(
-      'ağ hatası kullanıcıyı kilitlemez: claim olmadan active (Q-12)',
-      () async {
-        auth
-          ..currentUser = _user()
-          ..claims = {RoleCodes.superadmin: true}
-          ..failNext(AuthError.network);
-        final container = await resolved();
-        expect(
-          stateOf(container),
-          const SessionState(status: AuthStatus.active, uid: 'u1'),
-        );
-      },
-    );
+    test('jeton yenilenemezse (ağ) önbellekteki jetondan okunur; sonraki '
+        'çözüm yenilemeyi yeniden dener', () async {
+      auth
+        ..isSuperAdminResult = true
+        ..failNext(AuthError.network);
+      final container = await resolvedActive();
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(stateOf(container).isSuperAdmin, isTrue);
+      expect(auth.callsTo('isSuperAdmin').map((call) => call.args), [
+        [true],
+        [false],
+      ]);
+
+      await notifierOf(container).resolve();
+      expect(auth.callsTo('isSuperAdmin').last.args, [true]);
+    });
+
+    test('ağ hiç yoksa kullanıcı kilitlenmez: claim olmadan çözülür '
+        '(Q-12)', () async {
+      auth
+        ..isSuperAdminResult = true
+        // İlki repository, ikincisi servis düzeyinde: iki okuma da düşer.
+        ..failNext(AuthError.network)
+        ..service.failNext(AuthError.network);
+      final container = await resolvedActive();
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(stateOf(container).isSuperAdmin, isFalse);
+      expect(stateOf(container).isError, isFalse);
+    });
+
+    test('girişte bir kez: aynı oturumun sonraki çözümü jetonu '
+        'yenilemez', () async {
+      final container = await resolvedActive();
+      await notifierOf(container).resolve();
+      expect(auth.callsTo('isSuperAdmin').map((call) => call.args), [
+        [true],
+        [false],
+      ]);
+    });
 
     test('claim okunurken oturum sona ermişse → sessionExpired + kök kapı '
         '(DLG-27)', () async {
+      users.putActive('u1');
       auth
         ..currentUser = _user()
         ..failNext(AuthError.sessionExpired);
@@ -300,6 +551,7 @@ void main() {
     });
 
     test('claim okunurken hesap devre dışıysa → suspended', () async {
+      users.putActive('u1');
       auth
         ..currentUser = _user()
         ..failNext(AuthError.userDisabled);
@@ -310,10 +562,55 @@ void main() {
 
     test('oturum akışı hata verirse isError', () async {
       final container = await resolved();
-      auth.authStateController.addError(StateError('akış'));
+      auth.watchAuthStateController.addError(StateError('akış'));
       await pumpEventQueue();
       expect(stateOf(container).isError, isTrue);
       expect(stateOf(container).status, AuthStatus.signedOut);
+    });
+  });
+
+  group('T-12 · SessionViewModel · refreshUser', () {
+    test('belgeyi yeniden okur; claim yeniden okunmaz', () async {
+      final container = await resolvedActive();
+      await users.updateProfile('u1', const UserProfilePatch(bio: 'Merhaba.'));
+
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).user!.bio, 'Merhaba.');
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(auth.callsTo('isSuperAdmin'), hasLength(1));
+      expect(users.callsTo('getUser'), hasLength(2));
+    });
+
+    test('okunamazsa çözülmüş oturum korunur (isError yazılmaz)', () async {
+      final container = await resolvedActive();
+      final before = stateOf(container);
+      users.failNext(FirestoreError.unavailable);
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container), before);
+    });
+
+    test('yenilemede hesap askıya alınmışsa → suspended', () async {
+      final container = await resolvedActive();
+      users.users['u1'] = users.users['u1']!.copyWith(
+        status: UserStatus.suspended,
+      );
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).status, AuthStatus.suspended);
+    });
+
+    test('oturum yokken belge okunmaz', () async {
+      final container = await resolved();
+      await notifierOf(container).refreshUser();
+      expect(users.calls, isEmpty);
+      expect(stateOf(container).status, AuthStatus.signedOut);
+    });
+
+    test('"oturum sona erdi" bayrağını indirmez (yalnızca yeni çözülen '
+        'oturum indirir)', () async {
+      final container = await resolvedActive();
+      notifierOf(container).onTokenExpired();
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).sessionExpired, isTrue);
     });
   });
 
@@ -321,8 +618,7 @@ void main() {
     test(
       'sessionExpired → bayrak + kök kapı; ikinci olay tekrar etmez',
       () async {
-        auth.currentUser = _user();
-        final container = await resolved();
+        final container = await resolvedActive();
         var gateChanges = 0;
         container.listen(
           appGateViewModelProvider.select((gate) => gate.isSessionExpired),
@@ -345,8 +641,7 @@ void main() {
     );
 
     test('userDisabled → suspended', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       auth.tokenErrorController.add(AuthError.userDisabled);
       await pumpEventQueue();
       expect(stateOf(container).status, AuthStatus.suspended);
@@ -354,8 +649,7 @@ void main() {
     });
 
     test('oturumu geçersiz kılmayan hata durumu değiştirmez', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       final before = stateOf(container);
       auth.tokenErrorController.add(AuthError.network);
       await pumpEventQueue();
@@ -363,20 +657,20 @@ void main() {
     });
 
     test('yeni oturum çözülünce sessionExpired temizlenir', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       notifierOf(container).onTokenExpired();
       expect(stateOf(container).sessionExpired, isTrue);
 
       // SDK oturumu düşürür: bayrak girişe kadar kalır.
       auth
         ..currentUser = null
-        ..authStateController.add(null);
+        ..watchAuthStateController.add(null);
       await pumpEventQueue();
       expect(stateOf(container).status, AuthStatus.signedOut);
       expect(stateOf(container).sessionExpired, isTrue);
 
-      auth.emailVerified = true;
+      users.putActive(auth.service.uid);
+      auth.service.emailVerified = true;
       await auth.signIn(email: _email, password: _password);
       await pumpEventQueue();
       expect(stateOf(container).status, AuthStatus.active);
@@ -384,8 +678,7 @@ void main() {
     });
 
     test('signOut bayrağı temizler', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       notifierOf(container).onTokenExpired();
       await notifierOf(container).signOut();
       await pumpEventQueue();
@@ -395,8 +688,7 @@ void main() {
 
     test('signOut başarısızsa bayrak ve kök kapı açık kalır (DLG-27 yeniden '
         'gösterilebilir)', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       notifierOf(container).onTokenExpired();
       auth.failNext(AuthError.network);
       expect(await notifierOf(container).signOut(), isFalse);
@@ -412,16 +704,15 @@ void main() {
 
   group('T-11 · SessionViewModel · claim yenileme', () {
     test('refreshClaims jetonu zorlayarak okur ve değeri günceller', () async {
-      auth.currentUser = _user();
-      final container = await resolved();
+      final container = await resolvedActive();
       expect(stateOf(container).isSuperAdmin, isFalse);
 
-      auth.claims = {RoleCodes.superadmin: true};
+      auth.isSuperAdminResult = true;
       await notifierOf(container).refreshClaims();
       expect(stateOf(container).isSuperAdmin, isTrue);
-      expect(auth.callsTo('idTokenClaims').last.args, [true]);
+      expect(auth.callsTo('isSuperAdmin').last.args, [true]);
 
-      auth.claims = {};
+      auth.isSuperAdminResult = false;
       await notifierOf(container).refreshClaims();
       expect(stateOf(container).isSuperAdmin, isFalse);
     });
@@ -429,14 +720,12 @@ void main() {
     test('oturum yokken çağrı yapılmaz', () async {
       final container = await resolved();
       await notifierOf(container).refreshClaims();
-      expect(auth.callsTo('idTokenClaims'), isEmpty);
+      expect(auth.callsTo('isSuperAdmin'), isEmpty);
     });
 
     test('okunamazsa mevcut değer korunur', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: true};
-      final container = await resolved();
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
       auth.failNext(AuthError.network);
       await notifierOf(container).refreshClaims();
       expect(stateOf(container).isSuperAdmin, isTrue);
@@ -484,10 +773,8 @@ void main() {
 
   group('T-11 · SessionViewModel · rol kısayolları ve ömür', () {
     test('roleIn / accessTo / isBlocked state’e delege eder', () async {
-      auth
-        ..currentUser = _user()
-        ..claims = {RoleCodes.superadmin: true};
-      final container = await resolved();
+      auth.isSuperAdminResult = true;
+      final container = await resolvedActive();
       final notifier = notifierOf(container);
       expect(notifier.roleIn('c01'), isNull);
       expect(notifier.accessTo('c01'), ClubAccess.superAdmin);
@@ -497,12 +784,12 @@ void main() {
     test('kapsayıcı kapanınca oturum ve jeton akışı bırakılır', () async {
       final container = ProviderContainer()..read(sessionViewModelProvider);
       await pumpEventQueue();
-      expect(auth.authStateController.hasListener, isTrue);
+      expect(auth.watchAuthStateController.hasListener, isTrue);
       expect(auth.tokenErrorController.hasListener, isTrue);
 
       container.dispose();
       await pumpEventQueue();
-      expect(auth.authStateController.hasListener, isFalse);
+      expect(auth.watchAuthStateController.hasListener, isFalse);
       expect(auth.tokenErrorController.hasListener, isFalse);
     });
   });

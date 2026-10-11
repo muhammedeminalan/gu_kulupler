@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-10T18:57:43.514Z",
+  "updated": "2026-10-11T20:29:43.034Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -251,11 +251,13 @@
       "notes": ""
     },
     "T-12": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-10T20:47:38.313Z",
+      "finishedAt": "2026-10-11T20:29:43.033Z",
+      "commits": [
+        "9e792a2"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-13": {
@@ -955,7 +957,10 @@
       "resolveIn": [
         "T-12"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-12",
+      "closedAt": "2026-10-11T19:54:44.360Z",
+      "closeNote": "T-12: RepositoryHelpers (packages/gu_data/lib/src/repositories/repository_helpers.dart) — rejectInvalidIds (boş, '/', '.', '..', __x__ → invalidArgument; ArgumentError sızmaz), rejectInvalidFields, parse/parseOrNull/parseAll (fromJson hatası → FirestoreError.parse). Auth/User/Settings repository'leri kullanıyor; sonraki repository'ler aynı yardımcıyı kullanır."
     },
     {
       "id": "W-55",
@@ -968,6 +973,25 @@
       "actions": [
         "DLG-26.update"
       ]
+    },
+    {
+      "id": "W-56",
+      "declaredIn": "T-12",
+      "text": "Kimlik akışı bağlama (T-12 Rules sözleşmesi, CD-133): (a) UserRepository.createProfile yalnızca e-postası DOĞRULANMIŞ oturumda geçer (rules-spec §3.1/§3.2/§3.12 C emailOk()) — PLAN §12.5 RegisterViewModel.submit kayıt anında createProfile çağıramaz (permission-denied); profil belgesi AUT-03 doğrulaması sonrasında oluşturulur: SessionState belge yokken profileIncomplete + user == null verir, AUT-05 akışı createProfile → updateProfile çağırır; kayıt formundaki ad doğrulamaya kadar taşınmalı (T-13 kararı: AppPreferencesStore ya da AUT-05'te yeniden sorma). (b) createProfile(email:) = AuthUserInfo.email (Rules token e-postasıyla birebir eşitlik arar; form metni değil). (c) AUT-03 'Doğruladım': authRepository.reloadUser() (jetonu yeniler) → sessionViewModel.refreshUser(). (d) UserRepository.touchLastLogin çağrı yeri PLAN'da yok — girişte bir kez (LoginViewModel başarı dalı) bağlanır ya da kullanılmayacaksa kayda geçirilir. Kanıt: firebase/test/rules/repository_payloads.test.js 'akış kısıtları'",
+      "resolveIn": [
+        "T-13",
+        "T-14"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-57",
+      "declaredIn": "T-12",
+      "text": "AUT-05 yazım sırası (T-12 Rules sözleşmesi; PLAN §9.6.1 interests satırı): users U (sahibi) birleşmiş belgede interests.size() >= 1 ister (staff hariç). createProfile interests: [] yazdığından, profil tamamlanmadan tek alanlı güncelleme (yalnızca avatarPath / avatarSeed) permission-denied alır — PLAN §12.5 SetupProfileViewModel.submit sırası (önce updateAvatar, sonra updateProfile) bu yüzden çalışmaz: interests içeren yama (ad, bölüm, sınıf, ilgi alanları, profileComplete) avatarPath yazımından ÖNCE ya da onunla AYNI yamada gitmeli. UserRepository.updateAvatar T-14'te yazılır (Storage users/ kuralı ile birlikte). Kanıt: firebase/test/rules/repository_payloads.test.js 'profil tamamlanmadan … reddedilir'",
+      "resolveIn": [
+        "T-14"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [

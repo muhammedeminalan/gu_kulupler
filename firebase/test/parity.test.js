@@ -8,6 +8,9 @@
 //  (c) RolePolicy tablosu ↔ expectations/role_policy.json ↔ expectations/roles.json bağlamları
 //  (a) Limits ↔ Rules sayıları: statik olarak tool/check_rules_parity.js RP01/RP02 (her kapı);
 //      davranış düzeyi karşılığı koleksiyon testlerindeki sınır vakalarıdır (T-12+).
+//  (g) StaticTables / enum değerleri ↔ Rules değer listeleri (T-12: users.interests, year, department,
+//      avatarPath dosya adı deseni, fcmTokens[].platform, settings.reminderTime) — Dart tablosu değişip Rules listesi eski kalırsa üretimde
+//      `permission-denied` olur; bu test o sapmayı yakalar.
 //
 // role_policy.json nasıl güncellenir: tek kaynak docs/domain-model.md §3 tablosudur. Tablo değişince
 // JSON elle güncellenir; bu test Dart `RolePolicy._holdersOf` ile, Dart tarafındaki
@@ -126,6 +129,69 @@ describe('parite (c) · RolePolicy ↔ expectations/role_policy.json ↔ roles.j
   // T-12+: koleksiyon beklentileri dolunca role_policy.json'dan türetilebilirlik doğrulanır
   // (viewInside ⇒ posts.get allow · comment ⇒ comments.create allow · manageEvents ⇒ events.create allow).
   test.todo('expectations/*.json üyelik vakaları role_policy.json ile tutarlı (T-19, T-22; nihai T-45)');
+});
+
+describe('parite (g) · StaticTables / enum değerleri ↔ Rules değer listeleri (T-12)', () => {
+  const readDart = (rel) => fs.readFileSync(path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', rel), 'utf8');
+  const quoted = (source) => [...source.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  /** Rules'ta `anchor` ifadesinden sonraki ilk `[ … ]` listesinin dizgi elemanları. */
+  const rulesList = (anchor) => {
+    const at = firestoreRules.indexOf(anchor);
+    if (at < 0) throw new Error(`firestore.rules: "${anchor}" bulunamadı`);
+    const open = firestoreRules.indexOf('[', at);
+    return quoted(firestoreRules.slice(open, firestoreRules.indexOf(']', open)));
+  };
+  /** Dart enum'unun tel değerleri: `ad('değer')` satırları. */
+  const enumValues = (rel) => [...readDart(rel).matchAll(/^\s+\w+\('([^']+)'\)[,;]/gm)].map((m) => m[1]);
+  const staticTables = readDart('constants/static_tables.dart');
+  const tableIds = (model) => [...staticTables.matchAll(new RegExp(`${model}\\(id: '([^']+)'`, 'g'))].map((m) => m[1]);
+
+  test('users.interests değer listesi = StaticTables.interests kimlikleri (16)', () => {
+    const ids = tableIds('InterestModel');
+    expect(ids).toHaveLength(16);
+    expect(rulesList('d.interests.hasOnly(')).toEqual(ids);
+  });
+
+  test('users.year değer listesi = YearLevel değerleri (8)', () => {
+    const values = enumValues('models/enums/year_level.dart');
+    expect(values).toHaveLength(8);
+    expect(rulesList('d.year in ')).toEqual(values);
+  });
+
+  test('users.department deseni StaticTables.departments kimliklerinin tamamını kabul eder (24)', () => {
+    const ids = tableIds('DepartmentModel');
+    expect(ids).toHaveLength(24);
+    const literal = /d\.department\.matches\('([^']*)'\)/.exec(firestoreRules);
+    expect(literal).not.toBeNull();
+    const full = new RegExp(`^(?:${literal[1]})$`);
+    for (const id of ids) expect([id, full.test(id)]).toEqual([id, true]);
+    for (const other of ['d1', 'd001', 'x01', 'D01', '']) expect([other, full.test(other)]).toEqual([other, false]);
+  });
+
+  test('users.avatarPath deseni = users/{uid}/ + StoragePaths.fileNamePattern (Rules yazımıyla)', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`d.avatarPath.matches('users/' + uid + '/${dart.toRulesLiteral(pattern[1])}')`);
+    // Rules `matches` tüm dizgiyi eşler: desen StoragePaths.newFileName çıktısını kabul eder, ekini etmez.
+    const full = new RegExp(`^(?:${pattern[1]})$`);
+    expect(full.test('20261008T201501Z_3f9a1c2b7d4e5f60.jpg')).toBe(true);
+    for (const other of ['x.jpg', '20261008T201501Z_3f9a1c2b7d4e5f60.gif', '20261008T201501Z_3f9a1c2b7d4e5f60.jpgx', 'a/20261008T201501Z_3f9a1c2b7d4e5f60.jpg']) {
+      expect([other, full.test(other)]).toEqual([other, false]);
+    }
+  });
+
+  test('account.fcmTokens[].platform değer listesi = Limits.platforms', () => {
+    const platforms = /static const Set<String> platforms = \{([^}]*)\}/.exec(readDart('constants/limits.dart'));
+    expect(platforms).not.toBeNull();
+    expect(rulesList('t.platform in ')).toEqual(quoted(platforms[1]));
+  });
+
+  test('settings.reminderTime değer listesi ⊂ ReminderOption ve yalnızca 1h, 1d (CD-34)', () => {
+    const values = enumValues('models/enums/reminder_option.dart');
+    const allowed = rulesList('d.reminderTime in ');
+    expect(allowed).toEqual(['1h', '1d']);
+    for (const value of allowed) expect(values).toContain(value);
+  });
 });
 
 describe('parite (a) · Limits ↔ Rules sayıları', () => {

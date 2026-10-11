@@ -161,3 +161,88 @@ final class UserSettingsModel extends Equatable {
     updatedAt,
   ];
 }
+
+/// `settings/{uid}` belgesinin genel tercih alanlarının yaması (PLAN §10.4
+/// `SettingsRepository.updateSettings`; rules-spec §3.12 U).
+///
+/// Yalnızca **verilen** alanlar yazılır ([toJson]). Kulübe özgü tercihler
+/// (`clubs`) bu yamada yoktur: `SettingsRepository.updateClubSettings` ile
+/// tek kulüp anahtarı güncellenir.
+final class UserSettingsPatch extends Equatable {
+  /// Verilen alanları taşıyan yama.
+  const UserSettingsPatch({
+    this.announcements,
+    this.eventReminders,
+    this.newEvents,
+    this.applicationResults,
+    this.management,
+    this.system,
+    this.reminderTime,
+    this.quiet,
+    this.quietFrom,
+    this.quietTo,
+  });
+
+  /// Duyuru bildirimleri açık mı?
+  final bool? announcements;
+
+  /// Etkinlik hatırlatıcıları açık mı?
+  final bool? eventReminders;
+
+  /// Yeni etkinlik bildirimleri açık mı?
+  final bool? newEvents;
+
+  /// Başvuru sonucu bildirimleri açık mı?
+  final bool? applicationResults;
+
+  /// Yönetim bildirimleri açık mı?
+  final bool? management;
+
+  /// Sistem bildirimleri açık mı?
+  final bool? system;
+
+  /// Varsayılan hatırlatma zamanı; yalnızca [ReminderOption.oneHour] ve
+  /// [ReminderOption.oneDay] (CD-34).
+  final ReminderOption? reminderTime;
+
+  /// Sessiz saatler açık mı?
+  final bool? quiet;
+
+  /// Sessiz saatlerin başlangıcı, `HH:mm`.
+  final String? quietFrom;
+
+  /// Sessiz saatlerin bitişi, `HH:mm`.
+  final String? quietTo;
+
+  /// Yama hiçbir alan taşımıyor mu?
+  bool get isEmpty => toJson().isEmpty;
+
+  /// Firestore `update` yükü: yalnızca verilen alanlar. `updatedAt` servis
+  /// tarafından eklenir.
+  Map<String, Object?> toJson() => {
+    FirestoreFields.announcements: ?announcements,
+    FirestoreFields.eventReminders: ?eventReminders,
+    FirestoreFields.newEvents: ?newEvents,
+    FirestoreFields.applicationResults: ?applicationResults,
+    FirestoreFields.management: ?management,
+    FirestoreFields.system: ?system,
+    FirestoreFields.reminderTime: ?reminderTime?.json,
+    FirestoreFields.quiet: ?quiet,
+    FirestoreFields.quietFrom: ?quietFrom,
+    FirestoreFields.quietTo: ?quietTo,
+  };
+
+  @override
+  List<Object?> get props => [
+    announcements,
+    eventReminders,
+    newEvents,
+    applicationResults,
+    management,
+    system,
+    reminderTime,
+    quiet,
+    quietFrom,
+    quietTo,
+  ];
+}

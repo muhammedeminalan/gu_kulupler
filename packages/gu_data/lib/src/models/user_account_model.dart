@@ -11,7 +11,9 @@ part 'user_account_model.g.dart';
 /// (PLAN §9.6.2, domain-model §2.2).
 ///
 /// E-posta yalnızca burada tutulur (D-29); belgeyi sahibi ve (ADM-05 e-posta
-/// araması için) süper admin okur. Belge kimliği sabittir
+/// araması için) süper admin okur. Askıya alma gerekçesi de buradadır
+/// (CD-133): `users/{uid}` doğrulanmış her kullanıcıya açık olduğundan süper
+/// adminin serbest metni orada tutulmaz. Belge kimliği sabittir
 /// (`FirestoreCollections.accountDoc`), bu yüzden modelde kimlik alanı yoktur.
 @JsonSerializable()
 final class UserAccountModel extends Equatable with BaseFields {
@@ -21,6 +23,7 @@ final class UserAccountModel extends Equatable with BaseFields {
     required this.emailLower,
     this.fcmTokens = const [],
     this.lastLoginAt,
+    this.suspendReason,
     this.createdAt,
     this.updatedAt,
     this.isDeleted = false,
@@ -54,6 +57,12 @@ final class UserAccountModel extends Equatable with BaseFields {
   @JsonKey(name: FirestoreFields.lastLoginAt)
   @TimestampConverter()
   final DateTime? lastLoginAt;
+
+  /// Askıya alma gerekçesi (1 – `Limits.adminReasonMax`); yalnızca
+  /// `users.status` `suspended` iken doludur. **Yalnızca süper admin yazar**
+  /// (askıya alma / etkinleştirme batch'i); sahibi okur ama değiştiremez.
+  @JsonKey(name: FirestoreFields.suspendReason)
+  final String? suspendReason;
 
   @override
   @JsonKey(name: FirestoreFields.createdAt)
@@ -95,12 +104,14 @@ final class UserAccountModel extends Equatable with BaseFields {
     String? emailLower,
     List<FcmTokenModel>? fcmTokens,
     DateTime? lastLoginAt,
+    String? suspendReason,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDeleted,
     DateTime? deletedAt,
     String? deletedBy,
     bool clearLastLoginAt = false,
+    bool clearSuspendReason = false,
     bool clearCreatedAt = false,
     bool clearUpdatedAt = false,
     bool clearDeletedAt = false,
@@ -110,6 +121,9 @@ final class UserAccountModel extends Equatable with BaseFields {
     emailLower: emailLower ?? this.emailLower,
     fcmTokens: fcmTokens ?? this.fcmTokens,
     lastLoginAt: clearLastLoginAt ? null : lastLoginAt ?? this.lastLoginAt,
+    suspendReason: clearSuspendReason
+        ? null
+        : suspendReason ?? this.suspendReason,
     createdAt: clearCreatedAt ? null : createdAt ?? this.createdAt,
     updatedAt: clearUpdatedAt ? null : updatedAt ?? this.updatedAt,
     isDeleted: isDeleted ?? this.isDeleted,
@@ -123,6 +137,7 @@ final class UserAccountModel extends Equatable with BaseFields {
     emailLower,
     fcmTokens,
     lastLoginAt,
+    suspendReason,
     createdAt,
     updatedAt,
     isDeleted,

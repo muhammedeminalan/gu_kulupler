@@ -10,6 +10,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_auth_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/test_router.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
@@ -22,6 +23,11 @@ final Key _retry = GuKey.action('SYS-02.retry');
 final Key _home = GuKey.action('SYS-02.home');
 
 FakeAuthService _auth() => GetIt.I<AuthService>() as FakeAuthService;
+
+/// `FakeSessionStates.uid` için tamamlanmış profil: doğrulanmış oturum
+/// `active` çözülür (T-12).
+void _seedProfile() => (GetIt.I<UserRepository>() as FakeUserRepository)
+    .putActive(FakeSessionStates.uid);
 
 void main() {
   group('SYS-02 · Hata', () {
@@ -105,6 +111,7 @@ void main() {
         tester,
         location: '/error?from=%2Fprofile',
       );
+      _seedProfile();
       _auth().currentUser = const AuthUserInfo(
         uid: FakeSessionStates.uid,
         email: 'mehmet@ogr.gumushane.edu.tr',
@@ -120,6 +127,7 @@ void main() {
 
     testWidgets('SYS-02.retry: from yoksa ana sayfa', (tester) async {
       final app = await TestRouter.pump(tester, location: '/error');
+      _seedProfile();
       _auth().currentUser = const AuthUserInfo(
         uid: FakeSessionStates.uid,
         email: 'mehmet@ogr.gumushane.edu.tr',

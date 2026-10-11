@@ -15,35 +15,41 @@ part 'session_view_model.g.dart';
 /// boyunca yaşar; router `refreshListenable`'ı, `AppRedirect`, kabuk ve
 /// ekranlar oturum ve rol bilgisini buradan okur.
 ///
-/// Oturum akışını dinler ve [SessionState.status]'u çözer:
+/// Oturum akışını (`AuthRepository.watchAuthState`, tek dinleyici) dinler ve
+/// [SessionState.status]'u kimlik + `users/{uid}` belgesinden çözer:
 ///
-/// | Kimlik durumu | `status` |
+/// | Kimlik / kullanıcı belgesi | `status` |
 /// |---|---|
 /// | henüz olay gelmedi | `unknown` |
 /// | oturum yok | `signedOut` |
 /// | e-posta doğrulanmamış | `unverified` |
-/// | doğrulanmış | `active` (+ `superadmin` claim'i) |
+/// | doğrulanmış; belge yok ya da profil eksik | `profileIncomplete` |
+/// | doğrulanmış; profil tamam | `active` (+ `superadmin` claim'i) |
+/// | `users.status == suspended` | `suspended` (+ gerekçe, CD-133) |
 /// | hesap devre dışı (`AuthError.userDisabled`) | `suspended` |
+/// | `users.status == deleted` / `isDeleted` | oturum kapanır → `signedOut` |
 ///
-/// T-11 kapsamı kimlik, claim ve tanıtım bayrağıdır. `users/{uid}` belgesi
-/// (`profileIncomplete`, `users.status == 'suspended'`), üyelikler ve
-/// engellenenler sonraki task'larda bağlanır (gövdedeki sahipli notlar); o
-/// zamana kadar doğrulanmış her oturum `active` çözülür.
+/// Çözüm tamamlanana kadar `status` önceki değerinde kalır
+/// ([SessionState.isResolving]): doğrulanmış oturum, belgesi okunmadan
+/// `active` görünmez. Üyelikler ve engellenenler T-15'te bağlanır (gövdedeki
+/// sahipli notlar).
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
     with ProjectDependencyMixin {
   /// Çözüm sırası: yavaş kalan eski bir çözüm yenisinin sonucunu ezmez.
   int _epoch = 0;
 
+  /// Kimlik jetonu bu oturumda sunucudan yenilenmiş kullanıcı (D-28: girişte
+  /// bir kez). Oturum kapanınca sıfırlanır.
+  String? _claimsRefreshedFor;
+
   @override
   SessionState build() {
-    // TODO(T-12): `authRepository.watchAuthState()` (oturum akışının tek
-    // dinleyicisi repository üzerinden).
-    final authSubscription = authService.authStateChanges().listen(
+    final authSubscription = authRepository.watchAuthState().listen(
       (user) => unawaited(_resolveFor(user)),
       onError: _onAuthStreamError,
     );
-    final tokenSubscription = authService.tokenErrors.listen(_onTokenError);
+    final tokenSubscription = authRepository.tokenErrors.listen(_onTokenError);
     ref
       ..onDispose(authSubscription.cancel)
       ..onDispose(tokenSubscription.cancel);
@@ -52,19 +58,55 @@ final class SessionViewModel extends _$SessionViewModel
 
   /// Oturumu güncel kimlik bilgisinden yeniden çözer (SYS-02 "Yeniden dene",
   /// AUT-03 "Doğruladım" sonrası).
-  Future<void> resolve() => _resolveFor(authService.currentUser);
+  Future<void> resolve() => _resolveFor(authRepository.currentUser);
+
+  /// `users/{uid}` belgesini yeniden okur ve durumu ona göre yeniden çözer
+  /// (AUT-05 bitişi, profil düzenleme sonrası): `profileIncomplete` ↔
+  /// `active`, askı, silinmiş hesap.
+  ///
+  /// Oturum henüz çözülmediyse, doğrulanmamışsa ya da bir çözüm sürüyorsa tam
+  /// çözüm çalışır ([resolve]). Çözülmüş oturumda belge okunamazsa mevcut
+  /// durum korunur (geçici bir okuma hatası oturumu düşürmez).
+  Future<void> refreshUser() async {
+    final user = authRepository.currentUser;
+    final isSettled =
+        state.status == AuthStatus.active ||
+        state.status == AuthStatus.profileIncomplete;
+    if (user == null ||
+        user.uid != state.uid ||
+        !isSettled ||
+        state.isResolving) {
+      return resolve();
+    }
+    final epoch = ++_epoch;
+    // TODO(T-15): `blockRepository.fetchActiveBlocks(uid)` →
+    // `blockedUserIds`.
+    final result = await userRepository.getUser(user.uid);
+    if (!_isCurrent(epoch)) return;
+    if (result case FirebaseFailure(
+      :final error,
+    ) when error != FirestoreError.unauthenticated) {
+      AppLogger.warn('Kullanıcı belgesi yenilenemedi: ${error.name}');
+      return;
+    }
+    await _applyUser(
+      result,
+      epoch,
+      isSuperAdmin: state.isSuperAdmin,
+      isFullResolve: false,
+    );
+  }
 
   /// `superadmin` claim'ini sunucudan yenileyerek okur. Oturum yoksa
   /// etkisizdir; okunamazsa mevcut değer korunur.
   Future<void> refreshClaims() async {
     if (state.uid == null) return;
     final epoch = _epoch;
-    // TODO(T-12): `authRepository.isSuperAdmin(forceRefresh: true)`.
-    final result = await authService.idTokenClaims(forceRefresh: true);
-    if (!ref.mounted || epoch != _epoch) return;
+    final result = await authRepository.isSuperAdmin(forceRefresh: true);
+    if (!_isCurrent(epoch)) return;
     switch (result) {
       case FirebaseSuccess(:final data):
-        state = state.copyWith(isSuperAdmin: _isSuper(data));
+        state = state.copyWith(isSuperAdmin: data);
       case FirebaseFailure(:final error):
         AppLogger.warn('Claim yenilenemedi: ${error.name}');
     }
@@ -97,9 +139,8 @@ final class SessionViewModel extends _$SessionViewModel
   /// döner: çağıran akışını sonuca göre sürdürür (DLG-27 kapısı açık kalır,
   /// `sessionExpired` inmez).
   Future<bool> signOut() async {
-    // TODO(T-12): `authRepository.signOut()`.
     // TODO(T-23): `localReminderService.cancelAll()`.
-    final result = await authService.signOut();
+    final result = await authRepository.signOut();
     switch (result) {
       case FirebaseSuccess():
         if (ref.mounted) state = state.copyWith(sessionExpired: false);
@@ -119,11 +160,14 @@ final class SessionViewModel extends _$SessionViewModel
     ref.read(appGateViewModelProvider.notifier).onSessionExpired();
   }
 
+  bool _isCurrent(int epoch) => ref.mounted && epoch == _epoch;
+
   Future<void> _resolveFor(AuthUserInfo? user) async {
     final epoch = ++_epoch;
     // Tanıtım bayrağı her çözümün başında depodan okunur (CD-52).
     final onboardingSeen = appPreferencesStore.onboardingSeen;
     if (user == null) {
+      _claimsRefreshedFor = null;
       state = _withoutUser(
         state,
       ).copyWith(status: AuthStatus.signedOut, onboardingSeen: onboardingSeen);
@@ -148,49 +192,160 @@ final class SessionViewModel extends _$SessionViewModel
       isResolving: true,
       isError: false,
     );
-    // TODO(T-12): `authRepository.isSuperAdmin()` (girişte bir kez
-    // `forceRefresh: true`, D-28).
-    final claims = await authService.idTokenClaims();
-    if (!ref.mounted || epoch != _epoch) return;
-    switch (claims) {
+    final isSuperAdmin = await _readSuperAdmin(user.uid, epoch);
+    if (isSuperAdmin == null) return;
+    final result = await userRepository.getUser(user.uid);
+    if (!_isCurrent(epoch)) return;
+    await _applyUser(
+      result,
+      epoch,
+      isSuperAdmin: isSuperAdmin,
+      isFullResolve: true,
+    );
+  }
+
+  /// [uid] oturumunun `superadmin` claim'i. Çözüm bittiyse `null`: sonuç
+  /// eskidi ya da hata state'e yazıldı (çağıran devam etmez).
+  ///
+  /// Oturumun ilk çözümünde jeton sunucudan yenilenir (D-28): yeni atanmış
+  /// claim ve doğrulama sonrası `email_verified` jetona işler (Rules ikisini
+  /// de jetondan okur). Ağ yoksa önbellekteki jetona düşülür; o da yoksa
+  /// oturum claim'siz çözülür — çevrimdışı açılış kullanıcıyı kilitlemez
+  /// (Q-12), yetkiyi Rules uygular.
+  Future<bool?> _readSuperAdmin(String uid, int epoch) async {
+    final refresh = _claimsRefreshedFor != uid;
+    var result = await authRepository.isSuperAdmin(forceRefresh: refresh);
+    if (!_isCurrent(epoch)) return null;
+    if (refresh) {
+      if (result.isSuccess) {
+        _claimsRefreshedFor = uid;
+      } else if (result.errorOrNull == AuthError.network) {
+        result = await authRepository.isSuperAdmin();
+        if (!_isCurrent(epoch)) return null;
+      }
+    }
+    switch (result) {
       case FirebaseSuccess(:final data):
-        _activate(isSuperAdmin: _isSuper(data));
+        return data;
       case FirebaseFailure(error: AuthError.sessionExpired):
         state = state.copyWith(isResolving: false);
         onTokenExpired();
+        return null;
       case FirebaseFailure(error: AuthError.userDisabled):
         _suspend();
+        return null;
       case FirebaseFailure(error: AuthError.network):
-        // Çevrimdışı açılış kullanıcıyı kilitlemez (Q-12: okuma önbellekten).
-        // Claim okunamadıysa mevcut değer korunur; yetkiyi Rules uygular.
         AppLogger.warn('Claim okunamadı (ağ); oturum claim olmadan çözüldü');
-        _activate(isSuperAdmin: state.isSuperAdmin);
+        return state.isSuperAdmin;
+      case FirebaseFailure(:final error, :final message):
+        AppLogger.warn('Oturum çözülemedi: ${error.name}', error: message);
+        state = state.copyWith(isResolving: false, isError: true);
+        return null;
+    }
+  }
+
+  /// `users/{uid}` okumasının [result] sonucunu duruma çevirir.
+  /// [isFullResolve] tam çözümde (`_resolveFor`) `true`'dur: yalnızca yeni
+  /// çözülen oturum "oturum sona erdi" bayrağını indirir.
+  Future<void> _applyUser(
+    FirestoreResult<UserModel?> result,
+    int epoch, {
+    required bool isSuperAdmin,
+    required bool isFullResolve,
+  }) async {
+    // Bayrak yalnızca tam çözümde iner; yenilemede olduğu gibi kalır.
+    final sessionExpired = isFullResolve ? false : null;
+    switch (result) {
+      case FirebaseSuccess(data: null):
+        // Belge henüz yok: profil akışı (AUT-05) oluşturur. Kayıt sırasında
+        // oluşturulamaz — Rules doğrulanmış e-posta ister (rules-spec §3.1 C).
+        _settle(
+          AuthStatus.profileIncomplete,
+          isSuperAdmin: isSuperAdmin,
+          sessionExpired: sessionExpired,
+        );
+      case FirebaseSuccess(data: final user?)
+          when user.isDeleted || user.status == UserStatus.deleted:
+        await _closeDeletedAccount(epoch);
+      case FirebaseSuccess(data: final user?)
+          when user.status == UserStatus.suspended:
+        await _suspendWithReason(user, epoch);
+      case FirebaseSuccess(data: final user?):
+        _settle(
+          user.profileComplete
+              ? AuthStatus.active
+              : AuthStatus.profileIncomplete,
+          isSuperAdmin: isSuperAdmin,
+          sessionExpired: sessionExpired,
+          user: user,
+        );
+      case FirebaseFailure(error: FirestoreError.unauthenticated):
+        state = state.copyWith(isResolving: false);
+        onTokenExpired();
       case FirebaseFailure(:final error, :final message):
         AppLogger.warn(
-          'Oturum çözülemedi: ${error.name}',
+          'Kullanıcı belgesi okunamadı: ${error.name}',
           error: message,
         );
         state = state.copyWith(isResolving: false, isError: true);
     }
   }
 
-  void _activate({required bool isSuperAdmin}) {
-    // TODO(T-12): `userRepository.getUser(uid)` → `user`; profil eksikse
-    // `profileIncomplete`, `users.status == 'suspended'` ise `suspended`
-    // (`refreshUser()` aynı task'ta eklenir).
+  void _settle(
+    AuthStatus status, {
+    required bool isSuperAdmin,
+    required bool? sessionExpired,
+    UserModel? user,
+  }) {
     // TODO(T-15): `membershipRepository.watchMyMemberships(uid)` canlı akışı
     // → `memberships`; `blockRepository.fetchActiveBlocks(uid)` →
     // `blockedUserIds`.
     state = state.copyWith(
-      status: AuthStatus.active,
+      status: status,
+      user: user,
+      clearUser: user == null,
+      clearSuspendReason: true,
       isSuperAdmin: isSuperAdmin,
       isResolving: false,
       isError: false,
-      sessionExpired: false,
+      sessionExpired: sessionExpired,
     );
   }
 
-  void _suspend() {
+  /// Hesabı silinmiş (anonimleştirilmiş) kullanıcının oturumunu kapatır;
+  /// state, oturum akışından gelen olayla `signedOut` olur.
+  ///
+  /// Oturum kapatılamazsa hesap uygulamada **kalmaz**: durum `unknown` +
+  /// hata olur (R1 → SYS-01 → SYS-02 "Yeniden dene" kapatmayı yeniden dener).
+  Future<void> _closeDeletedAccount(int epoch) async {
+    // TODO(T-29): `accountDeletionRepository.resumeCleanup(uid)` + TST-22.
+    final result = await authRepository.signOut();
+    if (result.isSuccess || !_isCurrent(epoch)) return;
+    AppLogger.warn(
+      'Silinmiş hesabın oturumu kapatılamadı: ${result.errorOrNull?.name}',
+    );
+    state = state.copyWith(
+      status: AuthStatus.unknown,
+      clearUser: true,
+      isSuperAdmin: false,
+      isResolving: false,
+      isError: true,
+    );
+  }
+
+  /// Askıdaki kullanıcının gerekçesini okuyup oturumu askıya alır. Gerekçe
+  /// yalnızca sahibine açık belgededir (CD-133) ve oturum kapandıktan sonra
+  /// okunamaz; okunamazsa askı gerekçesiz uygulanır.
+  Future<void> _suspendWithReason(UserModel user, int epoch) async {
+    final account = await userRepository.getPrivateAccount(user.uid);
+    if (!_isCurrent(epoch)) return;
+    if (account case FirebaseFailure(:final error)) {
+      AppLogger.warn('Askı gerekçesi okunamadı: ${error.name}');
+    }
+    _suspend(user: user, reason: account.dataOrNull?.suspendReason);
+  }
+
+  void _suspend({UserModel? user, String? reason}) {
     // Bekleyen çözümü geçersiz kılar: jeton hatası claim okuması sürerken
     // gelirse, önbellekteki jetonla başarı dönen eski çözüm askıyı `active`
     // ile ezmemelidir.
@@ -199,6 +354,8 @@ final class SessionViewModel extends _$SessionViewModel
     // kadar erişimi R6 keser (askıdaki kullanıcı `/login`'de tutulur).
     state = state.copyWith(
       status: AuthStatus.suspended,
+      user: user,
+      suspendReason: reason,
       isResolving: false,
       isError: false,
     );
@@ -233,13 +390,11 @@ final class SessionViewModel extends _$SessionViewModel
   static SessionState _withoutUser(SessionState base) => base.copyWith(
     clearUid: true,
     clearUser: true,
+    clearSuspendReason: true,
     isSuperAdmin: false,
     memberships: const <String, MembershipModel>{},
     blockedUserIds: const <String>{},
     isResolving: false,
     isError: false,
   );
-
-  static bool _isSuper(Map<String, Object?> claims) =>
-      claims[RoleCodes.superadmin] == true;
 }

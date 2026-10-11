@@ -28,8 +28,10 @@ const Map<String, Object> _actual = {
   'interestsMin': Limits.interestsMin,
   'interestsMax': Limits.interestsMax,
   'bioMax': Limits.bioMax,
+  'avatarSeedMax': Limits.avatarSeedMax,
   'adminReasonMax': Limits.adminReasonMax,
   'fcmTokensMax': Limits.fcmTokensMax,
+  'fcmTokenMax': Limits.fcmTokenMax,
   'platforms': Limits.platforms,
   'clubSummaryMax': Limits.clubSummaryMax,
   'clubAboutMax': Limits.clubAboutMax,
@@ -239,9 +241,9 @@ void main() {
   final planNames = [for (final limit in planLimits) limit.name];
 
   group('T-08 · Limits · PLAN §9.8 ad paritesi', () {
-    test('tablo okunur: 67 tekil sabit', () {
-      expect(planLimits, hasLength(67));
-      expect(planNames.toSet(), hasLength(67), reason: 'yinelenen ad');
+    test('tablo okunur: 69 tekil sabit', () {
+      expect(planLimits, hasLength(69));
+      expect(planNames.toSet(), hasLength(69), reason: 'yinelenen ad');
     });
 
     test('test değer haritası tablodaki adlarla birebir', () {
@@ -279,7 +281,7 @@ void main() {
           .where((line) => RegExp('^ {2}[A-Za-z_@]').hasMatch(line));
 
       expect(typeDeclarations, ['abstract final class Limits {']);
-      expect(memberLines, hasLength(67));
+      expect(memberLines, hasLength(69));
       expect(memberLines, everyElement(startsWith('  static ')));
     });
 

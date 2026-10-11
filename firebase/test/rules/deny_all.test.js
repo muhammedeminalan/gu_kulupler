@@ -24,8 +24,11 @@ const {
 const payloads = require('../helpers/payloads');
 const budget = require('../helpers/budget');
 
-/** Kuralları açılmış koleksiyonlar (`expectations` `collection` değeri). T-10: hiçbiri. */
-const OPENED = [];
+/**
+ * Kuralları açılmış koleksiyonlar (`expectations` `collection` değeri); matrisleri kendi
+ * `rules/<koleksiyon>.test.js` dosyasındadır. T-12: `users`, `users/private`, `settings`.
+ */
+const OPENED = ['users', 'users/private', 'settings'];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
 const VARIANT_OF = { create: 'genericCreate', update: 'genericUpdate' };
@@ -43,6 +46,14 @@ describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
   test('18 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1)', () => {
     expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
     expect(expectations.map((e) => e.match).sort()).toEqual(collectionMatches.map((m) => m.pattern).sort());
+  });
+
+  test('açılmış koleksiyonlar beklenti dosyalarında vardır ve vaka taşır; kapalı olanlar vakasızdır', () => {
+    const byCollection = new Map(expectations.map((e) => [e.collection, e]));
+    for (const name of OPENED) expect([name, byCollection.get(name)?.cases.length > 0]).toEqual([name, true]);
+    for (const e of expectations) {
+      if (!OPENED.includes(e.collection)) expect([e.collection, e.cases.length]).toEqual([e.collection, 0]);
+    }
   });
 
   test('son kural varsayılan rettir: match /{document=**}', () => {
@@ -119,14 +130,15 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: kendi kullanıcı
-  // belgesi, kulüp, kendi üyeliği. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir.
-  test.each(ALL_CONTEXTS)('%s · kendi belgeleri ve kulüp → deny', async (role) => {
+  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: kulüp, gönderi, kendi
+  // üyeliği. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap /
+  // ayar belgesi T-12'de açıldı: users.test.js, settings.test.js.)
+  test.each(ALL_CONTEXTS)('%s · kulüp, gönderi ve kendi üyeliği → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    const paths = [`users/${uid}`, `users/${uid}/private/account`, `settings/${uid}`, 'clubs/c01', 'posts/p01'];
+    const paths = ['clubs/c01', 'posts/p01'];
     if (membership) paths.push(`memberships/${membership.clubId}_${uid}`);
     for (const p of paths) await assertFails(getDoc(doc(db, p)));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);

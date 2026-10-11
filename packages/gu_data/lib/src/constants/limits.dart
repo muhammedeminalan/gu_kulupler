@@ -80,14 +80,24 @@ abstract final class Limits {
   /// Biyografi en çok uzunluğu (`users.bio`); Rules `// limit: bioMax`.
   static const int bioMax = 140;
 
-  /// Yönetsel gerekçe en çok uzunluğu (`users.suspendReason`,
-  /// `clubs.suspendReason`, `events.cancelReason`); Rules
+  /// Avatar tohumu en çok uzunluğu (`users.avatarSeed`; değer `uid` ya da
+  /// ondan türeyen kısa bir dizgidir); Rules `// limit: avatarSeedMax`.
+  /// `users/{uid}` doğrulanmış her kullanıcıya açık olduğundan üst sınırsız
+  /// alan başkalarının listelerini şişirir (CD-133).
+  static const int avatarSeedMax = 64;
+
+  /// Yönetsel gerekçe en çok uzunluğu (`account.suspendReason` — kullanıcı
+  /// askısı, CD-133; `clubs.suspendReason`, `events.cancelReason`); Rules
   /// `// limit: adminReasonMax` (CD-30).
   static const int adminReasonMax = 300;
 
   /// `account.fcmTokens` en çok eleman sayısı; Rules `// limit: fcmTokensMax`
   /// (Mod C'de liste hep boş).
   static const int fcmTokensMax = 10;
+
+  /// Tek bildirim belirtecinin en çok uzunluğu (`fcmTokens[].token`); Rules
+  /// `// limit: fcmTokenMax` (CD-133).
+  static const int fcmTokenMax = 4096;
 
   /// `FcmTokenModel.platform` için izinli değerler.
   static const Set<String> platforms = {'ios', 'android'};

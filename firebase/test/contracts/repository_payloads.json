@@ -1,0 +1,213 @@
+{
+  "_doc": "T-12 — repository ↔ Security Rules yük sözleşmesi. Her adım bir repository çağrısının Firestore'a gönderdiği GERÇEK yazımlardır (op, yol, yük). İki taraf aynı dosyayı okur: (1) Dart — packages/gu_data/test/repositories/rules_payload_contract_test.dart gerçek FirebaseUserRepository / FirebaseSettingsRepository'yi kayıt tutan bir SDK çiftine karşı koşar ve yakalanan yazımların bu dosyayla birebir aynı olduğunu doğrular; (2) jest — firebase/test/rules/repository_payloads.test.js aynı yazımları emülatörde kurallar AÇIKKEN hesabın sahibi olarak gönderir, hepsi geçmelidir. Repository yükü ya da Rules beyaz listesi tek başına değişirse iki testten biri kırılır. `@serverTimestamp` = FieldValue.serverTimestamp(). `steps` sıralı bir öyküdür (her adım öncekilerin bıraktığı belgeler üzerinde koşar); `standalone` adımları boş veritabanında koşar. Bağlam: roles.json `student` (uid + token e-postası).",
+  "role": "student",
+  "uid": "u_student",
+  "email": "student@ogr.gumushane.edu.tr",
+  "clubId": "c01",
+  "serverTimestamp": "@serverTimestamp",
+  "steps": [
+    {
+      "call": "UserRepository.createProfile",
+      "note": "tek batch, üç set (rules-spec §3.1 C, §3.2 C, §3.12 C)",
+      "writes": [
+        {
+          "op": "set",
+          "path": "users/u_student",
+          "data": {
+            "name": "Ayşe Işık",
+            "nameLower": "ayşe ışık",
+            "avatarSeed": "u_student",
+            "interests": [],
+            "bio": "",
+            "status": "active",
+            "staff": false,
+            "profileComplete": false,
+            "createdAt": "@serverTimestamp",
+            "updatedAt": "@serverTimestamp",
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          }
+        },
+        {
+          "op": "set",
+          "path": "users/u_student/private/account",
+          "data": {
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr",
+            "fcmTokens": [],
+            "createdAt": "@serverTimestamp",
+            "updatedAt": "@serverTimestamp",
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          }
+        },
+        {
+          "op": "set",
+          "path": "settings/u_student",
+          "data": {
+            "announcements": true,
+            "eventReminders": true,
+            "newEvents": true,
+            "applicationResults": true,
+            "management": true,
+            "system": true,
+            "reminderTime": "1h",
+            "quiet": false,
+            "quietFrom": "22:00",
+            "quietTo": "08:00",
+            "clubs": {},
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateProfile · AUT-05 bitişi",
+      "note": "PLAN §12.5 SetupProfileViewModel.submit: ad, bölüm, sınıf, ilgi alanları, profileComplete",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "name": "Ayşe Işık",
+            "nameLower": "ayşe ışık",
+            "department": "d02",
+            "year": "2",
+            "interests": ["i01", "i05"],
+            "profileComplete": true,
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateProfile · profil fotoğrafı",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "avatarSeed": "u_student-2",
+            "avatarPath": "users/u_student/20261008T201501Z_3f9a1c2b7d4e5f60.jpg",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateProfile · fotoğrafı kaldır (SHT-16)",
+      "note": "clearAvatarPath → açık null",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "avatarPath": null,
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateProfile · profil düzenleme (PRF-02)",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "name": "Ayşe Işık Demir",
+            "nameLower": "ayşe ışık demir",
+            "department": "d03",
+            "year": "master",
+            "interests": ["i02"],
+            "bio": "Merhaba.",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.touchLastLogin",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student/private/account",
+          "data": {
+            "lastLoginAt": "@serverTimestamp",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "SettingsRepository.updateSettings",
+      "note": "UserSettingsPatch'in on alanı",
+      "writes": [
+        {
+          "op": "update",
+          "path": "settings/u_student",
+          "data": {
+            "announcements": false,
+            "eventReminders": false,
+            "newEvents": false,
+            "applicationResults": false,
+            "management": false,
+            "system": false,
+            "reminderTime": "1d",
+            "quiet": true,
+            "quietFrom": "23:30",
+            "quietTo": "07:15",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "SettingsRepository.updateClubSettings",
+      "note": "alan yolu clubs.<clubId>",
+      "writes": [
+        {
+          "op": "update",
+          "path": "settings/u_student",
+          "data": {
+            "clubs.c01": {
+              "announcements": true,
+              "events": false,
+              "posts": true,
+              "muted": true
+            },
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    }
+  ],
+  "standalone": [
+    {
+      "call": "SettingsRepository.getSettings · belge yok",
+      "note": "varsayılanlar tek set ile yazılır (FirebaseSettingsRepository.defaultsPayload)",
+      "writes": [
+        {
+          "op": "set",
+          "path": "settings/u_student",
+          "data": {
+            "announcements": true,
+            "eventReminders": true,
+            "newEvents": true,
+            "applicationResults": true,
+            "management": true,
+            "system": true,
+            "reminderTime": "1h",
+            "quiet": false,
+            "quietFrom": "22:00",
+            "quietTo": "08:00",
+            "clubs": {},
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,11 @@ rules_version = '2';
 // T-10: VARSAYILAN RET iskeleti. Her koleksiyon ve alt koleksiyon için açık bir `match` bloğu vardır
 // (adlar packages/gu_data/lib/src/constants/firestore_collections.dart ile birebir —
 // firebase/test/rules/delete_denied.test.js karşılaştırır); bloklar sahibi task'ta açılır (blok
-// başlıklarındaki T-xx). O güne kadar hiçbir istemci hiçbir belgeyi okuyamaz ve yazamaz.
+// başlıklarındaki T-xx). O güne kadar hiçbir istemci o bloğun belgelerini okuyamaz ve yazamaz.
+// Açılan bloklar: T-12 → users (sahibi C/U), users/private/account (sahibi C/U), settings.
+//
+// Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
+// yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
 //
 // Değişmez kurallar (tool/check_no_hard_delete.js HD20–HD22, tool/check_rules_parity.js RP01–RP06):
 //  - `allow delete: if false;` her blokta kalır — süper admin dahil (D-10). Silme = soft delete (update).
@@ -74,16 +78,158 @@ service cloud.firestore {
 
     // ── Koleksiyonlar (PLAN §11.1 — 18 satır) ───────────────────────────────────────────────────
 
-    // 1 · users/{uid} — T-12 (askı T-37, hesap silme T-29)
+    // 1 · users/{uid} — T-12 (askı T-37, hesap silme T-29) · rules-spec §3.1
+    // Yazma yolları: UserRepository.createProfile (C; 1 erişim çağrısı: existsAfter private/account) ·
+    // updateProfile (U, sahibi; erişim çağrısı yok).
+    // Kapalı kalan dallar: süper admin `status: active↔suspended` (T-37), sahibinin `deleted` dalı (T-29).
+    // `suspendReason` bu belgenin alanı DEĞİLDİR (CD-133): hiçbir beyaz listede yoktur.
     match /users/{uid} {
-      allow read: if false;
-      allow create, update: if false;
+      // sahibi: kendi belgesi + doğrulanmış, izinli alan adlı e-posta. `uid` = yol değişkeni
+      // (`match /users/{uid}`); oturum kimliği `uid()` yardımcısıyla karışmasın diye açık yazılır.
+      function isOwner() { return emailOk() && request.auth.uid == uid; }
+
+      // Sonuç belgenin (create: yeni belge · update: birleşmiş belge) alan tipleri ve sınırları.
+      // Belge her doğrulanmış kullanıcıya açıktır: tip hatası başkalarının listesini bozmasın diye
+      // beyaz listedeki her alanın tipi burada sabitlenir (UserModel.fromJson `checked: true`).
+      function userShape() {
+        let d = request.resource.data;
+        // alt sınır kırpılmış metinde aranır: yalnızca boşluktan oluşan ad listelerde "adsız" görünür
+        return d.name is string && d.name.trim().size() >= 2 && d.name.size() <= 60   // limit: nameMin, nameMax
+            // CD-11: `nameLower == name.lower()` eşitliği YOK (Türkçe küçük harf Rules'ta üretilemez)
+            && d.nameLower is string && d.nameLower.trim().size() >= 2 && d.nameLower.size() <= 60   // limit: nameMin, nameMax
+            // belge herkese açıktır: üst sınır yoksa tek kullanıcı her listeye ~1 MB yük bindirebilir
+            && d.avatarSeed is string && d.avatarSeed.size() > 0 && d.avatarSeed.size() <= 64   // limit: avatarSeedMax
+            // StoragePaths.isUserAvatar: yalnızca kendi klasörü + StoragePaths.fileNamePattern
+            // (users/{uid}/<yyyyMMddTHHmmssZ>_<16 hex>.<jpg|png|webp>; parity.test.js karşılaştırır)
+            && (d.get('avatarPath', null) == null
+                || (d.avatarPath is string
+                    && d.avatarPath.matches('users/' + uid + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)')))
+            // StaticTables.departmentIds (d01–d24) biçimi
+            && (d.get('department', null) == null
+                || (d.department is string && d.department.matches('d[0-9][0-9]')))
+            // YearLevel değerleri
+            && (d.get('year', null) == null
+                || d.year in ['prep', '1', '2', '3', '4', '5plus', 'master', 'phd'])
+            // StaticTables.interestIds (i01–i16); alt sınır (≥ 1) yalnızca güncellemede (aşağıda)
+            && d.interests is list && d.interests.size() <= 5   // limit: interestsMax
+            && d.interests.hasOnly(['i01', 'i02', 'i03', 'i04', 'i05', 'i06', 'i07', 'i08',
+                                    'i09', 'i10', 'i11', 'i12', 'i13', 'i14', 'i15', 'i16'])
+            && d.bio is string && d.bio.size() <= 140   // limit: bioMax
+            && d.profileComplete is bool;
+      }
+
+      // C — kayıt sonrası ilk belge (AUT-03 → AUT-05 öncesi). `activeUser()` istenemez: belge henüz yok.
+      // Profil, hesap belgesi OLMADAN oluşturulamaz (`existsAfter`: aynı batch'teki yazımı görür —
+      // createProfile). Aksi halde hesap belgesiz "aktif" kullanıcı askıya alınamaz (T-37 batch'i
+      // `private/account`'u günceller; süper admin için C yoktur) ve ADM-05 e-posta aramasında görünmez.
+      function canCreateUser() {
+        let d = request.resource.data;
+        return isOwner()
+            && d.keys().hasOnly(['name', 'nameLower', 'avatarSeed', 'avatarPath', 'department', 'year',
+                                 'interests', 'bio', 'status', 'staff', 'profileComplete',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.status == 'active' && d.staff == false && d.profileComplete == false
+            && userShape()
+            && existsAfter(/databases/$(database)/documents/users/$(uid)/private/account);
+      }
+
+      // U (sahibi) — profil alanları. `status`, `staff`, `createdAt`, `isDeleted*` beyaz listede yoktur
+      // → değişemez. Askıdaki / silinmiş kullanıcı profilini düzenleyemez (PLAN §11.1 satır 1 susp/del).
+      function canUpdateOwnProfile() {
+        return isOwner()
+            && resource.data.status == 'active'
+            && touches(['name', 'nameLower', 'avatarSeed', 'avatarPath', 'department', 'year',
+                        'interests', 'bio', 'profileComplete'])
+            && userShape()
+            // personelde (staff) ilgi alanı boş kalabilir; öğrencide en az bir tane
+            && (resource.data.staff == true || request.resource.data.interests.size() >= 1)   // limit: interestsMin
+            // AUT-05 zorunlu alanları: profil ancak bölüm (öğrencide ayrıca sınıf) doluyken "tamam" olur
+            // — `activeUser()` bu bayrağa bakar; değiştirilmiş istemci adımı atlayamaz
+            && (request.resource.data.profileComplete == false
+                || (request.resource.data.get('department', null) != null
+                    && (resource.data.staff == true || request.resource.data.get('year', null) != null)))
+            // tamamlanan profil geri alınamaz (true → false yok)
+            && (resource.data.profileComplete == false || request.resource.data.profileComplete == true);
+      }
+
+      // R — doğrulanmış her kullanıcı (rules-spec §9.1 kabul edilmiş sınırlama). `isDeleted` süzgeci
+      // YOKTUR: anonimleştirilmiş yazar "Silinmiş kullanıcı" olarak okunur (getUser / getUsers);
+      // liste ekranları (ADM-05) `isDeleted == false` süzgecini sorguda taşır.
+      allow read: if emailOk();
+      allow create: if canCreateUser();
+      allow update: if canUpdateOwnProfile();
       allow delete: if false;
 
-      // 2 · users/{uid}/private/account — T-12
+      // 2 · users/{uid}/private/account — T-12 (süper admin `suspendReason` yazımı T-37) · rules-spec §3.2
+      // Yazma yolları: UserRepository.createProfile (C; 1 erişim çağrısı: existsAfter users/{uid}) ·
+      // touchLastLogin (U; erişim çağrısı yok).
+      // `suspendReason` sahibi için SALT OKUNURDUR (CD-133): C'de yok / null, U'da değişemez.
+      // Kapalı kalan dallar: süper admin U (T-37), anonimleştirme (T-29), collectionGroup('private') (T-37).
       match /private/{docId} {
-        allow read: if false;
-        allow create, update: if false;
+        // `fcmTokens[i]` = FcmTokenModel {token, platform, updatedAt} (üçü de zorunlu). Belgeyi süper
+        // admin de okur (ADM-05): tek bozuk eleman onun okumasını ve e-posta araması sayfasını
+        // ayrıştırma hatasına düşürür → eleman biçimi burada sabitlenir.
+        function fcmTokenOk(t) {
+          return t is map && t.keys().hasOnly(['token', 'platform', 'updatedAt'])
+              && t.token is string && t.token.size() > 0 && t.token.size() <= 4096   // limit: fcmTokenMax
+              && t.platform in ['ios', 'android']
+              && t.updatedAt is timestamp;
+        }
+        // Rules'ta döngü yoktur: liste baştan birer eleman soyularak denetlenir (ilk eleman + kuyruk).
+        function fcmHeadOk(l) { return l.size() == 0 || fcmTokenOk(l[0]); }
+        function fcmTail(l) { return l.size() <= 1 ? [] : l[1:l.size()]; }
+        function fcmTokensOk(l) {
+          let t1 = fcmTail(l);
+          let t2 = fcmTail(t1);
+          let t3 = fcmTail(t2);
+          let t4 = fcmTail(t3);
+          let t5 = fcmTail(t4);
+          let t6 = fcmTail(t5);
+          let t7 = fcmTail(t6);
+          let t8 = fcmTail(t7);
+          let t9 = fcmTail(t8);
+          return l is list && l.size() <= 10   // limit: fcmTokensMax
+              && fcmHeadOk(l) && fcmHeadOk(t1) && fcmHeadOk(t2) && fcmHeadOk(t3) && fcmHeadOk(t4)
+              && fcmHeadOk(t5) && fcmHeadOk(t6) && fcmHeadOk(t7) && fcmHeadOk(t8) && fcmHeadOk(t9);
+        }
+
+        // Sonuç belge: e-posta token'daki adresle aynıdır; `fcmTokens` üst sınırlı ve biçimlidir.
+        function accountShape() {
+          let d = request.resource.data;
+          return d.email == request.auth.token.email
+              && d.emailLower == request.auth.token.email.lower()
+              && fcmTokensOk(d.fcmTokens);
+        }
+
+        // Hesap belgesi, profil belgesi OLMADAN oluşturulamaz (`existsAfter`; bkz. canCreateUser).
+        function canCreateAccount() {
+          let d = request.resource.data;
+          return isOwner() && docId == 'account'
+              && d.keys().hasOnly(['email', 'emailLower', 'fcmTokens', 'lastLoginAt', 'suspendReason',
+                                   'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+              && baseCreate()
+              && d.get('suspendReason', null) == null
+              && (d.get('lastLoginAt', null) == null || d.lastLoginAt == request.time)
+              && accountShape()
+              && existsAfter(userPath(uid));
+        }
+
+        // U (sahibi) — `suspendReason`, `createdAt`, `isDeleted*` beyaz listede yoktur → değişemez.
+        // Askıdaki kullanıcı da yazabilir (emailOk yeter; PLAN §11.1 satır 2 susp/del).
+        function canUpdateOwnAccount() {
+          return isOwner() && docId == 'account'
+              && touches(['email', 'emailLower', 'fcmTokens', 'lastLoginAt'])
+              && accountShape()
+              && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastLoginAt'])
+                  || request.resource.data.lastLoginAt == request.time);
+        }
+
+        // R — yalnızca sahibi (kendi e-postası ve askı gerekçesi) ve süper admin (ADM-05).
+        allow get: if isOwner() || isSuper();
+        allow list: if false;
+        allow create: if canCreateAccount();
+        allow update: if canUpdateOwnAccount();
         allow delete: if false;
       }
     }
@@ -165,10 +311,49 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 14 · settings/{uid} — T-12
+    // 14 · settings/{uid} — T-12 · rules-spec §3.12
+    // Yazma yolları: UserRepository.createProfile / SettingsRepository.getSettings (C, varsayılanlar) ·
+    // updateSettings · updateClubSettings (U). BaseFields YOK (yalnızca `updatedAt`); soft delete yok.
     match /settings/{uid} {
-      allow read: if false;
-      allow create, update: if false;
+      // `uid` = yol değişkeni (`match /settings/{uid}`), `request.auth.uid` = oturum kimliği.
+      function isOwner() { return emailOk() && request.auth.uid == uid; }
+
+      // Sonuç belge: on bir alanın tamamı vardır ve tipleri doğrudur.
+      function settingsShape() {
+        let d = request.resource.data;
+        return d.announcements is bool && d.eventReminders is bool && d.newEvents is bool
+            && d.applicationResults is bool && d.management is bool && d.system is bool
+            // CD-34: `none` ve `15m` yalnızca rsvps.reminder içindir
+            && d.reminderTime in ['1h', '1d']
+            && d.quiet is bool
+            && d.quietFrom is string && d.quietFrom.matches('^([01]\\d|2[0-3]):[0-5]\\d$')   // limit: timeOfDayPattern
+            && d.quietTo is string && d.quietTo.matches('^([01]\\d|2[0-3]):[0-5]\\d$')   // limit: timeOfDayPattern
+            // anahtar = clubId, değer = ClubNotificationPrefsModel; belge yalnızca sahibine açıktır
+            && d.clubs is map
+            && d.updatedAt == request.time;
+      }
+
+      function canCreateSettings() {
+        return isOwner()
+            && request.resource.data.keys().hasOnly(['announcements', 'eventReminders', 'newEvents',
+                                                     'applicationResults', 'management', 'system',
+                                                     'reminderTime', 'quiet', 'quietFrom', 'quietTo',
+                                                     'clubs', 'updatedAt'])
+            && settingsShape();
+      }
+
+      function canUpdateSettings() {
+        return isOwner()
+            && touches(['announcements', 'eventReminders', 'newEvents', 'applicationResults',
+                        'management', 'system', 'reminderTime', 'quiet', 'quietFrom', 'quietTo', 'clubs'])
+            && settingsShape();
+      }
+
+      // R — yalnızca sahibi (süper admin dahil başkası okuyamaz).
+      allow get: if isOwner();
+      allow list: if false;
+      allow create: if canCreateSettings();
+      allow update: if canUpdateSettings();
       allow delete: if false;
     }
 

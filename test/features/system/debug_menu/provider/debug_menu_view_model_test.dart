@@ -1,7 +1,8 @@
 // T-11 · DebugMenuViewModel (K-E, CD-69): görünüm tercihleri
 // AppPreferencesViewModel'den yansır ve ona (oradan depoya) yazılır.
 // T-11 · DebugMenu · demo hesap girişi (CD-132 (23)): yalnızca emülatörde
-// `authService.signIn(e-posta, demo parolası)`; hata → `isError`; çıkış.
+// `authRepository.signIn(e-posta, demo parolası)` (T-12); hata → `isError`;
+// çıkış.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,12 +17,15 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-import '../../../../fakes/fake_auth_service.dart';
+import '../../../../fakes/fake_auth_repository.dart';
 import '../../../../fakes/fake_base.dart';
+import '../../../../fakes/fake_user_repository.dart';
 import '../../../../fakes/register_fakes.dart';
 import '../../../../helpers/test_container.dart';
 
-FakeAuthService _auth() => GetIt.I<AuthService>() as FakeAuthService;
+FakeAuthRepository _auth() => GetIt.I<AuthRepository>() as FakeAuthRepository;
+
+FakeUserRepository _users() => GetIt.I<UserRepository>() as FakeUserRepository;
 
 /// Kapsayıcıyı kurar; DebugMenu ve oturum sağlayıcılarını test boyunca canlı
 /// tutar.
@@ -104,7 +108,8 @@ void main() {
 
     test('başarı: e-posta + demo parolasıyla signIn; oturum çözülür', () async {
       final container = _container();
-      _auth()
+      _users().putActive(account.id);
+      _auth().service
         ..emailVerified = true
         ..uid = account.id;
       final viewModel = container.read(debugMenuViewModelProvider.notifier);
@@ -133,7 +138,7 @@ void main() {
         'hatayı temizler', () async {
       final container = _container();
       _auth()
-        ..emailVerified = true
+        ..service.emailVerified = true
         ..failNext(AuthError.network);
       final viewModel = container.read(debugMenuViewModelProvider.notifier);
 
@@ -154,7 +159,7 @@ void main() {
 
     test('art arda tetik: süren giriş varken ikincisi başlatılmaz', () async {
       final container = _container();
-      _auth().emailVerified = true;
+      _auth().service.emailVerified = true;
       final viewModel = container.read(debugMenuViewModelProvider.notifier);
 
       final first = viewModel.signInDemo(account, isEmulator: true);
@@ -188,7 +193,8 @@ void main() {
 
     test('signOut: oturum kapanır; kapatılamazsa false', () async {
       final container = _container();
-      _auth().emailVerified = true;
+      _users().putActive(_auth().service.uid);
+      _auth().service.emailVerified = true;
       final viewModel = container.read(debugMenuViewModelProvider.notifier);
       await viewModel.signInDemo(account, isEmulator: true);
       await pumpEventQueue();

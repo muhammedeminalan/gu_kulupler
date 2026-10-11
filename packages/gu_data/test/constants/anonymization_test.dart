@@ -225,15 +225,14 @@ void main() {
       );
     });
 
-    test('avatarSeed, staff, profileComplete, suspendReason ve createdAt '
-        'alanlarına dokunmaz', () {
+    test('avatarSeed, staff, profileComplete ve createdAt alanlarına '
+        'dokunmaz', () {
       final payload = Anonymization.userPayload('u_ayse');
 
       for (final key in [
         'avatarSeed',
         'staff',
         'profileComplete',
-        'suspendReason',
         'createdAt',
         'createdBy',
       ]) {

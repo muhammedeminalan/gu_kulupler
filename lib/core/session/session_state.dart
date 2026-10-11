@@ -11,6 +11,7 @@ final class SessionState extends Equatable {
     this.status = AuthStatus.unknown,
     this.uid,
     this.user,
+    this.suspendReason,
     this.isSuperAdmin = false,
     this.memberships = const <String, MembershipModel>{},
     this.blockedUserIds = const <String>{},
@@ -26,8 +27,15 @@ final class SessionState extends Equatable {
   /// Oturumdaki kullanıcının kimliği; oturum yoksa `null`.
   final String? uid;
 
-  /// `users/{uid}` belgesi; çözülmediyse ya da oturum yoksa `null`.
+  /// `users/{uid}` belgesi; çözülmediyse, belge henüz oluşturulmadıysa ya da
+  /// oturum yoksa `null`.
   final UserModel? user;
+
+  /// Askı gerekçesi (`users/{uid}/private/account.suspendReason`, CD-133);
+  /// yalnızca [status] `suspended` iken ve okunabildiyse doludur. Belgeyi
+  /// yalnızca hesabın sahibi okuyabildiğinden oturum kapatılmadan **önce**
+  /// buraya alınır (W-03); gösterilip gösterilmeyeceği DLG-01'in kararıdır.
+  final String? suspendReason;
 
   /// Kimlik jetonunda `superadmin == true` claim'i var mı (D-28)?
   final bool isSuperAdmin;
@@ -81,6 +89,7 @@ final class SessionState extends Equatable {
     status,
     uid,
     user,
+    suspendReason,
     isSuperAdmin,
     memberships,
     blockedUserIds,
@@ -90,14 +99,17 @@ final class SessionState extends Equatable {
     sessionExpired,
   ];
 
-  /// Verilen alanları değiştirilmiş kopya. [clearUid] ve [clearUser] ilgili
-  /// alanı `null` yapar ve aynı adlı parametreden önce gelir.
+  /// Verilen alanları değiştirilmiş kopya. [clearUid], [clearUser] ve
+  /// [clearSuspendReason] ilgili alanı `null` yapar ve aynı adlı parametreden
+  /// önce gelir.
   SessionState copyWith({
     AuthStatus? status,
     String? uid,
     bool clearUid = false,
     UserModel? user,
     bool clearUser = false,
+    String? suspendReason,
+    bool clearSuspendReason = false,
     bool? isSuperAdmin,
     Map<String, MembershipModel>? memberships,
     Set<String>? blockedUserIds,
@@ -109,6 +121,9 @@ final class SessionState extends Equatable {
     status: status ?? this.status,
     uid: clearUid ? null : uid ?? this.uid,
     user: clearUser ? null : user ?? this.user,
+    suspendReason: clearSuspendReason
+        ? null
+        : suspendReason ?? this.suspendReason,
     isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
     memberships: memberships ?? this.memberships,
     blockedUserIds: blockedUserIds ?? this.blockedUserIds,

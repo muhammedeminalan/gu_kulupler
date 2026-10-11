@@ -6,8 +6,8 @@
   "license": "UNLICENSED",
   "engines": { "node": ">=20.0.0" },
   "scripts": {
-    "test": "firebase emulators:exec --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand\"",
-    "test:watch": "firebase emulators:exec --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand --watch\"",
+    "test": "firebase emulators:exec --config ../firebase.rules-test.json --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand\"",
+    "test:watch": "firebase emulators:exec --config ../firebase.rules-test.json --only auth,firestore,storage --project demo-gu-kulupler \"jest --runInBand --watch\"",
     "emulators": "firebase emulators:start --only auth,firestore,storage --project demo-gu-kulupler --import=./.emulator-data --export-on-exit"
   },
   "devDependencies": {

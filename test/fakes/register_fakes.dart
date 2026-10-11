@@ -15,34 +15,47 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import '../helpers/fake_app_clock.dart';
 import 'fake_app_info_service.dart';
 import 'fake_app_preferences_store.dart';
+import 'fake_auth_repository.dart';
 import 'fake_auth_service.dart';
 import 'fake_connectivity_service.dart';
 import 'fake_crash_service.dart';
 import 'fake_feedback_service.dart';
 import 'fake_firestore_service.dart';
 import 'fake_remote_config_service.dart';
+import 'fake_settings_repository.dart';
 import 'fake_storage_service.dart';
+import 'fake_user_repository.dart';
 
 /// Varsayılan [FakeAppClock] anı: 12 Ekim 2026 Pazartesi 19:30 Istanbul
 /// (PLAN §14.7 örnek anı).
 final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 
 /// Varsayılan fake'leri `GetIt.I`'ye kaydeder. `ConnectivityGate` gerçek
-/// sınıftır ve kayıtlı `FakeConnectivityService`'i okur.
+/// sınıftır ve kayıtlı `FakeConnectivityService`'i okur. `FakeAuthRepository`
+/// kayıtlı `FakeAuthService` ve `FakeAppClock` üzerinde çalışır: servis
+/// fake'ine yazılan oturum durumu repository'den de görülür.
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
+  final authService = FakeAuthService();
+  final clock = FakeAppClock(kDefaultFakeNowUtc);
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
-    ..registerSingleton<AuthService>(FakeAuthService())
+    ..registerSingleton<AuthService>(authService)
     ..registerSingleton<FirestoreService>(FakeFirestoreService())
     ..registerSingleton<StorageService>(FakeStorageService())
     ..registerSingleton<RemoteConfigService>(FakeRemoteConfigService())
     ..registerSingleton<CrashService>(FakeCrashService())
     // T-11 · saat, cihaz servisleri, tercihler, çevrimdışı kapısı
-    ..registerSingleton<AppClock>(FakeAppClock(kDefaultFakeNowUtc))
+    ..registerSingleton<AppClock>(clock)
     ..registerSingleton<ConnectivityService>(connectivity)
     ..registerSingleton<ConnectivityGate>(ConnectivityGate(connectivity))
     ..registerSingleton<AppInfoService>(FakeAppInfoService())
-    ..registerSingleton<AppPreferencesStore>(FakeAppPreferencesStore());
+    ..registerSingleton<AppPreferencesStore>(FakeAppPreferencesStore())
+    // T-12 · kimlik ve profil repository'leri
+    ..registerSingleton<AuthRepository>(
+      FakeAuthRepository(clock, service: authService),
+    )
+    ..registerSingleton<UserRepository>(FakeUserRepository())
+    ..registerSingleton<SettingsRepository>(FakeSettingsRepository());
 }

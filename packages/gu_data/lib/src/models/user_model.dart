@@ -11,8 +11,10 @@ part 'user_model.g.dart';
 /// Kullanıcının herkese açık profili — `users/{uid}` (PLAN §9.6.1,
 /// domain-model §2.1).
 ///
-/// E-posta bu modelde **yoktur** (D-29); `UserAccountModel` içindedir. Süper
-/// admin bir alan değil ID token claim'idir (D-28).
+/// E-posta bu modelde **yoktur** (D-29); `UserAccountModel` içindedir. Askıya
+/// alma gerekçesi de oradadır (CD-133): bu belgeyi doğrulanmış her kullanıcı
+/// okuyabilir, gerekçe ise yalnızca hesabın sahibine ve süper admine açıktır.
+/// Süper admin bir alan değil ID token claim'idir (D-28).
 ///
 /// Belge kimliği ([uid]) JSON'a yazılmaz ve JSON'dan okunmaz: okurken
 /// [UserModel.fromJson] çağrısına `id` olarak verilir.
@@ -30,7 +32,6 @@ final class UserModel extends Equatable with BaseFields {
     this.interests = const [],
     this.bio = '',
     this.status = UserStatus.active,
-    this.suspendReason,
     this.staff = false,
     this.profileComplete = false,
     this.createdAt,
@@ -94,12 +95,10 @@ final class UserModel extends Equatable with BaseFields {
   final String bio;
 
   /// Hesap durumu; yalnızca süper admin ya da hesap silme akışı değiştirir.
+  /// Askıya alma gerekçesi bu belgede değil `UserAccountModel.suspendReason`
+  /// alanındadır (CD-133).
   @JsonKey(name: FirestoreFields.status)
   final UserStatus status;
-
-  /// Askıya alma gerekçesi; yalnızca [status] `suspended` iken doludur.
-  @JsonKey(name: FirestoreFields.suspendReason)
-  final String? suspendReason;
 
   /// Akademik / idari personel mi? Yalnızca seed ve yönetim betiği yazar.
   @JsonKey(name: FirestoreFields.staff)
@@ -162,7 +161,6 @@ final class UserModel extends Equatable with BaseFields {
     List<String>? interests,
     String? bio,
     UserStatus? status,
-    String? suspendReason,
     bool? staff,
     bool? profileComplete,
     DateTime? createdAt,
@@ -173,7 +171,6 @@ final class UserModel extends Equatable with BaseFields {
     bool clearAvatarPath = false,
     bool clearDepartment = false,
     bool clearYear = false,
-    bool clearSuspendReason = false,
     bool clearCreatedAt = false,
     bool clearUpdatedAt = false,
     bool clearDeletedAt = false,
@@ -189,9 +186,6 @@ final class UserModel extends Equatable with BaseFields {
     interests: interests ?? this.interests,
     bio: bio ?? this.bio,
     status: status ?? this.status,
-    suspendReason: clearSuspendReason
-        ? null
-        : suspendReason ?? this.suspendReason,
     staff: staff ?? this.staff,
     profileComplete: profileComplete ?? this.profileComplete,
     createdAt: clearCreatedAt ? null : createdAt ?? this.createdAt,
@@ -213,7 +207,6 @@ final class UserModel extends Equatable with BaseFields {
     interests,
     bio,
     status,
-    suspendReason,
     staff,
     profileComplete,
     createdAt,

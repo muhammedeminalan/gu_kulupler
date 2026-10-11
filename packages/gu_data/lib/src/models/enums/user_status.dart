@@ -7,7 +7,8 @@ enum UserStatus {
   /// Hesap etkin.
   active('active'),
 
-  /// Hesap süper admin tarafından askıya alındı (`suspendReason` dolu).
+  /// Hesap süper admin tarafından askıya alındı (gerekçe
+  /// `users/{uid}/private/account.suspendReason` alanındadır, CD-133).
   suspended('suspended'),
 
   /// Hesap silindi ve anonimleştirildi (SET-03; domain-model §11).

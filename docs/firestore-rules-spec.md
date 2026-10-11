@@ -78,13 +78,17 @@ Gösterim: **R** okuma (get/list), **C** create, **U** update, **D** delete (hep
 
 ### 3.1 `users/{uid}`
 - **R:** `emailOk()` (doğrulanmış herhangi bir kullanıcı). `isDeleted` süzgeci **yok**: hesabı silinmiş (anonimleştirilmiş, `status=='deleted'`) kullanıcı belgesi de okunur; böylece gönderi/yorum yazarı "Silinmiş kullanıcı" olarak gösterilebilir. Liste sorguları (ADM-05) `isDeleted==false` ekler.
-- **C:** `uid == request.auth.uid`, `emailOk()`, belge yok; `status=='active'`, `profileComplete==false`, `staff==false`, `isDeleted==false`; alan beyaz listesi; `name` 2–60.
-- **U (sahibi):** `name, avatarSeed, avatarPath, department, year, interests, bio, profileComplete` (+`updatedAt`); `interests.size()` 1–5; `bio.size() <= 140`. `status`, `staff`, `suspendReason`, `isDeleted*` **değişemez** — yalnızca **hesap silme** akışında `status:'deleted'` + anonimleştirme alanları (domain-model §11) tek `update`te izinli (özel dal: `request.resource.data.status=='deleted' && name=='Silinmiş kullanıcı' && bio=='' && interests==[] && …`).
-- **U (süper admin):** yalnızca `status` (`active↔suspended`), `suspendReason`.
+- **C:** `uid == request.auth.uid`, `emailOk()`, belge yok; `status=='active'`, `profileComplete==false`, `staff==false`, `isDeleted==false`; alan beyaz listesi; `name` 2–60. **`private/account` ile birlikte oluşur:** `existsAfter(users/{uid}/private/account)` (aynı batch — `createProfile`); hesap belgesi olmayan profil oluşturulamaz (aksi halde T-37 askıya alma batch'i `not-found` ile düşer — CD-133 madde 14).
+- **U (sahibi):** `name, avatarSeed, avatarPath, department, year, interests, bio, profileComplete` (+`updatedAt`); `interests.size()` 1–5; `bio.size() <= 140`. **Biçim (C ve U; CD-133 madde 14):** `name` / `nameLower` alt sınırı kırpılmış metinde (`trim().size() >= 2`); `avatarSeed.size() <= 64` (`// limit: avatarSeedMax`); `avatarPath` = `users/{uid}/` + `StoragePaths.fileNamePattern`. **`profileComplete`:** `true` yalnızca birleşmiş belgede `department` (öğrencide ayrıca `year`) doluyken (AUT-05 zorunlu alanları); `true → false` yok. `status`, `staff`, `isDeleted*` **değişemez** — yalnızca **hesap silme** akışında `status:'deleted'` + anonimleştirme alanları (domain-model §11) tek `update`te izinli (özel dal: `request.resource.data.status=='deleted' && name=='Silinmiş kullanıcı' && bio=='' && interests==[] && …`).
+- **U (süper admin):** yalnızca `status` (`active↔suspended`) (+`updatedAt`). Gerekçe bu belgeye **yazılmaz**: aynı batch'te `users/{uid}/private/account.suspendReason` güncellenir (§3.2, CD-133).
+- **`suspendReason` bu belgenin alanı değildir** (CD-133): C ve U beyaz listelerinde yoktur; sahibi ya da süper admin bu anahtarı `users/{uid}`'e yazamaz (tablo dışı alan = ret).
 - **D:** `false`.
 
 ### 3.2 `users/{uid}/private/account`
-- **R/C/U:** `uid == request.auth.uid` && `emailOk()`; `email`/`emailLower` = `request.auth.token.email` (+lower); `fcmTokens` ≤ 10 eleman. **R** ayrıca süper admin (ADM-05 e-posta araması: `collectionGroup('private')` + `emailLower` aralığı → **kural koleksiyon grubu için ayrıca yazılır**: `match /{path=**}/private/{doc} { allow read: if isSuper(); }`).
+- **R/C/U:** `uid == request.auth.uid` && `emailOk()`; `email`/`emailLower` = `request.auth.token.email` (+lower); `fcmTokens` ≤ 10 eleman ve her eleman `{token: s 1–4096, platform: 'ios'|'android', updatedAt: timestamp}` (başka anahtar yok; `// limit: fcmTokenMax` — bozuk eleman süper adminin okumasını ayrıştırma hatasına düşürür, CD-133 madde 14). **C** ayrıca `existsAfter(users/{uid})`: hesap belgesi profil belgesi olmadan oluşturulamaz (§3.1 C ile karşılıklı). **R** ayrıca süper admin (ADM-05 e-posta araması: `collectionGroup('private')` + `emailLower` aralığı → **kural koleksiyon grubu için ayrıca yazılır**: `match /{path=**}/private/{doc} { allow read: if isSuper(); }`).
+- **`suspendReason` (CD-133) sahibi için salt okunurdur:** C'de `request.resource.data.get('suspendReason', null) == null`; U (sahibi) `diff(resource.data).affectedKeys()` içinde `suspendReason` taşıyamaz (hesap silme dalı dahil). Alan null olabilir → `data.get('suspendReason', null)` ile okunur (W-51: istemci belgesinde anahtar yok, seed'de açık `null`).
+- **U (süper admin):** `isSuper() && touches(['suspendReason'])` — yalnızca `suspendReason` (+`updatedAt == request.time`): `null` (etkinleştirme) ya da `is string && size() in 1..300` (`// limit: adminReasonMax`, CD-30). Belge yoksa yazılamaz (süper admin için C yok); `email`, `emailLower`, `fcmTokens`, `lastLoginAt`, `isDeleted*` değişemez.
+- Okuyanlar: **sahibi** (kendi gerekçesi) ve **süper admin** (ADM-05); başka hiçbir bağlam (aynı kulübün yöneticisi dahil) okuyamaz. Durum–gerekçe tutarlılığı (`suspended` ⇒ dolu, `active` ⇒ `null`) Rules'ta belgeler arası zorlanmaz; `AdminRepository.suspendUser/activateUser` ikisini tek batch'te yazar (yalnızca süper admin yazabildiği için yönetsel risk, kabul).
 - **D:** `false`.
 
 ### 3.3 `clubs/{clubId}`
@@ -280,7 +284,7 @@ Bileşik indeksler (alan sırası sorgu sırasıdır; Claude Code gerçek sorgul
 
 ## 9. Kabul edilmiş sınırlamalar (kullanıcıya bir kez bildirilir, `docs/PLAN.md` "Riskler"e yazılır)
 
-1. **Profil okuma:** `users/{uid}` tüm doğrulanmış kullanıcılarca okunabilir; "ortak kulüp yoksa gizle" yalnızca arayüzdedir (D-29).
+1. **Profil okuma:** `users/{uid}` tüm doğrulanmış kullanıcılarca okunabilir; "ortak kulüp yoksa gizle" yalnızca arayüzdedir (D-29). Bu yüzden e-posta (D-29) ve askı gerekçesi (CD-133) bu belgede tutulmaz; ikisi de `users/{uid}/private/account`'tadır. `users.status` (askıda olduğu bilgisi) ise açık kalır: `activeUser()` ve arayüz bu alana bakar.
 2. **Oy anonimliği:** oy belgeleri üyelerce okunabilir; arayüz kimin ne oy verdiğini göstermez.
 3. **Mod C fan-out:** alıcının üyeliği Rules'ta doğrulanmaz; kötü niyetli bir **yönetici** başka kullanıcılara bildirim yazabilir (spam). Mod F'de yok.
 4. **Kulüp adı benzersizliği** istemci kontrolüne dayanır (yarış durumu mümkün, süper admin tek kişi → pratikte düşük risk).

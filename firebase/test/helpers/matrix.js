@@ -1,10 +1,14 @@
 'use strict';
 // Rol × işlem matrisi koşucusu (PLAN §11.6): `expectations/<koleksiyon>.json` → vaka başına bir jest testi.
-// Bir dosya = §11.1'in bir satırı. Vaka: { role, op, variant, expect, ref, query?, group? }.
+// Bir dosya = §11.1'in bir satırı. Vaka: { role, op, variant, expect, ref, query?, group?, docPath?,
+// newDocPath?, without?, patch?, unset? }.
 //   op      get · list · create · update · softDelete · restore · delete
 //   role    contexts.js bağlamı (12 + alt varyantlar; `superadmin`/`otherMgr` takma adları kabul edilir)
 //   variant payloads.js yük adı (create/update); softDelete/restore yükleri sabittir
 //   expect  allow | deny
+//   docPath / newDocPath   dosyanın hedef yolunu bu vaka için değiştirir (`{uid}` = bağlamın uid'i)
+//   without / patch / unset   veri kümesini bu vaka için düzenler (fixtures.js `editDocs`): kurulmayacak
+//           belgeler · üzerine yazılacak alanlar · kaldırılacak anahtarlar; yollar `{uid}` taşıyabilir
 // `query` taşıyan her `list` vakası için süzgeçsiz ikizi otomatik üretilir ve `deny` beklenir
 // (rules-spec §1.7: Rules filtre değildir).
 //
@@ -115,12 +119,18 @@ const STORAGE_PREFIX = '/b/{bucket}/o';
 
 // ── Beklenti dosyaları ───────────────────────────────────────────────────────────────────────
 
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+
 function validateCase(file, c, index) {
   const where_ = `${file} cases[${index}]`;
   resolveName(c.role);
   if (!OPS.includes(c.op)) throw new Error(`${where_}: geçersiz op "${c.op}" (${OPS.join(', ')})`);
   if (!EXPECTS.includes(c.expect)) throw new Error(`${where_}: geçersiz expect "${c.expect}"`);
   if ((c.op === 'create' || c.op === 'update') && !c.variant) throw new Error(`${where_}: ${c.op} için variant zorunlu`);
+  if (c.without !== undefined && !Array.isArray(c.without)) throw new Error(`${where_}: without dizi olmalı`);
+  for (const key of ['patch', 'unset']) {
+    if (c[key] !== undefined && !isPlainObject(c[key])) throw new Error(`${where_}: ${key} nesne olmalı`);
+  }
 }
 
 /**
@@ -189,6 +199,16 @@ function perform(db, exp, c, ctx) {
   }
 }
 
+/** Vakanın veri kümesi düzenlemesi (`without` / `patch` / `unset`), yol şablonları doldurulmuş olarak. */
+function caseEdit(c, ctx) {
+  const fillKeys = (object = {}) => Object.fromEntries(Object.entries(object).map(([p, value]) => [fillPath(p, ctx), value]));
+  return {
+    without: (c.without || []).map((p) => fillPath(p, ctx)),
+    patch: fillKeys(c.patch),
+    unset: fillKeys(c.unset),
+  };
+}
+
 /**
  * Tek vakayı koşar: veri kurulur (kurallar kapalı) → istek bağlamla gönderilir → sonuç beklentiyle
  * karşılaştırılır. `deny` yalnızca `permission-denied` ile sağlanır (başka hata = test hatası).
@@ -199,10 +219,10 @@ function perform(db, exp, c, ctx) {
  *   (çağıran kendisi kurmuştur — aynı veri üzerinde art arda vaka).
  */
 async function runCase(exp, c, options = {}) {
-  if (typeof options.seed === 'function') await options.seed(exp, c);
-  else if (options.seed !== false) await seedFixture(exp.fixture || 'base', c.fixtureOptions);
   const role = resolveName(c.role);
   const ctx = { role, uid: uidOf(role), club: CLUB, otherClub: OTHER_CLUB };
+  if (typeof options.seed === 'function') await options.seed(exp, c);
+  else if (options.seed !== false) await seedFixture(exp.fixture || 'base', c.fixtureOptions, caseEdit(c, ctx));
   const request = perform(contextFor(role).firestore(), exp, c, ctx);
   await (c.expect === 'allow' ? assertSucceeds(request) : assertFails(request));
 }
@@ -221,7 +241,9 @@ function expandCases(cases) {
 
 function caseTitle(c) {
   const variant = c.variant ? `(${c.variant})` : c.op === 'list' ? (c.query ? '(süzgeçli)' : '(süzgeçsiz)') : '';
-  return `${c.role} · ${c.op}${variant} → ${c.expect}${c.ref ? ` — ${c.ref}` : ''}`;
+  const override = c.op === 'create' ? c.newDocPath : c.docPath;
+  const target = override ? ` @ ${override}` : '';
+  return `${c.role} · ${c.op}${variant}${target} → ${c.expect}${c.ref ? ` — ${c.ref}` : ''}`;
 }
 
 /** Vakaları jest testlerine çevirir (çağıran `describe` içinde olmalıdır). */
