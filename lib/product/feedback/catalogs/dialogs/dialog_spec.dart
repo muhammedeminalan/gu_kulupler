@@ -17,10 +17,10 @@ typedef DialogLabelBuilder = String Function(AppLocalizations l10n);
 /// Standart (başlık + gövde + en çok iki düğme) bir dialogun katalog kaydı —
 /// prototip `simple(id, {…})` (`dialogs.js:6`).
 ///
-/// Özel gövdeli dialoglar (DLG-02 geri sayım, DLG-19 / 28 / 30 girdi,
-/// DLG-21 adımlar, DLG-22 onay kutusu, DLG-23 seçenekler, DLG-25 üç eylem,
-/// DLG-32 bağlantı) katalogdan değil `FeedbackService.showDialog(builder:)`
-/// ile açılır.
+/// Özel gövdeli dialoglar (DLG-02 geri sayım — `LoginLockDialog`, DLG-19 /
+/// 28 / 30 girdi, DLG-21 adımlar, DLG-22 onay kutusu, DLG-23 seçenekler,
+/// DLG-25 üç eylem, DLG-32 bağlantı) katalogdan değil
+/// `FeedbackService.showDialog(builder:)` ile açılır.
 @immutable
 final class DialogSpec {
   const DialogSpec({
@@ -30,6 +30,7 @@ final class DialogSpec {
     this.secondary,
     this.icon,
     this.destructive = false,
+    this.primaryDanger,
     this.dismissible = true,
     this.primaryAction = 'confirm',
     this.secondaryAction = 'cancel',
@@ -50,8 +51,19 @@ final class DialogSpec {
   /// Üstteki ikon kutusu.
   final GuIcons? icon;
 
-  /// Yıkıcı işlem: ikon kutusu ve birincil düğme `danger`.
+  /// Yıkıcı işlem: ikon kutusu ve — [primaryDanger] aksini söylemedikçe —
+  /// birincil düğme `danger`.
   final bool destructive;
+
+  /// Birincil düğme `danger` mi? `null` → [destructive] ile aynı.
+  ///
+  /// Uyarı niteliğindeki dialoglarda ikon `danger`, birincil düğme ise
+  /// olağan (`primary`) kalır: DLG-01 "Destekle iletişime geç"
+  /// (`dialogs.js:18`), DLG-16 "Tamam".
+  final bool? primaryDanger;
+
+  /// Birincil düğme `danger` çizilir mi ([primaryDanger] ?? [destructive]).
+  bool get isPrimaryDanger => primaryDanger ?? destructive;
 
   /// `false` → scrim / geri tuşu kapatmaz (DLG-26, DLG-27).
   final bool dismissible;
@@ -70,6 +82,21 @@ final class DialogSpec {
 /// `showDialog(builder:)` ile açılır.
 abstract final class DialogCatalog {
   static final Map<DialogId, DialogSpec> _specs = <DialogId, DialogSpec>{
+    /// Design: DLG-01 — Hesabın askıya alındı (`dialogs.js:18`): ikon
+    /// `danger`, birincil düğme olağan. Sonuç `true` → destek e-postası
+    /// (`SuspendedAccountMixin`).
+    DialogId.dlg01: DialogSpec(
+      title: (l10n, _) => l10n.dlg01Title,
+      body: (l10n, _) => l10n.dlg01Body,
+      primary: (l10n) => l10n.dlg01Support,
+      secondary: (l10n) => l10n.commonOk,
+      icon: GuIcons.ban,
+      destructive: true,
+      primaryDanger: false,
+      primaryAction: 'support',
+      secondaryAction: 'ok',
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,

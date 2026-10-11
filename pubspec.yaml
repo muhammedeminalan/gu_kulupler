@@ -41,6 +41,7 @@ dependencies:
   # --- Cihaz servisleri (CD-08; her biri ilk kullanıldığı task'ta eklenir) ---
   connectivity_plus: ^7.3.1 # T-11: çevrimdışı durumu (Q-12)
   package_info_plus: ^10.2.2 # T-11: sürüm / build (DLG-26, SET-04)
+  url_launcher: ^6.3.3 # T-13: mailto / dış bağlantı (DLG-01; DLG-32 T-16)
 
   # --- Firebase (Mod C: firebase_messaging / cloud_functions yok — Q-02) ---
   firebase_core: ^4.15.0

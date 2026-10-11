@@ -11,6 +11,7 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// [ProjectDependency.setup]'ın gerçek uygulama yerine kullanacağı örnekler.
@@ -28,6 +29,7 @@ final class ProjectDependencyOverrides {
     this.appClock,
     this.connectivityService,
     this.appInfoService,
+    this.urlLauncherService,
     this.appPreferencesStore,
   });
 
@@ -54,6 +56,9 @@ final class ProjectDependencyOverrides {
 
   /// `AppInfoService` yerine.
   final AppInfoService? appInfoService;
+
+  /// `UrlLauncherService` yerine.
+  final UrlLauncherService? urlLauncherService;
 
   /// `AppPreferencesStore` yerine.
   final AppPreferencesStore? appPreferencesStore;
@@ -148,6 +153,9 @@ abstract final class ProjectDependency {
         ConnectivityGate(connectivityService),
       )
       ..registerSingleton<AppInfoService>(appInfoService)
+      ..registerSingleton<UrlLauncherService>(
+        overrides.urlLauncherService ?? const DeviceUrlLauncherService(),
+      )
       // Depo burada yalnızca kaydedilir; `AppBootstrap` `load()` çağırır.
       ..registerSingleton<AppPreferencesStore>(
         overrides.appPreferencesStore ?? SharedAppPreferencesStore(),

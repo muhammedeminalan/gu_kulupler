@@ -38,8 +38,13 @@ void main() {
   });
 
   group('T-07 · DialogCatalog', () {
-    test('satırları sahibi olan task ekler: T-11 → DLG-26, DLG-27', () {
-      expect(DialogCatalog.ids.toSet(), {DialogId.dlg26, DialogId.dlg27});
+    test('satırları sahibi olan task ekler: T-11 → DLG-26, DLG-27; '
+        'T-13 → DLG-01', () {
+      expect(DialogCatalog.ids.toSet(), {
+        DialogId.dlg01,
+        DialogId.dlg26,
+        DialogId.dlg27,
+      });
       for (final id in DialogId.values) {
         expect(
           DialogCatalog.of(id),

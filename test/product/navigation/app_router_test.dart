@@ -8,6 +8,10 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/auth/view/legal_view.dart';
+import 'package:gu_kulupler/features/auth/view/login_view.dart';
+import 'package:gu_kulupler/features/auth/view/register_view.dart';
+import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/view/error_view.dart';
 import 'package:gu_kulupler/features/system/view/not_found_view.dart';
@@ -123,13 +127,14 @@ void main() {
       app.session = FakeSessionStates.signedOutFirstRun;
       await tester.pumpAndSettle();
       expect(app.location, '/onboarding');
-      expect(_placeholderTitle(tester), tr.onbTitle);
+      expect(find.byType(OnboardingView), findsOneWidget);
 
       // ONB-01 "Başla": bayrak yazılır (CD-52).
       app.session = FakeSessionStates.signedOut;
       await tester.pumpAndSettle();
       expect(app.location, '/login');
-      expect(_placeholderTitle(tester), tr.authLoginTitle);
+      expect(find.byType(LoginView), findsOneWidget);
+      expect(find.byType(OnboardingView), findsNothing);
       expect(find.byType(AppShellView), findsNothing);
     });
 
@@ -323,6 +328,77 @@ void main() {
       expect(find.byType(NotFoundView), findsOneWidget);
     });
 
+    testWidgets('T-13 · /login/register AUT-01’in alt rotasıdır: `go` yığını '
+        '[giriş, kayıt] kurar; geri AUT-01’e döner', (tester) async {
+      final app = await TestRouter.pump(
+        tester,
+        session: FakeSessionStates.signedOut,
+      );
+      const RegisterRoute().go(rootNavigatorKey.currentContext!);
+      await tester.pumpAndSettle();
+
+      expect(app.location, '/login/register');
+      expect(find.byType(RegisterView), findsOneWidget);
+      expect(rootNavigatorKey.currentState!.widget.pages, hasLength(2));
+      expect(_topRootPage(), isA<MaterialPage<void>>());
+
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/login');
+      expect(find.byType(LoginView), findsOneWidget);
+      expect(find.byType(RegisterView), findsNothing);
+    });
+
+    testWidgets('T-13 · LegalRoute `push` ile açılır: açan ekran yığında '
+        'kalır, geri ona döner; `tip` yoldan okunur', (tester) async {
+      final app = await TestRouter.pump(
+        tester,
+        session: FakeSessionStates.signedOut,
+      );
+      for (final tab in LegalTab.values) {
+        final closed = LegalRoute(
+          tip: tab,
+        ).push<void>(rootNavigatorKey.currentContext!);
+        await tester.pumpAndSettle();
+
+        // `push` adres çubuğunu değiştirmez: taban konum açan ekrandır,
+        // yasal metin onun üstüne itilir.
+        expect(app.location, '/login');
+        expect(
+          GoRouterState.of(tester.element(find.byType(LegalView))).uri.path,
+          '/legal/${tab.name}',
+        );
+        expect(tester.widget<LegalView>(find.byType(LegalView)).tip, tab);
+        expect(_topRootPage(), isA<MaterialPage<void>>());
+        expect(rootNavigatorKey.currentState!.widget.pages, hasLength(2));
+        // Giriş ekranı yığında (altta) durur.
+        expect(find.byType(LoginView, skipOffstage: false), findsOneWidget);
+
+        expect(await app.systemBack(), isTrue);
+        await closed;
+        expect(app.location, '/login');
+        expect(find.byType(LegalView), findsNothing);
+      }
+    });
+
+    testWidgets('T-13 · /legal/:tip her oturum durumunda açılır (guard yok)', (
+      tester,
+    ) async {
+      for (final session in [
+        FakeSessionStates.signedOut,
+        FakeSessionStates.unverified,
+        FakeSessionStates.profileIncomplete,
+        FakeSessionStates.active,
+      ]) {
+        final app = await TestRouter.pump(tester, session: session);
+        await app.go('/legal/gizlilik');
+        expect(app.location, '/legal/gizlilik', reason: '${session.status}');
+        expect(
+          tester.widget<LegalView>(find.byType(LegalView)).tip,
+          LegalTab.gizlilik,
+        );
+      }
+    });
+
     testWidgets('/debug bayrak kapalıyken → /not-found (R14); DebugMenuView '
         'ağaca girmez', (tester) async {
       final app = await TestRouter.pump(tester);
@@ -471,7 +547,12 @@ void main() {
         clubsNavigatorKey.currentState!.widget.pages.single,
         isA<MaterialPage<void>>(),
       );
-      for (final location in ['/error', '/offline', '/not-found']) {
+      for (final location in [
+        '/error',
+        '/offline',
+        '/not-found',
+        '/legal/kvkk',
+      ]) {
         await app.go(location);
         expect(_topRootPage(), isA<MaterialPage<void>>(), reason: location);
       }

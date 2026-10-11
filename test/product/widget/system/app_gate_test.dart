@@ -9,18 +9,21 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_keys.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
 import 'package:gu_kulupler/product/init/app_gate_state.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_kulupler/product/widget/system/app_gate.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_auth_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_remote_config_service.dart';
+import '../../../fakes/fake_url_launcher_service.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_l10n.dart';
 
@@ -47,6 +50,9 @@ AppGateViewModel _notifier(WidgetTester tester) =>
     _container(tester).read(appGateViewModelProvider.notifier);
 
 FakeAuthService _auth() => GetIt.I<AuthService>() as FakeAuthService;
+
+FakeUrlLauncherService _launcher() =>
+    GetIt.I<UrlLauncherService>() as FakeUrlLauncherService;
 
 /// [body] boyunca `AppLogger` satırlarını toplar. `debugPrint` gövde bitmeden
 /// geri alınır (flutter_test hata ayıklama değişkenlerini gövde sonunda
@@ -192,18 +198,17 @@ void main() {
   });
 
   group('DLG-26 · Güncelleme gerekli', () {
-    testWidgets('"Güncelle" mağazayı açar (W-55: bağlantı T-13’te) ve kapı '
-        'açık kaldığı için dialog yeniden gösterilir', (tester) async {
-      late FakeFeedbackService feedback;
-      final logs = await _captureLogs(() async {
-        feedback = await _pumpGate(
-          tester,
-          state: _updateRequired,
-          firstResult: true,
-        );
-        await tester.pump();
-      });
-      expect(logs.join('\n'), contains('W-55'));
+    testWidgets('"Güncelle" mağaza sayfasını açar (W-55) ve kapı açık kaldığı '
+        'için dialog yeniden gösterilir', (tester) async {
+      final feedback = await _pumpGate(
+        tester,
+        state: _updateRequired,
+        firstResult: true,
+      );
+      await tester.pump();
+      expect(_launcher().opened, [
+        AppConstants.storeUri(TargetPlatform.android),
+      ]);
       expect(feedback.dialogs, [DialogId.dlg26, DialogId.dlg26]);
       expect(_state(tester).isUpdateRequired, isTrue);
     });
@@ -241,11 +246,11 @@ void main() {
     testWidgets('"Güncelle"den sonra da ekranda kalır', (tester) async {
       final h = _RealHarness();
       await h.pump(tester, _updateRequired);
-      final logs = await _captureLogs(() async {
-        await tester.tap(find.byKey(FeedbackKeys.of('DLG-26', 'update')));
-        await tester.pumpAndSettle();
-      });
-      expect(logs.join('\n'), contains('W-55'));
+      await tester.tap(find.byKey(FeedbackKeys.of('DLG-26', 'update')));
+      await tester.pumpAndSettle();
+      expect(_launcher().opened, [
+        AppConstants.storeUri(TargetPlatform.android),
+      ]);
       expect(
         tester.widget<GuDialogFrame>(find.byType(GuDialogFrame)).title,
         tester.l10n.dlg26Title,

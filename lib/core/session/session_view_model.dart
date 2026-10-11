@@ -7,6 +7,7 @@ import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
+import 'package:gu_kulupler/product/mixin/suspended_account_mixin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'session_view_model.g.dart';
@@ -25,8 +26,8 @@ part 'session_view_model.g.dart';
 /// | e-posta doğrulanmamış | `unverified` |
 /// | doğrulanmış; belge yok ya da profil eksik | `profileIncomplete` |
 /// | doğrulanmış; profil tamam | `active` (+ `superadmin` claim'i) |
-/// | `users.status == suspended` | `suspended` (+ gerekçe, CD-133) |
-/// | hesap devre dışı (`AuthError.userDisabled`) | `suspended` |
+/// | `users.status == suspended` | `suspended` (+ gerekçe, CD-133) → [onSuspended] |
+/// | hesap devre dışı (`AuthError.userDisabled`) | `suspended` → [onSuspended] |
 /// | `users.status == deleted` / `isDeleted` | oturum kapanır → `signedOut` |
 ///
 /// Çözüm tamamlanana kadar `status` önceki değerinde kalır
@@ -35,9 +36,16 @@ part 'session_view_model.g.dart';
 /// sahipli notlar).
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
-    with ProjectDependencyMixin {
+    with ProjectDependencyMixin, SuspendedAccountMixin {
   /// Çözüm sırası: yavaş kalan eski bir çözüm yenisinin sonucunu ezmez.
   int _epoch = 0;
+
+  /// Askı bildirimi (DLG-01) gösterilmeyi bekliyor mu
+  /// ([showPendingSuspendedNotice])?
+  bool _suspendedNoticePending = false;
+
+  /// Askıdaki oturumun kapatılması sürüyor mu ([onSuspended])?
+  bool _isClosingSuspended = false;
 
   /// Kimlik jetonu bu oturumda sunucudan yenilenmiş kullanıcı (D-28: girişte
   /// bir kez). Oturum kapanınca sıfırlanır.
@@ -158,6 +166,40 @@ final class SessionViewModel extends _$SessionViewModel
     if (state.sessionExpired) return;
     state = state.copyWith(sessionExpired: true);
     ref.read(appGateViewModelProvider.notifier).onSessionExpired();
+  }
+
+  /// Hesap askıya alındı (PLAN §13.4 R6'nın yan etkisi; W-03): oturumu
+  /// kapatır ve askı bildirimini (DLG-01) sıraya alır.
+  ///
+  /// Bildirim burada **gösterilmez**: yönlendirme (R6 → `/login`) alttaki
+  /// sayfayı değiştirirken kök gezgine itilen dialog sayfayla birlikte düşer.
+  /// Giriş ekranı yerleşince [showPendingSuspendedNotice] çağırır.
+  ///
+  /// Oturum kapatılamazsa durum `suspended` kalır (R6 kullanıcıyı `/login`'de
+  /// tutar); bildirim yine gösterilir.
+  Future<void> onSuspended() {
+    _suspendedNoticePending = true;
+    return _closeSuspendedSession();
+  }
+
+  /// Askıdaki oturumu kapatır; süren kapatma varken ikinci kez çağrılmaz.
+  Future<void> _closeSuspendedSession() async {
+    if (_isClosingSuspended) return;
+    _isClosingSuspended = true;
+    try {
+      await signOut();
+    } finally {
+      _isClosingSuspended = false;
+    }
+  }
+
+  /// Bekleyen askı bildirimini (DLG-01 "Hesabın askıya alındı") gösterir ve
+  /// kapanana kadar bekler; bekleyen bildirim yoksa etkisizdir. Giriş ekranı
+  /// (AUT-01) açılışta ve oturum durumu değişince çağırır.
+  Future<void> showPendingSuspendedNotice() async {
+    if (!_suspendedNoticePending) return;
+    _suspendedNoticePending = false;
+    await showSuspendedAccountDialog();
   }
 
   bool _isCurrent(int epoch) => ref.mounted && epoch == _epoch;
@@ -350,8 +392,9 @@ final class SessionViewModel extends _$SessionViewModel
     // gelirse, önbellekteki jetonla başarı dönen eski çözüm askıyı `active`
     // ile ezmemelidir.
     _epoch++;
-    // TODO(T-13): `onSuspended()` — oturumu kapat + DLG-01 (W-03). O zamana
-    // kadar erişimi R6 keser (askıdaki kullanıcı `/login`'de tutulur).
+    // Bildirim bayrağı durumdan önce kalkar: durumu dinleyen giriş ekranı
+    // bildirimi aynı anda isteyebilir.
+    _suspendedNoticePending = true;
     state = state.copyWith(
       status: AuthStatus.suspended,
       user: user,
@@ -359,6 +402,7 @@ final class SessionViewModel extends _$SessionViewModel
       isResolving: false,
       isError: false,
     );
+    unawaited(_closeSuspendedSession());
   }
 
   void _onTokenError(AuthError error) {
@@ -366,7 +410,12 @@ final class SessionViewModel extends _$SessionViewModel
       case AuthError.sessionExpired:
         onTokenExpired();
       case AuthError.userDisabled:
-        _suspend();
+        // Askı zaten işlendiyse (durum `suspended`) ya da oturum bu arada
+        // kapandıysa geç gelen olay yok sayılır: oturum iki kez kapatılmaz,
+        // bildirim iki kez gösterilmez.
+        if (state.uid != null && state.status != AuthStatus.suspended) {
+          _suspend();
+        }
       // Diğer hatalar oturumu geçersiz kılmaz; servis bu akışa yazmaz.
       // Sözlük büyürse sessizce yutulmasın diye günlüğe düşer.
       // ignore: no_default_cases

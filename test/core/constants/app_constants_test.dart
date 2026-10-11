@@ -1,5 +1,6 @@
 // T-08 · AppConstants.allowedEmailDomains: `gu_data` EmailDomainPolicy'ye
 // delegasyon — ikinci kopya yok (CD-76, D-27).
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
@@ -76,5 +77,58 @@ void main() {
         );
       },
     );
+  });
+
+  group('T-13 · AppConstants.supportMailUri', () {
+    test(
+      'destek adresine `mailto:` bağlantısıdır (DLG-01, SET-04 / SET-05)',
+      () {
+        final uri = AppConstants.supportMailUri;
+
+        expect(uri.scheme, 'mailto');
+        expect(uri.path, AppConstants.supportEmail);
+        expect(uri.toString(), 'mailto:${AppConstants.supportEmail}');
+        expect(uri.hasQuery, isFalse);
+      },
+    );
+  });
+
+  group('T-13 · AppConstants.storeUri (DLG-26 "Güncelle", W-55)', () {
+    test('Android ve diğer platformlar: Google Play sayfası', () {
+      for (final platform in [
+        TargetPlatform.android,
+        TargetPlatform.fuchsia,
+        TargetPlatform.linux,
+        TargetPlatform.windows,
+      ]) {
+        final uri = AppConstants.storeUri(platform);
+
+        expect(uri.scheme, 'https', reason: platform.name);
+        expect(uri.host, 'play.google.com');
+        expect(uri.path, '/store/apps/details');
+        expect(uri.queryParameters, {'id': AppConstants.androidApplicationId});
+      }
+    });
+
+    test('Apple platformları: App Store sayfası', () {
+      for (final platform in [TargetPlatform.iOS, TargetPlatform.macOS]) {
+        final uri = AppConstants.storeUri(platform);
+
+        expect(
+          uri.toString(),
+          'https://apps.apple.com/app/id${AppConstants.appStoreId}',
+          reason: platform.name,
+        );
+      }
+    });
+
+    test('androidApplicationId, Gradle `applicationId` ile aynıdır', () {
+      final gradle = readText('android/app/build.gradle.kts');
+
+      expect(
+        gradle,
+        contains('applicationId = "${AppConstants.androidApplicationId}"'),
+      );
+    });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:gu_data/gu_data.dart';
 
 /// Ürün adı ve dış adresler için TEK kaynak (D-01, K-D, K-N, CD-75, CD-76).
@@ -23,4 +24,39 @@ abstract final class AppConstants {
 
   /// Destek e-postası (DLG-01 mailto, SET-04; yer tutucu — K-N).
   static const String supportEmail = 'kulupler-destek@gumushane.edu.tr';
+
+  /// [supportEmail] adresine e-posta açan bağlantı (`UrlLauncherService.open`;
+  /// DLG-01 "Destekle iletişime geç", SET-04 / SET-05).
+  static Uri get supportMailUri => Uri(scheme: _mailScheme, path: supportEmail);
+
+  /// Android uygulama kimliği (`android/app/build.gradle.kts`
+  /// `applicationId` ile parite testi); Google Play adresinde kullanılır.
+  static const String androidApplicationId = 'com.gukulupler.gu_kulupler';
+
+  /// App Store uygulama kimliği (`apps.apple.com/app/id…`).
+  // TODO(T-46): yer tutucu — App Store Connect kaydı açılınca gerçek kimlik
+  // yazılır (mağaza ve yayın hazırlığı).
+  static const String appStoreId = '0000000000';
+
+  /// Uygulamanın [platform] mağazasındaki sayfası (DLG-26 "Güncelle";
+  /// `UrlLauncherService.open`). Apple platformlarında App Store, diğerlerinde
+  /// Google Play.
+  static Uri storeUri(TargetPlatform platform) => switch (platform) {
+    TargetPlatform.iOS || TargetPlatform.macOS => Uri.https(
+      _appStoreHost,
+      '/app/id$appStoreId',
+    ),
+    TargetPlatform.android ||
+    TargetPlatform.fuchsia ||
+    TargetPlatform.linux ||
+    TargetPlatform.windows => Uri.https(_playStoreHost, _playStorePath, {
+      _playStoreIdParameter: androidApplicationId,
+    }),
+  };
+
+  static const String _mailScheme = 'mailto';
+  static const String _appStoreHost = 'apps.apple.com';
+  static const String _playStoreHost = 'play.google.com';
+  static const String _playStorePath = '/store/apps/details';
+  static const String _playStoreIdParameter = 'id';
 }

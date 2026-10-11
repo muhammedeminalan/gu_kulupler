@@ -458,14 +458,17 @@ void main() {
     ) async {
       final h = _Harness();
       await h.pump(tester);
-      expect(DialogCatalog.of(_dialog), isNull);
+      // Özel gövdeli (katalog kaydı olmayan) ilk dialog.
+      final unlisted = DialogId.values.firstWhere(
+        (id) => DialogCatalog.of(id) == null,
+      );
       expect(
-        () => h.service.showDialog<bool>(_dialog),
+        () => h.service.showDialog<bool>(unlisted),
         throwsA(
           isA<StateError>().having(
             (e) => e.message,
             'message',
-            contains(_dialog.designId),
+            contains(unlisted.designId),
           ),
         ),
       );

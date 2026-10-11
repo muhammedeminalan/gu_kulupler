@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/product/init/app_gate_state.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_app_info_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
+import '../../fakes/fake_url_launcher_service.dart';
 import '../../fakes/register_fakes.dart';
 import '../../helpers/test_container.dart';
 
@@ -279,6 +282,46 @@ void main() {
         ..onSessionExpired()
         ..onSessionExpired();
       expect(changes, 1);
+    });
+  });
+
+  group('T-13 · AppGateViewModel · mağaza bağlantısı (W-55)', () {
+    FakeUrlLauncherService launcher() =>
+        GetIt.I<UrlLauncherService>() as FakeUrlLauncherService;
+
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    test('openStore cihazın platformundaki mağaza sayfasını açar; kapı '
+        'kapanmaz', () async {
+      config.values[RemoteConfigKeys.minSupportedBuild] = 11;
+      final container = createContainer();
+      final notifier = container.read(appGateViewModelProvider.notifier);
+      await pumpEventQueue();
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(await notifier.openStore(), isTrue);
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      expect(await notifier.openStore(), isTrue);
+      debugDefaultTargetPlatformOverride = null;
+
+      expect(launcher().opened, [
+        AppConstants.storeUri(TargetPlatform.android),
+        AppConstants.storeUri(TargetPlatform.iOS),
+      ]);
+      expect(container.read(appGateViewModelProvider).isUpdateRequired, isTrue);
+    });
+
+    test('mağaza açılamazsa `false` döner ve günlüğe düşer', () async {
+      final logs = <String>[];
+      debugPrint = (message, {wrapWidth}) => logs.add(message ?? '');
+      final container = createContainer();
+      final notifier = container.read(appGateViewModelProvider.notifier);
+      await pumpEventQueue();
+      launcher().canOpen = false;
+
+      expect(await notifier.openStore(), isFalse);
+      expect(launcher().opened, hasLength(1));
+      expect(logs.join('\n'), contains('Mağaza sayfası açılamadı'));
     });
   });
 }

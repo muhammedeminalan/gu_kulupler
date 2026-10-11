@@ -13,6 +13,7 @@ import 'register_fakes.dart';
 
 const String _email = 'ayse@ogr.gumushane.edu.tr';
 const String _password = 'Parola123';
+const String _name = 'Ayşe Yılmaz';
 
 void main() {
   late FakeAppClock clock;
@@ -62,10 +63,16 @@ void main() {
 
     test('register: doğrulanmamış oturum açar, `registered`e yazar ve '
         'yeniden gönderme beklemesini başlatır (gerçek kural)', () async {
-      final result = await fake.register(email: _email, password: _password);
+      final result = await fake.register(
+        email: _email,
+        password: _password,
+        name: _name,
+      );
 
       expect(result.dataOrNull?.emailVerified, isFalse);
-      expect(fake.registered, [(email: _email, password: _password)]);
+      expect(fake.registered, [
+        (email: _email, password: _password, name: _name),
+      ]);
       expect(fake.currentUser, result.dataOrNull);
       expect(fake.resendCooldownRemaining, Limits.verificationResendCooldown);
       expect(
@@ -78,11 +85,46 @@ void main() {
       expect((await fake.sendEmailVerification()).isSuccess, isTrue);
     });
 
+    test('register: ad görünen ad olarak taşınır (CD-134) — kayıt sonucu, '
+        'currentUser, doğrulama sonrası reloadUser ve yeniden giriş', () async {
+      final result = await fake.register(
+        email: _email,
+        password: _password,
+        name: '  $_name ',
+      );
+
+      expect(result.dataOrNull?.displayName, _name, reason: 'kırpılır');
+      expect(fake.currentUser?.displayName, _name);
+      expect(fake.service.displayName, _name);
+
+      fake.service.emailVerified = true;
+      expect((await fake.reloadUser()).dataOrNull?.displayName, _name);
+      await fake.signOut();
+      final signedIn = await fake.signIn(email: _email, password: _password);
+      expect(signedIn.dataOrNull?.displayName, _name);
+    });
+
+    test('register: ad yazılamazsa kayıt yine başarıdır, displayName null '
+        '(AUT-05 yedeğe düşer)', () async {
+      fake.service.failDisplayNameWrite = true;
+
+      final result = await fake.register(
+        email: _email,
+        password: _password,
+        name: _name,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.dataOrNull?.displayName, isNull);
+      expect(fake.registered, hasLength(1));
+    });
+
     test('register: izinli olmayan alan adı reddedilir, `registered` '
         'değişmez', () async {
       final result = await fake.register(
         email: 'ayse@gmail.com',
         password: _password,
+        name: _name,
       );
       expect(result.errorOrNull, AuthError.domainNotAllowed);
       expect(fake.registered, isEmpty);
@@ -121,7 +163,7 @@ void main() {
 
     test('reloadUser: doğrulanmadıysa emailNotVerified; doğrulandıysa '
         'güncel kullanıcı', () async {
-      await fake.register(email: _email, password: _password);
+      await fake.register(email: _email, password: _password, name: _name);
       expect((await fake.reloadUser()).errorOrNull, AuthError.emailNotVerified);
 
       fake.service.emailVerified = true;

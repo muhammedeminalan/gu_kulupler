@@ -3,3 +3,5 @@
 # Tek kaynak: tool/check_design_coverage.js ve test/helpers/action_inventory.dart bu dosyayı okur.
 # Biçim: satır başına bir kalıp (`*` joker), `#` sonrası gerekçe = kaynak dosya:satır + görünürlük koşulu.
 # Her ekran task'ı kendi satırlarını aynı commit'te ekler.
+ONB-01.start   # design/prototype/app/screens-auth.js:50 — yalnızca son slaytta ("İleri" yerine "Başla"); yakalama ilk slayt
+AUT-06.accept  # design/prototype/app/screens-auth.js:159 — yalnızca kayıt formundan açılışta (`from === 'register'`)

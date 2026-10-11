@@ -17,6 +17,7 @@ const String _interface =
 const String _implementation =
     'packages/gu_data/lib/src/repositories/firebase_auth_repository.dart';
 const String _email = 'ayse@ogr.gumushane.edu.tr';
+const String _name = 'Ayşe Yılmaz';
 const String _password = 'Sifre1234';
 const String _wrongPassword = 'Yanlis1234';
 
@@ -88,17 +89,24 @@ void main() {
         final result = await repository.register(
           email: '  $email ',
           password: _password,
+          name: _name,
         );
 
         expect(
           result.dataOrNull,
-          AuthUserInfo(uid: 'u_ayse', email: email, emailVerified: false),
+          AuthUserInfo(
+            uid: 'u_ayse',
+            email: email,
+            emailVerified: false,
+            displayName: _name,
+          ),
         );
         expect(
           auth.calls,
           ['register:$email', 'sendEmailVerification'],
           reason: 'adres kırpılarak servise gider',
         );
+        expect(auth.registeredNames, [_name]);
         expect(
           repository.resendCooldownRemaining,
           Limits.verificationResendCooldown,
@@ -119,6 +127,7 @@ void main() {
         final result = await repository.register(
           email: email,
           password: _password,
+          name: _name,
         );
 
         expect(result.errorOrNull, AuthError.domainNotAllowed);
@@ -140,6 +149,7 @@ void main() {
           final result = await repository.register(
             email: email,
             password: _password,
+            name: _name,
           );
 
           expect(result.errorOrNull, AuthError.invalidEmail);
@@ -154,6 +164,7 @@ void main() {
         final result = await repository.register(
           email: _email,
           password: password,
+          name: _name,
         );
 
         expect(result.errorOrNull, AuthError.weakPassword);
@@ -165,9 +176,62 @@ void main() {
       final result = await repository.register(
         email: _email,
         password: 'şifre1234Ş',
+        name: _name,
       );
 
       expect(result.isSuccess, isTrue);
+    });
+
+    test('ad kırpılarak kimlik hesabının görünen adı olur ve oturumda '
+        'taşınır (CD-134)', () async {
+      final result = await repository.register(
+        email: _email,
+        password: _password,
+        name: '  Ayşe Yılmaz  ',
+      );
+
+      expect(auth.registeredNames, ['Ayşe Yılmaz']);
+      expect(result.dataOrNull?.displayName, 'Ayşe Yılmaz');
+      expect(repository.currentUser?.displayName, 'Ayşe Yılmaz');
+    });
+
+    test('ad doğrulama sonrasında da okunur: reloadUser görünen adı korur '
+        '(profil belgesi o zaman oluşturulur — W-56)', () async {
+      await repository.register(
+        email: _email,
+        password: _password,
+        name: _name,
+      );
+      auth.emailVerified = true;
+
+      final reloaded = await repository.reloadUser();
+
+      expect(
+        reloaded.dataOrNull,
+        const AuthUserInfo(
+          uid: 'u_ayse',
+          email: _email,
+          emailVerified: true,
+          displayName: _name,
+        ),
+      );
+    });
+
+    test('ad başka cihazdaki girişte de gelir: signIn görünen adı '
+        'taşır', () async {
+      await repository.register(
+        email: _email,
+        password: _password,
+        name: _name,
+      );
+      await repository.signOut();
+
+      final signedIn = await repository.signIn(
+        email: _email,
+        password: _password,
+      );
+
+      expect(signedIn.dataOrNull?.displayName, _name);
     });
 
     test(
@@ -178,6 +242,7 @@ void main() {
         final result = await repository.register(
           email: _email,
           password: _password,
+          name: _name,
         );
 
         expect(result.errorOrNull, AuthError.emailAlreadyInUse);
@@ -193,6 +258,7 @@ void main() {
       final result = await repository.register(
         email: _email,
         password: _password,
+        name: _name,
       );
 
       expect(result.dataOrNull?.uid, 'u_ayse');

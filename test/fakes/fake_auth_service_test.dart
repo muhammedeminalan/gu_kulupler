@@ -74,6 +74,51 @@ void main() {
       expect(fake.currentUser?.emailVerified, isTrue);
     });
 
+    test('register(displayName): ad kırpılarak sunucu durumuna yazılır; '
+        'signIn ve reload oturuma yansıtır (CD-134)', () async {
+      final fake = FakeAuthService();
+
+      final registered = await fake.register(
+        email: _email,
+        password: _password,
+        displayName: '  Ayşe Yılmaz ',
+      );
+
+      expect(registered.dataOrNull?.displayName, 'Ayşe Yılmaz');
+      expect(fake.displayName, 'Ayşe Yılmaz');
+      expect(fake.callsTo('register').single.args, [
+        _email,
+        _password,
+        '  Ayşe Yılmaz ',
+      ]);
+      expect((await fake.reload()).dataOrNull?.displayName, 'Ayşe Yılmaz');
+      await fake.signOut();
+      await fake.signIn(email: _email, password: _password);
+      expect(fake.currentUser?.displayName, 'Ayşe Yılmaz');
+    });
+
+    test('register: ad verilmezse, boşsa ya da yazılamazsa displayName '
+        'null', () async {
+      final fake = FakeAuthService();
+      for (final name in [null, '', '   ']) {
+        final result = await fake.register(
+          email: _email,
+          password: _password,
+          displayName: name,
+        );
+        expect(result.dataOrNull?.displayName, isNull, reason: '"$name"');
+      }
+
+      fake.failDisplayNameWrite = true;
+      final result = await fake.register(
+        email: _email,
+        password: _password,
+        displayName: 'Ayşe Yılmaz',
+      );
+      expect(result.isSuccess, isTrue);
+      expect(result.dataOrNull?.displayName, isNull);
+    });
+
     test(
       'oturum gerektiren çağrılar oturum yokken sessionExpired döner',
       () async {

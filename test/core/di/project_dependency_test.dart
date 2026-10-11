@@ -16,6 +16,7 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_app_info_service.dart';
@@ -26,6 +27,7 @@ import '../../fakes/fake_crash_service.dart';
 import '../../fakes/fake_firestore_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
 import '../../fakes/fake_storage_service.dart';
+import '../../fakes/fake_url_launcher_service.dart';
 import '../../helpers/design_files.dart';
 import '../../helpers/fake_app_clock.dart';
 
@@ -94,6 +96,30 @@ void main() {
       expect(GetIt.I<ConnectivityGate>(), isA<ConnectivityGate>());
       expect(GetIt.I<AppInfoService>(), same(appInfo));
       expect(GetIt.I<AppPreferencesStore>(), same(prefs));
+      // T-13 · verilmediyse gerçek uygulama (platform çağrısı kurulumda yok).
+      expect(GetIt.I<UrlLauncherService>(), isA<DeviceUrlLauncherService>());
+    });
+
+    test('UrlLauncherService verilen örnekle kaydedilir; mixin onu görür '
+        '(T-13)', () async {
+      final launcher = FakeUrlLauncherService();
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: ProjectDependencyOverrides(
+          authService: auth,
+          firestoreService: firestore,
+          storageService: storage,
+          connectivityService: connectivity,
+          appInfoService: appInfo,
+          appPreferencesStore: prefs,
+          urlLauncherService: launcher,
+        ),
+      );
+
+      expect(GetIt.I<UrlLauncherService>(), same(launcher));
+      expect(_Consumer().urlLauncherService, same(launcher));
     });
 
     test('FeedbackService verilen kök gezgine ve toast denetleyicisine '
@@ -224,8 +250,11 @@ void main() {
         final registered = await consumer.authRepository.register(
           email: email,
           password: 'Parola123',
+          name: 'Ayşe Yılmaz',
         );
         expect(auth.callsTo('register'), hasLength(1));
+        // CD-134: ad kayıtlı AuthService'e görünen ad olarak gider.
+        expect(registered.dataOrNull!.displayName, 'Ayşe Yılmaz');
         expect(consumer.authRepository.currentUser, auth.currentUser);
         expect(
           consumer.authRepository.resendCooldownRemaining,

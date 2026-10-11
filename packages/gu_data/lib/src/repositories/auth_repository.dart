@@ -37,9 +37,17 @@ abstract interface class AuthRepository {
   /// Hesap açıldıktan sonra doğrulama e-postası gönderilemezse sonuç yine
   /// başarıdır (hesap vardır; AUT-03'te yeniden gönderilir) ve bekleme süresi
   /// başlamaz. Gönderildiyse [resendCooldownRemaining] başlar.
+  ///
+  /// [name] kayıt formundaki ad soyaddır (boşlukları kırpılır) ve kimlik
+  /// hesabının görünen adı olarak yazılır (CD-134): profil belgesi yalnızca
+  /// e-posta doğrulandıktan sonra oluşturulabildiğinden ad o ana kadar —
+  /// cihaz değişse bile — `AuthUserInfo.displayName` üzerinde taşınır. Biçim
+  /// denetimi (uzunluk) çağıranın form doğrulamasındadır; boş ad yazılmaz.
+  /// Ad yazılamazsa sonuç yine başarıdır (`displayName` `null` kalır).
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
+    required String name,
   });
 
   /// E-posta ve şifreyle oturum açar.

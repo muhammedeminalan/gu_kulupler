@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/product/init/app_gate_state.dart';
@@ -70,12 +72,16 @@ final class AppGateViewModel extends _$AppGateViewModel
     state = state.copyWith(isSessionExpired: false);
   }
 
-  /// DLG-26 "Güncelle": uygulamanın mağaza sayfasını açar. Kapı kapanmaz —
-  /// güncelleme kurulana kadar `isUpdateRequired` açık kalır.
-  // TODO(T-13): `urlLauncherService.open(…)` ile mağaza sayfasını aç
-  // (`UrlLauncherService` T-13'te doğar; bağlama borcu W-55).
-  Future<void> openStore() async {
-    AppLogger.info('Mağaza bağlantısı henüz bağlı değil (W-55)');
+  /// DLG-26 "Güncelle": uygulamanın mağaza sayfasını açar
+  /// (`AppConstants.storeUri`, cihazın platformuna göre) ve açılıp
+  /// açılmadığını döndürür. Kapı kapanmaz — güncelleme kurulana kadar
+  /// `isUpdateRequired` açık kalır.
+  Future<bool> openStore() async {
+    final opened = await urlLauncherService.open(
+      AppConstants.storeUri(defaultTargetPlatform),
+    );
+    if (!opened) AppLogger.warn('Mağaza sayfası açılamadı');
+    return opened;
   }
 
   void _read() {

@@ -35,6 +35,15 @@ final class FakeAuthService extends FakeBase implements AuthService {
   /// [signIn] / [register] ile açılan oturumun uid'i.
   String uid = 'fake-uid';
 
+  /// Sunucudaki görünen ad (CD-134): [register] verilen adı buraya yazar;
+  /// [signIn] ve [reload] [currentUser]'a yansıtır. Test doğrudan da kurabilir
+  /// (başka cihazda kayıt olmuş kullanıcı).
+  String? displayName;
+
+  /// Verilirse [register] hesabı açar ama görünen adı **yazamaz** (gerçek
+  /// serviste ad yazımı başarısız olsa da kayıt başarıdır).
+  bool failDisplayNameWrite = false;
+
   /// [idTokenClaims] sonucu (`{'superadmin': true}` gibi).
   Map<String, Object?> claims = <String, Object?>{};
 
@@ -62,9 +71,13 @@ final class FakeAuthService extends FakeBase implements AuthService {
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
+    String? displayName,
   }) async {
-    record('register', [email, password]);
+    record('register', [email, password, displayName]);
     if (_failure() case final error?) return FirebaseFailure(error);
+    // Gerçek servis gibi: ad kırpılır, boş ad yazılmaz.
+    final name = displayName?.trim() ?? '';
+    this.displayName = name.isEmpty || failDisplayNameWrite ? null : name;
     return FirebaseSuccess(_open(email, verified: false));
   }
 
@@ -101,6 +114,7 @@ final class FakeAuthService extends FakeBase implements AuthService {
         uid: user.uid,
         email: user.email,
         emailVerified: emailVerified,
+        displayName: displayName,
       ),
     );
   }
@@ -134,7 +148,12 @@ final class FakeAuthService extends FakeBase implements AuthService {
   }
 
   AuthUserInfo _open(String email, {required bool verified}) {
-    final user = AuthUserInfo(uid: uid, email: email, emailVerified: verified);
+    final user = AuthUserInfo(
+      uid: uid,
+      email: email,
+      emailVerified: verified,
+      displayName: displayName,
+    );
     currentUser = user;
     authStateController.add(user);
     return user;

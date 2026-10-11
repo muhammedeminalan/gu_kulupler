@@ -45,7 +45,7 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 | AUT-04 | `/login/reset` | `ResetPasswordRoute` | G | alt rota |
 | AUT-03 | `/verify` | `VerifyEmailRoute` | oturum var, doğrulanmamış | |
 | AUT-05 | `/setup-profile` | `SetupProfileRoute` | doğrulanmış, profil eksik | |
-| AUT-06 | `/legal/:tip` | `LegalRoute` | — | `tip ∈ {kosullar, gizlilik, kvkk}`; geçersiz → SYS-04; **`push`** ile açılır |
+| AUT-06 | `/legal/:tip` | `LegalRoute` | — | `tip ∈ {kosullar, gizlilik, kvkk}`; geçersiz → SYS-04; **`push`** ile açılır; `?from=register` (AUT-02'den açılış) → altta "Okudum, anladım" (`AUT-06.accept`, CD-134) |
 
 ### 2.2 Sekme: Kulüpler (`/clubs`)
 

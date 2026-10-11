@@ -7,14 +7,15 @@ import 'package:gu_ui/src/tokens/gu_spacing.dart';
 
 /// Yatay şerit dolgusu — `.hscroll` + dolgu değiştiricileri (css:102, 105).
 enum GuHorizontalListPadding {
-  /// `.hscroll{padding:3px 16px}`.
+  /// `.hscroll{padding:3px 16px}` (AUT-06 bölüm çipleri: `.hscroll.py8`
+  /// yazılmıştır, ancak `.hscroll` kuralı (css:105) `.py8`'den (css:102) sonra
+  /// gelir ve dolguyu ezer — referans görüntü 3 px'tir).
   normal(GuSizes.hscrollPaddingY, GuSizes.hscrollPaddingY),
 
   /// `.hscroll.pb16`: alt dolgu 16 (CLB-01, CLB-06, MGT-03, EVT-01).
   bottom(GuSizes.hscrollPaddingY, GuSpacing.s16),
 
-  /// `.hscroll.py8`: üst / alt dolgu 8 (NTF-01, MGT-06, MGT-10, ADM-04,
-  /// AUT-06).
+  /// `.hscroll.py8`: üst / alt dolgu 8 (NTF-01, MGT-06, MGT-10, ADM-04).
   vertical(GuSpacing.s8, GuSpacing.s8);
 
   const GuHorizontalListPadding(this.topInset, this.bottomInset);

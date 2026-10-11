@@ -6,6 +6,9 @@
 // yüzeyi ekler.
 //
 //   final auth = FakeAuthRepository(clock)..service.emailVerified = true;
+//   await auth.register(email: email, password: password, name: 'Ayşe Yılmaz');
+//   auth.currentUser!.displayName;             // 'Ayşe Yılmaz' (CD-134)
+//   auth.service.displayName = 'Ayşe Yılmaz';  // başka cihazda kayıt olmuş
 //   await auth.signIn(email: email, password: password);
 //   auth.isSuperAdminResult = true;
 //   auth.failNext(AuthError.network);          // repository düzeyinde hata
@@ -21,8 +24,11 @@ import 'package:gu_data/gu_data.dart';
 import 'fake_auth_service.dart';
 import 'fake_base.dart';
 
-/// Kayıt / giriş çağrısının kimlik bilgisi.
+/// Giriş çağrısının kimlik bilgisi.
 typedef FakeCredentials = ({String email, String password});
+
+/// Başarıyla açılan hesabın kayıt bilgisi (form değerleri, kırpılmadan).
+typedef FakeRegistration = ({String email, String password, String name});
 
 final class FakeAuthRepository extends FakeBase implements AuthRepository {
   /// [clock] kilit ve bekleme sürelerinin saatidir. [service] verilmezse yeni
@@ -40,7 +46,7 @@ final class FakeAuthRepository extends FakeBase implements AuthRepository {
   late final AuthRepository _real;
 
   /// Başarıyla açılan hesaplar, sırasıyla.
-  final List<FakeCredentials> registered = <FakeCredentials>[];
+  final List<FakeRegistration> registered = <FakeRegistration>[];
 
   /// Tüm giriş denemeleri (başarısız ve kilide takılanlar dahil), sırasıyla.
   final List<FakeCredentials> signInAttempts = <FakeCredentials>[];
@@ -86,11 +92,18 @@ final class FakeAuthRepository extends FakeBase implements AuthRepository {
   Future<AuthResult<AuthUserInfo>> register({
     required String email,
     required String password,
+    required String name,
   }) async {
-    record('register', [email, password]);
+    record('register', [email, password, name]);
     if (_failure() case final error?) return FirebaseFailure(error);
-    final result = await _real.register(email: email, password: password);
-    if (result.isSuccess) registered.add((email: email, password: password));
+    final result = await _real.register(
+      email: email,
+      password: password,
+      name: name,
+    );
+    if (result.isSuccess) {
+      registered.add((email: email, password: password, name: name));
+    }
     return result;
   }
 
