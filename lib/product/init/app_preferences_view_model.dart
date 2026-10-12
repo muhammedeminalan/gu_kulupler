@@ -2,6 +2,8 @@ import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/product/init/app_preferences_state.dart';
+import 'package:gu_kulupler/product/mixin/permission_prompt_mixin.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -14,7 +16,7 @@ part 'app_preferences_view_model.g.dart';
 /// yalnızca günlüğe düşer (geri alma yok — tercih oturum boyunca geçerlidir).
 @Riverpod(keepAlive: true)
 final class AppPreferencesViewModel extends _$AppPreferencesViewModel
-    with ProjectDependencyMixin {
+    with ProjectDependencyMixin, PermissionPromptMixin {
   @override
   AppPreferencesState build() => _fromStore();
 
@@ -47,6 +49,22 @@ final class AppPreferencesViewModel extends _$AppPreferencesViewModel
   Future<void> markNotificationPermissionAsked() async {
     state = state.copyWith(notificationPermissionAsked: true);
     _report(await appPreferencesStore.setNotificationPermissionAsked(true));
+  }
+
+  /// İlk aktif girişte bildirim ön izni (DLG-03) — cihazda **bir kez**
+  /// (architecture §6; PLAN §15.6). Uygulama kabuğu ilk kurulduğunda çağırır.
+  ///
+  /// Bayrak sorudan **önce** işaretlenir: sonuç ne olursa olsun (izin, ret,
+  /// "Şimdi değil", scrim) bir daha sorulmaz ve eşzamanlı ikinci çağrı
+  /// pencereyi yeniden açmaz. İzin zaten verilmişse pencere açılmaz.
+  /// Dönüş: bu çağrıda izin verildi mi (TST-19 gösterildi).
+  Future<bool> askNotificationPermissionOnce() async {
+    if (state.notificationPermissionAsked) return false;
+    await markNotificationPermissionAsked();
+    if (await permissionService.isGranted(Permission.notification)) {
+      return false;
+    }
+    return askNotificationPermission();
   }
 
   /// Depodaki `onboardingSeen` değerini state'e yansıtır. Bayrağı

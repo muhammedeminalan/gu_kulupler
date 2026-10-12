@@ -4,6 +4,9 @@
 //    gerçek `gu-kulupler` projesine bu testlerden hiçbir istek gidemez (Q-01, Q-03).
 //  - Kurallar firebase.json'ın gösterdiği dosyalardan yüklenir (firebase/firestore.rules, storage.rules).
 //  - Her testten önce Firestore ve Storage boşaltılır (emülatör API'si; uygulama kodunda silme yoktur).
+//    Storage `testEnv.clearStorage()` ile DEĞİL emülatörün sıfırlama ucuyla boşaltılır: `clearStorage`
+//    yalnızca kök düzeyindeki dosyaları siler, klasör altındakiler (`users/{uid}/{file}` …) kalır ve bir
+//    testin yüklediği dosya sonrakinde "var olan dosya" olur (T-14: üzerine yazma yasağı testleri).
 const fs = require('node:fs');
 const { initializeTestEnvironment } = require('@firebase/rules-unit-testing');
 const { setLogLevel } = require('firebase/firestore');
@@ -51,6 +54,17 @@ async function getAdminContext() {
   return admin.context;
 }
 
+/**
+ * Storage emülatöründeki TÜM dosyaları (iç içe yollar dahil) ve yarım yüklemeleri boşaltır
+ * (`POST /internal/reset`; kurallar yerinde kalır). Adres yalnızca yerel emülatördür
+ * (emulator_ports.js yerel olmayan adresi reddeder).
+ */
+async function resetStorage() {
+  const { host, port } = emulator('storage');
+  const response = await fetch(`http://${host}:${port}/internal/reset`, { method: 'POST' });
+  if (!response.ok) throw new Error(`Storage emülatörü sıfırlanamadı: HTTP ${response.status}`);
+}
+
 function assertDemoProject() {
   const fromCli = process.env.GCLOUD_PROJECT;
   if (fromCli && !fromCli.startsWith('demo-')) {
@@ -71,7 +85,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await testEnv.clearFirestore();
-  await testEnv.clearStorage();
+  await resetStorage();
 });
 
 afterAll(async () => {
@@ -84,4 +98,4 @@ afterAll(async () => {
   testEnv = null;
 });
 
-module.exports = { PROJECT_ID, getTestEnv, getAdminContext };
+module.exports = { PROJECT_ID, getTestEnv, getAdminContext, resetStorage };

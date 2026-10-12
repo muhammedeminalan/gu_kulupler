@@ -5,6 +5,8 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 /// ViewModel'lerin GetIt'teki servis ve repository'lere **tek** erişim yolu
@@ -57,4 +59,12 @@ mixin ProjectDependencyMixin {
 
   /// Dış bağlantılar: `mailto:`, web, mağaza (T-13).
   UrlLauncherService get urlLauncherService => GetIt.I<UrlLauncherService>();
+
+  /// Kamera / bildirim izni ve "Ayarlara git" (T-14). İzin ön açıklamaları
+  /// (DLG-03, DLG-04, DLG-05) için `PermissionPromptMixin` kullanılır.
+  PermissionService get permissionService => GetIt.I<PermissionService>();
+
+  /// Kamera / galeriden görsel seçimi (T-14). Ekranlar doğrudan değil
+  /// `PermissionPromptMixin.pickImage` üzerinden çağırır.
+  ImagePickerService get imagePickerService => GetIt.I<ImagePickerService>();
 }

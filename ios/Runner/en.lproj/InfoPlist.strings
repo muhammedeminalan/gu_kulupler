@@ -1,0 +1,5 @@
+/* GÜ Kulüpler — system permission prompt texts, English (T-14; PLAN §5.6.1).
+   Keys match Info.plist; texts live here, not in the ARB files (docs/packages.md §5).
+   In-app explanations: DLG-04 "Camera access", DLG-05 "Photo access". */
+"NSCameraUsageDescription" = "We need camera access to take photos and to scan QR codes at event check-in.";
+"NSPhotoLibraryUsageDescription" = "We need access to your photos so you can pick profile and post pictures.";

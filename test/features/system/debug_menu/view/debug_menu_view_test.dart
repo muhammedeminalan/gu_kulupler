@@ -11,6 +11,8 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/auth/view/login_view.dart';
+import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_accounts.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/widget/debug_menu_corner_button.dart';
@@ -345,29 +347,74 @@ void main() {
   });
 
   group('T-11 · DebugMenuCornerButton', () {
-    testWidgets('sağ üst köşede 32 dp düğme; anahtar `debug.open`; dokunma '
-        'geri çağrıyı tetikler', (tester) async {
+    Rect handleRect(WidgetTester tester) =>
+        tester.getRect(find.byKey(DebugMenuCornerButton.openKey));
+
+    /// [position] noktasındaki vuruş yolunda [finder]'ın öğesi var mı?
+    bool hits(WidgetTester tester, Offset position, Finder finder) {
+      final target = tester.renderObject(finder);
+      return tester
+          .hitTestOnBinding(position)
+          .path
+          .map((entry) => entry.target)
+          .whereType<RenderObject>()
+          .any((node) => _isWithin(node, target));
+    }
+
+    bool hitsHandle(WidgetTester tester, Offset position) =>
+        hits(tester, position, find.byKey(DebugMenuCornerButton.openKey));
+
+    testWidgets('sağ kenarda, dikeyde ~%45’te 16 × 48 dp yarı saydam tutamaç; '
+        'anahtar `debug.open`; dokunma geri çağrıyı tetikler', (tester) async {
       var opened = 0;
       await tester.pumpApp(
         DebugMenuCornerButton(
           onPressed: () => opened++,
           child: const SizedBox.expand(key: ValueKey<String>('corner.child')),
         ),
-        viewPadding: const EdgeInsets.only(top: 47),
+        viewPadding: const EdgeInsets.only(top: 47, bottom: 34),
       );
       expect(
         DebugMenuCornerButton.openKey,
         const ValueKey<String>('debug.open'),
       );
-      final button = tester.widget<GuIconButton>(
-        find.byKey(DebugMenuCornerButton.openKey),
+      // Sağ kenara yapışık; genişlik sayfa kenar boşluğu kadar.
+      final rect = handleRect(tester);
+      expect(rect.size, const Size(16, 48));
+      expect(rect.right, 390);
+      expect(rect.top, closeTo((844 - 48) * 0.45, 0.01));
+      // Etkin dokunma alanı görselin dışına taşmaz.
+      expect(hitsHandle(tester, rect.center), isTrue);
+      expect(hitsHandle(tester, rect.centerLeft - const Offset(2, 0)), isFalse);
+      expect(hitsHandle(tester, rect.topCenter - const Offset(0, 2)), isFalse);
+      expect(
+        hitsHandle(tester, rect.bottomCenter + const Offset(0, 2)),
+        isFalse,
       );
-      expect(button.size, GuIconButtonSize.xs);
-      // Üst güvenli alanın altında, sağ kenara yakın.
-      final rect = tester.getRect(find.byKey(DebugMenuCornerButton.openKey));
-      expect(rect.top, greaterThanOrEqualTo(47));
-      expect(rect.right, lessThanOrEqualTo(390));
-      expect(rect.left, greaterThan(390 / 2));
+      // Yarı saydam.
+      expect(
+        tester
+            .widget<Opacity>(
+              find.ancestor(
+                of: find.byKey(DebugMenuCornerButton.openKey),
+                matching: find.byType(Opacity),
+              ),
+            )
+            .opacity,
+        GuOpacity.disabled,
+      );
+      // Erişilebilirlik: etiketli düğme.
+      final handle = find.byKey(DebugMenuCornerButton.openKey);
+      expect(
+        tester.getSemantics(handle),
+        isSemantics(
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+          label: tester.l10n.settingsGroupAppearance,
+        ),
+      );
       // İçerik tüm alanı doldurur.
       expect(
         tester.getSize(find.byKey(const ValueKey<String>('corner.child'))),
@@ -379,5 +426,95 @@ void main() {
       await tester.tap(find.byKey(DebugMenuCornerButton.openKey));
       expect(opened, 1);
     });
+
+    testWidgets('üst çubuk ve alt sekme çubuğu bölgesinin dışında kalır — '
+        'tüm cihaz boyutları, güvenli alanlı', (tester) async {
+      const padding = EdgeInsets.only(top: 59, bottom: 34);
+      for (final size in MatrixSize.values) {
+        await tester.pumpApp(
+          DebugMenuCornerButton(
+            onPressed: () {},
+            child: const SizedBox.expand(),
+          ),
+          size: size.size,
+          viewPadding: padding,
+        );
+        final rect = handleRect(tester);
+        final height = size.size.height;
+        expect(rect.right, size.size.width, reason: size.name);
+        // Üst çubuk: güvenli alan + çubuk yüksekliği.
+        expect(
+          rect.top,
+          greaterThan(padding.top + kToolbarHeight),
+          reason: size.name,
+        );
+        // Alt sekme çubuğu: çubuk yüksekliği + güvenli alan.
+        expect(
+          rect.bottom,
+          lessThan(height - GuSizes.bottomNavHeight - padding.bottom),
+          reason: size.name,
+        );
+      }
+    });
+
+    testWidgets('yatay güvenli alan (çentik) kadar içeri kayar', (
+      tester,
+    ) async {
+      await tester.pumpApp(
+        DebugMenuCornerButton(onPressed: () {}, child: const SizedBox.expand()),
+        viewPadding: const EdgeInsets.only(right: 44),
+      );
+      expect(handleRect(tester).right, 390 - 44);
+    });
+
+    for (final (name, screen, actions) in <(String, Widget, List<String>)>[
+      ('ONB-01', const OnboardingView(), ['ONB-01.skip', 'ONB-01.lang']),
+      ('AUT-01', const LoginView(), ['AUT-01.lang']),
+    ]) {
+      testWidgets('$name sağ üst eylemleriyle çakışmaz: kutular kesişmez, '
+          'eylemin ortası eylemi vurur — tüm cihaz boyutları', (tester) async {
+        for (final size in MatrixSize.values) {
+          await tester.pumpApp(
+            DebugMenuCornerButton(onPressed: () {}, child: screen),
+            size: size.size,
+            viewPadding: const EdgeInsets.only(top: 59, bottom: 34),
+          );
+          await tester.pump();
+          final handle = handleRect(tester);
+          for (final action in actions) {
+            final finder = find.byKey(GuKey.action(action));
+            expect(finder, findsOneWidget, reason: '$action ${size.name}');
+            // Etkin dokunma alanı (≥ 48 dp) dahil kesişme yok.
+            final target = tester.getRect(finder).inflate(8);
+            expect(
+              handle.overlaps(target),
+              isFalse,
+              reason: '$action ${size.name}: $handle ↔ $target',
+            );
+            expect(
+              hitsHandle(tester, tester.getCenter(finder)),
+              isFalse,
+              reason: '$action ${size.name}',
+            );
+            // Eylemin ortasına dokunma eylemin kendisine ulaşır.
+            expect(
+              hits(tester, tester.getCenter(finder), finder),
+              isTrue,
+              reason: '$action ${size.name}',
+            );
+          }
+        }
+      });
+    }
   });
+}
+
+/// [node], [ancestor]'ın kendisi ya da torunu mu?
+bool _isWithin(RenderObject node, RenderObject ancestor) {
+  RenderObject? current = node;
+  while (current != null) {
+    if (current == ancestor) return true;
+    current = current.parent;
+  }
+  return false;
 }

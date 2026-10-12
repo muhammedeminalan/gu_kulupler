@@ -3,16 +3,28 @@
 // üzerine yazma/metadata güncelleme ve silme reddedilir. Yollar sahibi task'ta açılır
 // (users/ T-14 · clubs/ T-16 · events/ T-22 · posts/ T-21 · support/ T-28); `update` ve `delete`
 // her zaman kapalı kalır (D-10: dosya silinmez, üzerine yazılmaz).
+//
+// T-14 — `users/{uid}/{file}` (avatar): tek dosya okuması doğrulanmış her kullanıcıya açık, klasör
+// listesi kapalı; yükleme yalnızca sahibine, kendi klasörüne, StoragePaths.newFileName adıyla,
+// jpeg/png/webp (uzantı türle uyumlu) ve Limits.imageMaxBytes altında; üzerine yazma, üst veri
+// güncelleme ve silme herkes için ret.
+// T-14 güvenlik incelemesi (CD-135 madde 8):
+//  - yükleme yalnızca hesabı ETKİN kullanıcıya açıktır (`accountActive()`: `users/{uid}.status ==
+//    'active'`, 1 Firestore okuması) — askıdaki / silinmiş hesap ve profil belgesi olmayan oturum
+//    yükleyemez; `profileComplete` aranmaz (AUT-05 sırası: createProfile → yama → yükleme);
+//  - boş dosya, `contentEncoding` (gzip…), `contentDisposition` (attachment / dosya adı) ve `users/`
+//    yolunda özel üst veri reddedilir (D-10: yüklenen dosya sonradan silinemez).
 const fs = require('node:fs');
-const { assertFails } = require('@firebase/rules-unit-testing');
-const { deleteObject, getBytes, getMetadata, ref, updateMetadata, uploadBytes } = require('firebase/storage');
+const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
+const { deleteObject, getBytes, getMetadata, listAll, ref, updateMetadata, uploadBytes } = require('firebase/storage');
 const { getAdminContext } = require('../setup/env');
 const { rulesPath } = require('../setup/emulator_ports');
-const { CONTEXTS, VARIANTS, contextFor } = require('../helpers/contexts');
+const { CONTEXTS, VARIANTS, contextFor, definition, uidOf } = require('../helpers/contexts');
+const { buildFixture, seedDocs } = require('../helpers/fixtures');
 const { STORAGE_PREFIX, parseMatches } = require('../helpers/matrix');
 
-/** Okuma/yükleme kuralları açılmış yol kökleri. T-10: hiçbiri. */
-const OPENED = [];
+/** Okuma/yükleme kuralları açılmış yol kökleri. T-14: users/. */
+const OPENED = ['users'];
 
 /** PLAN §11.5'in beş yol kökü (StoragePaths ile aynı). */
 const ROOTS = ['users', 'clubs', 'events', 'posts', 'support'];
@@ -46,6 +58,19 @@ async function fileExists(path) {
   );
 }
 
+describe('storage · test düzeneği', () => {
+  const nested = `users/u_duzenek/${EXISTING_FILE}`;
+
+  test('1/2 · iç içe yola dosya kurulur', async () => {
+    await seedFile(nested);
+    expect(await fileExists(nested)).toBe(true);
+  });
+
+  test('2/2 · önceki testin dosyası sonraki teste taşınmaz (her testten önce tam sıfırlama)', async () => {
+    expect(await fileExists(nested)).toBe(false);
+  });
+});
+
 describe('storage · storage.rules yapısı', () => {
   test('beş yol kökü ve varsayılan ret bloğu vardır', () => {
     const roots = matches.filter((m) => !m.recursive).map((m) => m.names.join('/'));
@@ -56,6 +81,46 @@ describe('storage · storage.rules yapısı', () => {
   test('her yolda `allow update, delete: if false` (D-10, HD22)', () => {
     const denies = rulesText.match(/^\s*allow update, delete: if false;\s*$/gm) || [];
     expect(denies).toHaveLength(ROOTS.length);
+  });
+
+  test('açılan her yolun `create` kuralı üzerine yazmayı engeller (`isNewFile()`; `update: false` yetmez)', () => {
+    expect(rulesText).toContain('function isNewFile() { return resource == null; }');
+    const creates = (rulesText.match(/^\s*allow create:[^;]*;/gm) || []).filter((rule) => !/: if false;$/.test(rule.trim()));
+    expect(creates).toHaveLength(OPENED.length);
+    for (const rule of creates) expect(rule).toContain('isNewFile()');
+  });
+
+  test('açılan her `create` kuralı `imageOk()` ister; `imageOk()` boş dosyayı ve sunum üst verisini reddeder', () => {
+    const creates = (rulesText.match(/^\s*allow create:[^;]*;/gm) || []).filter((rule) => !/: if false;$/.test(rule.trim()));
+    for (const rule of creates) expect(rule).toContain('imageOk()');
+    const body = /function imageOk\(\) \{([^}]*)\}/.exec(rulesText);
+    expect(body).not.toBeNull();
+    for (const condition of [
+      'request.resource.size > 0',
+      "(request.resource.contentEncoding == null || request.resource.contentEncoding == 'identity')",
+      "(request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline')",
+    ]) {
+      expect(body[1]).toContain(condition);
+    }
+  });
+
+  test('users/ yüklemesi hesabın etkin olduğunu Firestore\'dan okur ve özel üst veri kabul etmez', () => {
+    const create = /match \/users\/\{uid\}\/\{file\} \{[^}]*?(allow create:[^;]*;)/.exec(rulesText);
+    expect(create).not.toBeNull();
+    expect(create[1]).toContain('noCustomMetadata()');
+    // Çapraz servis okuması en sonda: önceki koşullar tutmazsa Firestore okunmaz (kısa devre).
+    expect(create[1].trim().endsWith('&& accountActive();')).toBe(true);
+    expect(rulesText).toContain("firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active'");
+    expect(rulesText.match(/firestore\.(get|exists)\(/g)).toHaveLength(1);
+  });
+
+  test('users/ bloğu: okuma `get` ile açılır, `list` kapalıdır (`allow read` yazılmaz)', () => {
+    const block = /match \/users\/\{uid\}\/\{file\} \{([^}]*)\}/.exec(rulesText);
+    expect(block).not.toBeNull();
+    const allows = block[1].split(';').map((rule) => rule.trim()).filter((rule) => rule.startsWith('allow ')).map((rule) => `${rule};`);
+    expect(allows.map((line) => line.slice(0, line.indexOf(':')))).toEqual(['allow get', 'allow list', 'allow create', 'allow update, delete']);
+    expect(allows[1]).toBe('allow list: if false;');
+    expect(allows[3]).toBe('allow update, delete: if false;');
   });
 });
 
@@ -75,6 +140,334 @@ describe.each(ROOTS.filter((r) => !OPENED.includes(r)))('storage deny-all · %s/
     await assertFails(deleteObject(ref(storage, existing)));
     expect(await fileExists(existing)).toBe(true);
     expect(await fileExists(created)).toBe(false);
+  });
+});
+
+// ── users/{uid}/{file} — avatar (T-14) ────────────────────────────────────────────────────────
+
+/** Rules `signedInVerified()`: doğrulanmış + izinli alan adlı e-posta (askı / silinmiş hesap dahil). */
+const isVerified = (role) => {
+  const token = definition(role).token;
+  return Boolean(token && token.email_verified) && /@(ogr\.)?gumushane\.edu\.tr$/.test(token.email);
+};
+/** Rules `accountActive()`: `users/{uid}.status == 'active'` (askıdaki / silinmiş hesap yükleyemez). */
+const isActive = (role) => {
+  const user = definition(role).user;
+  return Boolean(user) && user.status === 'active';
+};
+const ALL_ROLES = [...CONTEXTS, ...VARIANTS];
+const VERIFIED = ALL_ROLES.filter(isVerified);
+const UNVERIFIED = ALL_ROLES.filter((role) => !isVerified(role));
+/** Doğrulanmış ve hesabı etkin (yükleyebilir) / doğrulanmış ama askıda ya da silinmiş (yükleyemez). */
+const UPLOADERS = VERIFIED.filter(isActive);
+const INACTIVE = VERIFIED.filter((role) => !isActive(role));
+
+/** Bağlamların `users/{uid}` belgeleri (roles.json → fixtures.js); yükleme kuralı bunları okur. */
+const USER_DOCS = Object.fromEntries(Object.entries(buildFixture('base')).filter(([path]) => /^users\/[^/]+$/.test(path)));
+const seedUsers = () => seedDocs(USER_DOCS);
+
+/** Bir dosya adının üç izinli türdeki karşılığı. */
+const STAMP = '20261008T201502Z_0a1b2c3d4e5f6071';
+const TYPES = [
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+];
+/** Limits.imageMaxBytes (5 MB); Rules `size < imageMaxBytes` ister. */
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+const OWNER = 'student';
+const ownerPath = (file) => `users/${uidOf(OWNER)}/${file}`;
+const upload = (role, path, bytes = PNG, metadata = IMAGE) => uploadBytes(ref(contextFor(role).storage(), path), bytes, metadata);
+
+describe('storage users/{uid}/{file} · bağlam kümeleri', () => {
+  test('doğrulanmış 11 bağlam (askı + silinmiş dahil), doğrulanmamış 3 bağlam', () => {
+    expect(UNVERIFIED.sort()).toEqual(['anon', 'outsideDomain', 'unver']);
+    expect(VERIFIED).toHaveLength(ALL_ROLES.length - UNVERIFIED.length);
+    expect(VERIFIED).toEqual(expect.arrayContaining(['student', 'super', 'susp', 'deleted']));
+  });
+
+  test('yükleyebilen 9 bağlam (hesabı etkin); askıdaki ve silinmiş hesap doğrulanmış ama yükleyemez', () => {
+    expect([...INACTIVE].sort()).toEqual(['deleted', 'susp']);
+    expect(UPLOADERS).toHaveLength(VERIFIED.length - INACTIVE.length);
+    expect(UPLOADERS).toEqual(expect.arrayContaining(['student', 'member', 'advisor', 'super']));
+    expect(Object.keys(USER_DOCS).sort()).toEqual(VERIFIED.map((role) => `users/${uidOf(role)}`).sort());
+  });
+});
+
+describe('storage users/{uid}/{file} · okuma', () => {
+  test.each(VERIFIED)('%s · başkasının avatarını (tek dosya) okur → allow', async (role) => {
+    await seedFile(ownerPath(EXISTING_FILE));
+    const storage = contextFor(role).storage();
+    await assertSucceeds(getBytes(ref(storage, ownerPath(EXISTING_FILE))));
+    await assertSucceeds(getMetadata(ref(storage, ownerPath(EXISTING_FILE))));
+  });
+
+  test.each(UNVERIFIED)('%s · okuyamaz → deny', async (role) => {
+    await seedFile(ownerPath(EXISTING_FILE));
+    const storage = contextFor(role).storage();
+    await assertFails(getBytes(ref(storage, ownerPath(EXISTING_FILE))));
+    await assertFails(getMetadata(ref(storage, ownerPath(EXISTING_FILE))));
+  });
+
+  test.each(ALL_ROLES)('%s · klasör listelenemez (eski avatarlar sızmaz) → deny', async (role) => {
+    await seedFile(ownerPath(EXISTING_FILE));
+    const storage = contextFor(role).storage();
+    await assertFails(listAll(ref(storage, `users/${uidOf(OWNER)}`)));
+    await assertFails(listAll(ref(storage, `users/${uidOf(role)}`)));
+    await assertFails(listAll(ref(storage, 'users')));
+  });
+});
+
+describe('storage users/{uid}/{file} · yükleme (sahiplik)', () => {
+  beforeEach(seedUsers);
+
+  test.each(UPLOADERS)('%s · kendi klasörüne yükler → allow', async (role) => {
+    const path = `users/${uidOf(role)}/${NEW_FILE}`;
+    await assertSucceeds(upload(role, path));
+    expect(await fileExists(path)).toBe(true);
+  });
+
+  test.each(INACTIVE)('%s · askıdaki / silinmiş hesap kendi klasörüne yükleyemez → deny (okuması açık kalır)', async (role) => {
+    const path = `users/${uidOf(role)}/${NEW_FILE}`;
+    await seedFile(ownerPath(EXISTING_FILE));
+    await assertFails(upload(role, path));
+    expect(await fileExists(path)).toBe(false);
+    await assertSucceeds(getBytes(ref(contextFor(role).storage(), ownerPath(EXISTING_FILE))));
+  });
+
+  test.each(UNVERIFIED)('%s · kendi klasörüne yükleyemez (doğrulanmamış / oturumsuz / alan adı dışı) → deny', async (role) => {
+    const path = `users/${uidOf(role)}/${NEW_FILE}`;
+    await assertFails(upload(role, path));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test.each(ALL_ROLES.filter((role) => role !== OWNER))('%s · başkasının klasörüne yükleyemez → deny', async (role) => {
+    await assertFails(upload(role, ownerPath(NEW_FILE)));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
+  });
+
+  test('alt klasör ve kök düzeyi dosya `users/{uid}/{file}` kalıbına girmez → deny', async () => {
+    await assertFails(upload(OWNER, `users/${uidOf(OWNER)}/alt/${NEW_FILE}`));
+    await assertFails(upload(OWNER, `users/${NEW_FILE}`));
+  });
+});
+
+describe('storage users/{uid}/{file} · yükleme (hesap durumu: users/{uid}.status)', () => {
+  const path = ownerPath(NEW_FILE);
+  const ownerDoc = `users/${uidOf(OWNER)}`;
+  const withOwner = (fields) => seedDocs({ ...USER_DOCS, [ownerDoc]: { ...USER_DOCS[ownerDoc], ...fields } });
+
+  test('profil belgesi yok (createProfile öncesi) → deny; başkalarının belgesi sayılmaz', async () => {
+    const { [ownerDoc]: _, ...others } = USER_DOCS;
+    await seedDocs(others);
+    await assertFails(upload(OWNER, path));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test('etkin hesap, profil henüz tamamlanmamış (AUT-05: createProfile sonrası) → allow', async () => {
+    await withOwner({ profileComplete: false, interests: [] });
+    await assertSucceeds(upload(OWNER, path));
+    expect(await fileExists(path)).toBe(true);
+  });
+
+  test.each([['suspended'], ['deleted'], ['ACTIVE'], [''], [null]])('status = %p → deny', async (status) => {
+    await withOwner({ status });
+    await assertFails(upload(OWNER, path));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test('status alanı olmayan belge → deny', async () => {
+    const { status: _, ...rest } = USER_DOCS[ownerDoc];
+    await seedDocs({ [ownerDoc]: rest });
+    await assertFails(upload(OWNER, path));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test('askı kapatma anahtarıdır: etkinken yükler, askıya alınınca yükleyemez, askı kalkınca yeniden yükler', async () => {
+    const second = ownerPath('20261008T201503Z_1a2b3c4d5e6f7081.png');
+    const third = ownerPath('20261008T201504Z_2a3b4c5d6e7f8091.png');
+    await seedUsers();
+    await assertSucceeds(upload(OWNER, path));
+
+    await withOwner({ status: 'suspended' });
+    await assertFails(upload(OWNER, second));
+    expect(await fileExists(second)).toBe(false);
+
+    await withOwner({ status: 'active' });
+    await assertSucceeds(upload(OWNER, third));
+    expect(await fileExists(path)).toBe(true);
+    expect(await fileExists(third)).toBe(true);
+  });
+});
+
+describe('storage users/{uid}/{file} · yükleme (içerik türü, uzantı, boyut, dosya adı)', () => {
+  beforeEach(seedUsers);
+
+  test.each(TYPES)('%s + .%s → allow', async (contentType, extension) => {
+    const path = ownerPath(`${STAMP}.${extension}`);
+    await assertSucceeds(upload(OWNER, path, PNG, { contentType }));
+    expect(await fileExists(path)).toBe(true);
+  });
+
+  test.each([
+    ['image/gif'],
+    ['image/svg+xml'],
+    ['image/heic'],
+    ['image/bmp'],
+    ['text/plain'],
+    ['text/html'],
+    ['application/octet-stream'],
+    ['IMAGE/PNG'],
+    ['image/png; charset=utf-8'],
+  ])('izinli olmayan içerik türü %s → deny', async (contentType) => {
+    await assertFails(upload(OWNER, ownerPath(NEW_FILE), PNG, { contentType }));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
+  });
+
+  test('içerik türü verilmeden yükleme → deny', async () => {
+    await assertFails(uploadBytes(ref(contextFor(OWNER).storage(), ownerPath(NEW_FILE)), PNG));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
+  });
+
+  test.each(
+    TYPES.flatMap(([contentType, own]) => TYPES.filter(([, other]) => other !== own).map(([, other]) => [contentType, other])),
+  )('uzantı içerik türüyle uyuşmuyor: %s + .%s → deny', async (contentType, extension) => {
+    const path = ownerPath(`${STAMP}.${extension}`);
+    await assertFails(upload(OWNER, path, PNG, { contentType }));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test('boyut sınırı: imageMaxBytes − 1 → allow, imageMaxBytes ve üstü → deny', async () => {
+    const under = ownerPath(`${STAMP}.jpg`);
+    const exact = ownerPath('20261008T201503Z_0a1b2c3d4e5f6071.jpg');
+    const over = ownerPath('20261008T201504Z_0a1b2c3d4e5f6071.jpg');
+    const jpeg = { contentType: 'image/jpeg' };
+
+    await assertSucceeds(upload(OWNER, under, new Uint8Array(IMAGE_MAX_BYTES - 1), jpeg));
+    await assertFails(upload(OWNER, exact, new Uint8Array(IMAGE_MAX_BYTES), jpeg));
+    await assertFails(upload(OWNER, over, new Uint8Array(IMAGE_MAX_BYTES + 1), jpeg));
+
+    expect(await fileExists(under)).toBe(true);
+    expect(await fileExists(exact)).toBe(false);
+    expect(await fileExists(over)).toBe(false);
+  });
+
+  test('boş dosya (0 bayt) → deny', async () => {
+    await assertFails(upload(OWNER, ownerPath(NEW_FILE), new Uint8Array(0)));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
+  });
+
+  // Sunumu değiştiren üst veri (T-14 güvenlik incelemesi). Dosya silinemediği için (D-10) kötü yük
+  // kalıcıdır: `contentEncoding: gzip` küçük dosyayı indirirken GB'lara açtırır; `contentDisposition`
+  // jetonlu indirme adresini keyfi adlı dosya dağıtımına çevirir.
+  test.each([
+    ['contentEncoding: gzip', { contentEncoding: 'gzip' }],
+    ['contentEncoding: deflate', { contentEncoding: 'deflate' }],
+    ['contentEncoding: br', { contentEncoding: 'br' }],
+    ['contentEncoding: GZIP', { contentEncoding: 'GZIP' }],
+    ['contentEncoding: identity, gzip', { contentEncoding: 'identity, gzip' }],
+    ['contentDisposition: attachment + dosya adı', { contentDisposition: 'attachment; filename="odev.exe"' }],
+    ['contentDisposition: attachment', { contentDisposition: 'attachment' }],
+    ['contentDisposition: inline + dosya adı', { contentDisposition: 'inline; filename="odev.exe"' }],
+    ['özel üst veri', { customMetadata: { clubId: 'c01' } }],
+    ['özel üst veri (boş değer)', { customMetadata: { x: '' } }],
+  ])('sunum üst verisi · %s → deny', async (_, extra) => {
+    await assertFails(upload(OWNER, ownerPath(NEW_FILE), PNG, { ...IMAGE, ...extra }));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
+  });
+
+  test.each([
+    ['contentEncoding: identity', { contentEncoding: 'identity' }],
+    ['contentDisposition: inline', { contentDisposition: 'inline' }],
+  ])('sunum üst verisi · %s (varsayılanla aynı anlam) → allow', async (_, extra) => {
+    await assertSucceeds(upload(OWNER, ownerPath(NEW_FILE), PNG, { ...IMAGE, ...extra }));
+    expect(await fileExists(ownerPath(NEW_FILE))).toBe(true);
+  });
+
+  test.each([
+    ['avatar.png'],
+    ['0.png'],
+    ['20261008T201502Z_0A1B2C3D4E5F6071.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f607.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f60711.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f607g.png'],
+    ['2026-10-08T20:15:02Z_0a1b2c3d4e5f6071.png'],
+    ['20261008T201502_0a1b2c3d4e5f6071.png'],
+    ['20261008T201502Z-0a1b2c3d4e5f6071.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f6071.PNG'],
+    ['20261008T201502Z_0a1b2c3d4e5f6071.png.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f6071.jpg.png'],
+    ['x20261008T201502Z_0a1b2c3d4e5f6071.png'],
+    [' 20261008T201502Z_0a1b2c3d4e5f6071.png'],
+    ['20261008T201502Z_0a1b2c3d4e5f6071'],
+    ['20261008T201502Z_0a1b2c3d4e5f6071.gif'],
+  ])('StoragePaths.newFileName şeması dışındaki ad "%s" → deny', async (file) => {
+    await assertFails(upload(OWNER, ownerPath(file)));
+    expect(await fileExists(ownerPath(file))).toBe(false);
+  });
+});
+
+describe('storage users/{uid}/{file} · üzerine yazma / üst veri / silme (D-10)', () => {
+  beforeEach(seedUsers);
+
+  test.each(ALL_ROLES)('%s · var olan dosyada update / metadata / delete → deny (sahibi dahil)', async (role) => {
+    const existing = `users/${uidOf(role)}/${EXISTING_FILE}`;
+    await seedFile(existing);
+    await seedFile(ownerPath(EXISTING_FILE));
+    const storage = contextFor(role).storage();
+    for (const path of [existing, ownerPath(EXISTING_FILE)]) {
+      // Aynı ada ikinci yükleme: Storage bunu `create` sayar (`update` yalnızca üst veridir) —
+      // üzerine yazmayı kuraldaki `isNewFile()` (resource == null) engeller.
+      await assertFails(uploadBytes(ref(storage, path), PNG, IMAGE));
+      await assertFails(updateMetadata(ref(storage, path), { contentType: 'image/jpeg' }));
+      await assertFails(updateMetadata(ref(storage, path), { customMetadata: { owner: 'x' } }));
+      // D-10 ret vakası: dosya silme yalnızca burada, reddedildiğini kanıtlamak için denenir.
+      await assertFails(deleteObject(ref(storage, path)));
+      expect(await fileExists(path)).toBe(true);
+    }
+  });
+
+  test('fotoğraf değişimi = yeni adla ikinci yükleme → allow; eski dosya yerinde kalır', async () => {
+    const first = ownerPath(`${STAMP}.jpg`);
+    const second = ownerPath('20261008T201503Z_1a2b3c4d5e6f7081.png');
+
+    await assertSucceeds(upload(OWNER, first, PNG, { contentType: 'image/jpeg' }));
+    await assertSucceeds(upload(OWNER, second));
+
+    expect(await fileExists(first)).toBe(true);
+    expect(await fileExists(second)).toBe(true);
+  });
+});
+
+describe('storage users/{uid}/{file} · repository sözleşmesi (UserRepository.updateAvatar)', () => {
+  // Firestore'a yazılan `avatarPath` değerleri repository'nin Storage'a yüklediği GERÇEK yollardır
+  // (Dart: rules_payload_contract_test.dart "avatarPath, Storage'a yüklenen dosyanın yoludur").
+  const contract = require('../contracts/repository_payloads.json');
+  const CONTENT_TYPE = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+  const avatarSteps = contract.steps.filter((step) => step.call.startsWith('UserRepository.updateAvatar'));
+  const paths = [...new Set(avatarSteps.map((step) => step.writes[0].data.avatarPath))];
+
+  beforeEach(seedUsers);
+
+  test('sözleşmede en az bir updateAvatar yolu var; AUT-05 yolu JPEG', () => {
+    expect(paths.length).toBeGreaterThan(0);
+    const aut05 = contract.steps.find((step) => step.call === contract.aut05[2]);
+    expect(aut05.writes[0].data.avatarPath).toMatch(/\.jpg$/);
+    expect(paths).toContain(aut05.writes[0].data.avatarPath);
+  });
+
+  test.each(paths)('%s · sahibi yükler → allow; başkası yükleyemez → deny', async (path) => {
+    const contentType = CONTENT_TYPE[path.slice(path.lastIndexOf('.') + 1)];
+    expect(path.startsWith(`users/${contract.uid}/`)).toBe(true);
+
+    await assertFails(upload('member', path, PNG, { contentType }));
+    expect(await fileExists(path)).toBe(false);
+
+    await assertSucceeds(upload(contract.role, path, PNG, { contentType }));
+    expect(await fileExists(path)).toBe(true);
+    // Yüklenen dosya profil görüntülenirken tek dosya olarak okunur.
+    await assertSucceeds(getBytes(ref(contextFor('member').storage(), path)));
   });
 });
 

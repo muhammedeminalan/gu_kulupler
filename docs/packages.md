@@ -32,11 +32,11 @@
 | `url_launcher` | e-posta/Instagram/web, Google Takvim, Ayarlar (`UrlLauncherService`, T-13) | DLG-01 (`mailto:` destek), CLB-03, DLG-32, SHT-14, SET-04/05 | — |
 | `share_plus` | .ics / bağlantı paylaşma | SHT-14, SHT-15 | — |
 | `path_provider` | .ics geçici dosyası | SHT-14 | — |
-| `permission_handler` | kamera/fotoğraf/bildirim izni, "Ayarlara git" | DLG-03/04/05, TST-32 | — |
+| `permission_handler` | kamera/bildirim izni, "Ayarlara git" (`PermissionService`, T-14; galeri için izin istenmez — CD-16; iOS SPM: `Package.swift` var, izin modülü `Info.plist` anahtarından derlenir) | DLG-03/04/05, TST-32 | — |
 | `mobile_scanner` | QR okuma | MGT-07 | — |
 | `qr_flutter` | QR üretme | EVT-03 | — |
-| `image_picker` | kamera/galeri | SHT-16 | Q-19 = yükle (kesin) |
-| `flutter_image_compress` | yükleme öncesi boyutlandırma | SHT-16, AUT-05, PRF-02, FED-03, MGT-09 | Q-19 = yükle (kesin); `image` paketi kullanılmaz |
+| `image_picker` | kamera/galeri (`ImagePickerService`, T-14; `requestFullMetadata: false` — sistem fotoğraf izni istenmez, CD-16; iOS SPM ✓) | SHT-16 | Q-19 = yükle (kesin) |
+| `flutter_image_compress` | yükleme öncesi JPEG'e sıkıştırma (`ImagePickerService`, T-14: uzun kenar 1600 px, kalite 82; `keepExif` kapalı — EXIF / konum ayıklanır; yeniden kodlama düşerse özgün dosya **yüklenmez**, CD-135 madde 8c; iOS SPM ✓ — `SDWebImage`, `SDWebImageWebPCoder`, `libwebp` SPM bağımlılıklarıyla gelir) | SHT-16, AUT-05, PRF-02, FED-03, MGT-09 | Q-19 = yükle (kesin); `image` paketi kullanılmaz |
 | `cached_network_image` | Storage'tan gelen fotoğraflar | avatar, kapak, gönderi görselleri | Q-19 = yükle (kesin) |
 | `flutter_svg` | ikon/kapak/desen/illüstrasyon | her yer | — |
 | `flutter_local_notifications`, `timezone` | cihazda planlı hatırlatıcı | SHT-13, EVT-02 | Q-07 = yerel hatırlatıcı (kesin), T-23 |

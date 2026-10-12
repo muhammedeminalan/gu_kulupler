@@ -98,8 +98,9 @@ abstract interface class AuthRepository {
 
   /// [email] adresine şifre sıfırlama bağlantısı gönderir (AUT-04).
   ///
-  /// Hesap bulunmasa da başarı döner (adresin kayıtlı olup olmadığı
-  /// sızdırılmaz).
+  /// Hesap bulunmasa da başarı döner (bu çağrı adresin kayıtlı olup
+  /// olmadığını sızdırmaz; `register` kayıtlı adresi `emailAlreadyInUse` ile
+  /// bildirir — rules-spec §9.9).
   Future<AuthResult<void>> sendPasswordReset({required String email});
 
   /// Oturumdaki kullanıcıyı [password] ile yeniden doğrular (SHT-32,

@@ -13,6 +13,10 @@ import 'package:gu_data/src/utils/login_throttle.dart';
 ///
 /// Giriş kilidi ve yeniden gönderme beklemesi **bellekte** tutulur (bu
 /// nesnenin ömrü = uygulama ömrü) ve zamanı yalnızca [AppClock]'tan okur.
+/// İkisi de alan adı denetimi gibi **istemci kolaylığıdır, güvenlik sınırı
+/// değildir**: uygulama yeniden başlayınca sıfırlanır ve doğrudan REST
+/// çağrısı hepsini atlar. Sunucu tarafındaki tek sınır Firebase Auth
+/// kotalarıdır (kabul edilmiş sınırlama: rules-spec §9.9).
 final class FirebaseAuthRepository implements AuthRepository {
   /// [_auth] servisini sarar. `loginThrottle` verilmezse `Limits`
   /// sınırlarıyla yenisi kurulur.
@@ -141,7 +145,8 @@ final class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<AuthResult<void>> sendPasswordReset({required String email}) async {
     final result = await _auth.sendPasswordReset(email: email.trim());
-    // Hesabın var olup olmadığı sızdırılmaz.
+    // Bu çağrı hesabın var olup olmadığını sızdırmaz (kayıt akışı ve sunucu
+    // tarafı ayrı konudur: rules-spec §9.9).
     return result.errorOrNull == AuthError.invalidCredentials
         ? const FirebaseSuccess(null)
         : result;

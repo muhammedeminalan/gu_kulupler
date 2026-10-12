@@ -42,6 +42,9 @@ dependencies:
   connectivity_plus: ^7.3.1 # T-11: çevrimdışı durumu (Q-12)
   package_info_plus: ^10.2.2 # T-11: sürüm / build (DLG-26, SET-04)
   url_launcher: ^6.3.3 # T-13: mailto / dış bağlantı (DLG-01; DLG-32 T-16)
+  permission_handler: ^13.0.2 # T-14: kamera / bildirim izni, "Ayarlara git" (DLG-03, DLG-04, TST-32; CD-16)
+  image_picker: ^1.2.4 # T-14: kamera / galeri seçimi (SHT-16; Photo Picker / PHPicker — CD-16)
+  flutter_image_compress: ^2.5.1 # T-14: yükleme öncesi JPEG'e sıkıştırma (Q-19, ≤ 5 MB)
 
   # --- Firebase (Mod C: firebase_messaging / cloud_functions yok — Q-02) ---
   firebase_core: ^4.15.0

@@ -127,10 +127,7 @@ mixin LoginViewMixin on KeyboardFocusMixin<LoginView, LoginField> {
   }
 
   /// "Şifremi unuttum" (`AUT-01.forgot`, DLG-02) → AUT-04.
-  void openResetPassword() {
-    // TODO(T-14): `const ResetPasswordRoute().go(context)` — AUT-04 rotası
-    // T-14'te doğar (bağlama borcu W-05). O zamana kadar etkisizdir.
-  }
+  void openResetPassword() => const ResetPasswordRoute().go(context);
 
   /// "Kayıt ol" (`AUT-01.register`) → AUT-02.
   void openRegister() => const RegisterRoute().go(context);

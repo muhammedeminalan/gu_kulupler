@@ -4,15 +4,25 @@
 // kimlik (W-54), ayrıştırma hatası ve hata eşlemesi (PLAN §10.3, §10.4;
 // rules-spec §3.1, §3.2; D-10, D-29, CD-11, CD-130, CD-133).
 //
+// T-14 · updateAvatar: Storage yüklemesi + `avatarPath` yazımı, çağrı kısıtı
+// (W-57: tamamlanmış profil ya da ilgi alanlarını içeren yama), adım bazlı
+// hata türü (PLAN §10.4, §11.5; D-10).
+//
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); hata yolları el yazımı SDK
 // çiftleriyle (`test/fakes/sdk_firestore_stubs.dart`).
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
+import '../fakes/fake_app_clock.dart';
+import '../fakes/recording_storage_service.dart';
 import '../fakes/sdk_firestore_stubs.dart';
+import '../fakes/sdk_storage_stubs.dart';
 import '../helpers/plan_repository_table.dart';
 import '../helpers/plan_service_table.dart';
 
@@ -45,9 +55,31 @@ Set<String> _changedKeys(Json before, Json after) => {
 /// Geçersiz belge kimlikleri (W-54).
 const List<String> _invalidIds = ['', 'u/1', '/', '.', '..', '__uid__'];
 
+/// `StoragePaths.newFileName` girdileri: saat ve rastgele baytlar.
+final DateTime _now = DateTime.utc(2026, 10, 8, 20, 15, 2);
+const List<int> _randomBytes = [0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71];
+const String _newAvatarPath =
+    'users/u_ayse/20261008T201502Z_0a1b2c3d4e5f6071.jpg';
+
+/// En küçük "görsel": içerik repository için önemsizdir (denetim serviste).
+final Uint8List _image = Uint8List.fromList(const [0xff, 0xd8, 0xff, 0xe0]);
+
 void main() {
   late FakeFirebaseFirestore db;
+  late RecordingStorageService storage;
   late UserRepository repository;
+
+  /// [firestore] servisine ve kayıt tutan depolamaya bağlı repository; dosya
+  /// adı [_now] + [_randomBytes] ile sabittir.
+  UserRepository repositoryOn(
+    FirestoreService firestore, {
+    StorageService? storageService,
+  }) => FirebaseUserRepository(
+    firestore,
+    storageService ?? storage,
+    FakeAppClock(_now),
+    SequenceRandom(_randomBytes),
+  );
 
   DocumentReference<Json> userRef([String uid = _uid]) =>
       db.collection('users').doc(uid);
@@ -74,25 +106,27 @@ void main() {
   );
 
   /// Her çağrısı [code] hatasıyla biten veritabanına bağlı repository.
-  UserRepository failing(String code) => FirebaseUserRepository(
+  UserRepository failing(String code) => repositoryOn(
     FirebaseFirestoreService(StubFirestore(error: firestoreException(code))),
   );
 
   setUp(() {
     db = FakeFirebaseFirestore();
-    repository = FirebaseUserRepository(FirebaseFirestoreService(db));
+    storage = RecordingStorageService();
+    repository = repositoryOn(FirebaseFirestoreService(db));
   });
 
   group('T-12 · UserRepository · sözleşme', () {
-    test('PLAN §10.4 tablosundaki T-12 üyeleri arayüzde aynı imzayla var; '
-        'başka üye yok (listByInterests T-25)', () {
+    test('PLAN §10.4 tablosundaki T-12 üyeleri ve updateAvatar (T-14) '
+        'arayüzde aynı imzayla var; başka üye yok (listByInterests T-25)', () {
       final members = interfaceMembers(_interface, '$UserRepository');
       final plan = readPlanRepositoryMembers('$UserRepository');
       final later = plan.where((row) => row.note.isNotEmpty);
       final now = plan.where((row) => row.note.isEmpty);
 
       expect(later.map((row) => row.member), ['listByInterests']);
-      expect(now, hasLength(6));
+      expect(now, hasLength(7));
+      expect(now.map((row) => row.member), contains('updateAvatar'));
       expect(members.toSet(), {
         for (final row in now) normalizeDartSource(row.signature),
       });
@@ -315,7 +349,7 @@ void main() {
 
     /// Batch'i Rules'un "belge varken create yok" reddiyle biten repository
     /// (okumalar [db]'ye gider).
-    UserRepository deniedBatch() => FirebaseUserRepository(
+    UserRepository deniedBatch() => repositoryOn(
       FirebaseFirestoreService(
         FailingBatchFirestore(
           db,
@@ -612,6 +646,391 @@ void main() {
       );
 
       expect(result.errorOrNull, FirestoreError.permissionDenied);
+    });
+  });
+
+  group('T-14 · UserRepository · updateAvatar', () {
+    /// Profili tamamlanmış (ilgi alanı olan) kullanıcı belgesi.
+    Future<void> seedComplete({bool staff = false}) => userRef().set({
+      'name': 'Ayşe Işık',
+      'nameLower': 'ayşe ışık',
+      'avatarSeed': _uid,
+      'department': 'd02',
+      'year': '2',
+      'interests': staff ? <String>[] : ['i01'],
+      'staff': staff,
+      'profileComplete': true,
+      ...BaseFieldsPayload.create(),
+    });
+
+    /// `createProfile` sonrası hal: ilgi alanı yok, profil tamamlanmamış.
+    Future<void> seedIncomplete() async =>
+        expect((await create()).isSuccess, isTrue);
+
+    const setupPatch = UserProfilePatch(
+      name: 'Ayşe Işık',
+      nameLower: 'ayşe ışık',
+      department: 'd02',
+      year: YearLevel.second,
+      interests: ['i01', 'i05'],
+      profileComplete: true,
+    );
+
+    Future<MediaUpdateResult<String>> update({
+      String uid = _uid,
+      Uint8List? bytes,
+      String contentType = 'image/jpeg',
+      UserProfilePatch? profile,
+      void Function(double fraction)? onProgress,
+      UserRepository? on,
+    }) => (on ?? repository).updateAvatar(
+      uid,
+      bytes: bytes ?? _image,
+      contentType: contentType,
+      profile: profile,
+      onProgress: onProgress,
+    );
+
+    test('tamamlanmış profil: dosya users/{uid}/{yeni ad} yoluna yüklenir, '
+        'yalnızca avatarPath (+ updatedAt) değişir ve yol döner', () async {
+      await seedComplete();
+      final before = (await read(userRef()))!;
+
+      final result = await update();
+      final after = (await read(userRef()))!;
+
+      expect(result.dataOrNull, _newAvatarPath);
+      expect(StoragePaths.isUserAvatar(_newAvatarPath, _uid), isTrue);
+      expect(storage.uploads, hasLength(1));
+      expect(storage.uploads.single.path, _newAvatarPath);
+      expect(storage.uploads.single.bytes, _image);
+      expect(storage.uploads.single.contentType, 'image/jpeg');
+      expect(storage.uploads.single.customMetadata, isEmpty);
+      expect(_changedKeys(before, after), {'avatarPath'});
+      expect(after['avatarPath'], _newAvatarPath);
+      expect(after['updatedAt'], isA<Timestamp>());
+    });
+
+    test('dosya uzantısı içerik türünden gelir (png, webp)', () async {
+      await seedComplete();
+
+      final png = await update(contentType: 'image/png');
+      final webp = await update(contentType: 'image/webp');
+
+      expect(png.dataOrNull, endsWith('.png'));
+      expect(webp.dataOrNull, endsWith('.webp'));
+      expect(storage.uploads.map((upload) => upload.contentType), [
+        'image/png',
+        'image/webp',
+      ]);
+    });
+
+    test('her çağrı yeni dosya adı üretir; eski dosya silinmez, üzerine '
+        'yazılmaz (D-10)', () async {
+      await seedComplete();
+      final clock = FakeAppClock(_now);
+      final repo = FirebaseUserRepository(
+        FirebaseFirestoreService(db),
+        storage,
+        clock,
+        SequenceRandom(List.generate(16, (i) => i)),
+      );
+
+      final first = (await update(on: repo)).dataOrNull!;
+      clock.advance(const Duration(seconds: 1));
+      final second = (await update(on: repo)).dataOrNull!;
+
+      expect(first, isNot(second));
+      expect(storage.uploads.map((upload) => upload.path), [first, second]);
+      expect((await read(userRef()))!['avatarPath'], second);
+    });
+
+    test('kriptografik kaynakla (kompozisyon kökünün verdiği) iki örnek aynı '
+        'saatte farklı ad üretir', () async {
+      await seedComplete();
+      UserRepository secure() => FirebaseUserRepository(
+        FirebaseFirestoreService(db),
+        storage,
+        FakeAppClock(_now),
+        Random.secure(),
+      );
+
+      final first = (await update(on: secure())).dataOrNull!;
+      final second = (await update(on: secure())).dataOrNull!;
+
+      expect(first, isNot(second));
+      expect(StoragePaths.isUserAvatar(first, _uid), isTrue);
+      expect(StoragePaths.isUserAvatar(second, _uid), isTrue);
+    });
+
+    test('ilerleme geri çağrısı yüklemeye aktarılır', () async {
+      await seedComplete();
+      final fractions = <double>[];
+
+      await update(onProgress: fractions.add);
+
+      expect(fractions, [0.5, 1.0]);
+    });
+
+    test('AUT-05: ilgi alanlarını içeren yama avatarPath ile AYNI güncellemede '
+        'yazılır; ön okuma yapılmaz (W-57)', () async {
+      await seedIncomplete();
+      final before = (await read(userRef()))!;
+
+      final result = await update(profile: setupPatch);
+      final after = (await read(userRef()))!;
+
+      expect(result.dataOrNull, _newAvatarPath);
+      expect(_changedKeys(before, after), {
+        'avatarPath',
+        'department',
+        'year',
+        'interests',
+        'profileComplete',
+      });
+      expect(after, containsPair('avatarPath', _newAvatarPath));
+      expect(after, containsPair('interests', ['i01', 'i05']));
+      expect(after, containsPair('profileComplete', true));
+      expect(after, containsPair('department', 'd02'));
+      expect(after, containsPair('year', '2'));
+    });
+
+    test('AUT-05 yaması tek yazımdır: belge okunamasa da (ön okuma yok) '
+        'yükleme yapılır ve yazım hatası belge adımı olarak döner', () async {
+      final result = await update(
+        on: failing('permission-denied'),
+        profile: setupPatch,
+      );
+
+      expect(
+        result.errorOrNull,
+        const MediaDocumentError(FirestoreError.permissionDenied),
+      );
+      // Yüklenen dosya yerinde kalır (D-10); yeniden deneme yeni ad üretir.
+      expect(storage.uploads.single.path, _newAvatarPath);
+    });
+
+    test('profil tamamlanmadan tek başına çağrı: yükleme YAPILMADAN '
+        'failedPrecondition (W-57)', () async {
+      await seedIncomplete();
+      final before = await read(userRef());
+
+      final result = await update();
+
+      expect(
+        result.errorOrNull,
+        const MediaDocumentError(FirestoreError.failedPrecondition),
+      );
+      expect(result.errorOrNull!.firestore, FirestoreError.failedPrecondition);
+      expect(result.errorOrNull!.storage, isNull);
+      expect(storage.uploads, isEmpty);
+      expect(await read(userRef()), before);
+    });
+
+    test('ilgi alanı içermeyen yama tamamlanmamış profilde yine reddedilir; '
+        'tamamlanmış profilde avatarPath ile birlikte yazılır', () async {
+      const bioOnly = UserProfilePatch(bio: 'Merhaba.');
+      await seedIncomplete();
+
+      final denied = await update(profile: bioOnly);
+
+      expect(
+        denied.errorOrNull,
+        const MediaDocumentError(FirestoreError.failedPrecondition),
+      );
+      expect(storage.uploads, isEmpty);
+
+      await seedComplete();
+      final before = (await read(userRef()))!;
+      final accepted = await update(profile: bioOnly);
+
+      expect(accepted.dataOrNull, _newAvatarPath);
+      expect(_changedKeys(before, (await read(userRef()))!), {
+        'avatarPath',
+        'bio',
+      });
+    });
+
+    test('yamadaki BOŞ ilgi listesi ön koşulu sağlamaz (öğrenci); personelde '
+        'geçer', () async {
+      const emptied = UserProfilePatch(interests: []);
+      await seedComplete();
+
+      final denied = await update(profile: emptied);
+
+      expect(
+        denied.errorOrNull,
+        const MediaDocumentError(FirestoreError.failedPrecondition),
+      );
+      expect(storage.uploads, isEmpty);
+
+      await seedComplete(staff: true);
+      expect((await update(profile: emptied)).isSuccess, isTrue);
+    });
+
+    test('personel: ilgi alanı olmadan da tek başına çağrılabilir', () async {
+      await seedComplete(staff: true);
+
+      expect((await update()).dataOrNull, _newAvatarPath);
+    });
+
+    test('profil belgesi yoksa yükleme yapılmadan notFound', () async {
+      final result = await update();
+
+      expect(
+        result.errorOrNull,
+        const MediaDocumentError(FirestoreError.notFound),
+      );
+      expect(storage.uploads, isEmpty);
+    });
+
+    test(
+      'ön koşul okuması başarısızsa hata aynen döner, yükleme yapılmaz',
+      () async {
+        final result = await update(on: failing('unavailable'));
+
+        expect(
+          result.errorOrNull,
+          const MediaDocumentError(FirestoreError.unavailable),
+        );
+        expect(storage.uploads, isEmpty);
+      },
+    );
+
+    test(
+      'yükleme hatası yükleme adımı olarak döner; avatarPath değişmez',
+      () async {
+        await seedComplete();
+        final before = await read(userRef());
+        storage.nextError = StorageError.unauthorized;
+
+        final result = await update();
+
+        expect(
+          result.errorOrNull,
+          const MediaUploadError(StorageError.unauthorized),
+        );
+        expect(result.errorOrNull!.storage, StorageError.unauthorized);
+        expect(result.errorOrNull!.firestore, isNull);
+        expect(
+          result,
+          isA<FirebaseFailure<String, MediaUpdateError>>().having(
+            (failure) => failure.message,
+            'message',
+            'storage/unauthorized',
+          ),
+        );
+        expect(await read(userRef()), before);
+      },
+    );
+
+    test('izinli olmayan içerik türü: SDK ve Firestore çağrılmadan '
+        'invalidType', () async {
+      for (final type in ['image/gif', 'image/heic', 'text/plain', '']) {
+        final result = await update(
+          on: failing('unavailable'),
+          contentType: type,
+        );
+
+        expect(
+          result.errorOrNull,
+          const MediaUploadError(StorageError.invalidType),
+          reason: type,
+        );
+      }
+      expect(storage.uploads, isEmpty);
+    });
+
+    test('boş dosya ve sınırı aşan dosya servisin ön denetiminde elenir '
+        "(SDK'ya gidilmez)", () async {
+      await seedComplete();
+      final sdk = StubStorage();
+      final real = repositoryOn(
+        FirebaseFirestoreService(db),
+        storageService: FirebaseStorageService(sdk),
+      );
+      final before = await read(userRef());
+
+      final empty = await update(on: real, bytes: Uint8List(0));
+      final tooLarge = await update(
+        on: real,
+        bytes: Uint8List(Limits.imageMaxBytes),
+      );
+
+      expect(empty.errorOrNull, const MediaUploadError(StorageError.noFile));
+      expect(
+        tooLarge.errorOrNull,
+        const MediaUploadError(StorageError.sizeLimit),
+      );
+      expect(sdk.references, isEmpty);
+      expect(await read(userRef()), before);
+    });
+
+    test('yama avatarPath ya da clearAvatarPath taşıyamaz (invalidArgument; '
+        'yükleme yok)', () async {
+      await seedComplete();
+
+      for (final patch in [
+        const UserProfilePatch(avatarPath: _avatarPath),
+        const UserProfilePatch(clearAvatarPath: true),
+      ]) {
+        expect(
+          (await update(profile: patch)).errorOrNull,
+          const MediaDocumentError(FirestoreError.invalidArgument),
+        );
+      }
+      expect(storage.uploads, isEmpty);
+    });
+
+    test('yama updateProfile kurallarıyla doğrulanır (ad / nameLower çifti, '
+        'alan sınırları)', () async {
+      await seedComplete();
+
+      for (final patch in [
+        const UserProfilePatch(name: 'Ayşe'),
+        const UserProfilePatch(interests: ['i01', 'yok']),
+        const UserProfilePatch(interests: ['i01'], department: 'd99'),
+      ]) {
+        expect(
+          (await update(profile: patch)).errorOrNull,
+          const MediaDocumentError(FirestoreError.invalidArgument),
+          reason: '${patch.toJson()}',
+        );
+      }
+      expect(storage.uploads, isEmpty);
+    });
+
+    for (final id in _invalidIds) {
+      test(
+        'geçersiz kimlik "$id": invalidArgument, istisna sızmaz (W-54)',
+        () async {
+          final result = await update(uid: id, profile: setupPatch);
+
+          expect(
+            result.errorOrNull,
+            const MediaDocumentError(FirestoreError.invalidArgument),
+          );
+          expect(storage.uploads, isEmpty);
+        },
+      );
+    }
+  });
+
+  group('T-14 · MediaUpdateError', () {
+    test('adım erişimcileri ve eşitlik', () {
+      const upload = MediaUploadError(StorageError.timeout);
+      const document = MediaDocumentError(FirestoreError.offline);
+
+      expect(upload.storage, StorageError.timeout);
+      expect(upload.firestore, isNull);
+      expect(document.firestore, FirestoreError.offline);
+      expect(document.storage, isNull);
+      expect(upload, const MediaUploadError(StorageError.timeout));
+      expect(upload, isNot(const MediaUploadError(StorageError.unknown)));
+      expect(document, const MediaDocumentError(FirestoreError.offline));
+      expect(document, isNot(const MediaDocumentError(FirestoreError.unknown)));
+      expect('$upload', 'MediaUploadError(timeout)');
+      expect('$document', 'MediaDocumentError(offline)');
     });
   });
 

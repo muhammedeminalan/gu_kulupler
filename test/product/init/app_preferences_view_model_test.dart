@@ -1,14 +1,21 @@
 // T-11 · AppPreferencesViewModel: başlangıç, her mutasyon, kalıcılık ve
 // kalıcılık hatası (PLAN §12.2).
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:gu_kulupler/product/feedback/dialog_id.dart';
+import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/init/app_preferences_state.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
+import '../../fakes/fake_feedback_service.dart';
+import '../../fakes/fake_permission_service.dart';
 import '../../helpers/test_container.dart';
 
 void main() {
@@ -224,6 +231,115 @@ void main() {
         container.read(appPreferencesViewModelProvider).themeMode,
         ThemeMode.dark,
       );
+    });
+  });
+
+  group('T-14 · AppPreferencesViewModel · ilk girişte bildirim ön izni '
+      '(DLG-03, bir kez)', () {
+    late FakeFeedbackService feedback;
+    late FakePermissionService permissions;
+
+    Future<bool> ask(ProviderContainer container) => container
+        .read(appPreferencesViewModelProvider.notifier)
+        .askNotificationPermissionOnce();
+
+    setUp(() {
+      useStore(FakeAppPreferencesStore());
+      feedback = FakeFeedbackService();
+      permissions = FakePermissionService();
+      GetIt.I
+        ..registerSingleton<FeedbackService>(feedback)
+        ..registerSingleton<PermissionService>(permissions);
+    });
+
+    test('"İzin ver": DLG-03 → sistem izni → TST-19; bayrak işaretlenir ve '
+        'kalıcı yazılır', () async {
+      feedback.nextDialogResult = true;
+      final container = createContainer();
+
+      expect(await ask(container), isTrue);
+
+      expect(feedback.dialogs, [DialogId.dlg03]);
+      expect(permissions.requested, [Permission.notification]);
+      expect(feedback.toasts, [ToastId.tst19]);
+      expect(
+        container
+            .read(appPreferencesViewModelProvider)
+            .notificationPermissionAsked,
+        isTrue,
+      );
+      expect(store.notificationPermissionAsked, isTrue);
+    });
+
+    for (final (label, result) in [
+      ('"Şimdi değil"', false),
+      ('scrim / geri', null),
+    ]) {
+      test('$label: sistem izni istenmez, toast yok; yine de bir daha '
+          'sorulmaz', () async {
+        feedback.nextDialogResult = result;
+        final container = createContainer();
+
+        expect(await ask(container), isFalse);
+        expect(feedback.dialogs, [DialogId.dlg03]);
+        expect(permissions.requested, isEmpty);
+        expect(feedback.toasts, isEmpty);
+        expect(store.notificationPermissionAsked, isTrue);
+
+        feedback.nextDialogResult = true;
+        expect(await ask(container), isFalse);
+        expect(feedback.dialogs, [DialogId.dlg03]);
+        expect(permissions.requested, isEmpty);
+      });
+    }
+
+    test('sistem izni reddederse TST-19 gösterilmez', () async {
+      feedback.nextDialogResult = true;
+      permissions.results[Permission.notification] =
+          PermissionStatus.permanentlyDenied;
+      final container = createContainer();
+
+      expect(await ask(container), isFalse);
+      expect(permissions.requested, [Permission.notification]);
+      expect(feedback.toasts, isEmpty);
+      expect(store.notificationPermissionAsked, isTrue);
+    });
+
+    test(
+      'izin zaten verilmişse pencere açılmaz; bayrak yine işaretlenir',
+      () async {
+        permissions.results[Permission.notification] = PermissionStatus.granted;
+        final container = createContainer();
+
+        expect(await ask(container), isFalse);
+        expect(feedback.dialogs, isEmpty);
+        expect(permissions.requested, isEmpty);
+        expect(store.notificationPermissionAsked, isTrue);
+      },
+    );
+
+    test(
+      'bayrak önceden işaretliyse (ikinci açılış) hiçbir şey yapılmaz',
+      () async {
+        store.values[AppPreferenceKeys.notificationPermissionAsked] = true;
+        feedback.nextDialogResult = true;
+        final container = createContainer();
+
+        expect(await ask(container), isFalse);
+        expect(feedback.dialogs, isEmpty);
+        expect(permissions.calls, isEmpty);
+      },
+    );
+
+    test('eşzamanlı iki çağrı pencereyi bir kez açar', () async {
+      feedback.nextDialogResult = true;
+      final container = createContainer();
+
+      final results = await Future.wait([ask(container), ask(container)]);
+
+      expect(results, [isTrue, isFalse]);
+      expect(feedback.dialogs, [DialogId.dlg03]);
+      expect(permissions.requested, [Permission.notification]);
     });
   });
 }

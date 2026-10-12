@@ -10,12 +10,22 @@
 // kurallardan geçer. Yük ya da beyaz liste tek başına değişirse iki testten
 // biri kırılır.
 //
+// T-14: `UserRepository.updateAvatar` yazımları da sözleşmededir (profil
+// yamasıyla aynı yazım; tamamlanmış profilde yalnızca `avatarPath` — W-57) ve
+// AUT-05'in gerçek sırası (`aut05`: createProfile → tamamlama yaması →
+// yamasız `updateAvatar`). Dosya adı sabit saat + sabit rastgele baytlarla
+// üretilir.
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
+import '../fakes/fake_app_clock.dart';
+import '../fakes/recording_storage_service.dart';
 import '../helpers/repo_sources.dart';
 
 const String _contractPath = 'firebase/test/contracts/repository_payloads.json';
@@ -26,13 +36,17 @@ const String _serverTimestamp = '@serverTimestamp';
 /// SDK'ya giden tek yazım.
 typedef _Write = ({String op, String path, Object? data});
 
-/// Yazımları [log]'a kaydeden veritabanı; okumalar "belge yok" döner.
+/// Yazımları [log]'a kaydeden veritabanı; okumalar [docs] içindeki belgeyi,
+/// yoksa "belge yok" döner.
 final class _RecordingFirestore implements FirebaseFirestore {
   final List<_Write> log = [];
 
+  /// Okumaların göreceği belgeler: yol → alanlar.
+  final Map<String, Json> docs = {};
+
   @override
   CollectionReference<Json> collection(String collectionPath) =>
-      _RecordingCollection(collectionPath, log);
+      _RecordingCollection(collectionPath, log, docs);
 
   @override
   WriteBatch batch() => _RecordingBatch(log);
@@ -42,33 +56,35 @@ final class _RecordingFirestore implements FirebaseFirestore {
 }
 
 final class _RecordingCollection implements CollectionReference<Json> {
-  _RecordingCollection(this.path, this._log);
+  _RecordingCollection(this.path, this._log, this._docs);
 
   @override
   final String path;
   final List<_Write> _log;
+  final Map<String, Json> _docs;
 
   @override
   DocumentReference<Json> doc([String? path]) =>
-      _RecordingReference('${this.path}/${path!}', _log);
+      _RecordingReference('${this.path}/${path!}', _log, _docs);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _RecordingReference implements DocumentReference<Json> {
-  _RecordingReference(this.path, this._log);
+  _RecordingReference(this.path, this._log, this._docs);
 
   @override
   final String path;
   final List<_Write> _log;
+  final Map<String, Json> _docs;
 
   @override
   String get id => path.split('/').last;
 
   @override
   Future<DocumentSnapshot<Json>> get([GetOptions? options]) async =>
-      _MissingSnapshot(this);
+      _StoredSnapshot(this, _docs[path]);
 
   @override
   Future<void> set(Json data, [SetOptions? options]) async =>
@@ -82,20 +98,22 @@ final class _RecordingReference implements DocumentReference<Json> {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-final class _MissingSnapshot implements DocumentSnapshot<Json> {
-  _MissingSnapshot(this.reference);
+/// [_data] alanlarını taşıyan belge görüntüsü; `null` → belge yok.
+final class _StoredSnapshot implements DocumentSnapshot<Json> {
+  _StoredSnapshot(this.reference, this._data);
 
   @override
   final DocumentReference<Json> reference;
+  final Json? _data;
 
   @override
-  bool get exists => false;
+  bool get exists => _data != null;
 
   @override
   String get id => reference.id;
 
   @override
-  Json? data() => null;
+  Json? data() => _data;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -141,6 +159,25 @@ List<Object?> _normalized(List<_Write> writes) => [
     {'op': write.op, 'path': write.path, 'data': _normalize(write.data)},
 ];
 
+/// `updateAvatar` dosya adının girdileri (sözleşmedeki yol bunlardan çıkar).
+final DateTime _uploadedAt = DateTime.utc(2026, 10, 8, 20, 15, 2);
+const List<int> _randomBytes = [0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71];
+final Uint8List _image = Uint8List.fromList(const [0xff, 0xd8, 0xff, 0xe0]);
+
+/// `updateAvatar`'ın ön koşul okuması (W-57) için tamamlanmış profil belgesi:
+/// yamasız çağrı yalnızca ilgi alanı olan profilde yükleme yapar.
+void _seedCompleteProfile(_RecordingFirestore db, String uid) {
+  db.docs['users/$uid'] = const UserModel(
+    name: 'Ayşe Işık',
+    nameLower: 'ayşe ışık',
+    avatarSeed: 'u',
+    department: 'd02',
+    year: YearLevel.second,
+    interests: ['i01', 'i05'],
+    profileComplete: true,
+  ).toJson();
+}
+
 void main() {
   final contract = readRepoJson(_contractPath);
   final uid = contract['uid']! as String;
@@ -152,6 +189,7 @@ void main() {
   ];
 
   late _RecordingFirestore db;
+  late RecordingStorageService storage;
   late UserRepository users;
   late SettingsRepository settings;
 
@@ -165,7 +203,29 @@ void main() {
           nameLower: 'ayşe ışık',
           avatarSeed: uid,
         ),
-        'UserRepository.updateProfile · AUT-05 bitişi': () =>
+        // AUT-05'in gerçek yazımları (SetupProfileViewModel.submit; W-57):
+        // tamamlama yaması → yamasız `updateAvatar`. Aynı yama kök
+        // `test/flows/auth_flow_test.dart` içinde ViewModel'den yakalanır.
+        'UserRepository.updateProfile · AUT-05 tamamlama '
+            '(SetupProfileViewModel.submit)': () => users.updateProfile(
+          uid,
+          const UserProfilePatch(
+            department: 'd02',
+            year: YearLevel.second,
+            interests: ['i01', 'i05'],
+            profileComplete: true,
+          ),
+        ),
+        'UserRepository.updateAvatar · AUT-05 (tamamlama yamasından sonra)':
+            () {
+              _seedCompleteProfile(db, uid);
+              return users.updateAvatar(
+                uid,
+                bytes: _image,
+                contentType: 'image/jpeg',
+              );
+            },
+        'UserRepository.updateProfile · tam profil yaması': () =>
             users.updateProfile(
               uid,
               const UserProfilePatch(
@@ -177,6 +237,28 @@ void main() {
                 profileComplete: true,
               ),
             ),
+        'UserRepository.updateAvatar · profil yamasıyla aynı yazım': () =>
+            users.updateAvatar(
+              uid,
+              bytes: _image,
+              contentType: 'image/jpeg',
+              profile: const UserProfilePatch(
+                name: 'Ayşe Işık',
+                nameLower: 'ayşe ışık',
+                department: 'd02',
+                year: YearLevel.second,
+                interests: ['i01', 'i05'],
+                profileComplete: true,
+              ),
+            ),
+        'UserRepository.updateAvatar · tamamlanmış profil (PRF-02)': () {
+          _seedCompleteProfile(db, uid);
+          return users.updateAvatar(
+            uid,
+            bytes: _image,
+            contentType: 'image/png',
+          );
+        },
         'UserRepository.updateProfile · profil fotoğrafı': () =>
             users.updateProfile(
               uid,
@@ -228,8 +310,14 @@ void main() {
 
   setUp(() {
     db = _RecordingFirestore();
+    storage = RecordingStorageService();
     final service = FirebaseFirestoreService(db);
-    users = FirebaseUserRepository(service);
+    users = FirebaseUserRepository(
+      service,
+      storage,
+      FakeAppClock(_uploadedAt),
+      SequenceRandom(_randomBytes),
+    );
     settings = FirebaseSettingsRepository(service);
   });
 
@@ -248,5 +336,37 @@ void main() {
         expect(_normalized(db.log), step['writes']);
       });
     }
+
+    test('aut05: AUT-05 sırasındaki her çağrı sözleşmede bir adımdır ve '
+        'sırası createProfile → updateProfile → updateAvatar', () {
+      final sequence = (contract['aut05']! as List<Object?>).cast<String>();
+      final story = [
+        for (final step in contract['steps']! as List<Object?>)
+          (step! as Map<String, Object?>)['call']! as String,
+      ];
+
+      expect(sequence, hasLength(3));
+      expect(sequence[0], 'UserRepository.createProfile');
+      expect(sequence[1], startsWith('UserRepository.updateProfile'));
+      expect(sequence[2], startsWith('UserRepository.updateAvatar'));
+      // Öyküde aynı sırayla ve art arda yer alır (jest yeniden oynatması).
+      expect(story.sublist(0, 3), sequence);
+    });
+
+    test("updateAvatar: Firestore'a yazılan avatarPath, Storage'a yüklenen "
+        'dosyanın yoludur ve users/{uid}/ altındadır', () async {
+      for (final step in steps) {
+        final call = step['call']! as String;
+        if (!call.startsWith('UserRepository.updateAvatar')) continue;
+        db.log.clear();
+        storage.uploads.clear();
+
+        await calls[call]!();
+
+        final written = (db.log.single.data! as Map)['avatarPath']! as String;
+        expect(storage.uploads.single.path, written, reason: call);
+        expect(StoragePaths.isUserAvatar(written, uid), isTrue, reason: call);
+      }
+    });
   });
 }

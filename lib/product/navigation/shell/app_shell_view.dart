@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/format/count_badge_label.dart';
+import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -21,7 +24,11 @@ import 'package:gu_ui/gu_ui.dart';
 ///   `pop`, ilk sekme dışındaki sekme kökünde ilk sekmeye dönüş, ilk sekmenin
 ///   kökünde uygulamadan çıkış.
 /// * `NAV.tab.*` aksiyon anahtarları yalnızca buradadır (K-17).
-class AppShellView extends ConsumerWidget {
+/// * Kabuk yalnızca `active` oturumda kurulur (`AppRedirect`); ilk kuruluşta
+///   bildirim ön izni (DLG-03) cihazda **bir kez** sorulur (architecture §6;
+///   prototip `auth.enterApp`). Prototipteki 600 ms gecikme yoktur: soru ilk
+///   kareden sonra açılır.
+class AppShellView extends ConsumerStatefulWidget {
   /// [navigationShell]: `StatefulShellRoute.indexedStack`'in dal kabı.
   const AppShellView({required this.navigationShell, super.key});
 
@@ -45,13 +52,55 @@ class AppShellView extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShellView> createState() => _AppShellViewState();
+
+  /// Sekme seçimi kuralı (navigation.md §1; prototip `nav.switchTab`).
+  ///
+  /// * Başka sekme → o dal **kaldığı yerden** açılır (yığın korunur).
+  /// * Etkin sekme, yığın derin → dalın köküne dönülür.
+  /// * Etkin sekme, zaten kökte ([isTabRoot]) → [onScrollTop] (liste başa
+  ///   kaydırılır).
+  ///
+  /// Alt çubuk yalnızca sekme kökünde çizildiğinden ikinci durum bugün
+  /// arayüzden üretilmez; kural yine de eksiksiz tutulur.
+  static void selectTab({
+    required StatefulNavigationShell shell,
+    required GuTab tab,
+    required bool isTabRoot,
+    required ValueChanged<GuTab> onScrollTop,
+  }) {
+    final isActive = tab.index == shell.currentIndex;
+    if (isActive && isTabRoot) {
+      onScrollTop(tab);
+      return;
+    }
+    shell.goBranch(tab.index, initialLocation: isActive);
+  }
+}
+
+class _AppShellViewState extends ConsumerState<AppShellView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        ref
+            .read(appPreferencesViewModelProvider.notifier)
+            .askNotificationPermissionOnce(),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final navigationShell = widget.navigationShell;
     final isSuperAdmin = ref.watch(
       sessionViewModelProvider.select((session) => session.isSuperAdmin),
     );
     final isTabRoot = GuTab.isTabRoot(GoRouterState.of(context).uri);
     final currentTab = GuTab.values[navigationShell.currentIndex];
-    final tabs = visibleTabs(isSuperAdmin: isSuperAdmin);
+    final tabs = AppShellView.visibleTabs(isSuperAdmin: isSuperAdmin);
     final l10n = context.l10n;
     final colors = context.gu.colors;
     // TODO(T-26): okunmamış bildirim sayısı `NotificationsViewModel`'den
@@ -90,7 +139,7 @@ class AppShellView extends ConsumerWidget {
                       ),
                   ],
                   currentIndex: tabs.indexOf(currentTab),
-                  onTap: (index) => selectTab(
+                  onTap: (index) => AppShellView.selectTab(
                     shell: navigationShell,
                     tab: tabs[index],
                     isTabRoot: isTabRoot,
@@ -99,35 +148,12 @@ class AppShellView extends ConsumerWidget {
                         .request(),
                   ),
                   semanticLabel: l10n.a11yMainNav,
-                  tabKeyBuilder: (index) => tabKeys[tabs[index]]!,
+                  tabKeyBuilder: (index) => AppShellView.tabKeys[tabs[index]]!,
                 )
               : null,
         ),
       ),
     );
-  }
-
-  /// Sekme seçimi kuralı (navigation.md §1; prototip `nav.switchTab`).
-  ///
-  /// * Başka sekme → o dal **kaldığı yerden** açılır (yığın korunur).
-  /// * Etkin sekme, yığın derin → dalın köküne dönülür.
-  /// * Etkin sekme, zaten kökte ([isTabRoot]) → [onScrollTop] (liste başa
-  ///   kaydırılır).
-  ///
-  /// Alt çubuk yalnızca sekme kökünde çizildiğinden ikinci durum bugün
-  /// arayüzden üretilmez; kural yine de eksiksiz tutulur.
-  static void selectTab({
-    required StatefulNavigationShell shell,
-    required GuTab tab,
-    required bool isTabRoot,
-    required ValueChanged<GuTab> onScrollTop,
-  }) {
-    final isActive = tab.index == shell.currentIndex;
-    if (isActive && isTabRoot) {
-      onScrollTop(tab);
-      return;
-    }
-    shell.goBranch(tab.index, initialLocation: isActive);
   }
 
   static GuIcons _iconOf(GuTab tab) => switch (tab) {

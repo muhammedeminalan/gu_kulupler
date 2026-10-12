@@ -180,6 +180,58 @@ describe('parite (g) · StaticTables / enum değerleri ↔ Rules değer listeler
     }
   });
 
+  test('storage.rules dosya adı deseni = StoragePaths.fileNamePattern (firestore.rules avatarPath ile aynı yazım)', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    const literal = dart.toRulesLiteral(pattern[1]);
+    expect(storageRules).toContain(`file.matches('${literal}')`);
+    expect(firestoreRules).toContain(`/${literal}')`);
+  });
+
+  test('storage.rules içerik türleri ve uzantı eşlemesi = StoragePaths.extensionByContentType', () => {
+    const table = /extensionByContentType = \{([^}]*)\}/.exec(readDart('constants/storage_paths.dart'));
+    expect(table).not.toBeNull();
+    const pairs = [...table[1].matchAll(/'([^']+)':\s*'([^']+)'/g)].map((m) => [m[1], m[2]]);
+    expect(pairs).toEqual([
+      ['image/jpeg', 'jpg'],
+      ['image/png', 'png'],
+      ['image/webp', 'webp'],
+    ]);
+    // imageOk(): yalnızca tablodaki türler
+    const subtypes = pairs.map(([type]) => type.replace('image/', ''));
+    expect(storageRules).toContain(`request.resource.contentType.matches('image/(${subtypes.join('|')})')`);
+    // fileNameOk(): her tür kendi uzantısıyla
+    for (const [type, extension] of pairs) {
+      expect(storageRules).toContain(`(request.resource.contentType == '${type}' && file.matches('.*\\\\.${extension}'))`);
+    }
+    const mapped = storageRules.match(/request\.resource\.contentType == '[^']+'/g) || [];
+    expect(mapped).toHaveLength(pairs.length);
+  });
+
+  test('storage.rules üst veri koşulları = FirebaseStorageService.upload\'ın gönderdiği üst veri (T-14 güvenlik incelemesi)', () => {
+    // İstemci yalnızca `contentType` (+ boş değilse özel üst veri) gönderir; Rules `contentEncoding` /
+    // `contentDisposition` taşıyan yüklemeyi reddeder. Servis bu alanlardan birini göndermeye başlarsa
+    // üretimde her yükleme `unauthorized` olur — bu test o sapmayı yakalar.
+    const service = readDart('services/storage_service.dart');
+    const settable = /SettableMetadata\(([^)]*)\)/.exec(service);
+    expect(settable).not.toBeNull();
+    const sent = [...settable[1].matchAll(/(\w+):/g)].map((m) => m[1]);
+    expect(sent).toEqual(['contentType', 'customMetadata']);
+    expect(settable[1]).toContain('customMetadata: customMetadata.isEmpty ? null : customMetadata');
+    for (const field of ['contentEncoding', 'contentDisposition']) {
+      expect(service).not.toContain(field);
+      expect(storageRules).toContain(`request.resource.${field} == null`);
+    }
+    // `users/` yolu özel üst veri kabul etmez: updateAvatar `customMetadata` vermez.
+    expect(storageRules).toContain('function noCustomMetadata()');
+    const repository = readDart('repositories/firebase_user_repository.dart');
+    expect(repository).toContain('_storage.upload(');
+    expect(repository).not.toContain('customMetadata');
+    // Boş dosya: servis ağ çağrısından önce `noFile` döner; Rules `size > 0` ister.
+    expect(service).toContain('if (bytes.isEmpty) return StorageError.noFile;');
+    expect(storageRules).toContain('request.resource.size > 0');
+  });
+
   test('account.fcmTokens[].platform değer listesi = Limits.platforms', () => {
     const platforms = /static const Set<String> platforms = \{([^}]*)\}/.exec(readDart('constants/limits.dart'));
     expect(platforms).not.toBeNull();

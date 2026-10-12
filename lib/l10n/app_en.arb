@@ -2989,6 +2989,19 @@
   "@feedUnsave": {
     "description": "Key feed.unsave"
   },
+  "imageInvalidType": "Only JPG, PNG or WebP images can be selected",
+  "@imageInvalidType": {
+    "description": "Key image.invalidType"
+  },
+  "imageTooLarge": "Image can be at most {maxMb} MB",
+  "@imageTooLarge": {
+    "description": "Key image.tooLarge",
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
   "interestI01": "Software",
   "@interestI01": {
     "description": "Key interest.i01"

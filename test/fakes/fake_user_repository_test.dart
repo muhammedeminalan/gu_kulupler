@@ -1,6 +1,10 @@
 // T-12 · FakeUserRepository sözleşmesi (PLAN §16.3): `users`,
 // `createdProfiles`, `profilePatches`; gerçek repository'nin okuma / yazma
 // sonuçlarını izler.
+// T-14 · `updateAvatar`: çağrı kısıtı (W-57), ön denetimler, adım bazlı hata.
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
@@ -161,5 +165,186 @@ void main() {
       expect((await create()).isSuccess, isTrue);
       expect(fake.callsTo('createProfile'), hasLength(2));
     });
+  });
+  group('T-14 · FakeUserRepository · updateAvatar', () {
+    final bytes = Uint8List.fromList(const [0xFF, 0xD8, 0xFF, 0xE0]);
+    const setupPatch = UserProfilePatch(
+      department: 'd02',
+      year: YearLevel.second,
+      interests: ['i01', 'i05'],
+      profileComplete: true,
+    );
+
+    Future<MediaUpdateResult<String>> update({
+      String uid = _uid,
+      Uint8List? data,
+      String contentType = 'image/jpeg',
+      UserProfilePatch? profile,
+      void Function(double fraction)? onProgress,
+    }) => fake.updateAvatar(
+      uid,
+      bytes: data ?? bytes,
+      contentType: contentType,
+      profile: profile,
+      onProgress: onProgress,
+    );
+
+    test(
+      'tamamlanmış profil: yeni yol users/{uid}/ altında, avatarPath '
+      'güncellenir, çağrı `avatarUploads`e yazılır; her çağrı yeni ad',
+      () async {
+        fake.putActive(_uid);
+        final fractions = <double>[];
+
+        final first = (await update(onProgress: fractions.add)).dataOrNull!;
+        final second = (await update(contentType: 'image/png')).dataOrNull!;
+
+        expect(StoragePaths.isUserAvatar(first, _uid), isTrue);
+        expect(StoragePaths.isUserAvatar(second, _uid), isTrue);
+        expect(first, endsWith('.jpg'));
+        expect(second, endsWith('.png'));
+        expect(first, isNot(second));
+        expect(fake.users[_uid]!.avatarPath, second);
+        expect(fractions, [1.0]);
+        expect(fake.avatarUploads.map((upload) => upload.path), [
+          first,
+          second,
+        ]);
+        expect(fake.avatarUploads.first.bytes, bytes);
+        expect(fake.avatarUploads.first.contentType, 'image/jpeg');
+        expect(fake.avatarUploads.first.profile, isNull);
+        expect(fake.callsTo('updateAvatar'), hasLength(2));
+        expect(fake.profilePatches, isEmpty);
+      },
+    );
+
+    test('AUT-05: ilgi alanlarını içeren yama avatarPath ile birlikte '
+        'uygulanır (W-57)', () async {
+      await create();
+
+      final path = (await update(profile: setupPatch)).dataOrNull!;
+
+      final user = fake.users[_uid]!;
+      expect(user.avatarPath, path);
+      expect(user.interests, ['i01', 'i05']);
+      expect(user.department, 'd02');
+      expect(user.year, YearLevel.second);
+      expect(user.profileComplete, isTrue);
+      expect(fake.avatarUploads.single.profile, setupPatch);
+    });
+
+    test(
+      'profil tamamlanmadan tek başına (ya da ilgi alansız yamayla) çağrı '
+      'failedPrecondition; belge yoksa notFound; hiçbir şey yazılmaz',
+      () async {
+        expect(
+          (await update()).errorOrNull,
+          const MediaDocumentError(FirestoreError.notFound),
+        );
+        await create();
+
+        for (final profile in [
+          null,
+          const UserProfilePatch(bio: 'Merhaba.'),
+          const UserProfilePatch(interests: []),
+        ]) {
+          expect(
+            (await update(profile: profile)).errorOrNull,
+            const MediaDocumentError(FirestoreError.failedPrecondition),
+          );
+        }
+        expect(fake.users[_uid]!.avatarPath, isNull);
+        expect(fake.avatarUploads, isEmpty);
+      },
+    );
+
+    test('personel ilgi alanı olmadan da yükleyebilir', () async {
+      fake.users[_uid] = const UserModel(
+        uid: _uid,
+        name: 'Dr. Ayşe',
+        nameLower: 'dr. ayşe',
+        avatarSeed: _uid,
+        staff: true,
+      );
+
+      expect((await update()).isSuccess, isTrue);
+    });
+
+    test('gerçek servisin ön denetimleri: tür, boş dosya, boyut sınırı; '
+        'geçersiz kimlik ve avatarPath taşıyan yama invalidArgument', () async {
+      fake.putActive(_uid);
+
+      expect(
+        (await update(contentType: 'image/gif')).errorOrNull,
+        const MediaUploadError(StorageError.invalidType),
+      );
+      expect(
+        (await update(data: Uint8List(0))).errorOrNull,
+        const MediaUploadError(StorageError.noFile),
+      );
+      expect(
+        (await update(data: Uint8List(Limits.imageMaxBytes))).errorOrNull,
+        const MediaUploadError(StorageError.sizeLimit),
+      );
+      expect(
+        (await update(uid: 'u/1')).errorOrNull,
+        const MediaDocumentError(FirestoreError.invalidArgument),
+      );
+      for (final profile in [
+        const UserProfilePatch(avatarPath: 'users/$_uid/x.jpg'),
+        const UserProfilePatch(clearAvatarPath: true),
+      ]) {
+        expect(
+          (await update(profile: profile)).errorOrNull,
+          const MediaDocumentError(FirestoreError.invalidArgument),
+        );
+      }
+      expect(fake.avatarUploads, isEmpty);
+      expect(fake.users[_uid]!.avatarPath, isNull);
+    });
+
+    test('failNext(StorageError) yükleme adımını, failNext(FirestoreError) '
+        'belge adımını düşürür (tek seferlik); avatarPath değişmez', () async {
+      fake
+        ..putActive(_uid)
+        ..failNext(StorageError.unauthorized);
+      expect(
+        (await update()).errorOrNull,
+        const MediaUploadError(StorageError.unauthorized),
+      );
+      fake.failNext(FirestoreError.permissionDenied);
+      expect(
+        (await update()).errorOrNull,
+        const MediaDocumentError(FirestoreError.permissionDenied),
+      );
+      fake.failNext();
+      expect(
+        (await update()).errorOrNull,
+        const MediaDocumentError(FirestoreError.unknown),
+      );
+      expect(fake.users[_uid]!.avatarPath, isNull);
+      expect(fake.avatarUploads, isEmpty);
+
+      expect((await update()).isSuccess, isTrue);
+    });
+
+    test(
+      'avatarUploadGate: yükleme bitti, belge yazımı kapıda bekler',
+      () async {
+        fake.putActive(_uid);
+        final gate = fake.avatarUploadGate = Completer<void>();
+        final fractions = <double>[];
+
+        final pending = update(onProgress: fractions.add);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fractions, [1.0]);
+        expect(fake.users[_uid]!.avatarPath, isNull);
+
+        gate.complete();
+        final path = (await pending).dataOrNull;
+        expect(fake.users[_uid]!.avatarPath, path);
+      },
+    );
   });
 }

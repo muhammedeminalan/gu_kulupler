@@ -6,10 +6,19 @@ rules_version = '2';
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
 // (`isManagerOf`, `eventClubId` — firestore.get/exists) ilk kullanan task'ta eklenir (T-16 / T-22).
+// Açılan yollar: users/ (T-14).
+//
+// Her açılan `create` kuralının taşıdığı kalıp (CD-135 madde 6 ve 8; storage.test.js yapı testleri):
+//   kimlik (`signedInVerified()` + yol sahibi/rolü) && `isNewFile()` && `imageOk()` && dosya adı deseni
+//   && hesabın / rolün Firestore'daki güncel durumu (çapraz servis okuması EN SONDA: önceki koşullar
+//   tutmazsa okuma yapılmaz).
+// Storage'da kullanıcı başına adet / toplam boyut kotası YOKTUR (rules-spec §9.8): tek fren dosya
+// başına boyut sınırı ve hesabın askıya alınmasıdır.
 //
 // Değişmez kurallar (tool/check_no_hard_delete.js HD20–HD22):
-//  - `allow update, delete: if false;` her yolda kalır (D-10): dosya silinmez, üzerine yazılmaz;
+//  - `allow update, delete: if false;` her yolda kalır (D-10): dosya silinmez, üst verisi değişmez;
 //    değişiklik = yeni dosya adı + Firestore yol alanı (avatarPath, logoPath, coverPath, images[].path).
+//  - Üzerine yazmayı `update: false` DEĞİL `create` kuralındaki `isNewFile()` engeller (aşağıda).
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -21,15 +30,63 @@ service firebase.storage {
     function isSuperAdmin() {
       return request.auth != null && request.auth.token.get('superadmin', false) == true;
     }
+    // Yalnızca StoragePaths.extensionByContentType türleri (jpeg / png / webp): `image/svg+xml` gibi
+    // betik taşıyabilen türler ve `image/gif` yüklenemez (parite: test/parity.test.js).
+    // Boş dosya ve SUNUMU değiştiren üst veri de reddedilir — yüklenen dosya sonradan silinemediği
+    // için (D-10) kötü yük kalıcı olurdu:
+    //  - `contentEncoding: gzip` → birkaç KB'lık dosya indirilirken GB'lara açılır (görsel önbelleği);
+    //  - `contentDisposition: attachment; filename=…` → jetonlu indirme adresi, saldırganın seçtiği
+    //    adla keyfi dosya dağıtır.
+    // İstemci (StorageService.upload) yalnızca `contentType` gönderir; iki alan da verilmez (`null`).
     function imageOk() {
-      return request.resource.contentType.matches('image/.*')
-          && request.resource.size < 5 * 1024 * 1024;   // limit: imageMaxBytes
+      return request.resource.contentType.matches('image/(jpeg|png|webp)')
+          && request.resource.size > 0
+          && request.resource.size < 5 * 1024 * 1024   // limit: imageMaxBytes
+          && (request.resource.contentEncoding == null || request.resource.contentEncoding == 'identity')
+          && (request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline');
+    }
+    // Özel üst veri taşımayan yükleme. `imageOk()` içinde DEĞİLDİR: posts/ yolu `metadata.clubId`
+    // ister (CD-39); özel üst veri beklemeyen her yol bunu ayrıca çağırır.
+    function noCustomMetadata() {
+      return request.resource.metadata == null || request.resource.metadata.size() == 0;
+    }
+    // Dosya adı StoragePaths.newFileName şemasında (StoragePaths.fileNamePattern — Firestore
+    // `avatarPath` kuralıyla aynı desen) ve uzantı içerik türüyle uyumlu.
+    function fileNameOk(file) {
+      return file.matches('\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)')
+          && ((request.resource.contentType == 'image/jpeg' && file.matches('.*\\.jpg'))
+              || (request.resource.contentType == 'image/png' && file.matches('.*\\.png'))
+              || (request.resource.contentType == 'image/webp' && file.matches('.*\\.webp')));
+    }
+
+    // Üzerine yazma yasağı (D-10). Storage'da `create` dosya İÇERİĞİ yazımının tamamını kapsar —
+    // var olan yola yeniden yükleme de `create`tir; `update` yalnızca üst veri güncellemesidir.
+    // Bu yüzden `allow update: if false` üzerine yazmayı ENGELLEMEZ: her `create` kuralı ayrıca
+    // hedefte dosya olmadığını ister (emülatör testi: storage.test.js "aynı ada ikinci yükleme").
+    function isNewFile() { return resource == null; }
+
+    // Yükleyenin hesabı etkin mi? (çapraz servis: yükleme başına 1 Firestore okuması)
+    // Mod C'de askı yalnızca `users.status` alanıdır, Auth hesabı açık kalır: bu okuma olmadan askıya
+    // alınan (ya da hesabını silen) kullanıcı klasörüne dosya yığmayı sürdürebilirdi. Belge yoksa ya da
+    // `status` alanı yoksa ifade hata verir = ret. `profileComplete` ARANMAZ: AUT-05'te fotoğraf,
+    // profil tamamlanırken yüklenir (sıra: createProfile → tamamlama yaması → yükleme; CD-135 madde 1).
+    function accountActive() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
     // users/{uid}/{file} — avatar · T-14
+    //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`). Klasör listelenemez: eski
+    //    avatarlar silinmediği için (D-10) liste, sahibinin değiştirdiği fotoğrafları da açardı;
+    //    uygulama yalnızca `users.avatarPath` yolunu okur.
+    //  - Yükleme: yalnızca sahibi, kendi klasörüne, yeni adla (`isNewFile()`), özel üst verisiz ve
+    //    hesabı etkinken (`accountActive()`; askıdaki / silinmiş hesap ve profil belgesi olmayan oturum
+    //    yükleyemez). Profil henüz tamamlanmamışken (AUT-05) de yüklenebilir; `users.avatarPath`
+    //    yazımını Firestore kuralları ayrıca denetler.
     match /users/{uid}/{file} {
-      allow read: if false;
-      allow create: if false;
+      allow get: if signedInVerified();
+      allow list: if false;
+      allow create: if signedInVerified() && request.auth.uid == uid && isNewFile()
+          && imageOk() && fileNameOk(file) && noCustomMetadata() && accountActive();
       allow update, delete: if false;
     }
 
