@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
@@ -72,7 +73,10 @@ class _GuAppState extends ConsumerState<GuApp> {
   @override
   void initState() {
     super.initState();
-    _attach(ref.read(appRouterProvider));
+    final router = ref.read(appRouterProvider);
+    _attach(router);
+    // İlk konum eşzamanlı okunur: henüz dinleyen bir katman yoktur.
+    _location.value = router.routerDelegate.currentConfiguration.uri;
   }
 
   @override
@@ -86,18 +90,15 @@ class _GuAppState extends ConsumerState<GuApp> {
     _router?.routerDelegate.removeListener(_onRouteChanged);
     _router = router;
     router.routerDelegate.addListener(_onRouteChanged);
-    _location.value = router.routerDelegate.currentConfiguration.uri;
   }
 
   void _onRouteChanged() {
-    // Router ilk konumunu kendi kurulumu sırasında bildirir; üst katman o
-    // karede yeniden kurulamaz — konum karenin ardından okunur.
-    if (SchedulerBinding.instance.schedulerPhase ==
-        SchedulerPhase.persistentCallbacks) {
-      SchedulerBinding.instance.addPostFrameCallback((_) => _readLocation());
-      return;
-    }
-    _readLocation();
+    // Router konumunu kendi kurulumu sırasında bildirebilir: hem bir karenin
+    // kurulumunda hem de `runApp`'in kare DIŞINDAKİ ilk ağaç kurulumunda
+    // (zamanlayıcı evresi `idle`). Üst katman o anda yeniden kurulamaz
+    // ("setState() called during build"). Konum, süren eşzamanlı işin
+    // (kurulum / kare) hemen ardından okunur.
+    scheduleMicrotask(_readLocation);
   }
 
   void _readLocation() {
@@ -108,7 +109,10 @@ class _GuAppState extends ConsumerState<GuApp> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(appRouterProvider, (_, next) => _attach(next));
+    ref.listen(appRouterProvider, (_, next) {
+      _attach(next);
+      _onRouteChanged();
+    });
     final preferences = ref.watch(appPreferencesViewModelProvider);
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(

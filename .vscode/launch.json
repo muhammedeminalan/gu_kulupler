@@ -1,0 +1,19 @@
+{
+  // F5 varsayılanı: yerel Firebase emülatörü (önce `bash tool/dev.sh --no-run`).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GÜ Kulüpler (emülatör)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "toolArgs": ["--dart-define=ENV=emulator"]
+    },
+    {
+      "name": "GÜ Kulüpler (gerçek proje)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart"
+    }
+  ]
+}
