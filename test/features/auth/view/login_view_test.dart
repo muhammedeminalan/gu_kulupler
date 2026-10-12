@@ -128,8 +128,8 @@ Future<void> _failLogin(WidgetTester tester, {int times = 1}) async {
 Override _state(LoginState state) =>
     loginViewModelProvider.overrideWithBuild((ref, notifier) => state);
 
-/// Ekranı geçici rotalarla çizer: `/login` (+ `register` alt rotası) ve
-/// `/legal/:tip`. Diğer ekranlar yer tutucudur (yollarını gösterir).
+/// Ekranı geçici rotalarla çizer: `/login` (+ `register`, `reset` alt
+/// rotaları) ve `/legal/:tip`. Diğer ekranlar yer tutucudur (yollarını gösterir).
 Future<GoRouter> _pumpRouter(WidgetTester tester) async {
   GoRouter? created;
   await tester.pumpAppRouter(
@@ -143,6 +143,10 @@ Future<GoRouter> _pumpRouter(WidgetTester tester) async {
             GoRoute(
               path: 'register',
               builder: (context, state) => const _Stub('/login/register'),
+            ),
+            GoRoute(
+              path: 'reset',
+              builder: (context, state) => const _Stub('/login/reset'),
             ),
           ],
         ),
@@ -931,8 +935,8 @@ void main() {
       expect(_loginButton(tester).disabled, isFalse);
     });
 
-    testWidgets('DLG-02 "Şifremi unuttum" (sonuç true): AUT-04 rotası T-14’te '
-        'bağlanır (W-05) — şimdilik ekranda kalınır', (tester) async {
+    testWidgets('DLG-02 "Şifremi unuttum" (sonuç true) → AUT-04 '
+        '(`/login/reset`, W-05); geri AUT-01’e döner', (tester) async {
       final router = await _pumpRouter(tester);
       await _fillValid(tester);
       await _failLogin(tester, times: Limits.loginMaxFailedAttempts - 1);
@@ -941,9 +945,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_feedback().dialogs, [DialogId.dlg02]);
+      expect(_location(router), '/login/reset');
+      expect(find.text('/login/reset'), findsOneWidget);
+      expect(router.canPop(), isTrue);
+
+      router.pop();
+      await tester.pumpAndSettle();
       expect(_location(router), '/login');
-      expect(router.canPop(), isFalse);
       expect(find.byType(LoginView), findsOneWidget);
+    });
+
+    testWidgets('DLG-02 "Tamam" / scrim (sonuç false / null): ekranda '
+        'kalınır', (tester) async {
+      for (final result in <bool?>[false, null]) {
+        final router = await _pumpRouter(tester);
+        await _fillValid(tester);
+        await _failLogin(tester, times: Limits.loginMaxFailedAttempts - 1);
+        _feedback().nextDialogResult = result;
+        await _failLogin(tester);
+        await tester.pumpAndSettle();
+
+        expect(_feedback().dialogs, [DialogId.dlg02], reason: '$result');
+        expect(_location(router), '/login', reason: '$result');
+        expect(router.canPop(), isFalse, reason: '$result');
+      }
     });
 
     testWidgets('kilit sürerken klavyeden gönderim de DLG-02 açar', (
@@ -1067,14 +1092,20 @@ void main() {
       }
     });
 
-    testWidgets('AUT-01.forgot: AUT-04 rotası T-14’te bağlanır (W-05) — '
-        'şimdilik etkisiz', (tester) async {
+    testWidgets('AUT-01.forgot → AUT-04 (`/login/reset`, W-05): `go` ile alt '
+        'rota açılır, geri AUT-01’e döner', (tester) async {
       final router = await _pumpRouter(tester);
       await _tap(tester, _forgot);
       await tester.pumpAndSettle();
-      expect(_location(router), '/login');
-      expect(router.canPop(), isFalse);
+      expect(_location(router), '/login/reset');
+      expect(find.text('/login/reset'), findsOneWidget);
+      expect(router.canPop(), isTrue);
       expect(_feedback().calls, isEmpty);
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(_location(router), '/login');
+      expect(find.byType(LoginView), findsOneWidget);
     });
   });
 

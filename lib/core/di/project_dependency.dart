@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/widgets.dart';
@@ -11,6 +13,8 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -30,6 +34,8 @@ final class ProjectDependencyOverrides {
     this.connectivityService,
     this.appInfoService,
     this.urlLauncherService,
+    this.permissionService,
+    this.imagePickerService,
     this.appPreferencesStore,
   });
 
@@ -59,6 +65,12 @@ final class ProjectDependencyOverrides {
 
   /// `UrlLauncherService` yerine.
   final UrlLauncherService? urlLauncherService;
+
+  /// `PermissionService` yerine.
+  final PermissionService? permissionService;
+
+  /// `ImagePickerService` yerine.
+  final ImagePickerService? imagePickerService;
 
   /// `AppPreferencesStore` yerine.
   final AppPreferencesStore? appPreferencesStore;
@@ -119,7 +131,15 @@ abstract final class ProjectDependency {
     // ve yeniden gönderme beklemesi bu tek örnekte (bellekte) yaşar.
     final appClock = overrides.appClock ?? const SystemAppClock();
     final authRepository = FirebaseAuthRepository(authService, appClock);
-    final userRepository = FirebaseUserRepository(firestoreService);
+    // Profil fotoğrafı yüklemesi repository metodudur (T-14): Storage servisi
+    // ViewModel'lere açılmaz (PLAN §6.1). Dosya adının rastgele kısmı
+    // kriptografik kaynaktan gelir: ad tahmin edilemez, üzerine yazma olmaz.
+    final userRepository = FirebaseUserRepository(
+      firestoreService,
+      storageService,
+      appClock,
+      Random.secure(),
+    );
     final settingsRepository = FirebaseSettingsRepository(firestoreService);
     // Cihaz servisleri (CD-08).
     final connectivityService =
@@ -155,6 +175,13 @@ abstract final class ProjectDependency {
       ..registerSingleton<AppInfoService>(appInfoService)
       ..registerSingleton<UrlLauncherService>(
         overrides.urlLauncherService ?? const DeviceUrlLauncherService(),
+      )
+      // T-14 · izinler ve görsel seçimi
+      ..registerSingleton<PermissionService>(
+        overrides.permissionService ?? const DevicePermissionService(),
+      )
+      ..registerSingleton<ImagePickerService>(
+        overrides.imagePickerService ?? const DeviceImagePickerService(),
       )
       // Depo burada yalnızca kaydedilir; `AppBootstrap` `load()` çağırır.
       ..registerSingleton<AppPreferencesStore>(

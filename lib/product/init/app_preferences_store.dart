@@ -34,6 +34,11 @@ abstract interface class AppPreferencesStore {
   /// Bildirim izni ön açıklaması (DLG-03) bir kez gösterildi mi?
   bool get notificationPermissionAsked;
 
+  /// Fotoğraf erişimi ön açıklaması (DLG-05) onaylandı mı? Galeri sistem
+  /// seçicisiyle açıldığından (CD-16) sistem izni yoktur; onay cihazda
+  /// tutulur ve açıklama bir daha gösterilmez.
+  bool get photoAccessExplained;
+
   /// Tema tercihini yazar.
   Future<bool> setThemeMode(ThemeMode mode);
 
@@ -48,6 +53,9 @@ abstract interface class AppPreferencesStore {
 
   /// Bildirim izni bayrağını yazar.
   Future<bool> setNotificationPermissionAsked(bool value);
+
+  /// Fotoğraf erişimi açıklaması bayrağını yazar.
+  Future<bool> setPhotoAccessExplained(bool value);
 }
 
 /// `shared_preferences` anahtarları — tek liste (PLAN §4.4, §12.2).
@@ -67,6 +75,9 @@ abstract final class AppPreferenceKeys {
   /// Bildirim izni ön açıklaması gösterildi mi.
   static const String notificationPermissionAsked =
       'pref.notificationPermissionAsked';
+
+  /// Fotoğraf erişimi ön açıklaması (DLG-05) onaylandı mı.
+  static const String photoAccessExplained = 'pref.photoAccessExplained';
 }
 
 /// [AppPreferencesStore] uygulaması: `shared_preferences`.
@@ -87,6 +98,7 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   GuTextScaleLevel _textScale = GuTextScaleLevel.s100;
   bool _onboardingSeen = false;
   bool _notificationPermissionAsked = false;
+  bool _photoAccessExplained = false;
 
   @override
   bool get isLoaded => _prefs != null;
@@ -107,6 +119,9 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   bool get notificationPermissionAsked => _notificationPermissionAsked;
 
   @override
+  bool get photoAccessExplained => _photoAccessExplained;
+
+  @override
   Future<void> load() async {
     try {
       final prefs = await _open();
@@ -125,6 +140,10 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
       _notificationPermissionAsked = _bool(
         prefs,
         AppPreferenceKeys.notificationPermissionAsked,
+      );
+      _photoAccessExplained = _bool(
+        prefs,
+        AppPreferenceKeys.photoAccessExplained,
       );
       _prefs = prefs;
     } on Object catch (error, stack) {
@@ -173,6 +192,14 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
     return _write(
       (prefs) =>
           prefs.setBool(AppPreferenceKeys.notificationPermissionAsked, value),
+    );
+  }
+
+  @override
+  Future<bool> setPhotoAccessExplained(bool value) {
+    _photoAccessExplained = value;
+    return _write(
+      (prefs) => prefs.setBool(AppPreferenceKeys.photoAccessExplained, value),
     );
   }
 

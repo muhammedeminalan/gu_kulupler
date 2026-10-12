@@ -5,3 +5,10 @@
 # Her ekran task'ı kendi satırlarını aynı commit'te ekler.
 ONB-01.start   # design/prototype/app/screens-auth.js:50 — yalnızca son slaytta ("İleri" yerine "Başla"); yakalama ilk slayt
 AUT-06.accept  # design/prototype/app/screens-auth.js:159 — yalnızca kayıt formundan açılışta (`from === 'register'`)
+AUT-04.toLogin  # design/prototype/app/screens-auth.js:130 — yalnızca bağlantı gönderildikten sonra (`f.sent`); yakalama form görünümü
+AUT-04.resend   # design/prototype/app/screens-auth.js:130 — yalnızca bağlantı gönderildikten sonra (`f.sent`); yakalama form görünümü
+AUT-05.department        # design/prototype/app/screens-auth.js:144 — yalnızca 2. adımda (`f.step === 2`); yakalama 1. adım
+AUT-05.year              # design/prototype/app/screens-auth.js:144 — yalnızca 2. adımda (`f.step === 2`); yakalama 1. adım
+AUT-05.toggleInterest.*  # design/prototype/app/screens-auth.js:145 — yalnızca 3. adımda (`f.step === 3`), ilgi alanı başına bir anahtar; yakalama 1. adım
+AUT-05.back              # design/prototype/app/screens-auth.js:147 — yalnızca 2. ve 3. adımda (`f.step > 1`); yakalama 1. adım
+AUT-05.finish            # design/prototype/app/screens-auth.js:147 — yalnızca 3. adımda ("Devam" yerine "Tamamla"); yakalama 1. adım

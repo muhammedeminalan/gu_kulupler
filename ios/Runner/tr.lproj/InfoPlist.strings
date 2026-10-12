@@ -1,0 +1,5 @@
+/* GÜ Kulüpler — sistem izin pencerelerinin Türkçe metinleri (T-14; PLAN §5.6.1).
+   Anahtarlar Info.plist ile aynıdır; metinler ARB'den değil buradan gelir (docs/packages.md §5).
+   Uygulama içi ön açıklamalar: DLG-04 "Kamera erişimi", DLG-05 "Fotoğraflarına erişim". */
+"NSCameraUsageDescription" = "Fotoğraf çekmek ve etkinlik girişinde QR kodları taramak için kameraya erişmemiz gerekiyor.";
+"NSPhotoLibraryUsageDescription" = "Profil ve gönderi fotoğrafı seçebilmen için fotoğraflarına erişmemiz gerekiyor.";

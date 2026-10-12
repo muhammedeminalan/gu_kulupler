@@ -2989,6 +2989,19 @@
   "@feedUnsave": {
     "description": "Key feed.unsave"
   },
+  "imageInvalidType": "Yalnızca JPG, PNG veya WebP görsel seçilebilir",
+  "@imageInvalidType": {
+    "description": "Key image.invalidType"
+  },
+  "imageTooLarge": "Görsel en fazla {maxMb} MB olabilir",
+  "@imageTooLarge": {
+    "description": "Key image.tooLarge",
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
   "interestI01": "Yazılım",
   "@interestI01": {
     "description": "Key interest.i01"

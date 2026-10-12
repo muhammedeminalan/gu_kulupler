@@ -11,6 +11,9 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/auth/view/legal_view.dart';
 import 'package:gu_kulupler/features/auth/view/login_view.dart';
 import 'package:gu_kulupler/features/auth/view/register_view.dart';
+import 'package:gu_kulupler/features/auth/view/reset_password_view.dart';
+import 'package:gu_kulupler/features/auth/view/setup_profile_view.dart';
+import 'package:gu_kulupler/features/auth/view/verify_email_view.dart';
 import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/view/error_view.dart';
@@ -146,12 +149,13 @@ void main() {
         session: FakeSessionStates.unverified,
       );
       expect(app.location, '/verify');
-      expect(_placeholderTitle(tester), tr.authVerifyTitle);
+      expect(find.byType(VerifyEmailView), findsOneWidget);
 
       app.session = FakeSessionStates.profileIncomplete;
       await tester.pumpAndSettle();
       expect(app.location, '/setup-profile');
-      expect(_placeholderTitle(tester), tr.authSetupTitle);
+      expect(find.byType(SetupProfileView), findsOneWidget);
+      expect(find.byType(VerifyEmailView), findsNothing);
 
       app.session = FakeSessionStates.active;
       await tester.pumpAndSettle();
@@ -346,6 +350,35 @@ void main() {
       expect(app.location, '/login');
       expect(find.byType(LoginView), findsOneWidget);
       expect(find.byType(RegisterView), findsNothing);
+    });
+
+    testWidgets('T-14 · /login/reset AUT-01’in alt rotasıdır: `go` yığını '
+        '[giriş, sıfırlama] kurar; geri AUT-01’e döner', (tester) async {
+      final app = await TestRouter.pump(
+        tester,
+        session: FakeSessionStates.signedOut,
+      );
+      expect(const ResetPasswordRoute().location, '/login/reset');
+      const ResetPasswordRoute().go(rootNavigatorKey.currentContext!);
+      await tester.pumpAndSettle();
+
+      expect(app.location, '/login/reset');
+      expect(find.byType(ResetPasswordView), findsOneWidget);
+      expect(rootNavigatorKey.currentState!.widget.pages, hasLength(2));
+      expect(_topRootPage(), isA<MaterialPage<void>>());
+
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/login');
+      expect(find.byType(LoginView), findsOneWidget);
+      expect(find.byType(ResetPasswordView), findsNothing);
+    });
+
+    testWidgets('T-14 · /login/reset yalnızca oturumsuzken açılır: etkin '
+        'oturum ana sayfaya yönlenir (R7)', (tester) async {
+      final app = await TestRouter.pump(tester);
+      await app.go('/login/reset');
+      expect(app.location, '/clubs');
+      expect(find.byType(ResetPasswordView), findsNothing);
     });
 
     testWidgets('T-13 · LegalRoute `push` ile açılır: açan ekran yığında '

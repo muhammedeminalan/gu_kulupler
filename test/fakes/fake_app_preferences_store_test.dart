@@ -7,6 +7,7 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import 'fake_app_preferences_store.dart';
+import 'fake_base.dart';
 import 'register_fakes.dart';
 
 void main() {
@@ -58,6 +59,27 @@ void main() {
         'setNotificationPermissionAsked',
       ]);
     });
+
+    test(
+      'photoAccessExplained (DLG-05, T-14): varsayılan false; yazılır, '
+      'anahtarıyla saklanır ve kaydedilir; failNext yazımı false yapar',
+      () async {
+        final fake = FakeAppPreferencesStore();
+        expect(fake.photoAccessExplained, isFalse);
+
+        expect(await fake.setPhotoAccessExplained(true), isTrue);
+
+        expect(fake.photoAccessExplained, isTrue);
+        expect(fake.values, {AppPreferenceKeys.photoAccessExplained: true});
+        expect(fake.calls, [
+          const FakeCall('setPhotoAccessExplained', [true]),
+        ]);
+
+        fake.failNext();
+        expect(await fake.setPhotoAccessExplained(false), isFalse);
+        expect(fake.photoAccessExplained, isFalse);
+      },
+    );
 
     test('setLocale(null) sistem diline döner; desteklenmeyen kod yok '
         'sayılır', () async {

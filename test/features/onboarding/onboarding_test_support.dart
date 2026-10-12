@@ -65,6 +65,9 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   bool get notificationPermissionAsked => inner.notificationPermissionAsked;
 
   @override
+  bool get photoAccessExplained => inner.photoAccessExplained;
+
+  @override
   Future<bool> setThemeMode(ThemeMode mode) => inner.setThemeMode(mode);
 
   @override
@@ -77,4 +80,8 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   @override
   Future<bool> setNotificationPermissionAsked(bool value) =>
       inner.setNotificationPermissionAsked(value);
+
+  @override
+  Future<bool> setPhotoAccessExplained(bool value) =>
+      inner.setPhotoAccessExplained(value);
 }

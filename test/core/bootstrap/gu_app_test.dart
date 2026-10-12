@@ -22,18 +22,22 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_state.dart';
+import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_router.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/widget/system/app_gate.dart';
 import 'package:gu_kulupler/product/widget/system/maintenance_banner.dart';
 import 'package:gu_kulupler/product/widget/system/offline_banner.dart';
 import 'package:gu_ui/gu_ui.dart';
 
+import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_connectivity_service.dart';
 import '../../fakes/fake_feedback_service.dart';
+import '../../fakes/fake_permission_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
 import '../../fakes/fake_session_states.dart';
 import '../../fakes/register_fakes.dart';
@@ -53,11 +57,19 @@ Future<GuToastController> _pumpGuApp(
   SessionState session = FakeSessionStates.active,
   List<Override> overrides = const [],
   Size size = const Size(390, 844),
+  bool notificationPermissionAsked = true,
+  void Function()? arrange,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await GetIt.I.reset();
   registerDefaultFakes();
   addTearDown(GetIt.I.reset);
+  // Kabuk ilk kuruluşta bildirim ön iznini (DLG-03) sorar; bu dosyadaki
+  // testlerin çoğu başka bir katmanı sınar ve soruyu sorulmuş sayar.
+  (GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore)
+          .values[AppPreferenceKeys.notificationPermissionAsked] =
+      notificationPermissionAsked;
+  arrange?.call();
   tester.view
     ..devicePixelRatio = 1
     ..physicalSize = size;
@@ -436,6 +448,61 @@ void main() {
         tester.getRect(find.byType(GuBanner).first).bottom,
       );
     });
+  });
+
+  group('DLG-03 · GuApp · ilk aktif girişte bildirim ön izni (bir kez)', () {
+    FakeAppPreferencesStore store() =>
+        GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore;
+    FakePermissionService permissions() =>
+        GetIt.I<PermissionService>() as FakePermissionService;
+
+    testWidgets('aktif oturum kabuğa girince DLG-03 bir kez istenir; "İzin '
+        'ver" sistem iznini ister ve TST-19 gösterir', (tester) async {
+      await _pumpGuApp(
+        tester,
+        notificationPermissionAsked: false,
+        arrange: () => _feedback().nextDialogResult = true,
+      );
+
+      expect(find.byType(AppShellView), findsOneWidget);
+      expect(_feedback().dialogs, [DialogId.dlg03]);
+      expect(permissions().requested, [Permission.notification]);
+      expect(_feedback().toasts, [ToastId.tst19]);
+      expect(store().notificationPermissionAsked, isTrue);
+
+      // Sekme değişimi ve derin ekran kabuğu yeniden kursa da sorulmaz.
+      await _go(tester, '/profile');
+      await _go(tester, '/clubs');
+      expect(_feedback().dialogs, [DialogId.dlg03]);
+    });
+
+    testWidgets('bayrak işaretliyse (sonraki açılışlar) sorulmaz', (
+      tester,
+    ) async {
+      await _pumpGuApp(tester);
+      expect(find.byType(AppShellView), findsOneWidget);
+      expect(_feedback().dialogs, isEmpty);
+      expect(permissions().requested, isEmpty);
+    });
+
+    for (final session in [
+      FakeSessionStates.signedOut,
+      FakeSessionStates.unverified,
+      FakeSessionStates.profileIncomplete,
+    ]) {
+      testWidgets('${session.status.name}: kabuk kurulmaz, DLG-03 sorulmaz', (
+        tester,
+      ) async {
+        await _pumpGuApp(
+          tester,
+          session: session,
+          notificationPermissionAsked: false,
+        );
+        expect(find.byType(AppShellView), findsNothing);
+        expect(_feedback().dialogs, isEmpty);
+        expect(store().notificationPermissionAsked, isFalse);
+      });
+    }
   });
 
   group('DLG-26 · DLG-27 · GuApp · kök kapılar', () {

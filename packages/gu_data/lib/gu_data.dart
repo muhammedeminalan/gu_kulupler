@@ -24,6 +24,7 @@ export 'src/core/conflict_exception.dart';
 export 'src/core/firebase_result.dart';
 export 'src/core/firestore_error.dart';
 export 'src/core/firestore_failure_detail.dart';
+export 'src/core/media_update_error.dart';
 export 'src/core/page_cursor.dart';
 export 'src/core/page_request.dart';
 export 'src/core/page_result.dart';

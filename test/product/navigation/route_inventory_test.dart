@@ -3,6 +3,7 @@
 // guard tablosu (PLAN §13.3, §13.5). Her ekran task'ı kendi satırını ekler;
 // T-43'te 57 rota sınıfı / 51 ekran tamamlanır.
 // T-13 · `RegisterRoute` (`/login/register`) ve `LegalRoute` (`/legal/:tip`).
+// T-14 · `ResetPasswordRoute` (`/login/reset`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -15,7 +16,8 @@ import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
 import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
-/// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13).
+/// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
+/// T-14).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -23,10 +25,12 @@ const Map<GoRouteData, String> _routes = {
   OfflineRoute(): '/offline',
   NotFoundRoute(): '/not-found',
   DebugMenuRoute(): '/debug',
-  // Oturum öncesi (T-13: ONB-01, AUT-01, AUT-02, AUT-06; T-14: yer tutucu)
+  // Oturum öncesi (T-13: ONB-01, AUT-01, AUT-02, AUT-06; T-14: AUT-03,
+  // AUT-04, AUT-05)
   OnboardingRoute(): '/onboarding',
   LoginRoute(): '/login',
   RegisterRoute(): '/login/register',
+  ResetPasswordRoute(): '/login/reset',
   LegalRoute(tip: LegalTab.kvkk): '/legal/:tip',
   VerifyEmailRoute(): '/verify',
   SetupProfileRoute(): '/setup-profile',
@@ -67,9 +71,10 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 16 yol (T-11: 14, T-13: +2)', () {
+    test('router yolları = kapsamdaki 17 yol (T-11: 14, T-13: +2, '
+        'T-14: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(16));
+      expect(_routes, hasLength(17));
     });
 
     test('rota sınıfının `location` değeri kilitli yoldur', () {
@@ -224,16 +229,21 @@ void main() {
       });
     });
 
-    test('T-13 · AUT-02 `/login` altındadır (geri → AUT-01); AUT-06 kök '
-        'düzeydedir', () {
+    test('T-13 / T-14 · AUT-02 ve AUT-04 `/login` altındadır (geri → '
+        'AUT-01); AUT-06 kök düzeydedir', () {
       final login = AppRouter.routes.whereType<GoRoute>().singleWhere(
         (route) => route.path == '/login',
       );
       expect(
         [for (final child in login.routes.whereType<GoRoute>()) child.path],
-        [RegisterRoute.segment],
+        [RegisterRoute.segment, ResetPasswordRoute.segment],
       );
       expect(const RegisterRoute().location, '/login/register');
+      expect(const ResetPasswordRoute().location, '/login/reset');
+      // Alt rotaların alt rotası yoktur.
+      for (final child in login.routes.whereType<GoRoute>()) {
+        expect(child.routes, isEmpty, reason: child.path);
+      }
     });
   });
 }

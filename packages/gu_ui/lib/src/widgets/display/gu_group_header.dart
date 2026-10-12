@@ -7,7 +7,8 @@ import 'package:gu_ui/src/tokens/gu_spacing.dart';
 /// `screens-events.js:30, 105`, `screens-clubs.js:147`,
 /// `screens-manage.js:135, 195`, `sheets.js:16`). CD-25.
 ///
-/// Zemin `bg.canvas`, dolgu 12/16/6, iki uca hizalı: solda [title]
+/// Zemin `bg.canvas` ([color] ile değişir: SHT-02'de sheet yüzeyi,
+/// `sheets.js:16`), dolgu 12/16/6, iki uca hizalı: solda [title]
 /// (overline; büyük harfi çağıran `upperFor(locale)` ile uygular, CD-11),
 /// sağda [trailingText] (caption, tabular; EVT-01 grup sayısı) ya da
 /// [trailing].
@@ -23,6 +24,7 @@ class GuGroupHeader extends StatelessWidget {
     this.trailingText,
     this.trailing,
     this.sticky = false,
+    this.color,
     super.key,
   }) : assert(
          trailingText == null || trailing == null,
@@ -41,12 +43,16 @@ class GuGroupHeader extends StatelessWidget {
   /// `true` → yapışkan sliver.
   final bool sticky;
 
+  /// Zemin rengi; `null` → `bg.canvas`. Başlık başka bir yüzeyin içindeyse
+  /// (sheet gövdesi) o yüzeyin rengi verilir.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final gu = context.gu;
     final trailingText = this.trailingText;
     final header = ColoredBox(
-      color: gu.colors.bgCanvas,
+      color: color ?? gu.colors.bgCanvas,
       child: Padding(
         padding: GuInsets.only(
           left: GuSizes.groupHeadPaddingX,

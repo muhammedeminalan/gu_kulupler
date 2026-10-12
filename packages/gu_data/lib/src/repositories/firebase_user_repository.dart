@@ -1,11 +1,17 @@
+import 'dart:math';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/constants/storage_paths.dart';
+import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/media_update_error.dart';
+import 'package:gu_data/src/core/storage_error.dart';
 import 'package:gu_data/src/models/user_account_model.dart';
 import 'package:gu_data/src/models/user_model.dart';
 import 'package:gu_data/src/models/user_profile_patch.dart';
@@ -14,15 +20,29 @@ import 'package:gu_data/src/repositories/repository_helpers.dart';
 import 'package:gu_data/src/repositories/user_repository.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
+import 'package:gu_data/src/services/storage_service.dart';
 import 'package:gu_data/src/utils/field_validators.dart';
 
 /// [UserRepository] uygulaması: `users/{uid}` ve
-/// `users/{uid}/private/account` (PLAN §10.4).
+/// `users/{uid}/private/account` (PLAN §10.4); profil fotoğrafı
+/// `users/{uid}/{file}` Storage yolunda (PLAN §11.5).
 final class FirebaseUserRepository implements UserRepository {
-  /// [_firestore] servisi üzerinden okur ve yazar.
-  FirebaseUserRepository(this._firestore);
+  /// [_firestore] üzerinden okur ve yazar; profil fotoğrafını [_storage] ile
+  /// yükler. Dosya adı damgası [_clock] saatinden, rastgele kısmı [_random]
+  /// kaynağından gelir: kompozisyon kökü kriptografik kaynak verir
+  /// (`Random.secure()` — ad tahmin edilemez); `gu_data` rastgele kaynağı
+  /// kendisi kurmaz.
+  FirebaseUserRepository(
+    this._firestore,
+    this._storage,
+    this._clock,
+    this._random,
+  );
 
   final FirestoreService _firestore;
+  final StorageService _storage;
+  final AppClock _clock;
+  final Random _random;
 
   @override
   Future<FirestoreResult<UserModel?>> getUser(String uid) async {
@@ -131,6 +151,59 @@ final class FirebaseUserRepository implements UserRepository {
   }
 
   @override
+  Future<MediaUpdateResult<String>> updateAvatar(
+    String uid, {
+    required Uint8List bytes,
+    required String contentType,
+    UserProfilePatch? profile,
+    void Function(double fraction)? onProgress,
+  }) async {
+    final rejected =
+        RepositoryHelpers.rejectInvalidIds<void>({'uid': uid}) ??
+        (profile == null ? null : _rejectAvatarCompanion(uid, profile));
+    if (rejected case FirebaseFailure(:final error, :final message)) {
+      return FirebaseFailure(MediaDocumentError(error), message: message);
+    }
+    final extension = StoragePaths.extensionByContentType[contentType];
+    if (extension == null) {
+      return const FirebaseFailure(MediaUploadError(StorageError.invalidType));
+    }
+    // W-57: Rules, sahibinin güncellemesinde birleşmiş belgede en az bir ilgi
+    // alanı ister. Koşul tutmayacaksa dosya hiç yüklenmez (yetim dosya ve
+    // anlamsız `permission-denied` yerine açık ön koşul hatası).
+    if (await _avatarPreconditionError(uid, profile) case final error?) {
+      return FirebaseFailure(MediaDocumentError(error));
+    }
+
+    final upload = await _storage.upload(
+      path: StoragePaths.userAvatar(
+        uid,
+        StoragePaths.newFileName(_clock, _random, extension),
+      ),
+      bytes: bytes,
+      contentType: contentType,
+      onProgress: onProgress,
+    );
+    switch (upload) {
+      case FirebaseFailure(:final error, :final message):
+        return FirebaseFailure(MediaUploadError(error), message: message);
+      case FirebaseSuccess(data: final path):
+        final written = await _firestore.update(_userRef(uid), {
+          ...?profile?.toJson(),
+          FirestoreFields.avatarPath: path,
+        });
+        return switch (written) {
+          FirebaseSuccess() => FirebaseSuccess(path),
+          // Dosya yerinde kalır (D-10); `avatarPath` eski değerindedir.
+          FirebaseFailure(:final error, :final message) => FirebaseFailure(
+            MediaDocumentError(error),
+            message: message,
+          ),
+        };
+    }
+  }
+
+  @override
   Future<FirestoreResult<UserAccountModel?>> getPrivateAccount(
     String uid,
   ) async {
@@ -153,6 +226,45 @@ final class FirebaseUserRepository implements UserRepository {
     return _firestore.update(_accountRef(uid), {
       FirestoreFields.lastLoginAt: _firestore.serverTimestamp(),
     });
+  }
+
+  /// [updateAvatar] ile birlikte yazılacak [profile] yamasını doğrular:
+  /// `avatarPath` alanını metot kendisi yazar, yama taşıyamaz.
+  static FirestoreResult<void>? _rejectAvatarCompanion(
+    String uid,
+    UserProfilePatch profile,
+  ) {
+    if (profile.avatarPath != null || profile.clearAvatarPath) {
+      return RepositoryHelpers.invalidArgument(
+        'updateAvatar: profile yaması avatarPath / clearAvatarPath taşıyamaz',
+      );
+    }
+    return _rejectPatch(uid, profile);
+  }
+
+  /// [updateAvatar] ön koşulu (W-57): yazım sonrasında belgede en az bir
+  /// ilgi alanı olmalı (personel hariç). Koşul tutuyorsa `null`.
+  ///
+  /// [profile] dolu bir ilgi alanı listesi taşıyorsa belge okunmaz (AUT-05:
+  /// tek güncelleme); aksi halde `users/{uid}` bir kez okunur.
+  Future<FirestoreError?> _avatarPreconditionError(
+    String uid,
+    UserProfilePatch? profile,
+  ) async {
+    final patched = profile?.interests;
+    if (patched != null && patched.isNotEmpty) return null;
+    final current = await getUser(uid);
+    switch (current) {
+      case FirebaseFailure(:final error):
+        return error;
+      case FirebaseSuccess(data: null):
+        return FirestoreError.notFound;
+      case FirebaseSuccess(data: final user?):
+        final interests = patched ?? user.interests;
+        return user.staff || interests.isNotEmpty
+            ? null
+            : FirestoreError.failedPrecondition;
+    }
   }
 
   /// [patch] alanlarını yazmadan önce doğrular; geçerliyse `null`.

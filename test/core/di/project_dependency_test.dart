@@ -2,6 +2,8 @@
 // çökme servisleri (W-53), reset (D-04; PLAN §4.4).
 // T-12 · kimlik ve profil repository'leri: kayıt, kayıtlı servislere bağlılık
 // ve `ProjectDependencyMixin` getter'ları.
+// T-14 · izin ve görsel seçici servisleri; profil fotoğrafı yüklemesinin
+// kayıtlı Storage servisine bağlılığı.
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -16,6 +18,8 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -25,6 +29,8 @@ import '../../fakes/fake_auth_service.dart';
 import '../../fakes/fake_connectivity_service.dart';
 import '../../fakes/fake_crash_service.dart';
 import '../../fakes/fake_firestore_service.dart';
+import '../../fakes/fake_image_picker_service.dart';
+import '../../fakes/fake_permission_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
 import '../../fakes/fake_storage_service.dart';
 import '../../fakes/fake_url_launcher_service.dart';
@@ -98,6 +104,86 @@ void main() {
       expect(GetIt.I<AppPreferencesStore>(), same(prefs));
       // T-13 · verilmediyse gerçek uygulama (platform çağrısı kurulumda yok).
       expect(GetIt.I<UrlLauncherService>(), isA<DeviceUrlLauncherService>());
+      // T-14 · izinler ve görsel seçimi (aynı kural).
+      expect(GetIt.I<PermissionService>(), isA<DevicePermissionService>());
+      expect(GetIt.I<ImagePickerService>(), isA<DeviceImagePickerService>());
+    });
+
+    test('PermissionService ve ImagePickerService verilen örneklerle '
+        'kaydedilir; mixin onları görür (T-14)', () async {
+      final permissions = FakePermissionService();
+      final picker = FakeImagePickerService();
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: ProjectDependencyOverrides(
+          authService: auth,
+          firestoreService: firestore,
+          storageService: storage,
+          connectivityService: connectivity,
+          appInfoService: appInfo,
+          appPreferencesStore: prefs,
+          permissionService: permissions,
+          imagePickerService: picker,
+        ),
+      );
+
+      expect(GetIt.I<PermissionService>(), same(permissions));
+      expect(GetIt.I<ImagePickerService>(), same(picker));
+      expect(_Consumer().permissionService, same(permissions));
+      expect(_Consumer().imagePickerService, same(picker));
+    });
+
+    test('UserRepository profil fotoğrafını kayıtlı StorageService ile '
+        "yükler: dosya users/{uid}/ altına gider, yol Firestore'a yazılır "
+        '(T-14)', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      const uid = 'u_ayse';
+      await firestore.set(firestore.doc(FirestoreCollections.users, uid), {
+        ...const UserModel(
+          name: 'Ayşe Işık',
+          nameLower: 'ayşe ışık',
+          avatarSeed: uid,
+          department: 'd01',
+          year: YearLevel.first,
+          interests: ['i01'],
+          profileComplete: true,
+        ).toJson(),
+        ...BaseFieldsPayload.create(),
+      });
+
+      final result = await GetIt.I<UserRepository>().updateAvatar(
+        uid,
+        bytes: kFakeJpeg.bytes,
+        contentType: kFakeJpeg.contentType,
+      );
+
+      final path = result.dataOrNull;
+      expect(path, isNotNull, reason: '$result');
+      expect(StoragePaths.isUserAvatar(path!, uid), isTrue);
+      expect(storage.uploads.keys, [path]);
+      final user = (await GetIt.I<UserRepository>().getUser(uid)).dataOrNull!;
+      expect(user.avatarPath, path);
+
+      // Aynı saniyede ikinci yükleme: ad rastgele kısmıyla ayrışır (üzerine
+      // yazma olmaz) — kaynak kriptografiktir.
+      final second = await GetIt.I<UserRepository>().updateAvatar(
+        uid,
+        bytes: kFakeJpeg.bytes,
+        contentType: kFakeJpeg.contentType,
+      );
+      expect(second.dataOrNull, isNot(path));
+      expect(storage.uploads.keys, [path, second.dataOrNull]);
+      expect(
+        readText('lib/core/di/project_dependency.dart'),
+        contains('Random.secure()'),
+      );
     });
 
     test('UrlLauncherService verilen örnekle kaydedilir; mixin onu görür '

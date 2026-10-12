@@ -182,4 +182,56 @@ void main() {
       expect(store.notificationPermissionAsked, isTrue);
     });
   });
+
+  group('T-14 · SharedAppPreferencesStore · photoAccessExplained (DLG-05)', () {
+    test('anahtar adı; varsayılan false (load öncesi ve boş diskte)', () async {
+      expect(
+        AppPreferenceKeys.photoAccessExplained,
+        'pref.photoAccessExplained',
+      );
+      final store = SharedAppPreferencesStore();
+      expect(store.photoAccessExplained, isFalse);
+      await store.load();
+      expect(store.photoAccessExplained, isFalse);
+    });
+
+    test('yazılır, diske işler ve yeni depo okur (kalıcılık); geri '
+        'alınabilir', () async {
+      final store = SharedAppPreferencesStore();
+      await store.load();
+
+      expect(await store.setPhotoAccessExplained(true), isTrue);
+      expect(store.photoAccessExplained, isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(AppPreferenceKeys.photoAccessExplained), isTrue);
+      // Diğer bayraklara dokunmaz.
+      expect(store.notificationPermissionAsked, isFalse);
+      expect(store.onboardingSeen, isFalse);
+
+      final reopened = SharedAppPreferencesStore();
+      await reopened.load();
+      expect(reopened.photoAccessExplained, isTrue);
+
+      expect(await reopened.setPhotoAccessExplained(false), isTrue);
+      expect(reopened.photoAccessExplained, isFalse);
+    });
+
+    test('yanlış tipte değer varsayılana düşer', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.photoAccessExplained: 'evet',
+      });
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      expect(store.photoAccessExplained, isFalse);
+    });
+
+    test('depo açılamazsa yazım false döner ama bellekteki değer '
+        'geçerlidir', () async {
+      final store = SharedAppPreferencesStore(
+        open: () async => throw StateError('disk yok'),
+      );
+      expect(await store.setPhotoAccessExplained(true), isFalse);
+      expect(store.photoAccessExplained, isTrue);
+    });
+  });
 }

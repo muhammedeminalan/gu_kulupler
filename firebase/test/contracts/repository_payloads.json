@@ -1,10 +1,15 @@
 {
-  "_doc": "T-12 — repository ↔ Security Rules yük sözleşmesi. Her adım bir repository çağrısının Firestore'a gönderdiği GERÇEK yazımlardır (op, yol, yük). İki taraf aynı dosyayı okur: (1) Dart — packages/gu_data/test/repositories/rules_payload_contract_test.dart gerçek FirebaseUserRepository / FirebaseSettingsRepository'yi kayıt tutan bir SDK çiftine karşı koşar ve yakalanan yazımların bu dosyayla birebir aynı olduğunu doğrular; (2) jest — firebase/test/rules/repository_payloads.test.js aynı yazımları emülatörde kurallar AÇIKKEN hesabın sahibi olarak gönderir, hepsi geçmelidir. Repository yükü ya da Rules beyaz listesi tek başına değişirse iki testten biri kırılır. `@serverTimestamp` = FieldValue.serverTimestamp(). `steps` sıralı bir öyküdür (her adım öncekilerin bıraktığı belgeler üzerinde koşar); `standalone` adımları boş veritabanında koşar. Bağlam: roles.json `student` (uid + token e-postası).",
+  "_doc": "T-12 — repository ↔ Security Rules yük sözleşmesi (T-14: UserRepository.updateAvatar yazımları ve AUT-05'in gerçek yazım sırası eklendi — createProfile → tamamlama yaması → avatarPath; `aut05` anahtarı bu üç adımın çağrı adlarıdır). Her adım bir repository çağrısının Firestore'a gönderdiği GERÇEK yazımlardır (op, yol, yük). İki taraf aynı dosyayı okur: (1) Dart — packages/gu_data/test/repositories/rules_payload_contract_test.dart gerçek FirebaseUserRepository / FirebaseSettingsRepository'yi kayıt tutan bir SDK çiftine karşı koşar ve yakalanan yazımların bu dosyayla birebir aynı olduğunu doğrular; (2) jest — firebase/test/rules/repository_payloads.test.js aynı yazımları emülatörde kurallar AÇIKKEN hesabın sahibi olarak gönderir, hepsi geçmelidir. Repository yükü ya da Rules beyaz listesi tek başına değişirse iki testten biri kırılır. `@serverTimestamp` = FieldValue.serverTimestamp(). `steps` sıralı bir öyküdür (her adım öncekilerin bıraktığı belgeler üzerinde koşar); `standalone` adımları boş veritabanında koşar. Bağlam: roles.json `student` (uid + token e-postası).",
   "role": "student",
   "uid": "u_student",
   "email": "student@ogr.gumushane.edu.tr",
   "clubId": "c01",
   "serverTimestamp": "@serverTimestamp",
+  "aut05": [
+    "UserRepository.createProfile",
+    "UserRepository.updateProfile · AUT-05 tamamlama (SetupProfileViewModel.submit)",
+    "UserRepository.updateAvatar · AUT-05 (tamamlama yamasından sonra)"
+  ],
   "steps": [
     {
       "call": "UserRepository.createProfile",
@@ -64,8 +69,39 @@
       ]
     },
     {
-      "call": "UserRepository.updateProfile · AUT-05 bitişi",
-      "note": "PLAN §12.5 SetupProfileViewModel.submit: ad, bölüm, sınıf, ilgi alanları, profileComplete",
+      "call": "UserRepository.updateProfile · AUT-05 tamamlama (SetupProfileViewModel.submit)",
+      "note": "T-14, W-57: AUT-05'in gönderdiği GERÇEK yama — bölüm, sınıf, ilgi alanları, profileComplete (ad yok: ekranda ad sorulmaz, CD-134). avatarPath yazımından ÖNCE gider",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "department": "d02",
+            "year": "2",
+            "interests": ["i01", "i05"],
+            "profileComplete": true,
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateAvatar · AUT-05 (tamamlama yamasından sonra)",
+      "note": "T-14, W-57: AUT-05 fotoğrafı tamamlama yamasından SONRA, yamasız updateAvatar ile yazar (CD-135); görsel her zaman JPEG'dir (ImagePickerService). Dosya Storage users/{uid}/{file} yoluna önce yüklenir",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "avatarPath": "users/u_student/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateAvatar · profil yamasıyla aynı yazım",
+      "note": "T-14: `profile` yaması verilirse avatarPath onunla TEK güncellemede gider (ilgi alanları aynı yazımda olduğundan tamamlanmamış profilde de geçer); dosya Storage users/{uid}/{file} yoluna önce yüklenir. AUT-05 bu biçimi kullanmaz (CD-135)",
       "writes": [
         {
           "op": "update",
@@ -77,6 +113,40 @@
             "year": "2",
             "interests": ["i01", "i05"],
             "profileComplete": true,
+            "avatarPath": "users/u_student/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateProfile · tam profil yaması",
+      "note": "ad, bölüm, sınıf, ilgi alanları, profileComplete tek yamada (T-12; AUT-05'in gerçek yaması yukarıdaki 'AUT-05 tamamlama' adımıdır)",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "name": "Ayşe Işık",
+            "nameLower": "ayşe ışık",
+            "department": "d02",
+            "year": "2",
+            "interests": ["i01", "i05"],
+            "profileComplete": true,
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.updateAvatar · tamamlanmış profil (PRF-02)",
+      "note": "T-14: tamamlanmış profilde yalnızca avatarPath (+ updatedAt); eski dosya silinmez, yeni dosya adı",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student",
+          "data": {
+            "avatarPath": "users/u_student/20261008T201502Z_0a1b2c3d4e5f6071.png",
             "updatedAt": "@serverTimestamp"
           }
         }

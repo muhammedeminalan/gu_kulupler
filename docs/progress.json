@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-11T21:59:18.162Z",
+  "updated": "2026-10-12T18:33:14.161Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -271,11 +271,13 @@
       "notes": ""
     },
     "T-14": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-12T15:06:52.816Z",
+      "finishedAt": "2026-10-12T18:33:14.160Z",
+      "commits": [
+        "7270c20"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-15": {
@@ -564,7 +566,9 @@
       "resolveIn": [
         "T-14"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-14",
+      "closedAt": "2026-10-12T17:18:34.802Z"
     },
     {
       "id": "W-03",
@@ -585,7 +589,9 @@
       "resolveIn": [
         "T-14"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-14",
+      "closedAt": "2026-10-12T17:18:34.831Z"
     },
     {
       "id": "W-06",
@@ -594,7 +600,9 @@
       "resolveIn": [
         "T-14"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-14",
+      "closedAt": "2026-10-12T17:18:34.858Z"
     },
     {
       "id": "W-09",
@@ -993,7 +1001,9 @@
         "T-13",
         "T-14"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-14",
+      "closedAt": "2026-10-12T17:18:34.883Z"
     },
     {
       "id": "W-57",
@@ -1002,12 +1012,32 @@
       "resolveIn": [
         "T-14"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-14",
+      "closedAt": "2026-10-12T17:18:34.908Z"
     },
     {
       "id": "W-58",
       "declaredIn": "T-13",
       "text": "AppConstants.appStoreId yer tutucu (DLG-26 'Güncelle' → App Store sayfası): App Store Connect kaydı açılınca gerçek kimlik yazılır; androidApplicationId yayın paket adıyla doğrulanır → T-46",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-59",
+      "declaredIn": "T-14",
+      "text": "T-14 güvenlik incelemesi (CD-135 madde 8) → T-45 raporu: (a) 'Hesap sayımı ve e-posta gönderim sınırı' bölümü (rules-spec §9.9 / PLAN S-9: e-posta sayım koruması, Auth kota uyarısı, App Check — CD-64); (b) 'Storage kotası' bölümü (§9.8 / S-8); (c) integration_test/auth_flow_test.dart fotoğraf adımı yerel SDK ile emülatörde koşturulur: yerel yükleme storage.rules imageOk() üst veri koşullarından (contentEncoding / contentDisposition / özel üst veri yok) geçmeli",
+      "resolveIn": [
+        "T-45"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-60",
+      "declaredIn": "T-14",
+      "text": "T-14 güvenlik incelemesi (CD-135 madde 8) → T-46 konsol kontrol listesi (kullanıcıyla): Authentication → Settings → User actions → Email enumeration protection AÇIK; Authentication kota / kullanım uyarısı (doğrulama + sıfırlama e-postaları); storage.rules deploy'unda çapraz servis (Storage → Firestore, accountActive()) izni onayı; App Check önerisi (CD-64)",
       "resolveIn": [
         "T-46"
       ],

@@ -74,6 +74,39 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('T-14 · GuGroupHeader · color verilirse zemin odur (SHT-02: '
+        'sheet yüzeyi); ölçü ve başlık değişmez — açık + koyu', (tester) async {
+      for (final (mode, colors) in [
+        (ThemeMode.light, GuColors.light),
+        (ThemeMode.dark, GuColors.dark),
+      ]) {
+        await tester.pumpApp(
+          _host(
+            GuGroupHeader(
+              title: 'MÜHENDİSLİK FAKÜLTESİ',
+              color: colors.bgSurfaceRaised,
+            ),
+          ),
+          theme: mode,
+        );
+        expect(
+          tester
+              .widget<ColoredBox>(
+                find.descendant(
+                  of: find.byType(GuGroupHeader),
+                  matching: find.byType(ColoredBox),
+                ),
+              )
+              .color,
+          colors.bgSurfaceRaised,
+          reason: '$mode',
+        );
+        expect(colors.bgSurfaceRaised, isNot(colors.bgCanvas));
+        expect(tester.getSize(find.byType(GuGroupHeader)), const Size(390, 32));
+        expect(tester.getTopLeft(find.text('MÜHENDİSLİK FAKÜLTESİ')).dx, 16);
+      }
+    });
+
     testWidgets('T-04 · GuGroupHeader · sticky: sliver olarak üstte sabit '
         'kalır, grup bitince sonraki başlıkla itilir', (tester) async {
       Widget group(String title) => SliverMainAxisGroup(

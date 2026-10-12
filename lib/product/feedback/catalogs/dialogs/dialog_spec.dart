@@ -19,8 +19,8 @@ typedef DialogLabelBuilder = String Function(AppLocalizations l10n);
 ///
 /// Özel gövdeli dialoglar (DLG-02 geri sayım — `LoginLockDialog`, DLG-19 /
 /// 28 / 30 girdi, DLG-21 adımlar, DLG-22 onay kutusu, DLG-23 seçenekler,
-/// DLG-25 üç eylem, DLG-32 bağlantı) katalogdan değil
-/// `FeedbackService.showDialog(builder:)` ile açılır.
+/// DLG-25 üç eylem — `UnsavedChangesDialog`, DLG-32 bağlantı) katalogdan
+/// değil `FeedbackService.showDialog(builder:)` ile açılır.
 @immutable
 final class DialogSpec {
   const DialogSpec({
@@ -95,6 +95,58 @@ abstract final class DialogCatalog {
       primaryDanger: false,
       primaryAction: 'support',
       secondaryAction: 'ok',
+    ),
+
+    /// Design: DLG-03 — Bildirimleri açalım mı? (`dialogs.js:15`
+    /// `permissionDialog`). Sonuç `true` → sistem bildirim izni istenir
+    /// (`PermissionPromptMixin.askNotificationPermission`); prototipin OS
+    /// izin maketi (`PermissionSim`) uygulanmaz (K-02).
+    DialogId.dlg03: DialogSpec(
+      title: (l10n, _) => l10n.dlg03Title,
+      body: (l10n, _) => l10n.dlg03Body,
+      primary: (l10n) => l10n.dlgPermissionAllow,
+      secondary: (l10n) => l10n.dlgPermissionNotNow,
+      icon: GuIcons.bellRing,
+      primaryAction: 'allow',
+      secondaryAction: 'notNow',
+    ),
+
+    /// Design: DLG-04 — Kamera erişimi (`dialogs.js:16`). Sonuç `true` →
+    /// sistem kamera izni istenir; ret → TST-32
+    /// (`PermissionPromptMixin.ensureCameraAccess`).
+    DialogId.dlg04: DialogSpec(
+      title: (l10n, _) => l10n.dlg04Title,
+      body: (l10n, _) => l10n.dlg04Body,
+      primary: (l10n) => l10n.dlgPermissionAllow,
+      secondary: (l10n) => l10n.dlgPermissionNotNow,
+      icon: GuIcons.camera,
+      primaryAction: 'allow',
+      secondaryAction: 'notNow',
+    ),
+
+    /// Design: DLG-05 — Fotoğraflarına erişim (`dialogs.js:17`). Ön
+    /// açıklamadır: sonuç `true` → sistem fotoğraf seçicisi doğrudan açılır,
+    /// sistem izni istenmez (CD-16;
+    /// `PermissionPromptMixin.ensureGalleryAccess`).
+    DialogId.dlg05: DialogSpec(
+      title: (l10n, _) => l10n.dlg05Title,
+      body: (l10n, _) => l10n.dlg05Body,
+      primary: (l10n) => l10n.dlgPermissionAllow,
+      secondary: (l10n) => l10n.dlgPermissionNotNow,
+      icon: GuIcons.images,
+      primaryAction: 'allow',
+      secondaryAction: 'notNow',
+    ),
+
+    /// Design: DLG-06 — Çıkış yapılsın mı? (`dialogs.js:21`). Sonuç `true`
+    /// → oturum kapatılır (`SignOutMixin.confirmSignOut`).
+    DialogId.dlg06: DialogSpec(
+      title: (l10n, _) => l10n.dlg06Title,
+      body: (l10n, _) => l10n.dlg06Body,
+      primary: (l10n) => l10n.authLogout,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.logOut,
+      primaryAction: 'logout',
     ),
 
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).

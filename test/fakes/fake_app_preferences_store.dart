@@ -60,6 +60,10 @@ final class FakeAppPreferencesStore extends FakeBase
       values[AppPreferenceKeys.notificationPermissionAsked] == true;
 
   @override
+  bool get photoAccessExplained =>
+      values[AppPreferenceKeys.photoAccessExplained] == true;
+
+  @override
   Future<bool> setThemeMode(ThemeMode mode) =>
       _write('setThemeMode', mode, AppPreferenceKeys.themeMode, mode.name);
 
@@ -88,6 +92,14 @@ final class FakeAppPreferencesStore extends FakeBase
     'setNotificationPermissionAsked',
     value,
     AppPreferenceKeys.notificationPermissionAsked,
+    value,
+  );
+
+  @override
+  Future<bool> setPhotoAccessExplained(bool value) => _write(
+    'setPhotoAccessExplained',
+    value,
+    AppPreferenceKeys.photoAccessExplained,
     value,
   );
 

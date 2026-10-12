@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- T-14 (PLAN §5.6.2, CD-16): kamera — profil fotoğrafı çekimi (SHT-16 → DLG-04, TST-32);
+         bildirim — yerel hatırlatıcılar için ön izin (DLG-03, Android 13+).
+         READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE bilerek YOK: galeri sistem fotoğraf seçicisiyle
+         (Android Photo Picker) açılır, depolama izni istenmez. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="GÜ Kulüpler"
         android:name="${applicationName}"
