@@ -41,10 +41,22 @@ say() { printf '\n▸ %s\n' "$*"; }
 port_open() { curl -s -o /dev/null --max-time 2 "http://$HOST:$1/"; }
 emulator_up() { port_open "$FIRESTORE_PORT" && port_open "$AUTH_PORT"; }
 
+# CLI kapanırken Firestore emülatörünün Java süreci bazen geride kalır ve portu tutar;
+# yalnızca komut satırında emülatör JAR'ı geçen süreç sonlandırılır.
+kill_orphan_firestore() {
+  local pid
+  for pid in $(lsof -tiTCP:"$FIRESTORE_PORT" -sTCP:LISTEN 2>/dev/null); do
+    if ps -o command= -p "$pid" 2>/dev/null | grep -q "cloud-firestore-emulator"; then
+      kill "$pid" 2>/dev/null || true
+    fi
+  done
+}
+
 stop_emulator() {
   pkill -INT -f "$EMULATOR_CMD" 2>/dev/null || true
-  for _ in $(seq 1 30); do
+  for i in $(seq 1 30); do
     if ! port_open "$FIRESTORE_PORT" && ! port_open "$AUTH_PORT"; then return 0; fi
+    if [ "$i" = 10 ]; then kill_orphan_firestore; fi
     sleep 1
   done
   echo "UYARI: emülatör 30 sn içinde kapanmadı" >&2
