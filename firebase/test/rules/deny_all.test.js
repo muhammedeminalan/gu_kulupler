@@ -28,10 +28,12 @@ const budget = require('../helpers/budget');
  * Kuralları açılmış koleksiyonlar (`expectations` `collection` değeri); matrisleri kendi
  * `rules/<koleksiyon>.test.js` dosyasındadır. T-12: `users`, `users/private`, `settings`.
  * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
+ * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
  */
 const OPENED = [
   'users', 'users/private', 'settings',
   'clubs', 'memberships', 'memberships/private', 'reports', 'blocks', 'activity',
+  'posts', 'posts/votes', 'comments', 'savedPosts', 'announcementCounters',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -95,12 +97,12 @@ describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e)
 );
 
 describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vakası süzgeçsiz ikiziyle koşar', () => {
-  // Henüz kapalı bir koleksiyon (T-19): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
-  const posts = loadExpectations('posts.json');
+  // Henüz kapalı bir koleksiyon (T-22): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
+  const posts = loadExpectations('events.json');
   const filtered = { where: [['isDeleted', '==', false]], orderBy: [['createdAt', 'desc']] };
   runCases(
     posts,
-    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'FED-01' })),
+    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'EVT-01' })),
     { seed: seedTarget },
   );
 
@@ -137,15 +139,15 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: gönderi, etkinlik,
+  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: etkinlik, katılım,
   // kendi bildirimi. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap /
-  // ayar belgesi T-12'de; kulüp ve üyelik T-15'te açıldı: users / settings / clubs / memberships.test.js.)
-  test.each(ALL_CONTEXTS)('%s · gönderi, herkese açık etkinlik ve bildirim → deny', async (role) => {
+  // ayar belgesi T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy, kayıt ve duyuru sayacı T-19'da açıldı.)
+  test.each(ALL_CONTEXTS)('%s · herkese açık etkinlik, katılım ve bildirim → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    for (const p of ['posts/p01', 'events/e_public', 'notifications/n01']) await assertFails(getDoc(doc(db, p)));
+    for (const p of ['events/e_public', 'rsvps/e_public_u_member', 'notifications/n01']) await assertFails(getDoc(doc(db, p)));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 

@@ -58,6 +58,17 @@ void main() {
       expect(consumer.reportRepository, same(GetIt.I<ReportRepository>()));
       expect(consumer.blockRepository, same(GetIt.I<BlockRepository>()));
       expect(consumer.activityRepository, same(GetIt.I<ActivityRepository>()));
+      // T-19 · gönderi, yorum, kayıt, duyuru sayacı
+      expect(consumer.postRepository, same(GetIt.I<PostRepository>()));
+      expect(consumer.commentRepository, same(GetIt.I<CommentRepository>()));
+      expect(
+        consumer.savedPostRepository,
+        same(GetIt.I<SavedPostRepository>()),
+      );
+      expect(
+        consumer.announcementCounterRepository,
+        same(GetIt.I<AnnouncementCounterRepository>()),
+      );
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

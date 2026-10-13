@@ -7,11 +7,12 @@
 // sorgu BİÇİMLERİ sınanır.
 //
 // T-15: CLB-01 / getClubs · oturum üyelikleri / listMine · CLB-06 / MGT-03 / listManagers · MGT-02 ·
-// MGT-10 · ADM-04 · SET-02. T-19 (FED-01/02, MGT-08, PRF-04), T-22 (EVT-01, MGT-04, EVT-04, MGT-06) ve
-// T-25 (`listByInterests`) kendi satırlarını ekler.
+// MGT-10 · ADM-04 · SET-02. T-19: FED-01 / listFeed · MGT-08 / listForManagement · FED-02 / watchComments ·
+// PRF-04 / listSaved · countVotes. T-22 (EVT-01, MGT-04, EVT-04, MGT-06) ve T-25 (`listByInterests`) kendi
+// satırlarını ekler.
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
+const { collection, doc, documentId, getCountFromServer, getDoc, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
 const { seedFixture } = require('../helpers/fixtures');
 
@@ -29,6 +30,11 @@ const QUERIES = Object.freeze({
   listOpenReports: { collection: 'reports', equals: ['status'], order: ['createdAt', 'desc'] },
   listReportsForTarget: { collection: 'reports', equals: ['targetType', 'targetId', 'status'] },
   fetchActiveBlocks: { collection: 'blocks', equals: ['blockerId', 'isDeleted'] },
+  // T-19 (sözleşme docs/plans/T-19.md §6.e)
+  listFeed: { collection: 'posts', equals: ['clubId', 'isDeleted', 'isHidden'], order: ['createdAt', 'desc'] },
+  listForManagement: { collection: 'posts', equals: ['clubId', 'isDeleted'], order: ['createdAt', 'desc'] },
+  watchComments: { collection: 'comments', equals: ['postId', 'clubId', 'isDeleted', 'isHidden'], order: ['createdAt', 'asc'] },
+  listSaved: { collection: 'savedPosts', equals: ['userId', 'isDeleted'], order: ['savedAt', 'desc'] },
 });
 
 /**
@@ -52,7 +58,7 @@ function hasIndex(spec) {
 const dbOf = (role) => contextFor(role).firestore();
 const ids = (snapshot) => snapshot.docs.map((d) => d.id).sort();
 
-describe('indeksler · firestore.indexes.json sorguları karşılar (PLAN §11.4 T-15 satırları)', () => {
+describe('indeksler · firestore.indexes.json sorguları karşılar (PLAN §11.4 T-15 / T-19 satırları)', () => {
   test.each(Object.entries(QUERIES))('%s', (_name, spec) => {
     expect(hasIndex(spec)).toBe(true);
   });
@@ -229,5 +235,72 @@ describe('reports ve blocks · sorgu biçimleri (rules-spec §6 ADM-04, SET-02)'
     expect(ids(await assertSucceeds(getDocs(active('susp', 'u_susp'))))).toEqual(['u_susp_u_student']);
     // Engellenen kullanıcı kendisini engelleyenleri sorgulayamaz.
     await assertFails(getDocs(query(collection(dbOf('student'), 'blocks'), where('blockedId', '==', 'u_student'), where('isDeleted', '==', false))));
+  });
+});
+
+describe('posts · sorgu biçimleri (rules-spec §6 FED-01, MGT-08; PLAN §10.4 PostRepository)', () => {
+  const posts = (role) => collection(dbOf(role), 'posts');
+  const live = [where('isDeleted', '==', false)];
+  const feed = (role, club = CLUB) => query(posts(role), where('clubId', '==', club), ...live, where('isHidden', '==', false), orderBy('createdAt', 'desc'), limit(20));
+  const management = (role) => query(posts(role), where('clubId', '==', CLUB), ...live, orderBy('createdAt', 'desc'), limit(20));
+  const HIDDEN_AND_DELETED = {
+    patch: { 'posts/p01': { isHidden: true, hiddenBy: 'u_super' }, 'posts/p02': { isDeleted: true, deletedBy: 'u_board' } },
+  };
+
+  test('listFeed: üye silinmemiş ve gizlenmemiş gönderileri görür; gizli / silinmiş gönderi sonuçta yoktur', async () => {
+    await seedFixture('base');
+    expect(ids(await assertSucceeds(getDocs(feed('member'))))).toEqual(['p01', 'p02']);
+    await seedFixture('base', undefined, HIDDEN_AND_DELETED);
+    expect(ids(await assertSucceeds(getDocs(feed('member'))))).toEqual([]);
+    expect(ids(await assertSucceeds(getDocs(feed('advisor'))))).toEqual([]);
+  });
+
+  test('listForManagement: yönetim gizli gönderiyi de görür (silinmiş hariç); üye bu sorguyu kuramaz', async () => {
+    await seedFixture('base', undefined, HIDDEN_AND_DELETED);
+    expect(ids(await assertSucceeds(getDocs(management('board'))))).toEqual(['p01']);
+    expect(ids(await assertSucceeds(getDocs(management('super'))))).toEqual(['p01']);
+    await assertFails(getDocs(management('member')));
+    await assertFails(getDocs(management('advisor')));
+  });
+
+  test('kulüp süzgeci zorunludur: üye başka kulübü, kulüpsüz ya da çok kulüplü sorguyu kuramaz', async () => {
+    await seedFixture('base');
+    await assertFails(getDocs(feed('member', OTHER_CLUB)));
+    await assertFails(getDocs(query(posts('member'), ...live, where('isHidden', '==', false))));
+    await assertFails(getDocs(query(posts('member'), where('clubId', 'in', [CLUB, OTHER_CLUB]), ...live, where('isHidden', '==', false))));
+    await assertFails(getDocs(query(posts('member'), where('authorId', '==', 'u_board'))));
+    await assertFails(getDocs(posts('board')));
+  });
+});
+
+describe('comments, votes ve savedPosts · sorgu biçimleri (rules-spec §6 FED-02, PRF-04)', () => {
+  test('watchComments: postId + clubId + isDeleted + isHidden, createdAt artan; gizli yorum üyenin listesinde yoktur', async () => {
+    const thread = (role, postId) =>
+      query(collection(dbOf(role), 'comments'), where('postId', '==', postId), where('clubId', '==', CLUB), where('isDeleted', '==', false), where('isHidden', '==', false), orderBy('createdAt', 'asc'));
+    await seedFixture('base', undefined, { patch: { 'comments/cm02': { isHidden: true, hiddenBy: 'u_super' } } });
+    expect(ids(await assertSucceeds(getDocs(thread('member', 'p01'))))).toEqual(['cm01']);
+    expect(ids(await assertSucceeds(getDocs(thread('member', 'p02'))))).toEqual([]);
+    // Kulüp süzgeci gönderinin kulübü değilse sonuç boştur; üyesi olmadığı kulüple sorgu reddedilir.
+    const elsewhere = query(collection(dbOf('member'), 'comments'), where('postId', '==', 'p01'), where('clubId', '==', OTHER_CLUB), where('isDeleted', '==', false), where('isHidden', '==', false));
+    await assertFails(getDocs(elsewhere));
+  });
+
+  test('countVotes: seçenek başına `where optionId == x` + count(); üye olmayan sayamaz', async () => {
+    await seedFixture('base');
+    const votesOf = (role, optionId) => query(collection(dbOf(role), 'posts/p01/votes'), where('optionId', '==', optionId));
+    expect((await assertSucceeds(getCountFromServer(votesOf('advisor', 'o1')))).data().count).toBe(1);
+    expect((await assertSucceeds(getCountFromServer(votesOf('member', 'o2')))).data().count).toBe(0);
+    await assertFails(getCountFromServer(votesOf('student', 'o1')));
+  });
+
+  test('listSaved (PRF-04): userId == uid, isDeleted == false, savedAt azalan → kaldırılmış kayıt dönmez', async () => {
+    const mine = (role, uid) => query(collection(dbOf(role), 'savedPosts'), where('userId', '==', uid), where('isDeleted', '==', false), orderBy('savedAt', 'desc'), limit(20));
+    await seedFixture('base', undefined, { patch: { 'savedPosts/u_member_p01': { isDeleted: true, deletedBy: 'u_member' } } });
+    expect(ids(await assertSucceeds(getDocs(mine('member', 'u_member'))))).toEqual([]);
+    expect(ids(await assertSucceeds(getDocs(mine('former', 'u_former'))))).toEqual(['u_former_p01']);
+    // Gönderiye göre "kim kaydetti" sorgusu kurulamaz (yönetici ve süper admin dahil).
+    for (const role of ['board', 'super']) {
+      await assertFails(getDocs(query(collection(dbOf(role), 'savedPosts'), where('postId', '==', 'p01'), where('isDeleted', '==', false))));
+    }
   });
 });

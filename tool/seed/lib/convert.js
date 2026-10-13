@@ -490,6 +490,9 @@ function expectedCounts(raw) {
   };
 }
 
+/** Gönderi görseli yolu: `posts/{postId}/<StoragePaths.newFileName>` (firestore.rules `imageOk` ile aynı desen). */
+const POST_IMAGE = /^posts\/([^/]+)\/\d{8}T\d{6}Z_[0-9a-f]{16}\.(?:jpg|png|webp)$/;
+
 /**
  * Dönüştürülmüş verinin iç tutarlılığı (PLAN §9.12 "Doğrulama"). Sorun listesi döner; boş = tutarlı.
  * @param {ReturnType<typeof convert>['docs']} docs
@@ -521,6 +524,43 @@ function validate(docs, { announcementDailyLimit }) {
     }
     const commentCount = count(docs.comments, (c) => c.postId === postId && c.isDeleted !== true);
     if (post.commentCount !== commentCount) problems.push(`posts/${postId}: commentCount ${post.commentCount} ≠ ${commentCount}`);
+    // T-19 · Security Rules'un gönderi biçimi (firestore.rules `posts`): tohumlanan belge kurallardan geçen
+    // yazımlarla (düzenleme, oy, sabitleme) uyumlu olmalıdır.
+    if ((post.title !== null) !== (post.type === 'announcement')) problems.push(`posts/${postId}: başlık yalnızca duyuruda olur`);
+    if ((post.poll !== null) !== (post.type === 'poll')) problems.push(`posts/${postId}: anket yalnızca anket gönderisinde olur`);
+    if (post.pushSent === true && post.type !== 'announcement') problems.push(`posts/${postId}: pushSent yalnızca duyuruda olur`);
+    if (post.poll !== null) {
+      const ids = post.poll.options.map((option) => option.id);
+      if (ids.length < 2 || ids.length > 4 || ids.some((id, index) => id !== `o${index + 1}`)) {
+        problems.push(`posts/${postId}: seçenek kimlikleri o1…oN değil (${ids.join(', ')})`);
+      }
+    }
+    for (const image of post.images) {
+      const folder = POST_IMAGE.exec(image.path);
+      if (!folder || folder[1] !== postId) problems.push(`posts/${postId}: görsel yolu gönderinin klasöründe değil (${image.path})`);
+    }
+    // Sabitleme iki yönlüdür: posts.pinned ↔ clubs.pinnedPostId (kulüp başına en çok bir sabit gönderi).
+    const pinnedHere = docs.clubs[post.clubId].pinnedPostId === postId;
+    if ((post.pinned === true) !== pinnedHere || (pinnedHere && post.isDeleted === true)) {
+      problems.push(`posts/${postId}: pinned ile clubs/${post.clubId}.pinnedPostId tutarsız`);
+    }
+  }
+  for (const [clubId, club] of Object.entries(docs.clubs)) {
+    if (club.pinnedPostId !== null && docs.posts[club.pinnedPostId]?.clubId !== clubId) {
+      problems.push(`clubs/${clubId}: pinnedPostId ${club.pinnedPostId} bu kulübün gönderisi değil`);
+    }
+  }
+  for (const [key, vote] of Object.entries(docs.votes)) {
+    const poll = docs.posts[key.slice(0, key.indexOf('/'))]?.poll;
+    if (!poll || !poll.options.some((option) => option.id === vote.optionId)) problems.push(`votes/${key}: ankette olmayan seçenek`);
+  }
+  for (const [id, comment] of Object.entries(docs.comments)) {
+    if (docs.posts[comment.postId]?.clubId !== comment.clubId) problems.push(`comments/${id}: clubId gönderinin kulübü değil`);
+  }
+  for (const [id, saved] of Object.entries(docs.savedPosts)) {
+    if (id !== `${saved.userId}_${saved.postId}` || docs.posts[saved.postId]?.clubId !== saved.clubId) {
+      problems.push(`savedPosts/${id}: kimlik ya da clubId tutarsız`);
+    }
   }
   for (const [id, rsvp] of Object.entries(docs.rsvps)) {
     if (!TICKET_CODE.test(rsvp.ticketCode || '')) problems.push(`rsvps/${id}: ticketCode biçimi geçersiz`);
@@ -530,6 +570,8 @@ function validate(docs, { announcementDailyLimit }) {
   }
   for (const [id, counter] of Object.entries(docs.announcementCounters)) {
     if (counter.count > announcementDailyLimit) problems.push(`announcementCounters/${id}: count ${counter.count} > ${announcementDailyLimit}`);
+    // Belge kimliği `{clubId}_{yyyyMMdd}`, `day` alanı aynı günün `yyyy-MM-dd` yazımıdır (Rules ikisini de denetler).
+    if (id !== `${counter.clubId}_${String(counter.day).replace(/-/g, '')}`) problems.push(`announcementCounters/${id}: kimlik ile day tutarsız`);
   }
   return problems;
 }

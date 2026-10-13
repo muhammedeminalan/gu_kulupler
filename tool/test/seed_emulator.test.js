@@ -215,6 +215,33 @@ test('seed · validate tutarsız veriyi yakalar (betik yazmadan durur)', () => {
   assert.match(problems.join('\n'), /events\/e03: goingCount 29 ≠ 30/);
   assert.match(problems.join('\n'), /ticketCode biçimi geçersiz/);
   assert.match(problems.join('\n'), /count 3 > 2/);
+
+  // T-19 · içerik değişmezleri (Security Rules'un gönderi / oy / yorum / kayıt / sayaç biçimi)
+  assert.deepEqual(validate(atToday.docs, { announcementDailyLimit: 2 }), []);
+  const content = structuredClone(atToday.docs);
+  content.posts.p02.title = 'Gönderide başlık olmaz';
+  content.posts.p04.poll.options[1].id = 'x2';
+  content.posts.p06.images[0].path = content.posts.p02.images[0].path;
+  content.posts.p03.pinned = true;
+  content.clubs.c02.pinnedPostId = 'p01';
+  content.votes[Object.keys(content.votes).find((key) => key.startsWith('p09/'))].optionId = 'o4';
+  content.comments.cm01.clubId = 'c02';
+  content.savedPosts.u_mehmet_p01.clubId = 'c02';
+  content.announcementCounters.c01_20261008.day = '2026-10-09';
+  const contentProblems = validate(content, { announcementDailyLimit: 2 }).join('\n');
+  for (const expected of [
+    /posts\/p02: başlık yalnızca duyuruda olur/,
+    /posts\/p04: seçenek kimlikleri o1…oN değil/,
+    /posts\/p06: görsel yolu gönderinin klasöründe değil/,
+    /posts\/p03: pinned ile clubs\/c01\.pinnedPostId tutarsız/,
+    /clubs\/c02: pinnedPostId p01 bu kulübün gönderisi değil/,
+    /votes\/p09\/[^:]+: ankette olmayan seçenek/,
+    /comments\/cm01: clubId gönderinin kulübü değil/,
+    /savedPosts\/u_mehmet_p01: kimlik ya da clubId tutarsız/,
+    /announcementCounters\/c01_20261008: kimlik ile day tutarsız/,
+  ]) {
+    assert.match(contentProblems, expected);
+  }
   assert.deepEqual(staticTablesDiff({ ...raw, places: raw.places.slice(1) }, fs.readFileSync(path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart'), 'utf8')), ['places: StaticTables (10) ≠ demo-data.json (9)']);
 });
 

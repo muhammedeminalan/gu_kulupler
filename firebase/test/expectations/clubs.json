@@ -64,6 +64,11 @@
     {"role":"board","op":"update","variant":"clubBumpAlone","expect":"deny","ref":"§4 sayaç tek başına yazılamaz (eşlik eden üyelik geçişi yok)"},
     {"role":"president","op":"update","variant":"clubBumpAlone","expect":"deny","ref":"§4 sayaç tek başına yazılamaz (eşlik eden üyelik geçişi yok)"},
     {"role":"super","op":"update","variant":"clubBumpAlone","expect":"deny","ref":"§4 sayaç tek başına yazılamaz (eşlik eden üyelik geçişi yok)"},
+    {"role":"member","op":"update","variant":"clubPinAlone","expect":"deny","ref":"T-19 §6.a pinnedPostId: yalnızca yönetim"},
+    {"role":"board","op":"update","variant":"clubPinAlone","expect":"deny","ref":"T-19 §6.a pinnedPostId gönderi yazımı olmadan değişmez"},
+    {"role":"president","op":"update","variant":"clubPinAlone","expect":"deny","ref":"T-19 §6.a pinnedPostId gönderi yazımı olmadan değişmez"},
+    {"role":"super","op":"update","variant":"clubPinAlone","expect":"deny","ref":"T-19 §6.a pinnedPostId gönderi yazımı olmadan değişmez"},
+    {"role":"otherManager","op":"update","variant":"clubPinAlone","expect":"deny","ref":"T-19 §6.a başka kulübün yöneticisi"},
     {"role":"president","op":"softDelete","expect":"deny","ref":"§3.3 kulüp silme yolu yok (askı T-37)"},
     {"role":"super","op":"softDelete","expect":"deny","ref":"§3.3 kulüp silme yolu yok (askı T-37)"},
     {"role":"super","op":"restore","patch":{"clubs/c01":{"isDeleted":true,"deletedBy":"u_super"}},"expect":"deny","ref":"§3.3 restore yolu yok"}

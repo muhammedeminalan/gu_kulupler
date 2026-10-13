@@ -54,6 +54,20 @@ mixin ProjectDependencyMixin {
   /// Kulüp günlüğü (MGT-10; T-15).
   ActivityRepository get activityRepository => GetIt.I<ActivityRepository>();
 
+  /// Gönderiler: yayın, düzenleme, beğeni, oy, sabitleme, akış listeleri
+  /// (T-19).
+  PostRepository get postRepository => GetIt.I<PostRepository>();
+
+  /// Yorumlar: yaz, kaldır, geri al, canlı liste (T-19).
+  CommentRepository get commentRepository => GetIt.I<CommentRepository>();
+
+  /// Kaydedilen gönderiler (PRF-04; T-19).
+  SavedPostRepository get savedPostRepository => GetIt.I<SavedPostRepository>();
+
+  /// Günlük bildirimli duyuru hakkı (FED-03 hak çubuğu, DLG-24; T-19).
+  AnnouncementCounterRepository get announcementCounterRepository =>
+      GetIt.I<AnnouncementCounterRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

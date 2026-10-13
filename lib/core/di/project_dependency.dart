@@ -161,6 +161,25 @@ abstract final class ProjectDependency {
     );
     final reportRepository = FirebaseReportRepository(firestoreService);
     final blockRepository = FirebaseBlockRepository(firestoreService);
+    // T-19 · gönderi, yorum, kayıt, duyuru sayacı. Yayın işlemi günlük
+    // kaydını ve (bildirimli duyuruda) günün sayacını aynı işlemde yazar:
+    // gönderi repository'si kayıtlı günlük ve sayaç repository'lerini
+    // paylaşır. Duyuru bildirimi burada dağıtılmaz (T-30 — PLAN §10.5).
+    final announcementCounterRepository = FirebaseAnnouncementCounterRepository(
+      firestoreService,
+      appClock,
+    );
+    final postRepository = FirebasePostRepository(
+      firestoreService,
+      activityRepository,
+      announcementCounterRepository,
+      appClock,
+    );
+    final commentRepository = FirebaseCommentRepository(
+      firestoreService,
+      appClock,
+    );
+    final savedPostRepository = FirebaseSavedPostRepository(firestoreService);
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -186,6 +205,13 @@ abstract final class ProjectDependency {
       ..registerSingleton<ReportRepository>(reportRepository)
       ..registerSingleton<BlockRepository>(blockRepository)
       ..registerSingleton<ActivityRepository>(activityRepository)
+      // T-19 · akış repository'leri
+      ..registerSingleton<PostRepository>(postRepository)
+      ..registerSingleton<CommentRepository>(commentRepository)
+      ..registerSingleton<SavedPostRepository>(savedPostRepository)
+      ..registerSingleton<AnnouncementCounterRepository>(
+        announcementCounterRepository,
+      )
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

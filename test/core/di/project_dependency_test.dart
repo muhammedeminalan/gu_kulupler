@@ -501,6 +501,101 @@ void main() {
     });
   });
 
+  group('T-19 · ProjectDependency · akış kayıtları', () {
+    test('dört repository gerçek uygulamalarıyla kaydedilir; mixin '
+        'getter’ları aynı örnekleri döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(GetIt.I<PostRepository>(), isA<FirebasePostRepository>());
+      expect(GetIt.I<CommentRepository>(), isA<FirebaseCommentRepository>());
+      expect(
+        GetIt.I<SavedPostRepository>(),
+        isA<FirebaseSavedPostRepository>(),
+      );
+      expect(
+        GetIt.I<AnnouncementCounterRepository>(),
+        isA<FirebaseAnnouncementCounterRepository>(),
+      );
+
+      final consumer = _Consumer();
+      expect(consumer.postRepository, same(GetIt.I<PostRepository>()));
+      expect(consumer.commentRepository, same(GetIt.I<CommentRepository>()));
+      expect(
+        consumer.savedPostRepository,
+        same(GetIt.I<SavedPostRepository>()),
+      );
+      expect(
+        consumer.announcementCounterRepository,
+        same(GetIt.I<AnnouncementCounterRepository>()),
+      );
+    });
+
+    test('bildirimli duyuru kayıtlı FirestoreService üzerinde gönderi + '
+        'günlük + günün sayacını birlikte yazar; yorum gönderinin sayacını '
+        'artırır; sayaç ve günlük kayıtlı repository’lerden okunur', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(
+          appClock: FakeAppClock(DateTime.utc(2026, 10, 13, 9)),
+        ),
+      );
+      final consumer = _Consumer();
+
+      final published = await consumer.postRepository.create(
+        const PostDraft(
+          type: PostType.announcement,
+          title: 'Genel kurul',
+          text: 'Cuma 14.00.',
+          pushSent: true,
+        ),
+        authorId: 'u_president',
+        clubId: 'c01',
+        postId: 'p_new',
+      );
+      final comment = await consumer.commentRepository.add(
+        postId: 'p_new',
+        clubId: 'c01',
+        authorId: 'u_ayse',
+        text: 'Orada olacağım.',
+      );
+      await consumer.savedPostRepository.save(
+        userId: 'u_ayse',
+        postId: 'p_new',
+        clubId: 'c01',
+      );
+
+      expect(published.dataOrNull?.pushSent, isTrue);
+      final counter = await consumer.announcementCounterRepository.getToday(
+        'c01',
+      );
+      expect(
+        (counter.dataOrNull?.count, counter.dataOrNull?.lastPostRef),
+        (1, 'posts/p_new'),
+      );
+      final post = await consumer.postRepository.getPost('p_new');
+      expect(
+        (post.dataOrNull?.commentCount, post.dataOrNull?.lastCommentRef),
+        (1, 'comments/${comment.dataOrNull?.id}'),
+      );
+      final log = await consumer.activityRepository.listActivity(
+        'c01',
+        const PageRequest(),
+      );
+      expect(log.dataOrNull?.items.single.kind, ActivityKind.announcement);
+      final saved = await consumer.savedPostRepository.isSaved(
+        userId: 'u_ayse',
+        postId: 'p_new',
+      );
+      expect(saved.dataOrNull, isTrue);
+    });
+  });
+
   group('T-11 · ProjectDependency · emülatör ortamı (W-53)', () {
     test('emülatörde Remote Config ve çökme servisi yereldir: Firebase '
         "SDK'sına dokunulmaz", () async {

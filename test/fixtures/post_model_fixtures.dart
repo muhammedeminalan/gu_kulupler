@@ -16,4 +16,19 @@ abstract final class PostModelFixtures {
   /// `p01` — `c01` kulübünün sabitlenmiş, bildirimi gönderilmiş duyurusu (3
   /// yorum).
   static final PostModel p01 = byId('p01');
+
+  /// `p02` — `c01` kulübünün iki görselli gönderisi (3 yorum).
+  static final PostModel p02 = byId('p02');
+
+  /// `p04` — `c01` kulübünün dört seçenekli anketi (`o1`…`o4`).
+  static final PostModel p04 = byId('p04');
+
+  /// Demo verideki [clubId] kulübünün gönderileri, en yeni üstte (akış
+  /// sırası — FED-01).
+  static List<PostModel> ofClub(String clubId) =>
+      [
+          for (final id in DemoDataFixture.ids(FirestoreCollections.posts))
+            byId(id),
+        ].where((post) => post.clubId == clubId).toList()
+        ..sort((a, b) => b.createdAt!.compareTo(a.createdAt!));
 }
