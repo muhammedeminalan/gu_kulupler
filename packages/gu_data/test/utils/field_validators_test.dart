@@ -191,6 +191,21 @@ Map<String, List<_Case>> _table() => {
       _empty,
     ),
     (
+      'yalnızca boşluk, not isteniyor',
+      FieldValidators.applicationNote(' ', requireNote: true),
+      _empty,
+    ),
+    (
+      'yalnızca satır sonu, not isteniyor',
+      FieldValidators.applicationNote('\n\n', requireNote: true),
+      _empty,
+    ),
+    (
+      'yalnızca boşluk, not istenmiyor',
+      FieldValidators.applicationNote(' ', requireNote: false),
+      null,
+    ),
+    (
       '300',
       FieldValidators.applicationNote(_x(300), requireNote: true),
       null,

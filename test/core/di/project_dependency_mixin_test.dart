@@ -13,6 +13,7 @@ import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_auth_service.dart';
@@ -62,6 +63,8 @@ void main() {
         consumer.urlLauncherService,
         same(GetIt.I<UrlLauncherService>()),
       );
+      // T-16 · sistem paylaşım sayfası
+      expect(consumer.shareService, same(GetIt.I<ShareService>()));
       // T-14 · izinler ve görsel seçimi
       expect(consumer.permissionService, same(GetIt.I<PermissionService>()));
       expect(

@@ -31,7 +31,8 @@ import 'package:gu_data/src/utils/field_validators.dart';
 
 /// [MembershipRepository] uygulaması: `memberships/{clubId}_{userId}`,
 /// `memberships/{id}/private/contact`, `clubs.memberCount` sayacı ve günlük
-/// kaydı (PLAN §10.4; rules-spec §3.4 M1–M4, M7, M8).
+/// kaydı (PLAN §10.4; rules-spec §3.4 M1–M4, M7, M8 ve `private/contact`
+/// U(b) not düzenleme).
 ///
 /// Her geçiş tek transaction'dır: önce okur (başvuranın kullanıcı belgesi,
 /// kulüp, üyelik, iletişim belgesi), beklenen durumu doğrular, sonra yazar.
@@ -153,6 +154,43 @@ final class FirebaseMembershipRepository implements MembershipRepository {
       }
       tx.update(membershipRef, {
         FirestoreFields.status: MembershipStatus.cancelled.json,
+        ...BaseFieldsPayload.update(),
+      });
+    });
+  }
+
+  @override
+  Future<FirestoreResult<void>> updateApplicationNote({
+    required String clubId,
+    required String userId,
+    required String note,
+  }) async {
+    final rejected =
+        _rejectPair<void>(clubId, userId) ??
+        RepositoryHelpers.rejectInvalidFields<void>({
+          // Alt sınır kulübe bağlıdır; işlem içinde, kulüp okununca denetlenir.
+          FirestoreFields.note: FieldValidators.applicationNote(
+            note,
+            requireNote: false,
+          ),
+        });
+    if (rejected != null) return rejected;
+    final membershipRef = _membershipRef(clubId, userId);
+    final clubRef = _clubRef(clubId);
+    final contactRef = _contactRef(clubId, userId);
+    return _transact((tx) async {
+      // Transaction kuralı: tüm okumalar yazımlardan önce.
+      final current = _membershipOrNull(await tx.get(membershipRef));
+      final clubSnapshot = await tx.get(clubRef);
+      // Not yalnızca başvuru beklerken düzenlenir (rules-spec §3.4 U(b)).
+      if (current?.status != MembershipStatus.pending) {
+        throw const ConflictException.conflict();
+      }
+      // Not isteyen kulüpte not boşaltılamaz (başvurudaki koşulun aynısı).
+      _requireNote(note, _liveClub(clubSnapshot));
+      // Üyelik belgesi yazılmaz: yalnızca `note` + `updatedAt` (CD-137).
+      tx.update(contactRef, {
+        FirestoreFields.note: note,
         ...BaseFieldsPayload.update(),
       });
     });
@@ -388,18 +426,7 @@ final class FirebaseMembershipRepository implements MembershipRepository {
             throw const ConflictException.conflict();
           }
       }
-      if (!instant) {
-        final noteError = FieldValidators.applicationNote(
-          note,
-          requireNote: club.requireNote,
-        );
-        if (noteError != null) {
-          throw _Halt(
-            FirestoreError.invalidArgument,
-            'geçersiz alan: ${FirestoreFields.note} (${noteError.name})',
-          );
-        }
-      }
+      if (!instant) _requireNote(note, club);
 
       final timestamp = _firestore.serverTimestamp();
       final priorCount = current == null ? 0 : current.priorCount + 1;
@@ -494,6 +521,21 @@ final class FirebaseMembershipRepository implements MembershipRepository {
       FirebaseFailure(:final error, :final message, :final detail) =>
         FirebaseFailure(error, message: message, detail: detail),
     };
+  }
+
+  /// [note] [club] kulübünün başvuru notu koşulunu (`requireNote`, üst sınır)
+  /// karşılamıyorsa işlemi [FirestoreError.invalidArgument] ile durdurur.
+  static void _requireNote(String note, ClubModel club) {
+    final noteError = FieldValidators.applicationNote(
+      note,
+      requireNote: club.requireNote,
+    );
+    if (noteError != null) {
+      throw _Halt(
+        FirestoreError.invalidArgument,
+        'geçersiz alan: ${FirestoreFields.note} (${noteError.name})',
+      );
+    }
   }
 
   /// `clubs.memberCount` sayacını [delta] kadar oynatır. Değer hesaplanıp

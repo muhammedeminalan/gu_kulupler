@@ -59,6 +59,23 @@ void main() {
       },
     );
 
+    test('dialogResults: kimliğe bağlı kalıcı sonuç; nextDialogResult '
+        'önceliklidir (zincirli dialoglar)', () async {
+      final fake = FakeFeedbackService()
+        ..nextDialogResult = false
+        ..dialogResults[DialogId.dlg32] = true;
+
+      // İlk açılış tek seferlik sonucu tüketir; sonrakiler kimlik kaydını.
+      expect(await fake.showDialog<bool>(DialogId.dlg32), isFalse);
+      expect(await fake.showDialog<bool>(DialogId.dlg32), isTrue);
+      expect(await fake.showDialog<bool>(DialogId.dlg32), isTrue);
+      expect(await fake.showDialog<bool>(DialogId.dlg01), isNull);
+
+      fake.resetFake();
+      expect(fake.dialogResults, isEmpty);
+      expect(await fake.showDialog<bool>(DialogId.dlg32), isNull);
+    });
+
     test('showToast: kimlik + değişken günlüğü, görünen toast, eylem', () {
       final fake = FakeFeedbackService();
       var undone = 0;

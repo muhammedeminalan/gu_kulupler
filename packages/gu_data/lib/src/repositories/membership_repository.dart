@@ -14,8 +14,9 @@ import 'package:gu_data/src/models/user_model.dart';
 /// domain-model §5).
 ///
 /// Bu sürüm **başvuran / üye tarafını** taşır: başvur, anında katıl, yeniden
-/// başvur, isteği iptal et, ayrıl ve okumalar. Yönetici geçişleri (onay, ret,
-/// çıkarma, rol, devir) sonraki sürümlerde eklenir.
+/// başvur, isteği iptal et, başvuru notunu düzenle, ayrıl ve okumalar.
+/// Yönetici geçişleri (onay, ret, çıkarma, rol, devir) sonraki sürümlerde
+/// eklenir.
 ///
 /// **Durum makinesi:** her geçiş bir transaction içinde üyeliğin *beklenen
 /// önceki durumunu* okur. Durum tutmuyorsa hiçbir şey yazılmaz ve sonuç
@@ -111,6 +112,23 @@ abstract interface class MembershipRepository {
   Future<FirestoreResult<void>> cancelApplication({
     required String clubId,
     required String userId,
+  });
+
+  /// [userId] kullanıcısının [clubId] kulübündeki **bekleyen** başvurusunun
+  /// notunu [note] ile değiştirir (CLB-05). Yalnızca `private/contact`
+  /// belgesinin `note` alanı yazılır; üyelik belgesine dokunulmaz, sayaç ve
+  /// günlük kaydı yoktur (not düzenleme bir üyelik geçişi değildir — CD-137).
+  ///
+  /// Hatalar:
+  /// - başvuru `pending` değil (onaylanmış, reddedilmiş, iptal edilmiş) ya da
+  ///   hiç yok → [FirestoreError.conflict];
+  /// - kulüp belgesi yok / kulüp silinmiş → [FirestoreError.notFound];
+  /// - [note] çok uzun, ya da kulüp not istiyor ve [note] boş →
+  ///   [FirestoreError.invalidArgument].
+  Future<FirestoreResult<void>> updateApplicationNote({
+    required String clubId,
+    required String userId,
+    required String note,
   });
 
   /// [userId] üyesini [clubId] kulübünden ayırır (`active → left`); aynı

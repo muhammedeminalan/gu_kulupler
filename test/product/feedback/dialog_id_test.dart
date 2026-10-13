@@ -40,13 +40,19 @@ void main() {
   group('T-07 · DialogCatalog', () {
     test('satırları sahibi olan task ekler: T-11 → DLG-26, DLG-27; '
         'T-13 → DLG-01; T-14 → DLG-03, DLG-04, DLG-05, DLG-06 (DLG-25 üç '
-        'eylemlidir: katalogda değil, `UnsavedChangesDialog`)', () {
+        'eylemlidir: katalogda değil, `UnsavedChangesDialog`); T-16 → '
+        'DLG-07, DLG-08, DLG-09, DLG-12 (DLG-32 özel gövdelidir: '
+        '`ExternalLinkDialog`)', () {
       expect(DialogCatalog.ids.toSet(), {
         DialogId.dlg01,
         DialogId.dlg03,
         DialogId.dlg04,
         DialogId.dlg05,
         DialogId.dlg06,
+        DialogId.dlg07,
+        DialogId.dlg08,
+        DialogId.dlg09,
+        DialogId.dlg12,
         DialogId.dlg26,
         DialogId.dlg27,
       });

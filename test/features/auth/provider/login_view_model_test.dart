@@ -556,14 +556,30 @@ void main() {
       expect(feedback.toasts, isEmpty);
     });
 
-    test('DLG-01 "Destekle iletişime geç": destek e-postası açılır', () async {
+    test('DLG-01 "Destekle iletişime geç": dış bağlantı onayı (DLG-32) '
+        'verilince destek e-postası açılır', () async {
+      final container = containerOf();
+      fill(container);
+      auth.service.failNext(AuthError.userDisabled);
+      feedback
+        ..nextDialogResult = true
+        ..dialogResults[DialogId.dlg32] = true;
+
+      expect(await vmOf(container).submit(), LoginOutcome.suspended);
+      expect(feedback.dialogs, [DialogId.dlg01, DialogId.dlg32]);
+      expect(launcher.opened, [AppConstants.supportMailUri]);
+    });
+
+    test('DLG-01 "Destekle iletişime geç": dış bağlantı onayı verilmezse '
+        'e-posta açılmaz', () async {
       final container = containerOf();
       fill(container);
       auth.service.failNext(AuthError.userDisabled);
       feedback.nextDialogResult = true;
 
       expect(await vmOf(container).submit(), LoginOutcome.suspended);
-      expect(launcher.opened, [AppConstants.supportMailUri]);
+      expect(feedback.dialogs, [DialogId.dlg01, DialogId.dlg32]);
+      expect(launcher.opened, isEmpty);
     });
 
     test('oturum kapatılamazsa da DLG-01 gösterilir (günlüğe düşer)', () async {

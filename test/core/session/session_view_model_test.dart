@@ -1318,10 +1318,14 @@ void main() {
       expect(launcher().opened, isEmpty);
     });
 
-    test('"Destekle iletişime geç" destek adresine e-posta açar', () async {
+    test('"Destekle iletişime geç": dış bağlantı onayı (DLG-32) verilince '
+        'destek adresine e-posta açar', () async {
       final container = await resolvedSuspended();
-      feedback().nextDialogResult = true;
+      feedback()
+        ..nextDialogResult = true
+        ..dialogResults[DialogId.dlg32] = true;
       await notifierOf(container).showPendingSuspendedNotice();
+      expect(feedback().dialogs, [DialogId.dlg01, DialogId.dlg32]);
       expect(launcher().opened, [AppConstants.supportMailUri]);
     });
 

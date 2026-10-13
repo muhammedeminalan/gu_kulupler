@@ -1,9 +1,9 @@
 // DLG-01 · Hesabın askıya alındı — katalog kaydı + `SuspendedAccountMixin`:
 // çizim (ikon `danger`, birincil düğme olağan), anahtarlar (`DLG-01.support`,
-// `DLG-01.ok`, `DLG-01.scrim`), sonuçlar ve "Destekle iletişime geç" →
-// destek e-postası (`UrlLauncherService`). Referans:
-// design/reference-shots/dialogs/DLG-01__light.webp, __dark.webp; prototip
-// dialogs.js:18.
+// `DLG-01.ok`, `DLG-01.scrim`), sonuçlar ve "Destekle iletişime geç" → dış
+// bağlantı onayı (DLG-32) → destek e-postası (`UrlLauncherService`; T-16).
+// Referans: design/reference-shots/dialogs/DLG-01__light.webp, __dark.webp;
+// prototip dialogs.js:19.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -36,6 +36,9 @@ final Uri _supportMail = Uri(
 );
 
 Key _key(String action) => FeedbackKeys.of(DialogId.dlg01.designId, action);
+
+/// Dış bağlantı onayının (DLG-32) düğme anahtarı.
+Key _linkKey(String action) => FeedbackKeys.of(DialogId.dlg32.designId, action);
 
 void main() {
   group('DLG-01 · Hesabın askıya alındı · katalog kaydı', () {
@@ -184,8 +187,9 @@ void main() {
       }
     });
 
-    testWidgets('uçtan uca: mixin dialogu açar; "Destekle iletişime geç" '
-        'destek e-postasını açar ve dialog kapanır', (tester) async {
+    testWidgets('uçtan uca: mixin dialogu açar; "Destekle iletişime geç" → '
+        'DLG-01 kapanır, dış bağlantı onayı (DLG-32) destek adresini '
+        'gösterir; "Aç" e-postayı açar', (tester) async {
       await pump(tester);
       // `pumpApp` fake'leri kaydetti: geri bildirimi gerçek servisle değiştir.
       await GetIt.I.unregister<FeedbackService>();
@@ -203,9 +207,42 @@ void main() {
       await tester.tap(find.byKey(_key('support')));
       await tester.pumpAndSettle();
 
+      // DLG-01 kapandı; yerinde dış bağlantı onayı var, adres henüz açılmadı.
+      final l10n = tester.l10nFor(const Locale('tr'));
+      expect(find.text(l10n.dlg01Title), findsNothing);
+      expect(find.text(l10n.dlg32Title), findsOneWidget);
+      expect(find.text('mailto:${AppConstants.supportEmail}'), findsOneWidget);
+      expect(launcher.opened, isEmpty);
+      expect(opened, isNull);
+
+      await tester.tap(find.byKey(_linkKey('open')));
+      await tester.pumpAndSettle();
+
       expect(find.byType(GuDialogFrame), findsNothing);
       expect(launcher.opened, [_supportMail]);
       expect(opened, isTrue);
+    });
+
+    testWidgets('uçtan uca: dış bağlantı onayında "Vazgeç" → e-posta '
+        'açılmaz, sonuç false', (tester) async {
+      await pump(tester);
+      await GetIt.I.unregister<FeedbackService>();
+      GetIt.I.registerSingleton<FeedbackService>(service);
+      final launcher = GetIt.I<UrlLauncherService>() as FakeUrlLauncherService;
+
+      bool? opened;
+      unawaited(
+        _Notifier().showSuspendedAccountDialog().then((v) => opened = v),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(_key('support')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(_linkKey('cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GuDialogFrame), findsNothing);
+      expect(launcher.opened, isEmpty);
+      expect(opened, isFalse);
     });
   });
 
@@ -229,18 +266,44 @@ void main() {
       expect(feedback.dialogParams.single, isEmpty);
     });
 
-    test('destek seçilirse (true) destek e-postası açılır', () async {
-      feedback.nextDialogResult = true;
+    test('destek seçilirse (true) dış bağlantı onayı (DLG-32) sorulur; '
+        'onaylanırsa destek e-postası açılır', () async {
+      feedback
+        ..nextDialogResult = true
+        ..dialogResults[DialogId.dlg32] = true;
 
       expect(await _Notifier().showSuspendedAccountDialog(), isTrue);
 
+      expect(feedback.dialogs, [DialogId.dlg01, DialogId.dlg32]);
+      // DLG-32 özel gövdeyle (adres) açılır.
+      expect(feedback.lastDialogBuilder, isNotNull);
       expect(launcher.opened, [_supportMail]);
       expect(launcher.calls, [
         FakeCall('open', [_supportMail]),
       ]);
     });
 
-    test('Tamam (false) ve scrim / geri (null) bağlantı açmaz', () async {
+    test('destek seçilir ama dış bağlantı onayı verilmezse (Vazgeç / scrim) '
+        'e-posta açılmaz', () async {
+      for (final confirm in [false, null]) {
+        feedback
+          ..nextDialogResult = true
+          ..dialogResults[DialogId.dlg32] = confirm;
+
+        expect(await _Notifier().showSuspendedAccountDialog(), isFalse);
+      }
+      expect(feedback.dialogs, [
+        DialogId.dlg01,
+        DialogId.dlg32,
+        DialogId.dlg01,
+        DialogId.dlg32,
+      ]);
+      expect(launcher.opened, isEmpty);
+    });
+
+    test('Tamam (false) ve scrim / geri (null) bağlantı açmaz, onay '
+        'sorulmaz', () async {
+      feedback.dialogResults[DialogId.dlg32] = true;
       for (final result in [false, null]) {
         feedback.nextDialogResult = result;
 
@@ -251,7 +314,9 @@ void main() {
     });
 
     test('cihazda e-posta uygulaması yoksa false döner (fırlatmaz)', () async {
-      feedback.nextDialogResult = true;
+      feedback
+        ..nextDialogResult = true
+        ..dialogResults[DialogId.dlg32] = true;
       launcher.canOpen = false;
 
       expect(await _Notifier().showSuspendedAccountDialog(), isFalse);

@@ -4,6 +4,8 @@
 // T-43'te 57 rota sınıfı / 51 ekran tamamlanır.
 // T-13 · `RegisterRoute` (`/login/register`) ve `LegalRoute` (`/legal/:tip`).
 // T-14 · `ResetPasswordRoute` (`/login/reset`).
+// T-16 · `ClubDetailRoute` (`/clubs/:clubId`), `ClubAppliedRoute`
+// (`…/applied`), `ClubApplicationRoute` (`…/application`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -17,7 +19,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14).
+/// T-14 + T-16).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -36,11 +38,21 @@ const Map<GoRouteData, String> _routes = {
   SetupProfileRoute(): '/setup-profile',
   // Kabuk: beş sekme kökü
   ClubsRoute(): '/clubs',
+  // Kulüpler dalı (T-16: CLB-03, CLB-04, CLB-05)
+  ClubDetailRoute(clubId: _clubId): '/clubs/:clubId',
+  ClubAppliedRoute(clubId: _clubId): '/clubs/:clubId/applied',
+  ClubApplicationRoute(clubId: _clubId): '/clubs/:clubId/application',
   EventsRoute(): '/events',
   NotificationsRoute(): '/notifications',
   AdminRoute(): '/admin',
   ProfileRoute(): '/profile',
 };
+
+/// Parametreli kulüp rotalarının örnek kimliği.
+const String _clubId = 'c01';
+
+/// Yol parametresi işareti (`/clubs/:clubId`).
+const String _parameterMark = ':';
 
 /// Tasarım kimliği olmayan rotalar (CD-69).
 const Set<String> _idlessPaths = {'/debug'};
@@ -60,26 +72,37 @@ Set<String> _collectPaths(List<RouteBase> routes, [String parent = '']) {
 }
 
 /// navigation.md §2 tablolarından sınıf adı → Flutter yolu (sorgusuz).
+///
+/// Kulüp yollarındaki `:id` parçası `:clubId` olarak okunur — navigation.md
+/// §2.2 notu: "`:id` ve `:clubId` aynı kulüp kimliğidir (yol parametresi adı
+/// `clubId` olarak birleştirilir)".
 Map<String, String> _documentedPaths() {
   final row = RegExp(r'^\|[^|]*\|\s*`([^`]+)`[^|]*\|\s*`(\w+Route)`\s*\|');
   return {
     for (final line in readText('docs/navigation.md').split('\n'))
       if (row.firstMatch(line) case final match?)
-        match.group(2)!: match.group(1)!.split('?').first,
+        match.group(2)!: match
+            .group(1)!
+            .split('?')
+            .first
+            .replaceFirst(
+              RegExp(r'^/clubs/:id(?=/|$)'),
+              '/clubs/:${RouteAccessTable.clubIdParameter}',
+            ),
   };
 }
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 17 yol (T-11: 14, T-13: +2, '
-        'T-14: +1)', () {
+    test('router yolları = kapsamdaki 20 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(17));
+      expect(_routes, hasLength(20));
     });
 
     test('rota sınıfının `location` değeri kilitli yoldur', () {
       for (final MapEntry(key: route, value: path) in _routes.entries) {
-        if (route is LegalRoute) continue; // parametreli: aşağıda
+        if (path.contains(_parameterMark)) continue; // parametreli: aşağıda
         expect(route.location, path, reason: '${route.runtimeType}');
       }
     });
@@ -113,6 +136,53 @@ void main() {
           RouteAccessTable.legalPattern,
         );
         expect(RouteParamGuard.check(fromRegister), isNull);
+      }
+    });
+
+    test('T-16 · kulüp rotaları: `clubId` yol parametresidir; her rotanın '
+        'yolu guard tablosunda aktif oturum (A) ister', () {
+      const locations = <GoRouteData, String>{
+        ClubDetailRoute(clubId: _clubId): '/clubs/c01',
+        ClubAppliedRoute(clubId: _clubId): '/clubs/c01/applied',
+        ClubApplicationRoute(clubId: _clubId): '/clubs/c01/application',
+      };
+      for (final MapEntry(key: route, value: location) in locations.entries) {
+        final name = '${route.runtimeType}';
+        expect(route.location, location, reason: name);
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, _routes[route], reason: name);
+        expect(match.access, RouteAccess.active, reason: name);
+        expect(match.clubId, _clubId, reason: name);
+        expect(RouteParamGuard.check(Uri.parse(location)), isNull);
+      }
+      expect(ClubDetailRoute.segment, ':${RouteAccessTable.clubIdParameter}');
+      expect(ClubAppliedRoute.segment, 'applied');
+      expect(ClubApplicationRoute.segment, 'application');
+      // Kimlik yolda kodlanır (ayırıcı içeren değer yolu bölmez).
+      expect(
+        const ClubDetailRoute(clubId: 'a/b c').location,
+        '/clubs/a%2Fb%20c',
+      );
+    });
+
+    test('T-16 · ClubDetailRoute: `tab` sorgu parametresidir; değerler '
+        'ekrandaki sekme sırasıyla `ClubDetailTab` adlarıdır', () {
+      expect(ClubDetailTab.values.map((tab) => tab.name), [
+        'about',
+        'events',
+        'posts',
+        'members',
+      ]);
+      expect(const ClubDetailRoute(clubId: _clubId).tab, isNull);
+      for (final tab in ClubDetailTab.values) {
+        final location = Uri.parse(
+          ClubDetailRoute(clubId: _clubId, tab: tab).location,
+        );
+        expect(location.toString(), '/clubs/c01?tab=${tab.name}');
+        // Sorgu yolu ve guard'ı değiştirmez.
+        final match = RouteAccessTable.match(location);
+        expect(match.pattern, '/clubs/:clubId');
+        expect(match.access, RouteAccess.active);
       }
     });
 

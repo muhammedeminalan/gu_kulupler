@@ -5,8 +5,8 @@ rules_version = '2';
 //
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
-// (`isManagerOf`, `eventClubId` — firestore.get/exists) ilk kullanan task'ta eklenir (T-16 / T-22).
-// Açılan yollar: users/ (T-14).
+// (`isManagerOf`, `eventClubId` — firestore.get/exists) ilk kullanan task'ta eklenir (T-36 / T-22).
+// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36).
 //
 // Her açılan `create` kuralının taşıdığı kalıp (CD-135 madde 6 ve 8; storage.test.js yapı testleri):
 //   kimlik (`signedInVerified()` + yol sahibi/rolü) && `isNewFile()` && `imageOk()` && dosya adı deseni
@@ -106,9 +106,17 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    // clubs/{clubId}/{file} — logo ve kapak · T-16 (T-36)
+    // clubs/{clubId}/{file} — logo ve kapak · T-16 (okuma) · T-36 (yükleme)
+    //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`) — kulüp belgesi (`clubs.logoPath`,
+    //    `clubs.coverPath`) doğrulanmış herkese açıktır; görseller de öyle (CLB-01, CLB-03). Klasör
+    //    listelenemez: eski logo / kapak silinmediği için (D-10) liste, kulübün değiştirdiği görselleri
+    //    de açardı; uygulama yalnızca belgedeki yolu okur. Askıdaki hesabın okuması açık kalır (users/
+    //    ile aynı).
+    //  - Yükleme: KAPALI. Kulüp ayarları (MGT-09) T-36'da açar: `isManagerOf(clubId) || isSuperAdmin()`
+    //    + users/ ile aynı kalıp (`isNewFile()`, `imageOk()`, `fileNameOk(file)`, `noCustomMetadata()`).
     match /clubs/{clubId}/{file} {
-      allow read: if false;
+      allow get: if signedInVerified();
+      allow list: if false;
       allow create: if false;
       allow update, delete: if false;
     }

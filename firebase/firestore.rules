@@ -351,7 +351,9 @@ service cloud.firestore {
       }
 
       // `requireNote` kulübünde not, aynı batch'te yazılan `private/contact.note`'tan okunur (CD-137).
-      function noteGiven(club, contact) { return club.requireNote == false || contact.note.size() > 0; }
+      // Kırpılmış metin ölçülür: yalnızca boşluktan oluşan not "verilmiş" sayılmaz (istemci
+      // `FieldValidators.applicationNote` ile aynı; CD-138 madde 3).
+      function noteGiven(club, contact) { return club.requireNote == false || contact.note.trim().size() > 0; }
 
       // C ortak biçimi (M1 / M2): yeni belge, sahibi oturumdur, kimlik `clubId_userId` ile birebirdir.
       // Süper admin başvuramaz / katılamaz (domain-model §3 `apply`: yalnızca öğrenci; RolePolicy ile aynı).
@@ -465,9 +467,9 @@ service cloud.firestore {
       // 5 · memberships/{id}/private/contact — T-15 (not düzenleme T-16, anonimleştirme T-29) · rules-spec §3.4
       // Alanlar: `email`, `emailLower`, `note` (başvuru notu — CD-137) + BaseFields. "Sahibi" = üst üyelik
       // belgesinin `userId`'si. Yazma yolları (T-15): apply / joinInstant — M1 / M2'de C, M3 / M4'te U(a)
-      // (belge yoksa C). Yönetici, danışman ve süper admin YAZAMAZ.
-      // Kapalı kalan dallar: U(b) not düzenleme `canEditNote()` (üyelik önce ve sonra `pending` — T-16) ·
-      // anonimleştirme (T-29) · collectionGroup('private') (T-37).
+      // (belge yoksa C); T-16: updateApplicationNote — U(b) (bekleyen başvurunun notu). Yönetici, danışman
+      // ve süper admin YAZAMAZ.
+      // Kapalı kalan dallar: anonimleştirme (T-29) · collectionGroup('private') (T-37).
       match /private/{docId} {
         function membershipPath() { return /databases/$(database)/documents/memberships/$(membershipId); }
 
@@ -511,10 +513,27 @@ service cloud.firestore {
               && request.resource.data.note.size() <= 300;   // limit: applicationNoteMax
         }
 
+        // U(b) — not düzenleme (T-16; CLB-05 → MembershipRepository.updateApplicationNote): bekleyen
+        // başvurunun sahibi notunu değiştirir. Yalnızca `note` (+ `updatedAt`); üyelik belgesi YAZILMAZ —
+        // önce de sonra da `pending`'dir (onaylanmış / reddedilmiş / iptal edilmiş başvurunun notu değişmez;
+        // U(a)'dan ayrışır: orada önceki durum `pending` değildir). Not isteyen kulüpte not boşaltılamaz
+        // (M1 / M3 / M4'teki `noteGiven` koşulunun aynısı). `email` / `emailLower` değişmez.
+        // 3 erişim yolu: users/{uid} · üyelik (get + getAfter) · kulüp.
+        function canEditNote() {
+          let m = get(membershipPath()).data;
+          return activeUser() && docId == 'contact'
+              && m.userId == uid() && m.status == 'pending'
+              && getAfter(membershipPath()).data.status == 'pending'
+              && touches(['note'])
+              && request.resource.data.note is string
+              && request.resource.data.note.size() <= 300   // limit: applicationNoteMax
+              && noteGiven(get(clubPath(m.clubId)).data, request.resource.data);
+        }
+
         allow get: if canReadContact();
         allow list: if false;
         allow create: if canCreateContact();
-        allow update: if canRewriteNote();
+        allow update: if canRewriteNote() || canEditNote();
         allow delete: if false;
       }
     }

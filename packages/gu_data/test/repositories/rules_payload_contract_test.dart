@@ -24,6 +24,14 @@
 // `{"@increment": n}`, günlük belgesinin üretilen kimliği `@autoId` olarak
 // yazılır.
 //
+// T-16: `MembershipRepository.updateApplicationNote` senaryosu aynı
+// `t15.scenarios` listesindedir (üyelik + kulüp okunur, yalnızca
+// `private/contact.note` yazılır — rules-spec §3.4 U(b)). Ekranların gerçek
+// çağrıları da sözleşmededir: CLB-03 kulüp şikayeti
+// (`ReportRepository.report · kulüp`, hedef = kulübün kendisi) ve SHT-07'nin
+// üç `updateClubSettings` yazımı (tümünü sessize al / sessizi kaldır / tek
+// tür) öykü adımlarında (`steps`).
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:typed_data';
@@ -427,6 +435,32 @@ void main() {
               clubId,
               const ClubNotificationPrefsModel(events: false, muted: true),
             ),
+        // T-16 · SHT-07'nin gerçek yazımları
+        // (`ClubNotificationPrefsViewModel.toggle`): tümünü sessize al →
+        // üç tür kapanır; sessizi kaldır → üçü açılır; tek tür.
+        'SettingsRepository.updateClubSettings · SHT-07 tümünü sessize al':
+            () => settings.updateClubSettings(
+              uid,
+              clubId,
+              const ClubNotificationPrefsModel(
+                announcements: false,
+                events: false,
+                posts: false,
+                muted: true,
+              ),
+            ),
+        'SettingsRepository.updateClubSettings · SHT-07 sessizi kaldır': () =>
+            settings.updateClubSettings(
+              uid,
+              clubId,
+              const ClubNotificationPrefsModel(),
+            ),
+        'SettingsRepository.updateClubSettings · SHT-07 tek tür '
+            '(duyurular kapalı)': () => settings.updateClubSettings(
+          uid,
+          clubId,
+          const ClubNotificationPrefsModel(announcements: false),
+        ),
         // Kayıt tutan çiftte belge yoktur: `getSettings` varsayılanı yazar.
         'SettingsRepository.getSettings · belge yok': () =>
             settings.getSettings(uid),
@@ -507,6 +541,7 @@ void main() {
     );
     const application = 'Kulübe katılmak istiyorum.';
     const reapplication = 'Yeniden başvuruyorum.';
+    const edited = 'Güncel not.';
     const blocked = 'u_member';
     const ReportTarget post = (
       type: ReportTargetType.post,
@@ -551,6 +586,12 @@ void main() {
               apply(reapplication),
           'MembershipRepository.cancelApplication · M7': () =>
               memberships.cancelApplication(clubId: clubId, userId: uid),
+          'MembershipRepository.updateApplicationNote · not düzenleme '
+              '(pending)': () => memberships.updateApplicationNote(
+            clubId: clubId,
+            userId: uid,
+            note: edited,
+          ),
           'MembershipRepository.leave · M8': () =>
               memberships.leave(clubId: clubId, userId: uid),
           'MembershipRepository.readContact · üyelik yok': () =>
@@ -566,6 +607,18 @@ void main() {
             reason: ReportReason.harassment,
             note: 'Rahatsız edici mesajlar.',
           ),
+          // T-16 · CLB-03 "Bu kulübü şikayet et" (SHT-10, neden "Diğer").
+          'ReportRepository.report · kulüp (CLB-03 → SHT-10)': () =>
+              reports.report(
+                reporterId: uid,
+                target: (
+                  type: ReportTargetType.club,
+                  id: clubId,
+                  clubId: clubId,
+                ),
+                reason: ReportReason.other,
+                note: 'Kulüp sayfasındaki bilgiler yanıltıcı.',
+              ),
           'ReportRepository.hasReported · şikayet yok': () =>
               reports.hasReported(reporterId: uid, target: post),
           'BlockRepository.block · yeni engel': () =>

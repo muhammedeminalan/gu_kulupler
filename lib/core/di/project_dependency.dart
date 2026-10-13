@@ -15,6 +15,7 @@ import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -34,6 +35,7 @@ final class ProjectDependencyOverrides {
     this.connectivityService,
     this.appInfoService,
     this.urlLauncherService,
+    this.shareService,
     this.permissionService,
     this.imagePickerService,
     this.appPreferencesStore,
@@ -65,6 +67,9 @@ final class ProjectDependencyOverrides {
 
   /// `UrlLauncherService` yerine.
   final UrlLauncherService? urlLauncherService;
+
+  /// `ShareService` yerine.
+  final ShareService? shareService;
 
   /// `PermissionService` yerine.
   final PermissionService? permissionService;
@@ -197,6 +202,10 @@ abstract final class ProjectDependency {
       ..registerSingleton<AppInfoService>(appInfoService)
       ..registerSingleton<UrlLauncherService>(
         overrides.urlLauncherService ?? const DeviceUrlLauncherService(),
+      )
+      // T-16 · sistem paylaşım sayfası
+      ..registerSingleton<ShareService>(
+        overrides.shareService ?? const DeviceShareService(),
       )
       // T-14 · izinler ve görsel seçimi
       ..registerSingleton<PermissionService>(

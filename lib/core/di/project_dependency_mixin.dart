@@ -7,6 +7,7 @@ import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 /// ViewModel'lerin GetIt'teki servis ve repository'lere **tek** erişim yolu
@@ -75,8 +76,14 @@ mixin ProjectDependencyMixin {
   /// Kurulu uygulamanın sürüm / derleme bilgisi.
   AppInfoService get appInfoService => GetIt.I<AppInfoService>();
 
-  /// Dış bağlantılar: `mailto:`, web, mağaza (T-13).
+  /// Dış bağlantılar: `mailto:`, web, mağaza (T-13). Kullanıcının dokunduğu
+  /// bağlantılar doğrudan değil `ExternalLinkMixin.openExternalLink` ile
+  /// (DLG-32 onayı) açılır.
   UrlLauncherService get urlLauncherService => GetIt.I<UrlLauncherService>();
+
+  /// Sistem paylaşım sayfası — bağlantı (SHT-15), dosya (SHT-14) — ve
+  /// panoya kopyalama (TST-08, TST-35) (T-16).
+  ShareService get shareService => GetIt.I<ShareService>();
 
   /// Kamera / bildirim izni ve "Ayarlara git" (T-14). İzin ön açıklamaları
   /// (DLG-03, DLG-04, DLG-05) için `PermissionPromptMixin` kullanılır.
