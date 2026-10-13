@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
-import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
+import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// CLB-03 "Kulüp" ekranının başlığı — prototip `screens-clubs.js:86–92`:
@@ -91,27 +91,6 @@ class ClubHeader extends StatelessWidget {
   /// Kulüp ikonu kayıtta yoksa amblemde çizilen ikon (kapak şablonunun
   /// gömülü ikonu — CD-124).
   static const GuIcons fallbackIcon = GuIcons.sparkles;
-
-  /// [role] rolünün rozeti.
-  static GuRoleBadge roleBadge(AppLocalizations l10n, ClubRole role) =>
-      switch (role) {
-        ClubRole.president => GuRoleBadge(
-          kind: GuRoleBadgeKind.president,
-          label: l10n.rolePresident,
-        ),
-        ClubRole.board => GuRoleBadge(
-          kind: GuRoleBadgeKind.board,
-          label: l10n.roleBoard,
-        ),
-        ClubRole.advisor => GuRoleBadge(
-          kind: GuRoleBadgeKind.advisor,
-          label: l10n.roleAdvisor,
-        ),
-        ClubRole.member => GuRoleBadge(
-          kind: GuRoleBadgeKind.member,
-          label: l10n.roleMember,
-        ),
-      };
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +206,7 @@ class ClubHeader extends StatelessWidget {
                       kind: GuBadgeKind.success,
                       icon: GuIcons.sparkles,
                     ),
-                  if (role != null) roleBadge(l10n, role),
+                  if (role != null) MemberRow.roleBadge(l10n, role),
                 ],
               ),
               GuTapTarget(

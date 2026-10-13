@@ -34,9 +34,10 @@ import 'package:gu_ui/gu_ui.dart';
 /// * "Katıl": ViewModel hangi yolun gerektiğini söyler — SHT-05 (başvuru)
 ///   → CLB-04, bekleme → CLB-05, onaysız kulüp → doğrudan katılım (TST-34).
 /// * Kulüp yoksa / silinmişse SYS-04'e gidilir.
-/// * Hedefi henüz yazılmamış girişler (CLB-06, CLB-07, MGT-01, MGT-05,
-///   MGT-09, SHT-25) anahtarlarıyla yerindedir; hedef ekranın task'ında
-///   bağlanır (bağlama borçları W-11…W-17).
+/// * Kişi satırları CLB-07'ye, "Tüm üyeler" CLB-06'ya gider (`go`).
+/// * Hedefi henüz yazılmamış girişler (MGT-01, MGT-05, MGT-09, SHT-25)
+///   anahtarlarıyla yerindedir; hedef ekranın task'ında bağlanır (bağlama
+///   borçları W-12…W-17).
 mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// Sayfanın kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -227,16 +228,13 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// Web sitesi satırı (`CLB-03.about.link.web`).
   void openWeb() => unawaited(viewModel.openWeb());
 
-  /// Kişi satırı (`CLB-03.about.person.<userId>`) → CLB-07.
-  void openPerson(String userId) {
-    // TODO(T-18): `UserProfileRoute(userId: userId, clubId: widget.clubId)`
-    // (CLB-07).
-  }
+  /// Kişi satırı (`CLB-03.about.person.<userId>`, `CLB-03.member.<userId>`)
+  /// → CLB-07; kulüp bağlamı `?clubId=` ile taşınır.
+  void openPerson(String userId) =>
+      ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
 
   /// "Tüm üyeler" (`CLB-03.allMembers`, SHT-06 "Üyeler") → CLB-06.
-  void openAllMembers() {
-    // TODO(T-18): `ClubMembersRoute(clubId: widget.clubId)` (CLB-06; W-11).
-  }
+  void openAllMembers() => ClubMembersRoute(clubId: widget.clubId).go(context);
 
   /// "Yönetim" / "Yönetimi görüntüle" (`CLB-03.openManage`) → MGT-01.
   void openManage() {

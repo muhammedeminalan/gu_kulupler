@@ -8,6 +8,8 @@
 // (`…/applied`), `ClubApplicationRoute` (`…/application`).
 // T-17 · `ClubsSearchRoute` (`/clubs/search`), `EventsSearchRoute`
 // (`/events/search`) — aynı `SearchView`, başlangıç sekmesi farklı.
+// T-18 · `ClubMembersRoute` (`/clubs/:clubId/members`),
+// `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -21,7 +23,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17).
+/// T-14 + T-16 + T-17 + T-18).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -40,11 +42,14 @@ const Map<GoRouteData, String> _routes = {
   SetupProfileRoute(): '/setup-profile',
   // Kabuk: beş sekme kökü
   ClubsRoute(): '/clubs',
-  // Kulüpler dalı (T-17: CLB-02; T-16: CLB-03, CLB-04, CLB-05)
+  // Kulüpler dalı (T-17: CLB-02; T-18: CLB-07, CLB-06; T-16: CLB-03,
+  // CLB-04, CLB-05)
   ClubsSearchRoute(): '/clubs/search',
+  ClubUserProfileRoute(userId: _userId): '/clubs/user/:userId',
   ClubDetailRoute(clubId: _clubId): '/clubs/:clubId',
   ClubAppliedRoute(clubId: _clubId): '/clubs/:clubId/applied',
   ClubApplicationRoute(clubId: _clubId): '/clubs/:clubId/application',
+  ClubMembersRoute(clubId: _clubId): '/clubs/:clubId/members',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak)
   EventsSearchRoute(): '/events/search',
@@ -55,6 +60,9 @@ const Map<GoRouteData, String> _routes = {
 
 /// Parametreli kulüp rotalarının örnek kimliği.
 const String _clubId = 'c01';
+
+/// Parametreli kullanıcı rotalarının örnek kimliği.
+const String _userId = 'u01';
 
 /// Yol parametresi işareti (`/clubs/:clubId`).
 const String _parameterMark = ':';
@@ -99,10 +107,38 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 22 yol (T-11: 14, T-13: +2, '
-        'T-14: +1, T-16: +3, T-17: +2)', () {
+    test('router yolları = kapsamdaki 24 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3, T-17: +2, T-18: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(22));
+      expect(_routes, hasLength(24));
+    });
+
+    test('T-18 · üye listesi ve profil rotaları: `user` parçası `:clubId` '
+        'kalıbına düşmez; `clubId` profil rotasında sorgu parametresidir', () {
+      const members = ClubMembersRoute(clubId: _clubId);
+      expect(members.location, '/clubs/c01/members');
+      final membersMatch = RouteAccessTable.match(Uri.parse(members.location));
+      expect(membersMatch.pattern, '/clubs/:clubId/members');
+      expect(membersMatch.access, RouteAccess.member);
+      expect(membersMatch.clubId, _clubId);
+      expect(ClubMembersRoute.segment, 'members');
+
+      const profile = ClubUserProfileRoute(userId: _userId);
+      expect(profile.location, '/clubs/user/u01');
+      expect(
+        const ClubUserProfileRoute(userId: _userId, clubId: _clubId).location,
+        '/clubs/user/u01?clubId=c01',
+      );
+      for (final location in [
+        '/clubs/user/u01',
+        '/clubs/user/u01?clubId=c01',
+      ]) {
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, '/clubs/user/:userId', reason: location);
+        expect(match.access, RouteAccess.active, reason: location);
+        expect(match.clubId, isNull, reason: location);
+      }
+      expect(ClubUserProfileRoute.segment, 'user/:userId');
     });
 
     test('T-17 · arama rotaları: sabit `search` parçası `:clubId` kalıbına '

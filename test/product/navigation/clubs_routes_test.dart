@@ -4,6 +4,9 @@
 // aktarılır, yığın rota ağacından kurulur (geri ebeveyne döner), alt çubuk
 // derin ekranda gizlenir, guard `A` (oturumsuz → giriş), geçiş platform
 // varsayılanıdır (D-06).
+// T-18 · CLB-06 `/clubs/:clubId/members` (guard `üye`), CLB-07
+// `/clubs/user/:userId?clubId=` (guard `A`; `user` parçası `:clubId`
+// kalıbından önce eşleşir).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -12,19 +15,23 @@ import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/features/clubs/view/club_application_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
+import 'package:gu_kulupler/features/clubs/view/club_members_view.dart';
+import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_club_repository.dart';
 import '../../fakes/fake_session_states.dart';
+import '../../fakes/fake_user_repository.dart';
 import '../../fakes/test_router.dart';
 import '../../fixtures/club_model_fixtures.dart';
 
-/// Gerçek rota ağacını çizer, demo veriden kulüpleri sahte repository'ye
-/// yazar ve [location] yoluna gider. Kulüp ekranları kulübü açılışta okur;
-/// bulunamayan kulüp SYS-04'e yönlenir — bu yüzden kulüpler yola gitmeden
-/// önce yazılır (fake'ler `pump` sırasında sıfırlanır).
+/// Gerçek rota ağacını çizer, demo veriden kulüpleri (ve profil rotasının
+/// kullanıcılarını) sahte repository'ye yazar ve [location] yoluna gider.
+/// Kulüp ekranları kulübü, CLB-07 kullanıcıyı açılışta okur; bulunamayan
+/// kulüp / kullanıcı SYS-04'e yönlenir — bu yüzden veri yola gitmeden önce
+/// yazılır (fake'ler `pump` sırasında sıfırlanır).
 Future<TestRouter> _pump(
   WidgetTester tester, {
   SessionState session = FakeSessionStates.active,
@@ -35,6 +42,8 @@ Future<TestRouter> _pump(
   for (final id in const ['c01', 'c03', 'c06', 'c07', 'c09']) {
     clubs.clubs[id] = ClubModelFixtures.byId(id);
   }
+  final users = GetIt.I<UserRepository>() as FakeUserRepository;
+  const ['u01', 'u02'].forEach(users.putActive);
   if (location != null) await app.go(location);
   return app;
 }
@@ -43,6 +52,46 @@ ClubDetailView _detail(WidgetTester tester) =>
     tester.widget<ClubDetailView>(find.byType(ClubDetailView));
 
 void main() {
+  group('T-18 · üye listesi ve profil rotaları', () {
+    testWidgets('/clubs/:clubId/members → ClubMembersView(clubId); üye '
+        'olmayan kulüp sayfasına yönlenir', (tester) async {
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeMember('c01'),
+        location: '/clubs/c01/members',
+      );
+      expect(app.location, '/clubs/c01/members');
+      expect(
+        tester.widget<ClubMembersView>(find.byType(ClubMembersView)).clubId,
+        'c01',
+      );
+
+      await app.go('/clubs/c03/members');
+      expect(app.location, '/clubs/c03');
+      expect(find.byType(ClubMembersView), findsNothing);
+    });
+
+    testWidgets('/clubs/user/:userId?clubId= → UserProfileView(userId, '
+        'clubId); `user` kulüp kimliği sayılmaz', (tester) async {
+      final app = await _pump(tester, location: '/clubs/user/u01');
+      UserProfileView profile() =>
+          tester.widget<UserProfileView>(find.byType(UserProfileView));
+      expect(app.location, '/clubs/user/u01');
+      expect(find.byType(ClubDetailView), findsNothing);
+      expect(profile().userId, 'u01');
+      expect(profile().clubId, isNull);
+
+      const ClubUserProfileRoute(
+        userId: 'u02',
+        clubId: 'c03',
+      ).go(tester.element(find.byType(UserProfileView)));
+      await tester.pumpAndSettle();
+      expect(app.location, '/clubs/user/u02?clubId=c03');
+      expect(profile().userId, 'u02');
+      expect(profile().clubId, 'c03');
+    });
+  });
+
   group('T-16 · kulüp rotaları · eşleşme', () {
     testWidgets('/clubs/:clubId → ClubDetailView(clubId); sekme verilmezse '
         '`tab` null', (tester) async {

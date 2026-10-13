@@ -1,12 +1,14 @@
 // DLG-07 · İsteği iptal et? · DLG-08 · Kulüpten ayrıl? · DLG-09 · Ayrılamazsın
-// · DLG-12 · Şikayetin alındı — katalog kayıtları ve gösterim: çizim (ikon,
-// ikon kutusu tonu, başlık, kulüp adlı gövde, düğme türleri), anahtarlar
-// (`DLG-07.confirm` / `.cancel`, `DLG-08.confirm` / `.cancel`,
-// `DLG-09.transfer` / `.ok`, `DLG-12.ok` / `.block`, `.scrim`), sonuçlar,
+// · DLG-12 · Şikayetin alındı · DLG-13 · {name} engellensin mi? — katalog
+// kayıtları ve gösterim: çizim (ikon, ikon kutusu tonu, başlık, kulüp /
+// kullanıcı adlı metin, düğme türleri), anahtarlar (`DLG-07.confirm` /
+// `.cancel`, `DLG-08.confirm` / `.cancel`, `DLG-09.transfer` / `.ok`,
+// `DLG-12.ok` / `.block`, `DLG-13.confirm` / `.cancel`, `.scrim`), sonuçlar,
 // DLG-12'nin koşullu "… kullanıcısını da engelle" düğmesi, dar ekran + büyük
 // metin taşması ve golden.
-// Referans: design/reference-shots/dialogs/DLG-{07,08,09,12}__{light,dark}.webp;
-// prototip dialogs.js:22, :24, :25, :28.
+// Referans:
+// design/reference-shots/dialogs/DLG-{07,08,09,12,13}__{light,dark}.webp;
+// prototip dialogs.js:22, :24, :25, :28, :29.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
@@ -84,10 +86,22 @@ final List<_Expected> _dialogs = [
     primaryAction: 'ok',
     secondaryAction: 'block',
   ),
+  (
+    id: DialogId.dlg13,
+    icon: GuIcons.ban,
+    danger: true,
+    params: const {DialogParamKeys.name: _user},
+    title: (l10n) => l10n.dlg13Title(_user),
+    body: (l10n) => l10n.dlg13Body,
+    primary: (l10n) => l10n.sht27Block,
+    secondary: (l10n) => l10n.commonGiveUp,
+    primaryAction: 'confirm',
+    secondaryAction: 'cancel',
+  ),
 ];
 
 void main() {
-  group('DLG-07 / DLG-08 / DLG-09 / DLG-12 · katalog kayıtları', () {
+  group('DLG-07 / DLG-08 / DLG-09 / DLG-12 / DLG-13 · katalog kayıtları', () {
     for (final expected in _dialogs) {
       final id = expected.id;
       test('${id.designId}: ikon, ton, metinler (TR + EN), anahtar sonekleri; '
@@ -125,6 +139,14 @@ void main() {
         expect(body(l10n, const {}), isNot(contains('{club}')));
         expect(body(l10n, const {DialogParamKeys.club: 42}), isNotEmpty);
       }
+    });
+
+    test('DLG-13 başlığı kullanıcı adını taşır; ad verilmezse boş kalır '
+        '(çökmez)', () {
+      final l10n = lookupAppLocalizations(const Locale('tr'));
+      final title = DialogCatalog.of(DialogId.dlg13)!.title;
+      expect(title(l10n, const {DialogParamKeys.name: _user}), contains(_user));
+      expect(title(l10n, const {}), isNot(contains('{name}')));
     });
 
     test('DLG-12 "… kullanıcısını da engelle": yalnızca ad verildiyse; boş ad '
@@ -166,7 +188,8 @@ void main() {
     });
   });
 
-  group('DLG-07 / DLG-08 / DLG-09 / DLG-12 · gösterim (FeedbackService)', () {
+  group('DLG-07 / DLG-08 / DLG-09 / DLG-12 / DLG-13 · gösterim '
+      '(FeedbackService)', () {
     for (final expected in _dialogs) {
       final id = expected.id;
       Key key(String action) => DialogHarness.keyOf(id, action);

@@ -206,14 +206,17 @@ void main() {
         expect(state.isFetching, isFalse);
         expect(state.managers, kManagers);
         expect(state.managers.first.role, ClubRole.president);
-        expect(state.memberPreview, hasLength(4));
+        expect(
+          state.memberPreview,
+          hasLength(ClubDetailState.memberPreviewLimit),
+        );
         expect(
           state.memberPreview.every((m) => m.status == MembershipStatus.active),
           isTrue,
         );
         expect(memberships.callsTo('listActiveMembers').single.args, [
           kClubId,
-          const PageRequest(limit: 4),
+          const PageRequest(limit: ClubDetailState.memberPreviewLimit),
           null,
         ]);
       });
@@ -281,7 +284,10 @@ void main() {
         expect(state.club, kClub);
         expect(state.isError, isFalse);
         expect(state.managers, isEmpty);
-        expect(state.memberPreview, hasLength(4));
+        expect(
+          state.memberPreview,
+          hasLength(ClubDetailState.memberPreviewLimit),
+        );
       },
     );
   });
@@ -304,7 +310,10 @@ void main() {
         expect(stateOf(container).membership, approved.memberships[kClubId]);
         await pumpEventQueue();
         expect(stateOf(container).managers, kManagers);
-        expect(stateOf(container).memberPreview, hasLength(4));
+        expect(
+          stateOf(container).memberPreview,
+          hasLength(ClubDetailState.memberPreviewLimit),
+        );
         expect(memberships.callsTo('listManagers'), hasLength(1));
         expect(memberships.callsTo('listActiveMembers'), hasLength(1));
       },

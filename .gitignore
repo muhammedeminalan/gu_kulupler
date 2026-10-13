@@ -91,3 +91,6 @@ firebase/.emulator-data/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Golden testi başarısız olunca Flutter'ın yazdığı karşılaştırma görüntüleri (geçici)
+**/failures/

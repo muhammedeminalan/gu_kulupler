@@ -20,6 +20,7 @@ CLB-03.openManage    # design/prototype/app/screens-clubs.js:108–109 — alt �
 CLB-03.createEvent   # design/prototype/app/screens-clubs.js:108 — alt çubuk yalnızca yönetici / süper adminde; yakalama ziyaretçi
 CLB-03.eventSeg.*    # design/prototype/app/screens-clubs.js:102 — "Yaklaşan / Geçmiş" dilimi yalnızca Etkinlikler sekmesinde (`tab === 'events'`); yakalama Hakkında sekmesi
 CLB-03.allMembers    # design/prototype/app/screens-clubs.js:106 — "Tüm üyeler" yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`); yakalama ziyaretçi, Hakkında sekmesi
+CLB-03.member.*      # design/prototype/app/cards.js:168 — üye önizleme satırı (`MemberRow`, ilk beş üye) yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`, screens-clubs.js:106); yakalama ziyaretçi, Hakkında sekmesi
 CLB-01.myClub.*      # design/prototype/app/cards.js:42 — "Kulüplerim" kartı yalnızca etkin üyeliği olan kullanıcıda (`mine.length`, screens-clubs.js:25); yakalama üyeliksiz kullanıcı (u_ayse → "İlk kulübünü bul")
 CLB-01.myClubsAll    # design/prototype/app/screens-clubs.js:25 — "Kulüplerim" şeridinin sonundaki "Tümü" kartı yalnızca etkin üyeliği olan kullanıcıda; yakalama üyeliksiz kullanıcı
 CLB-01.status.*      # design/prototype/app/cards.js:23–25 — `ClubCTA` durum düğmesi yalnızca başvurusu bekleyen / reddedilen / çıkarılan kullanıcının kartında; yakalama ziyaretçi
@@ -33,3 +34,7 @@ CLB-02.suggest.*         # design/prototype/app/screens-clubs.js:56 — "sonuç 
 CLB-02.status.*          # design/prototype/app/cards.js:23–25 — önerilen kulüp kartında `ClubCTA` durum düğmesi yalnızca başvurusu bekleyen / reddedilen / çıkarılan kullanıcıda; yakalama ziyaretçi (u_ayse)
 CLB-02.open.*            # design/prototype/app/cards.js:26 — önerilen kulüp kartında "Aç" yalnızca kulübün içini gören kipte (kart üstünden katıldıktan sonra, süper admin, danışman); yakalama ziyaretçi (u_ayse)
 CLB-02.retry             # lib/features/search/view/search_view.dart — yalnızca arama havuzu okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+CLB-06.menu.*   # design/prototype/app/cards.js:168, screens-clubs.js:147 — üye satırındaki "⋮" (`MemberRow` `onMenu`) yalnızca yönetici / süper admin bakışında ve başkan ile danışman dışındaki satırlarda; yakalama sıradan üye (u_mehmet → c01)
+CLB-06.retry    # lib/features/clubs/view/club_members_view.dart — yalnızca üyeler okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
+CLB-07.unblock  # design/prototype/app/screens-clubs.js:156 — "Engeli kaldır" yalnızca kullanıcı engelliyken çizilen uyarı bandında (`blocked`); yakalama engellenmemiş kullanıcı (u_burak → u001)
+CLB-07.retry    # lib/features/clubs/view/user_profile_view.dart — yalnızca kullanıcı okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

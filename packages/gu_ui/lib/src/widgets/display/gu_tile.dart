@@ -48,6 +48,10 @@ enum GuTilePadding {
 /// [titleSpan] verilirse başlık zengin metindir (CLB-02 arama sonucunda
 /// eşleşen kısım kalın — `Highlight`, `screens-clubs.js:36`); taban stil
 /// aynıdır, [title] erişilebilirlik etiketi olarak kalır.
+/// [titleWidget] verilirse başlık satırı o widget'tır (ad + rozet —
+/// `UserRow`, `ui.js:131`); [sub2Widget] verilirse üçüncü satır o widget'tır
+/// (katılım oranı çubuğu — `MemberRow`, `cards.js:167`). İkisi de satırın
+/// taban stilini (`DefaultTextStyle`) alır ve kendi semantiğini taşır.
 /// `key` (`GuKey.action`) satırın kendisidir.
 class GuTile extends StatefulWidget {
   const GuTile({
@@ -65,8 +69,17 @@ class GuTile extends StatefulWidget {
     this.disabled = false,
     this.titleStyle,
     this.titleSpan,
+    this.titleWidget,
+    this.sub2Widget,
     super.key,
-  });
+  }) : assert(
+         titleSpan == null || titleWidget == null,
+         'titleSpan ve titleWidget birlikte verilemez',
+       ),
+       assert(
+         sub2 == null || sub2Widget == null,
+         'sub2 ve sub2Widget birlikte verilemez',
+       );
 
   /// Başlık.
   final String title;
@@ -75,11 +88,19 @@ class GuTile extends StatefulWidget {
   /// erişilebilirlik etiketidir).
   final InlineSpan? titleSpan;
 
+  /// Başlık satırının yerine çizilen widget (ad + rozet). Taban başlık stili
+  /// `DefaultTextStyle` olarak verilir; [title] çizilmez, widget kendi
+  /// semantiğini taşır.
+  final Widget? titleWidget;
+
   /// İkinci satır (bodyS, `text.muted`).
   final String? subtitle;
 
   /// Üçüncü satır (caption).
   final String? sub2;
+
+  /// Üçüncü satırın yerine çizilen widget (`caption` `DefaultTextStyle` ile).
+  final Widget? sub2Widget;
 
   /// Baştaki öğe (ikon 20/22, avatar, amblem, `GuIconBox`).
   final Widget? leading;
@@ -133,6 +154,8 @@ class _GuTileState extends State<GuTile> {
     final subtitle = widget.subtitle;
     final sub2 = widget.sub2;
     final titleSpan = widget.titleSpan;
+    final titleWidget = widget.titleWidget;
+    final sub2Widget = widget.sub2Widget;
     final titleStyle = text.bodyM
         .copyWith(
           color: widget.danger ? colors.stateDanger : colors.textHeading,
@@ -151,7 +174,9 @@ class _GuTileState extends State<GuTile> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (titleSpan == null)
+              if (titleWidget != null)
+                DefaultTextStyle(style: titleStyle, child: titleWidget)
+              else if (titleSpan == null)
                 Text(widget.title, style: titleStyle)
               else
                 Text.rich(
@@ -165,6 +190,8 @@ class _GuTileState extends State<GuTile> {
                   style: text.bodyS.copyWith(color: colors.textMuted),
                 ),
               if (sub2 != null) Text(sub2, style: text.caption),
+              if (sub2Widget != null)
+                DefaultTextStyle(style: text.caption, child: sub2Widget),
             ],
           ),
         ),

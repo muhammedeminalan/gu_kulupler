@@ -1,8 +1,9 @@
 part of 'shell_route.dart';
 
 // T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
-// kökünün gerçek ekranını ve aramayı kurar; kalan alt rotalar PLAN §13.3.2
-// tablosundaki task'larda eklenir.
+// kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
+// profilini kurar; kalan alt rotalar PLAN §13.3.2 tablosundaki task'larda
+// eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
 // T-18) `:clubId` kalıbından **önce** yazılır (go_router ilk eşleşeni alır).
@@ -13,11 +14,13 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
   path: AppPaths.clubs,
   routes: <TypedRoute<RouteData>>[
     TypedGoRoute<ClubsSearchRoute>(path: ClubsSearchRoute.segment),
+    TypedGoRoute<ClubUserProfileRoute>(path: ClubUserProfileRoute.segment),
     TypedGoRoute<ClubDetailRoute>(
       path: ClubDetailRoute.segment,
       routes: <TypedRoute<RouteData>>[
         TypedGoRoute<ClubAppliedRoute>(path: ClubAppliedRoute.segment),
         TypedGoRoute<ClubApplicationRoute>(path: ClubApplicationRoute.segment),
+        TypedGoRoute<ClubMembersRoute>(path: ClubMembersRoute.segment),
       ],
     ),
   ],
@@ -119,4 +122,54 @@ final class ClubApplicationRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ClubApplicationView(clubId: clubId);
+}
+
+/// CLB-06 Üyeler — `/clubs/:clubId/members`. CLB-03'ün alt rotasıdır (guard
+/// `üye`: kulübün içini görmeyen kulüp sayfasına yönlenir —
+/// `RouteAccessTable`). CLB-03 "Üye listesi" ve SHT-06 "Üyeler" `go` ile
+/// açar, geri kulübe döner.
+final class ClubMembersRoute extends GoRouteData
+    with $ClubMembersRoute, PlatformPageMixin {
+  /// [clubId] kulübünün üye listesi.
+  const ClubMembersRoute({required this.clubId});
+
+  /// `/clubs/:clubId` altındaki yol parçası.
+  static const String segment = 'members';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ClubMembersView(clubId: clubId);
+}
+
+/// CLB-07 Profil — `/clubs/user/:userId?clubId=` (guard `A`). `/clubs`'un
+/// doğrudan alt rotasıdır: geri CLB-01'e döner. Ekran paylaşılan yapraktır
+/// (PLAN §13.9): `BlockedUserProfileRoute` (T-28) ve `AdminUserProfileRoute`
+/// (T-41) aynı view'ı açar.
+final class ClubUserProfileRoute extends GoRouteData
+    with $ClubUserProfileRoute, PlatformPageMixin {
+  /// [userId] kullanıcısının profili; [clubId] açıldığı kulüp bağlamıdır.
+  const ClubUserProfileRoute({
+    required this.userId,
+    @TypedQueryParameter<String>(name: clubIdQuery) this.clubId,
+  });
+
+  /// `/clubs` altındaki yol parçası; sabit `user` parçası `:clubId`
+  /// kalıbından önce eşleşir.
+  static const String segment = 'user/:userId';
+
+  /// Kulüp bağlamının sorgu parametresi adı (`?clubId=`).
+  static const String clubIdQuery = 'clubId';
+
+  /// Profili açılan kullanıcının kimliği (yol parametresi).
+  final String userId;
+
+  /// Açıldığı kulüp (`?clubId=`, üyelik bağlamı); yoksa `null`.
+  final String? clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UserProfileView(userId: userId, clubId: clubId);
 }
