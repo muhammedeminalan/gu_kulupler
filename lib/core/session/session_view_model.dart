@@ -154,6 +154,24 @@ final class SessionViewModel extends _$SessionViewModel
   /// [userId] engellenmiş mi ([SessionState.isBlocked])?
   bool isBlocked(String userId) => state.isBlocked(userId);
 
+  /// [userId] için engel yazımı sunucuya işlendi: oturumdaki engel kümesi
+  /// yeniden okunmadan güncellenir (`BlockUserMixin.onBlockSaved` — engelle,
+  /// engeli kaldır ve TST-09 "Geri al"). Aktif oturum yoksa ya da küme zaten
+  /// bu durumdaysa etkisizdir.
+  void setBlocked(String userId, {required bool isBlocked}) {
+    if (state.status != AuthStatus.active ||
+        state.isBlocked(userId) == isBlocked) {
+      return;
+    }
+    state = state.copyWith(
+      blockedUserIds: {
+        for (final id in state.blockedUserIds)
+          if (id != userId) id,
+        if (isBlocked) userId,
+      },
+    );
+  }
+
   /// Oturumu kapatır ve kapanıp kapanmadığını döndürür. State, oturum
   /// akışından gelen olayla `signedOut` olur.
   ///

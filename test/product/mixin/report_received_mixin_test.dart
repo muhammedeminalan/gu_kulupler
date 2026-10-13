@@ -12,6 +12,7 @@ import 'package:gu_kulupler/product/feedback/catalogs/dialogs/dialog_spec.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
+import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_feedback_service.dart';
@@ -21,7 +22,8 @@ import '../../helpers/test_l10n.dart';
 import '../feedback/dialog_test_support.dart';
 
 /// Şikayet gönderen bir ViewModel'in en küçük hali.
-final class _Notifier with ProjectDependencyMixin, ReportReceivedMixin {}
+final class _Notifier
+    with ProjectDependencyMixin, WriteGuardMixin, ReportReceivedMixin {}
 
 const String _user = 'Yiğit Kılıç';
 

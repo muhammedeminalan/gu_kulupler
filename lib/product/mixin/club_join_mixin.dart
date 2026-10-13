@@ -4,6 +4,7 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 
 /// "Katıl" akışının sonucu. Sheet açma ve gezinme view'dadır (PLAN §12.1);
 /// ViewModel yalnızca hangisinin gerektiğini söyler.
@@ -68,7 +69,8 @@ enum JoinApplicationOutcome {
 ///
 /// Mixin durum tutmaz ve yazmaz: giriş kararını ([joinGate]) ve
 /// `membershipRepository.joinInstant` hatasının sonucunu
-/// ([joinRuleOutcome], [showWriteFailureToast]) verir. Yazımı, çevrimdışı
+/// ([joinRuleOutcome]; ağ / yetki bildirimi
+/// `WriteGuardMixin.showWriteFailureToast`) verir. Yazımı, çevrimdışı
 /// kapısını (`WriteGuardMixin.ensureOnline`), iyimser güncellemeyi ve TST-34'ü
 /// tüketici yapar:
 ///
@@ -77,14 +79,7 @@ enum JoinApplicationOutcome {
 /// if (!ensureOnline()) return JoinOutcome.failed;
 /// final result = await membershipRepository.joinInstant(…);
 /// ```
-mixin ClubJoinMixin on ProjectDependencyMixin {
-  /// Bağlantı kaynaklı yazma hataları (→ TST-24).
-  static const Set<FirestoreError> networkErrors = {
-    FirestoreError.offline,
-    FirestoreError.unavailable,
-    FirestoreError.timeout,
-  };
-
+mixin ClubJoinMixin on ProjectDependencyMixin, WriteGuardMixin {
   /// Reddedilmiş, çıkarılmış ya da başvurusunu geri çekmiş kullanıcı onaysız
   /// kulübe de başvuruyla girer (`MembershipRepository.joinInstant` →
   /// `reapplyNeedsReview`).
@@ -120,7 +115,7 @@ mixin ClubJoinMixin on ProjectDependencyMixin {
   }
 
   /// `joinInstant` hatasının katılım kurallarına düşen sonucu; hata bir
-  /// katılım kuralı değilse `null` (çağıran [showWriteFailureToast] ile
+  /// katılım kuralı değilse `null` (çağıran `showWriteFailureToast` ile
   /// sürdürür).
   ///
   /// * Başvurular kapalı → TST-X1, [reloadClub] (beklenmez),
@@ -171,20 +166,5 @@ mixin ClubJoinMixin on ProjectDependencyMixin {
     return (club?.approvalRequired ?? false)
         ? JoinOutcome.needsApplication
         : JoinOutcome.failed;
-  }
-
-  /// Yazma hatasının bildirimi: ağ → TST-24, yetki yok → TST-X18. Toast
-  /// gösterildiyse `true`; başka hatada `false` (çağıran günlüğe yazar ve
-  /// ekranı yeniler).
-  bool showWriteFailureToast(FirestoreError error) {
-    if (networkErrors.contains(error)) {
-      feedback.showToast(ToastId.tst24);
-      return true;
-    }
-    if (error == FirestoreError.permissionDenied) {
-      feedback.showToast(ToastId.tstX18);
-      return true;
-    }
-    return false;
   }
 }

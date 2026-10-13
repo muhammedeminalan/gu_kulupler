@@ -86,7 +86,8 @@ final SessionState kSuperSession = FakeSessionStates.activeSuper.copyWith(
 /// [session] oturumundaki kullanıcının gördüğü dolu ekran durumu: kulüp ve
 /// yönetim kurulu yüklü (yöneticiler herkese okunur — CD-139); üye
 /// önizlemesi kulübün içini görende ilk etkin üyelerden, görmeyende
-/// yöneticilerden kurulur (ViewModel'in ürettiği durumla aynı).
+/// yöneticilerden kurulur (ViewModel'in ürettiği durumla aynı): içeridekine
+/// beş üye (`ClubDetailState.memberPreviewLimit`), dışarıdakine dört.
 ClubDetailState loadedState(
   SessionState session, {
   ClubModel? club,
@@ -100,7 +101,7 @@ ClubDetailState loadedState(
   return state.copyWith(
     managers: kManagers,
     memberPreview: state.seesInside
-        ? [kPresident, kAdvisorMembership, ...kBoard.take(2)]
+        ? [kPresident, kAdvisorMembership, ...kBoard.take(3)]
         : kManagers.take(GuSizes.avatarGroupMax).toList(),
   );
 }

@@ -159,6 +159,47 @@ void main() {
       expect(spans.last.style, isNull);
     });
 
+    testWidgets('T-18 · GuTile · titleWidget / sub2Widget: başlık ve üçüncü '
+        'satır widget alır; taban stiller ve satır ölçüsü metinle aynıdır', (
+      tester,
+    ) async {
+      const colors = GuColors.light;
+      final text = GuTypography.resolve(colors);
+
+      // Metin satırları: 22 + 18 + 16 = 56 → 72.
+      await tester.pumpApp(
+        _host(const GuTile(title: 'Ad', subtitle: 'Alt', sub2: 'Üçüncü')),
+      );
+      final plain = tester.getSize(find.byType(GuTile));
+
+      await tester.pumpApp(
+        _host(
+          const GuTile(
+            title: 'okunmaz',
+            titleWidget: Text('Ad'),
+            subtitle: 'Alt',
+            sub2Widget: Text('Üçüncü'),
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(GuTile)), plain);
+      expect(find.text('okunmaz'), findsNothing);
+      expect(
+        DefaultTextStyle.of(tester.element(find.text('Ad'))).style,
+        text.bodyM.copyWith(color: colors.textHeading),
+      );
+      expect(
+        DefaultTextStyle.of(tester.element(find.text('Üçüncü'))).style,
+        text.caption,
+      );
+      // Sıra: başlık · alt satır · üçüncü satır.
+      final title = tester.getRect(find.text('Ad'));
+      final subtitle = tester.getRect(find.text('Alt'));
+      final third = tester.getRect(find.text('Üçüncü'));
+      expect(subtitle.top, title.bottom);
+      expect(third.top, subtitle.bottom);
+    });
+
     testWidgets('T-04 · GuTile · dokunma → callback, basılı zemin '
         'bg.surfaceMuted (plain hariç), disabled → çağrılmaz + opaklık .5, '
         'Semantics, dokunma hedefi', (tester) async {

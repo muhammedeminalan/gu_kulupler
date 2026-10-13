@@ -1213,6 +1213,28 @@ void main() {
       expect(stateOf(container).isError, isFalse);
     });
 
+    test('T-18 · setBlocked kümeyi okumadan günceller; aktif olmayan '
+        'oturumda etkisizdir', () async {
+      blocks.put('u1', 'u7');
+      final container = await resolvedActive();
+      final reads = blocks.calls.length;
+
+      notifierOf(container).setBlocked('u8', isBlocked: true);
+      expect(stateOf(container).blockedUserIds, {'u7', 'u8'});
+      notifierOf(container)
+        ..setBlocked('u7', isBlocked: false)
+        ..setBlocked('u9', isBlocked: false);
+      expect(stateOf(container).blockedUserIds, {'u8'});
+      expect(blocks.calls, hasLength(reads));
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      notifierOf(container).setBlocked('u7', isBlocked: true);
+      expect(stateOf(container).blockedUserIds, isEmpty);
+    });
+
     test('kullanıcı belgesi okunamasa da refreshUser engelleri '
         'yeniler', () async {
       final container = await resolvedActive();

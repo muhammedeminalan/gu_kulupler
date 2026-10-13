@@ -239,6 +239,20 @@ abstract final class DialogCatalog {
       secondaryAction: 'block',
     ),
 
+    /// Design: DLG-13 — {name} engellensin mi? (`dialogs.js:29`): ikon ve
+    /// birincil düğme `danger`; başlık kullanıcının adını taşır
+    /// ([DialogParamKeys.name]). Sonuç `true` → kullanıcı engellenir
+    /// (`BlockUserMixin.blockUser`; ardından TST-09 "Geri al").
+    DialogId.dlg13: DialogSpec(
+      title: (l10n, params) =>
+          l10n.dlg13Title(_text(params, DialogParamKeys.name)),
+      body: (l10n, _) => l10n.dlg13Body,
+      primary: (l10n) => l10n.sht27Block,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.ban,
+      destructive: true,
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,

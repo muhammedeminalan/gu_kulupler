@@ -35,7 +35,6 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_header.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_locked_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_members_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_menu_sheet.dart';
-import 'package:gu_kulupler/features/clubs/view/widget/club_person_row.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/dialogs/dialog_spec.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
@@ -49,6 +48,8 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_kulupler/product/widget/club/club_cta.dart';
+import 'package:gu_kulupler/product/widget/member/member_row.dart';
+import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -84,6 +85,13 @@ final Key _allMembers = GuKey.action('CLB-03.allMembers');
 Key _tab(ClubDetailTab tab) => GuKey.action('CLB-03.tab.${tab.name}');
 
 Key _person(String userId) => GuKey.action('CLB-03.about.person.$userId');
+
+Key _member(String userId) => GuKey.action('CLB-03.member.$userId');
+
+/// [key] anahtarlı kişi satırı (anahtar satırın `GuTile` kabuğundadır).
+UserRow _rowOf(WidgetTester tester, Key key) => tester.widget<UserRow>(
+  find.ancestor(of: find.byKey(key), matching: find.byType(UserRow)),
+);
 
 Key _segment(ClubEventSegment segment) =>
     GuKey.action('CLB-03.eventSeg.${segment.name}');
@@ -176,13 +184,17 @@ Future<GoRouter> _pumpRoute(
           builder: (_, _) => const _Stub(_clubsPath),
           routes: [
             GoRoute(
+              path: 'user/:userId',
+              builder: (_, state) => _Stub(state.uri.path),
+            ),
+            GoRoute(
               path: ':clubId',
               builder: (_, state) => clubDetailView(
                 tab: ClubDetailTab.values
                     .asNameMap()[state.uri.queryParameters['tab']],
               ),
               routes: [
-                for (final segment in ['applied', 'application'])
+                for (final segment in ['applied', 'application', 'members'])
                   GoRoute(
                     path: segment,
                     builder: (_, state) => _Stub(state.uri.path),
@@ -386,16 +398,15 @@ void main() {
         // de okunur (CD-139).
         // "Danışman" hem bölüm başlığı hem satırın rol alt yazısıdır.
         expect(find.text(l10n.clubAdvisor), findsNWidgets(2));
-        final advisor = tester.widget<ClubPersonRow>(
-          find.byKey(_person(_advisorId)),
-        );
+        final advisor = _rowOf(tester, _person(_advisorId));
         expect(advisor.name, 'Doç. Dr. Hakan Yalçın');
-        expect(advisor.subtitle, l10n.roleAdvisor);
+        expect(advisor.sub, l10n.roleAdvisor);
         expect(advisor.badge, isNull);
-        expect(
-          find.byType(ClubPersonRow),
-          findsNWidgets(1 + kManagers.length),
-        );
+        expect(advisor.inCard, isTrue);
+        expect(advisor.chevron, isTrue);
+        expect(find.byType(UserRow), findsNWidgets(1 + kManagers.length));
+        // Yönetim kurulu satırları kart içi `MemberRow`'dur.
+        expect(find.byType(MemberRow), findsNWidgets(kManagers.length));
 
         // Katılım koşulları ve şikayet.
         expect(find.text(l10n.clubConditions), findsOneWidget);
@@ -469,11 +480,12 @@ void main() {
           advisor: const ClubAdvisorModel(name: 'Elif Aksoy', title: ''),
         ),
       );
-      final advisorRow = find.widgetWithText(ClubPersonRow, 'Elif Aksoy');
-      final row = tester.widget<ClubPersonRow>(advisorRow);
+      final advisorRow = find.widgetWithText(UserRow, 'Elif Aksoy');
+      final row = tester.widget<UserRow>(advisorRow);
       expect(row.name, 'Elif Aksoy');
       expect(row.onTap, isNull);
-      expect(row.key, isNull);
+      expect(row.actionKey, isNull);
+      expect(row.chevron, isFalse);
       expect(
         find.descendant(of: advisorRow, matching: find.byType(GuIcon)),
         findsNothing,
@@ -758,19 +770,23 @@ void main() {
       );
     });
 
-    testWidgets('menü: hedefi henüz yazılmamış satırlar (Üyeler → CLB-06, '
-        'Kulüp ayarları → MGT-09) ekranı bozmaz', (tester) async {
+    testWidgets('menü: "Kulüp ayarları" hedefi (MGT-09) henüz yazılmadı — '
+        'ekranı bozmaz; "Üyeler" → CLB-06', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: sessionWith(role: ClubRole.board),
       );
-      for (final action in [ClubMenuAction.members, ClubMenuAction.settings]) {
-        _feedback().nextSheetResult = action;
-        await _tapKey(tester, _menu);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        expect(_location(router), '$_clubsPath/$kClubId');
-      }
+      _feedback().nextSheetResult = ClubMenuAction.settings;
+      await _tapKey(tester, _menu);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(_location(router), '$_clubsPath/$kClubId');
+
+      _feedback().nextSheetResult = ClubMenuAction.members;
+      await _tapKey(tester, _menu);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(_location(router), '$_clubsPath/$kClubId/members');
     });
 
     testWidgets('şikayet → SHT-10 (hedef kulüp) → DLG-12; sayfa kapatılırsa '
@@ -967,18 +983,44 @@ void main() {
       expect(_feedback().toasts, [ToastId.tst08]);
     });
 
-    testWidgets('kişi satırları dokunulabilir; hedef (CLB-07) henüz bağlı '
-        'değil: gezinme yok, hata yok', (tester) async {
-      final router = await _pumpRoute(tester, session: sessionWith());
+    testWidgets('kişi satırı (danışman, yönetim kurulu) → CLB-07, kulüp '
+        'bağlamıyla (`?clubId=`)', (tester) async {
       for (final userId in [_advisorId, kPresident.userId]) {
-        final row = tester.widget<ClubPersonRow>(find.byKey(_person(userId)));
-        expect(row.onTap, isNotNull);
+        final router = await _pumpRoute(tester, session: sessionWith());
+        expect(_rowOf(tester, _person(userId)).onTap, isNotNull);
         await _tapKey(tester, _person(userId));
         await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(
+          _location(router),
+          '$_clubsPath/user/$userId?clubId=$kClubId',
+        );
+        expect(_feedback().calls, isEmpty);
       }
+    });
+
+    testWidgets('Üyeler sekmesi: önizleme satırı → CLB-07; "Tüm üyeler" → '
+        'CLB-06', (tester) async {
+      var router = await _pumpRoute(
+        tester,
+        session: sessionWith(),
+        query: '?tab=members',
+      );
+      final first = tester.widget<MemberRow>(find.byType(MemberRow).first);
+      final userId = first.membership.userId;
+      await _tapKey(tester, _member(userId));
+      await tester.pumpAndSettle();
+      expect(_location(router), '$_clubsPath/user/$userId?clubId=$kClubId');
+
+      router = await _pumpRoute(
+        tester,
+        session: sessionWith(),
+        query: '?tab=members',
+      );
+      await _tapKey(tester, _allMembers);
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(_location(router), '$_clubsPath/$kClubId');
-      expect(_feedback().calls, isEmpty);
+      expect(_location(router), '$_clubsPath/$kClubId/members');
     });
 
     testWidgets('etkinlik dilimi: "Geçmiş" seçilir', (tester) async {
@@ -992,16 +1034,14 @@ void main() {
       expect(segmented().value, ClubEventSegment.upcoming.name);
     });
 
-    testWidgets('yönetici düğmeleri ve "Tüm üyeler": hedefleri (MGT-01, '
-        'MGT-05, CLB-06) henüz bağlı değil: gezinme yok, hata yok', (
-      tester,
-    ) async {
+    testWidgets('yönetici düğmeleri: hedefleri (MGT-01, MGT-05) henüz bağlı '
+        'değil: gezinme yok, hata yok', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: sessionWith(role: ClubRole.board),
         query: '?tab=members',
       );
-      for (final key in [_openManage, _createEvent, _allMembers]) {
+      for (final key in [_openManage, _createEvent]) {
         await _tapKey(tester, key);
         await tester.pumpAndSettle();
       }
@@ -1275,9 +1315,7 @@ void main() {
 
       // Yönetim kurulu: başkan önde, rol rozeti + bölüm · sınıf.
       expect(find.text(l10n.clubBoard), findsOneWidget);
-      final rows = tester
-          .widgetList<ClubPersonRow>(find.byType(ClubPersonRow))
-          .toList();
+      final rows = tester.widgetList<UserRow>(find.byType(UserRow)).toList();
       expect(rows.map((r) => r.name), [
         'Doç. Dr. Hakan Yalçın',
         'Burak Şahin',
@@ -1289,15 +1327,34 @@ void main() {
       ]);
       expect((rows[1].badge! as GuRoleBadge).kind, GuRoleBadgeKind.president);
       expect((rows[2].badge! as GuRoleBadge).kind, GuRoleBadgeKind.board);
-      expect(rows[1].subtitle, contains(' · '));
+      expect(rows[1].sub, contains(' · '));
+      expect(rows.every((r) => r.inCard && r.chevron), isTrue);
 
       await _pump(tester, session: sessionWith(), tab: ClubDetailTab.posts);
       final feed = tester.widget<GuEmptyState>(find.byType(GuEmptyState));
       expect(feed.illustration, GuIllustrations.emptyPosts);
       expect(feed.title, l10n.feedEmptyTitle);
 
+      // Üyeler sekmesi: sayı · önizleme satırları (`MemberRow`, tam
+      // genişlik, kart dışı, oksuz) · "Tüm üyeler".
       await _pump(tester, session: sessionWith(), tab: ClubDetailTab.members);
       expect(find.text(l10n.clubsCardMembers(kClub.memberCount)), findsWidgets);
+      final preview = loadedState(sessionWith()).memberPreview;
+      final members = tester
+          .widgetList<MemberRow>(find.byType(MemberRow))
+          .toList();
+      expect(members.map((m) => m.membership), preview);
+      for (final member in members) {
+        expect(member.actionKey, _member(member.membership.userId));
+        expect(member.onTap, isNotNull);
+        expect(member.onMenu, isNull);
+        expect(member.inCard, isFalse);
+        expect(member.chevron, isFalse);
+      }
+      expect(
+        tester.getSize(find.byType(MemberRow).first).width,
+        tester.getSize(find.byType(ClubMembersTab)).width,
+      );
       final all = _button(tester, find.byKey(_allMembers));
       expect(all.label, l10n.clubAllMembers);
       expect(all.variant, GuButtonVariant.outline);

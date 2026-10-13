@@ -1,10 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
-import 'package:gu_kulupler/features/clubs/view/widget/club_header.dart';
-import 'package:gu_kulupler/features/clubs/view/widget/club_person_row.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
-import 'package:gu_kulupler/product/l10n/static_labels.dart';
+import 'package:gu_kulupler/product/widget/member/member_row.dart';
+import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// CLB-03 "Hakkında" sekmesi — prototip `screens-clubs.js:94–101`. Yatay 16,
@@ -17,10 +16,12 @@ import 'package:gu_ui/gu_ui.dart';
 /// 2. İletişim kartı: e-posta (`mail`), Instagram (`camera`), web sitesi
 ///    (`globe`) — kart içi satırlar, aralarında ayraç; boş bağlantının
 ///    satırı yoktur. Dokunma harici bağlantı onayına gider (DLG-32).
-/// 3. "Danışman" — tek kişi satırı (alt satır rol adı).
-/// 4. "Yönetim kurulu" — başkan önde; rol rozeti + bölüm · sınıf. Üyelik
-///    belgeleri yalnızca kulübün içini görenlere okunur: liste boşsa bölüm
-///    çizilmez.
+/// 3. "Danışman" — tek kişi satırı (`UserRow`; alt satır rol adı).
+/// 4. "Yönetim kurulu" — başkan önde; kart içi `MemberRow` (rol rozeti +
+///    bölüm · sınıf + ok). Etkin yönetici üyelikleri doğrulanmış her
+///    kullanıcıya okunur (CD-139); liste boşsa bölüm çizilmez.
+///
+/// Kişi satırları CLB-07'ye gider (`CLB-03.about.person.<userId>`).
 /// 5. "Katılım koşulları" — madde imli liste (`bodyM`, `text.secondary`).
 /// 6. "Bu kulübü şikayet et" (metin düğmesi + `flag` — `CLB-03.report`).
 ///
@@ -99,9 +100,6 @@ class ClubAboutTab extends StatelessWidget {
 
   /// Madde imi (`ul` varsayılan `disc`).
   static const String _bullet = '•';
-
-  /// Alt satır ayracı (`cards.js:8` `' · '`).
-  static const String _separator = ' · ';
 
   /// [value] boş değilse kırpılmış hali, boşsa `null`.
   static String? _filled(String? value) {
@@ -242,7 +240,7 @@ class ClubAboutTab extends StatelessWidget {
                     children: [
                       for (final (index, manager) in managers.indexed) ...[
                         if (index > 0) const GuDivider(),
-                        _managerRow(context, manager),
+                        _managerRow(manager),
                       ],
                     ],
                   ),
@@ -279,39 +277,33 @@ class ClubAboutTab extends StatelessWidget {
   }
 
   /// Danışman satırı. Ad ünvanıyla birlikte yazılır; hesaba bağlanmamış
-  /// danışmanın satırı dokunulmaz (`screens-clubs.js:97`).
+  /// danışmanın satırı dokunulmaz, oksuz ve anahtarsızdır
+  /// (`screens-clubs.js:97`).
   Widget _advisorRow(BuildContext context, ClubAdvisorModel advisor) {
     final userId = advisor.userId;
     final name = [
       advisor.title.trim(),
       advisor.name.trim(),
     ].where((part) => part.isNotEmpty).join(' ');
-    return ClubPersonRow(
-      key: userId == null ? null : personKeyOf(userId),
+    return UserRow.named(
       name: name,
       avatarSeed: userId ?? name,
-      subtitle: context.l10n.roleAdvisor,
+      sub: context.l10n.roleAdvisor,
+      inCard: true,
+      chevron: userId != null,
+      actionKey: userId == null ? null : personKeyOf(userId),
       onTap: userId == null ? null : () => onPerson(userId),
     );
   }
 
   /// Yönetim kurulu satırı: rol rozeti + bölüm · sınıf.
-  Widget _managerRow(BuildContext context, MembershipModel manager) {
-    final applicant = manager.applicant;
-    final department = applicant.department;
-    final year = applicant.year;
-    return ClubPersonRow(
-      key: personKeyOf(manager.userId),
-      name: applicant.name,
-      avatarSeed: applicant.avatarSeed,
-      subtitle: [
-        if (department != null) StaticLabels.department(context, department),
-        if (year != null) StaticLabels.year(context, year),
-      ].join(_separator),
-      badge: ClubHeader.roleBadge(context.l10n, manager.role),
-      onTap: () => onPerson(manager.userId),
-    );
-  }
+  Widget _managerRow(MembershipModel manager) => MemberRow(
+    membership: manager,
+    inCard: true,
+    chevron: true,
+    actionKey: personKeyOf(manager.userId),
+    onTap: () => onPerson(manager.userId),
+  );
 
   /// Katılım koşulu: madde imi (20 dp girinti, `ul{padding-left:20px}`) +
   /// metin.

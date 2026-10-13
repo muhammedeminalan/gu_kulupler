@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T19:01:27.758Z",
+  "updated": "2026-10-13T20:05:42.911Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -311,11 +311,13 @@
       "notes": ""
     },
     "T-18": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-13T19:02:37.352Z",
+      "finishedAt": "2026-10-13T20:05:42.910Z",
+      "commits": [
+        "7eada81"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-19": {
@@ -635,7 +637,10 @@
       "resolveIn": [
         "T-18"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-18",
+      "closedAt": "2026-10-13T19:45:54.370Z",
+      "closeNote": "CLB-03 'Tüm üyeler' (CLB-03.allMembers) ve SHT-06 'Üyeler' → ClubMembersRoute; akış testi test/flows/club_members_flow_test.dart"
     },
     {
       "id": "W-12",
@@ -1108,10 +1113,13 @@
       "resolveIn": [
         "T-18"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "CLB-03.about.person.*"
-      ]
+      ],
+      "closedIn": "T-18",
+      "closedAt": "2026-10-13T19:45:54.404Z",
+      "closeNote": "CLB-03 yönetim kurulu → MemberRow (P2), danışman → UserRow.named (P1), Üyeler sekmesi önizlemesi → MemberRow; satır → ClubUserProfileRoute; ClubPersonRow (F26) silindi"
     },
     {
       "id": "W-67",
@@ -1133,6 +1141,20 @@
         "T-26"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-69",
+      "declaredIn": "T-18",
+      "text": "CLB-07 yönetici bağlamı kartı (screens-clubs.js:160–161): e-posta + 'Kopyala' (TST-08; e-posta memberships/private/contact — D-29), kulüpteki rol, üyelik tarihi; 'Rolü değiştir' → SHT-22, 'Kulüpten çıkar' → DLG-19. UserProfileState.contextMembership hazır → T-33",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open",
+      "actions": [
+        "CLB-07.copyEmail",
+        "CLB-07.changeRole",
+        "CLB-07.remove"
+      ]
     }
   ],
   "notImplemented": [

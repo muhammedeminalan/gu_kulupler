@@ -125,7 +125,10 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
         state.seesInside
             ? ClubMembersTab(
                 memberCount: club.memberCount,
+                members: state.memberPreview,
+                onMember: openPerson,
                 onAllMembers: openAllMembers,
+                memberKeyOf: (userId) => GuKey.action('CLB-03.member.$userId'),
                 allMembersKey: GuKey.action('CLB-03.allMembers'),
               )
             : ClubLockedTab(

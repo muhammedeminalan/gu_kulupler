@@ -69,8 +69,13 @@ final class ClubDetailState extends Equatable {
   /// Yönetim kurulu: aktif başkan ve yönetim kurulu üyelikleri, başkan önde.
   final List<MembershipModel> managers;
 
-  /// İlk birkaç aktif üye (başlıktaki avatar grubu).
+  /// İlk [memberPreviewLimit] aktif üye: başlıktaki avatar grubu (ilk dördü)
+  /// ve "Üyeler" sekmesindeki önizleme satırları.
   final List<MembershipModel> memberPreview;
+
+  /// Önizleme için okunan üye sayısı — "Üyeler" sekmesi ilk beş üyeyi çizer
+  /// (`members.slice(0, 5)`, `screens-clubs.js:106`).
+  static const int memberPreviewLimit = 5;
 
   /// İlk yükleme sürüyor mu (iskelet)?
   final bool isFetching;

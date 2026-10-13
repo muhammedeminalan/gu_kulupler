@@ -387,7 +387,7 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
       inside
           ? membershipRepository.listActiveMembers(
               clubId,
-              const PageRequest(limit: GuSizes.avatarGroupMax),
+              const PageRequest(limit: ClubDetailState.memberPreviewLimit),
             )
           : Future<FirestoreResult<PageResult<MembershipModel>>?>.value(),
     ).wait;
