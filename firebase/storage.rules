@@ -38,18 +38,29 @@ service firebase.storage {
     //  - `contentEncoding: gzip` → birkaç KB'lık dosya indirilirken GB'lara açılır (görsel önbelleği);
     //  - `contentDisposition: attachment; filename=…` → jetonlu indirme adresi, saldırganın seçtiği
     //    adla keyfi dosya dağıtır.
-    // İstemci (StorageService.upload) yalnızca `contentType` gönderir; iki alan da verilmez (`null`).
+    // İstemci (StorageService.upload) yalnızca `contentType` gönderir. Emülatörde verilmeyen iki alan
+    // `null` görünür; gerçek sunucunun bu alanları kural değerlendirmesinden ÖNCE kendi
+    // varsayılanlarıyla (`contentEncoding`: `identity` / boş; `contentDisposition`:
+    // `inline; filename*=utf-8''<dosya adı>`) doldurması olasıdır (belgelenmemiş; ilk canlı denemede
+    // avatar yüklemesi `unauthorized` aldı, 2026-10-13). Bu yüzden o biçimler de kabul edilir; dosya
+    // adı yalnızca StoragePaths.newFileName şemasında olabilir — saldırganın seçtiği ad (`odev.exe`)
+    // ve `attachment` yine reddedilir.
     function imageOk() {
       return request.resource.contentType.matches('image/(jpeg|png|webp)')
           && request.resource.size > 0
           && request.resource.size < 5 * 1024 * 1024   // limit: imageMaxBytes
-          && (request.resource.contentEncoding == null || request.resource.contentEncoding == 'identity')
-          && (request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline');
+          && (request.resource.contentEncoding == null || request.resource.contentEncoding == ''
+              || request.resource.contentEncoding == 'identity')
+          && (request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline'
+              || request.resource.contentDisposition.matches("inline; filename\\*=utf-8''([A-Za-z0-9_-]+%2F)*\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(jpg|png|webp)"));
     }
     // Özel üst veri taşımayan yükleme. `imageOk()` içinde DEĞİLDİR: posts/ yolu `metadata.clubId`
-    // ister (CD-39); özel üst veri beklemeyen her yol bunu ayrıca çağırır.
+    // ister (CD-39); özel üst veri beklemeyen her yol bunu ayrıca çağırır. İndirme jetonu
+    // (`firebaseStorageDownloadTokens`) depoda aynı haritada tutulur; gerçek sunucu onu değerlendirme
+    // anında haritaya koyuyorsa yükleme reddedilmesin diye yalnızca o anahtara izin vardır.
     function noCustomMetadata() {
-      return request.resource.metadata == null || request.resource.metadata.size() == 0;
+      return request.resource.metadata == null
+          || request.resource.metadata.keys().hasOnly(['firebaseStorageDownloadTokens']);
     }
     // Dosya adı StoragePaths.newFileName şemasında (StoragePaths.fileNamePattern — Firestore
     // `avatarPath` kuralıyla aynı desen) ve uzantı içerik türüyle uyumlu.
@@ -71,6 +82,10 @@ service firebase.storage {
     // alınan (ya da hesabını silen) kullanıcı klasörüne dosya yığmayı sürdürebilirdi. Belge yoksa ya da
     // `status` alanı yoksa ifade hata verir = ret. `profileComplete` ARANMAZ: AUT-05'te fotoğraf,
     // profil tamamlanırken yüklenir (sıra: createProfile → tamamlama yaması → yükleme; CD-135 madde 1).
+    // DAĞITIM NOTU: `firestore.get` için Storage servis hesabına
+    // `roles/firebaserules.firestoreServiceAgent` rolü gerekir; rol yoksa her yükleme "unauthorized"
+    // alır. `firebase deploy --only storage` rolü yalnızca ETKİLEŞİMLİ terminalde ve kural dosyası
+    // değişmişse sorar (etkileşimsiz ortamda ve "already up to date" durumunda atlar).
     function accountActive() {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }

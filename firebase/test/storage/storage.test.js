@@ -97,8 +97,9 @@ describe('storage · storage.rules yapısı', () => {
     expect(body).not.toBeNull();
     for (const condition of [
       'request.resource.size > 0',
-      "(request.resource.contentEncoding == null || request.resource.contentEncoding == 'identity')",
-      "(request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline')",
+      'request.resource.contentEncoding == null',
+      "request.resource.contentEncoding == 'identity'",
+      "request.resource.contentDisposition == null || request.resource.contentDisposition == 'inline'",
     ]) {
       expect(body[1]).toContain(condition);
     }
@@ -370,8 +371,12 @@ describe('storage users/{uid}/{file} · yükleme (içerik türü, uzantı, boyut
     ['contentDisposition: attachment + dosya adı', { contentDisposition: 'attachment; filename="odev.exe"' }],
     ['contentDisposition: attachment', { contentDisposition: 'attachment' }],
     ['contentDisposition: inline + dosya adı', { contentDisposition: 'inline; filename="odev.exe"' }],
+    ["contentDisposition: inline + şema dışı ad (filename*)", { contentDisposition: "inline; filename*=utf-8''odev.exe" }],
+    ["contentDisposition: inline + yol geçişli ad", { contentDisposition: `inline; filename*=utf-8''..%2F${NEW_FILE}` }],
+    ["contentDisposition: attachment + şemaya uyan ad", { contentDisposition: `attachment; filename*=utf-8''${NEW_FILE}` }],
     ['özel üst veri', { customMetadata: { clubId: 'c01' } }],
     ['özel üst veri (boş değer)', { customMetadata: { x: '' } }],
+    ['özel üst veri (jeton + başka anahtar)', { customMetadata: { firebaseStorageDownloadTokens: 't', x: '1' } }],
   ])('sunum üst verisi · %s → deny', async (_, extra) => {
     await assertFails(upload(OWNER, ownerPath(NEW_FILE), PNG, { ...IMAGE, ...extra }));
     expect(await fileExists(ownerPath(NEW_FILE))).toBe(false);
@@ -380,6 +385,10 @@ describe('storage users/{uid}/{file} · yükleme (içerik türü, uzantı, boyut
   test.each([
     ['contentEncoding: identity', { contentEncoding: 'identity' }],
     ['contentDisposition: inline', { contentDisposition: 'inline' }],
+    // Gerçek sunucunun varsayılan biçimleri (ilk canlı denemede katı eşitlik her yüklemeyi reddetti).
+    ['contentDisposition: sunucu varsayılanı (dosya adı)', { contentDisposition: `inline; filename*=utf-8''${NEW_FILE}` }],
+    ['contentDisposition: sunucu varsayılanı (kodlanmış yol)', { contentDisposition: `inline; filename*=utf-8''users%2Fabc_123%2F${NEW_FILE}` }],
+    ['özel üst veri: yalnızca indirme jetonu', { customMetadata: { firebaseStorageDownloadTokens: 'jeton' } }],
   ])('sunum üst verisi · %s (varsayılanla aynı anlam) → allow', async (_, extra) => {
     await assertSucceeds(upload(OWNER, ownerPath(NEW_FILE), PNG, { ...IMAGE, ...extra }));
     expect(await fileExists(ownerPath(NEW_FILE))).toBe(true);
