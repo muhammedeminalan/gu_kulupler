@@ -475,6 +475,7 @@ Mock opaklıklar yazılmaz: `.homebar .85` css:117, durum çubuğu sinyal `.3` s
 | `commentAvatar` / `applicationRowAvatar` / `postAvatar` (**ek**) | 32 / 44 / 40 | sheets:48, cards:175, cards:110 (hepsi `avatarSizes` kümesinde) |
 | `iconButtonTonal` (**ek**, K-32) | 44 | cards:176 onay/ret `IconButton` `width: '44px', height: '44px'` + `state*Container` zemin (`GuIconButton(tone: success/danger)`) |
 | `myClubCardWidth` (**ek**, K-30) | 132 | cards:42 `MyClubChip` kartı `width:132px` |
+| `myClubsAllTileWidth` (**ek**, T-17) | 100 | screens-clubs.js:25 CLB-01 "Kulüplerim" şeridinin sonundaki "Tümü" kartı `class="card is-tappable" style="width:100px` (`MyClubsStrip`; `GuSizes` N = 402 → **403**) |
 | `applicationRowMinHeight` (**ek**, K-31) | 64 | cards:172 `ApplicationRow` `padding:6px 8px 6px 16px;min-height:64px` |
 | `avatarBadgeBorder` (**ek**, CD-91) | 2 | screens-profile.js:11 PRF-01 kamera rozeti `border:2px solid var(--bg-canvas)`; konum `right:-2px;bottom:-2px` = −`avatarBadgeBorder` (ayrı sabit yok) |
 | `parallaxEmblemOverlap` (**ek**, K-46) | 36 | screens-clubs.js:89 CLB-03 amblem kapsayıcısı `margin-top:-36px` (amblem kapağın altına 36 px biner) |

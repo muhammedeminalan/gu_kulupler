@@ -6,6 +6,8 @@
 // T-14 · `ResetPasswordRoute` (`/login/reset`).
 // T-16 · `ClubDetailRoute` (`/clubs/:clubId`), `ClubAppliedRoute`
 // (`…/applied`), `ClubApplicationRoute` (`…/application`).
+// T-17 · `ClubsSearchRoute` (`/clubs/search`), `EventsSearchRoute`
+// (`/events/search`) — aynı `SearchView`, başlangıç sekmesi farklı.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -19,7 +21,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16).
+/// T-14 + T-16 + T-17).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -38,11 +40,14 @@ const Map<GoRouteData, String> _routes = {
   SetupProfileRoute(): '/setup-profile',
   // Kabuk: beş sekme kökü
   ClubsRoute(): '/clubs',
-  // Kulüpler dalı (T-16: CLB-03, CLB-04, CLB-05)
+  // Kulüpler dalı (T-17: CLB-02; T-16: CLB-03, CLB-04, CLB-05)
+  ClubsSearchRoute(): '/clubs/search',
   ClubDetailRoute(clubId: _clubId): '/clubs/:clubId',
   ClubAppliedRoute(clubId: _clubId): '/clubs/:clubId/applied',
   ClubApplicationRoute(clubId: _clubId): '/clubs/:clubId/application',
   EventsRoute(): '/events',
+  // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak)
+  EventsSearchRoute(): '/events/search',
   NotificationsRoute(): '/notifications',
   AdminRoute(): '/admin',
   ProfileRoute(): '/profile',
@@ -94,10 +99,28 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 20 yol (T-11: 14, T-13: +2, '
-        'T-14: +1, T-16: +3)', () {
+    test('router yolları = kapsamdaki 22 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3, T-17: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(20));
+      expect(_routes, hasLength(22));
+    });
+
+    test('T-17 · arama rotaları: sabit `search` parçası `:clubId` kalıbına '
+        'düşmez; ikisi de aktif oturum (A) ister', () {
+      const locations = <GoRouteData, String>{
+        ClubsSearchRoute(): '/clubs/search',
+        EventsSearchRoute(): '/events/search',
+      };
+      for (final MapEntry(key: route, value: location) in locations.entries) {
+        final name = '${route.runtimeType}';
+        expect(route.location, location, reason: name);
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, location, reason: name);
+        expect(match.access, RouteAccess.active, reason: name);
+        expect(match.clubId, isNull, reason: name);
+      }
+      expect(ClubsSearchRoute.segment, 'search');
+      expect(EventsSearchRoute.segment, 'search');
     });
 
     test('rota sınıfının `location` değeri kilitli yoldur', () {

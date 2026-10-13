@@ -45,6 +45,9 @@ enum GuTilePadding {
 /// [plain] ise yok). [danger] başlığı `state.danger` yapar (css:213; ikon
 /// rengini çağıran verir). [disabled] opaklık `GuOpacity.disabled`, dokunma
 /// çağrılmaz. [alignStart] üstten hizalar (`NotificationRow`, K-35).
+/// [titleSpan] verilirse başlık zengin metindir (CLB-02 arama sonucunda
+/// eşleşen kısım kalın — `Highlight`, `screens-clubs.js:36`); taban stil
+/// aynıdır, [title] erişilebilirlik etiketi olarak kalır.
 /// `key` (`GuKey.action`) satırın kendisidir.
 class GuTile extends StatefulWidget {
   const GuTile({
@@ -61,11 +64,16 @@ class GuTile extends StatefulWidget {
     this.danger = false,
     this.disabled = false,
     this.titleStyle,
+    this.titleSpan,
     super.key,
   });
 
   /// Başlık.
   final String title;
+
+  /// Başlığın zengin metni; verilirse [title] yerine çizilir ([title]
+  /// erişilebilirlik etiketidir).
+  final InlineSpan? titleSpan;
 
   /// İkinci satır (bodyS, `text.muted`).
   final String? subtitle;
@@ -124,6 +132,12 @@ class _GuTileState extends State<GuTile> {
     final trailing = widget.trailing;
     final subtitle = widget.subtitle;
     final sub2 = widget.sub2;
+    final titleSpan = widget.titleSpan;
+    final titleStyle = text.bodyM
+        .copyWith(
+          color: widget.danger ? colors.stateDanger : colors.textHeading,
+        )
+        .merge(widget.titleStyle);
 
     final row = Row(
       crossAxisAlignment: widget.alignStart
@@ -137,16 +151,14 @@ class _GuTileState extends State<GuTile> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.title,
-                style: text.bodyM
-                    .copyWith(
-                      color: widget.danger
-                          ? colors.stateDanger
-                          : colors.textHeading,
-                    )
-                    .merge(widget.titleStyle),
-              ),
+              if (titleSpan == null)
+                Text(widget.title, style: titleStyle)
+              else
+                Text.rich(
+                  titleSpan,
+                  style: titleStyle,
+                  semanticsLabel: widget.title,
+                ),
               if (subtitle != null)
                 Text(
                   subtitle,

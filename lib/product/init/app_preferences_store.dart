@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show Locale, ThemeMode;
+import 'package:gu_data/gu_data.dart' show Limits;
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -10,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Okuyucular eşzamanlıdır; [load] tamamlanmadan varsayılanları döndürür.
 /// - Yazıcılar **hiçbir zaman fırlatmaz**: kalıcılık hatası `false` döner
 ///   (çağıran günlüğe yazar; kullanıcıya gösterilmez).
-/// - Son aramalar (T-17) ve yazı taslakları (T-21) kendi task'larında eklenir.
+/// - Yazı taslakları (T-21) kendi task'ında eklenir.
 abstract interface class AppPreferencesStore {
   /// Değerler diskten okundu mu?
   bool get isLoaded;
@@ -39,6 +40,10 @@ abstract interface class AppPreferencesStore {
   /// tutulur ve açıklama bir daha gösterilmez.
   bool get photoAccessExplained;
 
+  /// Son aramalar (CLB-02), en yeni önde; en çok `Limits.recentSearchesMax`.
+  /// Dönen liste değiştirilemez.
+  List<String> get recentSearches;
+
   /// Tema tercihini yazar.
   Future<bool> setThemeMode(ThemeMode mode);
 
@@ -56,6 +61,10 @@ abstract interface class AppPreferencesStore {
 
   /// Fotoğraf erişimi açıklaması bayrağını yazar.
   Future<bool> setPhotoAccessExplained(bool value);
+
+  /// Son aramaları [terms] ile değiştirir (en yeni önde); fazlası
+  /// `Limits.recentSearchesMax`'te kesilir. Boş liste geçmişi temizler.
+  Future<bool> setRecentSearches(List<String> terms);
 }
 
 /// `shared_preferences` anahtarları — tek liste (PLAN §4.4, §12.2).
@@ -78,6 +87,9 @@ abstract final class AppPreferenceKeys {
 
   /// Fotoğraf erişimi ön açıklaması (DLG-05) onaylandı mı.
   static const String photoAccessExplained = 'pref.photoAccessExplained';
+
+  /// Son aramalar (CLB-02): metin listesi, en yeni önde.
+  static const String recentSearches = 'pref.recentSearches';
 }
 
 /// [AppPreferencesStore] uygulaması: `shared_preferences`.
@@ -99,6 +111,7 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   bool _onboardingSeen = false;
   bool _notificationPermissionAsked = false;
   bool _photoAccessExplained = false;
+  List<String> _recentSearches = const <String>[];
 
   @override
   bool get isLoaded => _prefs != null;
@@ -120,6 +133,9 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
 
   @override
   bool get photoAccessExplained => _photoAccessExplained;
+
+  @override
+  List<String> get recentSearches => _recentSearches;
 
   @override
   Future<void> load() async {
@@ -144,6 +160,9 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
       _photoAccessExplained = _bool(
         prefs,
         AppPreferenceKeys.photoAccessExplained,
+      );
+      _recentSearches = _capped(
+        _stringList(prefs, AppPreferenceKeys.recentSearches),
       );
       _prefs = prefs;
     } on Object catch (error, stack) {
@@ -203,6 +222,14 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
     );
   }
 
+  @override
+  Future<bool> setRecentSearches(List<String> terms) {
+    final capped = _recentSearches = _capped(terms);
+    return _write(
+      (prefs) => prefs.setStringList(AppPreferenceKeys.recentSearches, capped),
+    );
+  }
+
   /// [write] yazımını çalıştırır; depo açılamadıysa ya da yazım başarısızsa
   /// `false` (bellekteki değer oturum boyunca geçerli kalır).
   Future<bool> _write(
@@ -229,6 +256,17 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
         final bool value => value,
         _ => false,
       };
+
+  /// [key] metin listesi değilse (tip uyuşmazlığı) boş liste.
+  static List<String> _stringList(SharedPreferences prefs, String key) =>
+      switch (prefs.get(key)) {
+        final List<Object?> values => values.whereType<String>().toList(),
+        _ => const <String>[],
+      };
+
+  /// En çok `Limits.recentSearchesMax` öğe, değiştirilemez liste.
+  static List<String> _capped(List<String> terms) =>
+      List<String>.unmodifiable(terms.take(Limits.recentSearchesMax));
 
   static T _enumOf<T extends Enum>(List<T> values, String? name, T fallback) {
     for (final value in values) {

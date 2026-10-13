@@ -68,6 +68,9 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   bool get photoAccessExplained => inner.photoAccessExplained;
 
   @override
+  List<String> get recentSearches => inner.recentSearches;
+
+  @override
   Future<bool> setThemeMode(ThemeMode mode) => inner.setThemeMode(mode);
 
   @override
@@ -84,4 +87,8 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   @override
   Future<bool> setPhotoAccessExplained(bool value) =>
       inner.setPhotoAccessExplained(value);
+
+  @override
+  Future<bool> setRecentSearches(List<String> terms) =>
+      inner.setRecentSearches(terms);
 }

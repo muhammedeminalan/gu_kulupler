@@ -11,7 +11,7 @@
 /// Registry'de (`registry.json#tokens`) boyut grubu yoktur. Sayaç/adet
 /// sabitleri (`textareaRows`, `avatarGroupMax`, `calendarDotsMax`,
 /// `calendarWeeks`) tüketici imzaları `int` beklediği için `int`'tir.
-/// Token testi: `test/tokens/gu_sizes_test.dart` (tablo uzunluğu 402).
+/// Token testi: `test/tokens/gu_sizes_test.dart` (tablo uzunluğu 403).
 abstract final class GuSizes {
   // ===========================================================================
   // CSS-derived (CD-20) — `design/extracted/component-css.css`; `css:N` = satır.
@@ -1304,6 +1304,10 @@ abstract final class GuSizes {
   /// cards.js:42 `style="width:132px;text-align:left"` —
   /// K-30, K-46.
   static const double myClubCardWidth = 132;
+
+  /// screens-clubs.js:25 `class="card is-tappable" style="width:100px` —
+  /// CLB-01 "Kulüplerim" şeridinin sonundaki "Tümü" kartı (T-17).
+  static const double myClubsAllTileWidth = 100;
 
   /// cards.js:172 `padding:6px 8px 6px 16px;min-height:64px` —
   /// K-31, K-46.

@@ -11,7 +11,7 @@
 // T-25 (`listByInterests`) kendi satırlarını ekler.
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { collection, documentId, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
+const { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
 const { seedFixture } = require('../helpers/fixtures');
 
@@ -132,9 +132,53 @@ describe('memberships · sorgu biçimleri (rules-spec §6; PLAN §10.4 Membershi
     expect(ids(await assertSucceeds(getDocs(byRole)))).toEqual(['c01_u_board']);
     const managers = (role) => query(memberships(role), where('clubId', '==', CLUB), where('status', '==', 'active'), where('role', 'in', ['board', 'president']));
     expect(ids(await assertSucceeds(getDocs(managers('board'))))).toEqual(['c01_u_board', 'c01_u_president']);
-    // Üye olmayan (başvuran dahil) yönetici listesini okuyamaz: `application_received` alıcı çözümü T-25'in işidir.
-    await assertFails(getDocs(managers('student')));
-    await assertFails(getDocs(managers('pending')));
+  });
+
+  test('listManagers (CD-139): üye olmayan aktif kullanıcı yalnızca etkin yöneticileri okur; üye listesi ve başvurular kapalı kalır', async () => {
+    await seedFixture('base', undefined, { patch: { 'memberships/c01_u_pending/private/contact': { note: 'Gizli başvuru notu.' } } });
+    const inClub = (role, ...filters) => query(memberships(role), where('clubId', '==', CLUB), ...filters);
+    const active = where('status', '==', 'active');
+    const managers = (role) => inClub(role, active, where('role', 'in', ['board', 'president']));
+    // Üye olmayan, eski üye, başvuran ve başka kulübün yöneticisi: aynı iki belge (CLB-03 "Yönetim kurulu", kulüp kartı).
+    for (const role of ['student', 'former', 'pending', 'otherManager']) {
+      const snapshot = await assertSucceeds(getDocs(managers(role)));
+      expect(ids(snapshot)).toEqual(['c01_u_board', 'c01_u_president']);
+      for (const d of snapshot.docs) {
+        for (const key of ['email', 'emailLower', 'note']) expect(d.data()).not.toHaveProperty(key);
+        expect(d.data().status).toBe('active');
+      }
+    }
+    // Danışman da görünür yöneticidir (rol süzgeci üç role kadar genişler).
+    const withAdvisor = inClub('student', active, where('role', 'in', ['president', 'board', 'advisor']));
+    expect(ids(await assertSucceeds(getDocs(withAdvisor)))).toEqual(['c01_u_advisor', 'c01_u_board', 'c01_u_president']);
+
+    // Tam üye listesi, sıradan üyeler ve başvurular üye olmayana kapalıdır; süzgeç eksilirse / genişlerse sorgu reddedilir.
+    await assertFails(getDocs(inClub('student', active)));
+    await assertFails(getDocs(inClub('student', active, where('role', '==', 'member'))));
+    await assertFails(getDocs(inClub('student', active, where('role', 'in', ['board', 'president', 'member']))));
+    await assertFails(getDocs(inClub('student', where('role', 'in', ['board', 'president']))));
+    await assertFails(getDocs(inClub('student', where('status', '==', 'pending'), where('role', 'in', ['board', 'president']))));
+    await assertFails(getDocs(inClub('student')));
+    await assertFails(getDocs(memberships('student')));
+    await assertFails(getDoc(doc(dbOf('student'), 'memberships/c01_u_member')));
+    await assertFails(getDoc(doc(dbOf('student'), 'memberships/c01_u_pending')));
+
+    // `private/contact` yönetici belgesinde de kapalı kalır (e-posta sızmaz).
+    await assertSucceeds(getDoc(doc(dbOf('student'), 'memberships/c01_u_board')));
+    await assertFails(getDoc(doc(dbOf('student'), 'memberships/c01_u_board/private/contact')));
+
+    // Doğrulanmamış, alan adı dışı ve oturumsuz istek reddedilir.
+    for (const role of ['anon', 'unver', 'outsideDomain']) await assertFails(getDocs(managers(role)));
+  });
+
+  test('listManagers (CD-139): askıdaki ya da profili eksik (üye olmayan) kullanıcı yönetici listesini okuyamaz', async () => {
+    const managers = query(memberships('student'), where('clubId', '==', CLUB), where('status', '==', 'active'), where('role', 'in', ['board', 'president']));
+    await seedFixture('base', undefined, { patch: { 'users/u_student': { status: 'suspended' } } });
+    await assertFails(getDocs(managers));
+    await seedFixture('base', undefined, { patch: { 'users/u_student': { profileComplete: false } } });
+    await assertFails(getDocs(managers));
+    await seedFixture('base');
+    await assertSucceeds(getDocs(managers));
   });
 
   test('listPending (MGT-02): yönetim başvuruları sıralı okur; başka kulübün yöneticisi kendi kulübünü okur, c01\'i okuyamaz', async () => {

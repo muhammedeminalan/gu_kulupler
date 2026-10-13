@@ -4,8 +4,6 @@
 // T-11 · DebugMenu · demo hesaplar (CD-132 (23)): yalnızca emülatörde altı
 // hesap satırı → `signIn(e-posta, demo parolası)` + uygulamaya gidiş; hata
 // satırı; "Çıkış yap"; SYS-02 / 03 / 04 kısayolları.
-// T-16 · DebugMenu · demo kulüpler: yalnızca emülatörde üç kulüp satırı →
-// CLB-03 (`ClubDetailRoute.go`); T-17'de kaldırılır.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,7 +14,6 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/auth/view/login_view.dart';
 import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_accounts.dart';
-import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_clubs.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/widget/debug_menu_corner_button.dart';
 import 'package:gu_kulupler/product/init/app_preferences_state.dart';
@@ -346,64 +343,6 @@ void main() {
         ],
         safeAreas: true,
       );
-    });
-  });
-
-  group('T-16 · DebugMenu · demo kulüpler', () {
-    // TODO(T-17): Kulüpler listesi gelince bölüm ve bu grup kaldırılır.
-    testWidgets('emülatör değilken bölüm yok', (tester) async {
-      await tester.pumpApp(const DebugMenuView(), size: _tall);
-      expect(find.text(tester.l10n.debugMenuDemoClubs), findsNothing);
-      for (final club in DebugDemoClubs.all) {
-        expect(find.byKey(DebugMenuView.demoClubKey(club.id)), findsNothing);
-      }
-    });
-
-    testWidgets('emülatörde üç kulüp satırı: katılım biçimi + yol; '
-        'anahtarlar `debug.club.<id>` (tasarım envanteri dışı)', (
-      tester,
-    ) async {
-      await tester.pumpApp(const DebugMenuView(isEmulator: true), size: _tall);
-      final l10n = tester.l10n;
-      expect(find.text(l10n.debugMenuDemoClubs), findsOneWidget);
-      final labels = {
-        DebugDemoClubKind.instant: l10n.clubTypeInstant,
-        DebugDemoClubKind.approval: l10n.clubTypeApproval,
-        DebugDemoClubKind.closed: l10n.clubsCardClosed,
-      };
-      expect(DebugDemoClubs.all, hasLength(3));
-      for (final club in DebugDemoClubs.all) {
-        final row = find.byKey(DebugMenuView.demoClubKey(club.id));
-        expect(row, findsOneWidget);
-        expect(
-          DebugMenuView.demoClubKey(club.id),
-          ValueKey<String>('debug.club.${club.id}'),
-        );
-        final tile = tester.widget<GuTile>(row);
-        expect(tile.title, labels[club.kind]);
-        expect(tile.subtitle, '${AppPaths.clubs}/${club.id}');
-        expect(tile.chevron, isTrue);
-      }
-      expect(ActionInventory.found(tester), isEmpty);
-    });
-
-    testWidgets('satıra dokunma → kulüp sayfasına `go` (CLB-03, '
-        '`/clubs/<id>`)', (tester) async {
-      for (final club in DebugDemoClubs.all) {
-        final path = '${AppPaths.clubs}/${club.id}';
-        final router = _debugRouter([path]);
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pumpAppRouter(routerOf: (_) => router, size: _tall);
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byKey(DebugMenuView.demoClubKey(club.id)));
-        await tester.pumpAndSettle();
-
-        expect(_location(router), path, reason: club.id);
-        // `go`: DebugMenu yığında kalmaz (guard'lı rotaya push yok).
-        expect(router.canPop(), isFalse, reason: club.id);
-        expect(find.byType(DebugMenuView), findsNothing);
-      }
     });
   });
 

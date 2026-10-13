@@ -2,32 +2,10 @@ import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 
-/// `ClubDetailViewModel.startJoin` / `.joinInstant` sonucu. Sheet açma ve
-/// gezinme view'dadır (PLAN §12.1); ViewModel yalnızca hangisinin gerektiğini
-/// söyler.
-enum JoinOutcome {
-  /// Onaysız kulübe anında katılındı (TST-34 gösterildi).
-  joined,
-
-  /// Başvuru formu gerekli: view SHT-05'i açar (kulüp onay istiyor ya da
-  /// kullanıcı yeniden başvuruyor).
-  needsApplication,
-
-  /// Yeniden başvuru bekleme süresi dolmadı: view başvuru durumuna (CLB-05)
-  /// gider.
-  waiting,
-
-  /// Bekleme süresini sunucu söyledi (oturumdaki üyelik eskiydi): TST-X4
-  /// gösterildi.
-  cooldown,
-
-  /// Kulüp başvuru almıyor (TST-X1 gösterildi).
-  closed,
-
-  /// Katılım olmadı: kulüp yüklenmedi, süren işlem var, çevrimdışı (TST-24),
-  /// yetki yok (TST-X18) ya da beklenmeyen hata.
-  failed,
-}
+// `JoinOutcome` kart "Katıl" akışıyla ortaktır (CLB-02 — `ClubJoinMixin`);
+// bu dosyayı içe aktaranlar aynı adı görmeye devam eder.
+export 'package:gu_kulupler/product/mixin/club_join_mixin.dart'
+    show JoinOutcome;
 
 /// `ClubDetailViewModel.leave` sonucu.
 enum LeaveOutcome {
@@ -52,9 +30,10 @@ enum LeaveOutcome {
 /// CLB-03 "Kulüp" ekranının durumu (PLAN §12.6).
 ///
 /// [access] ve [membership] oturumdan gelir (canlı); [club] tek seferlik
-/// okunur. [managers] ve [memberPreview] yalnızca kulübün içini görenlere
-/// yüklenir ([seesInside]): Security Rules üyelik belgelerini üye olmayana
-/// okutmaz (rules-spec §3.4 R(c)).
+/// okunur. [managers] herkese yüklenir: etkin yönetici üyelikleri doğrulanmış
+/// her kullanıcıya okunur (rules-spec §3.4 R(d), CD-139). [memberPreview]
+/// kulübün içini görende ([seesInside]) ilk etkin üyelerden, görmeyende
+/// yöneticilerden kurulur — tam üye listesi üyelere özeldir (R(c)).
 final class ClubDetailState extends Equatable {
   /// Varsayılan: kulüp yok, ziyaretçi, hakkında sekmesi.
   const ClubDetailState({

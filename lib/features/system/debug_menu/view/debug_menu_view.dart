@@ -5,7 +5,6 @@ import 'package:gu_kulupler/core/di/app_provider_mixin.dart';
 import 'package:gu_kulupler/core/env/app_environment.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_accounts.dart';
-import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_clubs.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_menu_state.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_menu_view_model.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
@@ -21,15 +20,11 @@ import 'package:intl/intl.dart';
 ///
 /// Bölümler: tema, dil, metin ölçeği; **demo hesaplar** (yalnızca
 /// [isEmulator]; CD-132 (23)) — hesaba dokunmak seed'deki hesapla oturum açar
-/// ve uygulamaya gider (nereye varılacağına router karar verir); **demo
-/// kulüpler** (yalnızca [isEmulator]) — her katılım biçiminden bir kulübün
-/// sayfasına (CLB-03) kısayol; oturum açıksa "Çıkış yap"; sistem ekranlarına
-/// (SYS-02 / 03 / 04) kısayollar.
+/// ve uygulamaya gider (nereye varılacağına router karar verir); oturum
+/// açıksa "Çıkış yap"; sistem ekranlarına (SYS-02 / 03 / 04) kısayollar.
 /// Anahtarlar `debug.*` biçimindedir (`GuKey.action` değil — tasarım aksiyon
 /// envanterine girmez).
 // TODO(T-43): çevrimdışı simülasyonu, boş / hata zorlama.
-// TODO(T-17): "Demo kulüpler" bölümü Kulüpler listesi (CLB-01) gelince
-// kaldırılır (`DebugDemoClubs`, `demoClubKey`, `debugMenuDemoClubs`).
 class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
   /// DebugMenu paneli. [isEmulator] yalnızca testte verilir (bayrak derleme
   /// sabitidir).
@@ -78,16 +73,6 @@ class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
 
   /// Demo hesap satırının anahtarı ([id]: `u_ayse` …).
   static Key demoAccountKey(String id) => ValueKey<String>('debug.demo.$id');
-
-  /// Demo kulüp satırının anahtarı ([id]: `c03` …).
-  static Key demoClubKey(String id) => ValueKey<String>('debug.club.$id');
-
-  static String _clubLabel(AppLocalizations l10n, DebugDemoClubKind kind) =>
-      switch (kind) {
-        DebugDemoClubKind.instant => l10n.clubTypeInstant,
-        DebugDemoClubKind.approval => l10n.clubTypeApproval,
-        DebugDemoClubKind.closed => l10n.clubsCardClosed,
-      };
 
   static String _roleLabel(AppLocalizations l10n, DebugDemoRole role) =>
       switch (role) {
@@ -239,15 +224,6 @@ class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
                   text: l10n.debugMenuSignInError(code),
                   card: true,
                 ),
-              ),
-            GuSectionTitle(title: l10n.debugMenuDemoClubs),
-            for (final club in DebugDemoClubs.all)
-              GuTile(
-                key: demoClubKey(club.id),
-                title: _clubLabel(l10n, club.kind),
-                subtitle: ClubDetailRoute(clubId: club.id).location,
-                chevron: true,
-                onTap: () => ClubDetailRoute(clubId: club.id).go(context),
               ),
           ],
           if (uid != null) ...[

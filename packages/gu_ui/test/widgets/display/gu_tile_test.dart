@@ -132,6 +132,33 @@ void main() {
       expect(_style(tester, 'Kulüpten ayrıl').color, colors.stateDanger);
     });
 
+    testWidgets('T-17 · GuTile · titleSpan: zengin başlık taban stille '
+        'çizilir, title erişilebilirlik etiketidir', (tester) async {
+      const colors = GuColors.light;
+      final text = GuTypography.resolve(colors);
+      final bold = TextStyle(fontWeight: text.titleL.fontWeight);
+      await tester.pumpApp(
+        _host(
+          GuTile(
+            title: 'Satranç Kulübü',
+            titleSpan: TextSpan(
+              children: [
+                TextSpan(text: 'Satranç', style: bold),
+                const TextSpan(text: ' Kulübü'),
+              ],
+            ),
+          ),
+        ),
+      );
+      final rich = tester.widget<Text>(find.text('Satranç Kulübü'));
+      expect(rich.data, isNull);
+      expect(rich.semanticsLabel, 'Satranç Kulübü');
+      expect(rich.style, text.bodyM.copyWith(color: colors.textHeading));
+      final spans = (rich.textSpan! as TextSpan).children!;
+      expect(spans.first.style, bold);
+      expect(spans.last.style, isNull);
+    });
+
     testWidgets('T-04 · GuTile · dokunma → callback, basılı zemin '
         'bg.surfaceMuted (plain hariç), disabled → çağrılmaz + opaklık .5, '
         'Semantics, dokunma hedefi', (tester) async {
