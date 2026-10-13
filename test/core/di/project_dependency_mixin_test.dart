@@ -48,6 +48,15 @@ void main() {
       expect(consumer.authRepository, same(GetIt.I<AuthRepository>()));
       expect(consumer.userRepository, same(GetIt.I<UserRepository>()));
       expect(consumer.settingsRepository, same(GetIt.I<SettingsRepository>()));
+      // T-15 · kulüp, üyelik, şikayet, engel, günlük
+      expect(consumer.clubRepository, same(GetIt.I<ClubRepository>()));
+      expect(
+        consumer.membershipRepository,
+        same(GetIt.I<MembershipRepository>()),
+      );
+      expect(consumer.reportRepository, same(GetIt.I<ReportRepository>()));
+      expect(consumer.blockRepository, same(GetIt.I<BlockRepository>()));
+      expect(consumer.activityRepository, same(GetIt.I<ActivityRepository>()));
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

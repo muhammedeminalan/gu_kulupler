@@ -17,7 +17,9 @@ part 'membership_model.g.dart';
 /// §5).
 ///
 /// Üyelik hiç soft delete edilmez: ayrılma, çıkarma ve geri çekme birer
-/// **durum geçişidir** ([status]). E-posta bu belgede yoktur (D-29).
+/// **durum geçişidir** ([status]). E-posta (D-29) ve başvuru notu (CD-137)
+/// bu belgede yoktur: belgeyi kulübün her aktif üyesi okuyabildiği için ikisi
+/// de `private/contact` alt belgesindedir (`MembershipContactModel`).
 /// Belge kimliği [id] JSON'a girmez.
 @JsonSerializable()
 final class MembershipModel extends Equatable with BaseFields {
@@ -31,7 +33,6 @@ final class MembershipModel extends Equatable with BaseFields {
     this._id,
     this.status = MembershipStatus.pending,
     this.role = ClubRole.member,
-    this.note = '',
     this.appliedAt,
     this.decidedAt,
     this.decidedBy,
@@ -76,10 +77,6 @@ final class MembershipModel extends Equatable with BaseFields {
   /// Kulüp rolü; yalnızca [status] `active` iken anlamlıdır.
   @JsonKey(name: FirestoreFields.role)
   final ClubRole role;
-
-  /// Başvuru notu.
-  @JsonKey(name: FirestoreFields.note)
-  final String note;
 
   /// Başvuranın başvuru anındaki anlık görüntüsü.
   @JsonKey(name: FirestoreFields.applicant)
@@ -184,7 +181,6 @@ final class MembershipModel extends Equatable with BaseFields {
     String? userId,
     MembershipStatus? status,
     ClubRole? role,
-    String? note,
     MembershipApplicantModel? applicant,
     DateTime? appliedAt,
     bool clearAppliedAt = false,
@@ -214,7 +210,6 @@ final class MembershipModel extends Equatable with BaseFields {
     userId: userId ?? this.userId,
     status: status ?? this.status,
     role: role ?? this.role,
-    note: note ?? this.note,
     applicant: applicant ?? this.applicant,
     appliedAt: clearAppliedAt ? null : (appliedAt ?? this.appliedAt),
     decidedAt: clearDecidedAt ? null : (decidedAt ?? this.decidedAt),
@@ -239,7 +234,6 @@ final class MembershipModel extends Equatable with BaseFields {
     userId,
     status,
     role,
-    note,
     applicant,
     appliedAt,
     decidedAt,

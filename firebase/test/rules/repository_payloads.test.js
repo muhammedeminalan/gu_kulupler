@@ -18,21 +18,43 @@
 //     (önce fotoğraf) reddedilir. Storage yüklemesi profil belgesini okur (`accountActive()`:
 //     `users/{uid}.status == 'active'`): createProfile'dan ÖNCE yükleme reddedilir, sonrasında —
 //     profil tamamlanmamış olsa da — geçer.
+//  4. T-15 — `contract.t15.scenarios`: FirebaseMembershipRepository (M1–M4, M7, M8), FirebaseReportRepository
+//     ve FirebaseBlockRepository'nin GERÇEK okuma + yazımları. Her senaryo kendi ön koşul belgeleriyle
+//     (`seed`, kurallar kapalıyken) koşar; `tx: true` ise okumalar ve yazımlar repository'deki gibi TEK
+//     transaction'dır (okumalar da kurallardan geçer: var olmayan kendi belgesi boş döner). `denied`
+//     aynı çağrının kasıtlı bozuk biçimleridir (sayaçsız, yanlış durum, başkası adına …): reddedilir ve
+//     hiçbir belge değişmez.
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { doc, serverTimestamp, setDoc, updateDoc, writeBatch } = require('firebase/firestore');
+const {
+  Timestamp,
+  collection,
+  doc,
+  getDoc,
+  increment,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} = require('firebase/firestore');
 const { getMetadata, ref, uploadBytes } = require('firebase/storage');
 const contract = require('../contracts/repository_payloads.json');
 const { contextFor, definition } = require('../helpers/contexts');
-const { readDoc } = require('../helpers/fixtures');
+const { readDoc, seedDocs } = require('../helpers/fixtures');
 const { getAdminContext } = require('../setup/env');
 
 const SENTINEL = contract.serverTimestamp;
+const INCREMENT = contract.t15.increment;
 
-/** Sözleşmedeki `@serverTimestamp` nöbetçilerini SDK nöbetçisine çevirir (iç içe map / liste dahil). */
+/**
+ * Sözleşmedeki nöbetçileri SDK nöbetçisine çevirir (iç içe map / liste dahil): `@serverTimestamp` →
+ * `serverTimestamp()`, `{"@increment": n}` → `increment(n)`.
+ */
 function materialize(value) {
   if (value === SENTINEL) return serverTimestamp();
   if (Array.isArray(value)) return value.map(materialize);
   if (value && typeof value === 'object') {
+    if (Object.keys(value).length === 1 && INCREMENT in value) return increment(value[INCREMENT]);
     return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, materialize(inner)]));
   }
   return value;
@@ -233,5 +255,124 @@ describe('AUT-05 gerçek yazım sırası (SetupProfileViewModel.submit) — sahi
     await assertFails(send(other, avatar.writes));
 
     expect(await readDoc(userPath)).toEqual(before);
+  });
+});
+
+describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, kurallar açık)', () => {
+  const t15 = contract.t15;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const DAYS_AGO = '@daysAgo:';
+
+  /** Ön koşul belgesindeki nöbetçiler: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  /** `{"$fixture": ad, …}` → `fixtures[ad]` + üzerine yazılan alanlar (nöbetçiler çözülmeden). */
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t15.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t15.fixtures[name]), ...fields };
+  }
+
+  /**
+   * Senaryonun ön koşul belgeleri; `variant.seed` yamaları üzerine yazılır. Gönderen başka bir bağlamsa
+   * (`variant.role`) onun da etkin bir kullanıcı belgesi kurulur: ret "kullanıcı belgesi yok"tan değil,
+   * "sahibi değil"den gelmelidir.
+   */
+  function seedOf(scenario, variant = {}) {
+    const docs = Object.fromEntries(Object.entries(scenario.seed).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) docs[path] = { ...docs[path], ...expand(patch) };
+    if (variant.role) docs[`users/${definition(variant.role).uid}`] = expand({ $fixture: 'user' });
+    return Object.fromEntries(Object.entries(docs).map(([path, data]) => [path, seedValue(data)]));
+  }
+
+  /** Bozuk varyantın yazımları: `patch` alanları üzerine yazılır, `without` sıraları çıkarılır. */
+  function writesOf(scenario, variant = {}) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    return scenario.writes
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+  }
+
+  /**
+   * Senaryoyu repository'nin gönderdiği biçimde gönderir: `tx` ise okumalar + yazımlar tek transaction
+   * (yeniden deneme yok); değilse okumalar tekil `get`, yazımlar `send`. `@autoId` yolu yeni bir kimlik alır.
+   */
+  async function run(db, scenario, writes) {
+    const refOf = (path) => doc(db, path.replace(t15.autoId, doc(collection(db, 'activity')).id));
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of scenario.reads) await tx.get(refOf(path));
+          for (const write of writes) {
+            if (write.op === 'set') tx.set(refOf(write.path), materialize(write.data));
+            else if (write.op === 'update') tx.update(refOf(write.path), materialize(write.data));
+            else throw new Error(`bilinmeyen işlem: ${write.op}`);
+          }
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of scenario.reads) await getDoc(refOf(path));
+    return writes.length === 0 ? undefined : send(db, writes);
+  }
+
+  /** Senaryonun dokunduğu sabit yollar (ön koşul + yazım; üretilen kimlikli günlük hariç). */
+  const pathsOf = (scenario, seed) => [
+    ...new Set([...Object.keys(seed), ...scenario.writes.map((write) => write.path)]),
+  ].filter((path) => !path.includes(t15.autoId));
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  test('sözleşme: nöbetçiler ve bağlam', () => {
+    expect(t15.autoId).toBe('@autoId');
+    expect(INCREMENT).toBe('@increment');
+    // Başvuranın kullanıcı belgesi etkin kullanıcıdır (activeUser()).
+    expect(t15.fixtures.user).toMatchObject({ status: 'active', profileComplete: true });
+    expect(t15.fixtures.contact.email).toBe(contract.email);
+  });
+
+  describe.each(t15.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test('gerçek okuma + yazımlar geçer', async () => {
+      const seed = seedOf(scenario);
+      await seedDocs(seed);
+
+      await assertSucceeds(run(ownerDb(), scenario, scenario.writes));
+
+      for (const write of scenario.writes) {
+        if (!write.path.includes(t15.autoId)) expect(await readDoc(write.path)).not.toBeNull();
+      }
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const seed = seedOf(scenario, variant);
+      await seedDocs(seed);
+      const paths = pathsOf(scenario, seed);
+      const before = await snapshot(paths);
+
+      await assertFails(run(contextFor(variant.role || contract.role).firestore(), scenario, writesOf(scenario, variant)));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
   });
 });

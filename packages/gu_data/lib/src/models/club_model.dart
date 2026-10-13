@@ -165,8 +165,11 @@ final class ClubModel extends Equatable with BaseFields {
   @JsonKey(name: FirestoreFields.suspendReason)
   final String? suspendReason;
 
-  /// `memberCount`'u son değiştiren batch'teki üyelik belgesinin yolu
-  /// (CD-41); sayaç hiç değişmediyse `null`.
+  /// Ayrılmış alan — istemci **yazmaz**, değeri hep `null`'dır (CD-137).
+  ///
+  /// CD-41 bu alana `memberCount`'u değiştiren üyeliğin yolunu yazdırıyordu;
+  /// kulüp belgesi doğrulanmış herkese açık olduğundan yol kimin katıldığını
+  /// / ayrıldığını sızdırırdı. Rules bu alanın yazımını reddeder.
   @JsonKey(name: FirestoreFields.lastMembershipRef)
   final String? lastMembershipRef;
 

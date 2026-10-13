@@ -3,7 +3,11 @@
 // sınıflandırılması ve ölçüm çıktısının JSON olarak yazılması.
 //
 // Rules bir işlemde 10, bir istekte 20 `get/exists/getAfter` çağrısına izin verir. Sınır aşılınca
-// emülatör de `permission-denied` döner; ayrım ileti metnindedir ("evaluation error"). Bütçe testleri
+// emülatör de `permission-denied` döner; ayrım ileti metnindedir: reddedilen erişim çağrısı
+// "Service call error. Function: [get] …" satırını bırakır. (Düz "evaluation error" ayırt etmez: emülatör
+// iletisi eşleşen her `allow` satırının sonucunu listeler ve `set` isteğinde `update` kuralının
+// `resource == null` hatası da orada görünür — T-15.) Emülatör aynı yolu bir kez sayar (tekil sayım;
+// PLAN §11.3): ölçüm 2026-10-13, 10 ayrı yol geçer, 11. reddedilir. Bütçe testleri
 // (`budget/*.test.js`, T-22/T-25/T-29/T-30) parça boyutunu büyüterek `ok` → `evaluation-error`
 // eşiğini bulur ve sonucu `budget/<ad>_result.json` dosyasına yazar; `tool/check_rules_parity.js`
 // (RP05, RP06) o dosyayı `Limits` ile karşılaştırır.
@@ -55,7 +59,7 @@ async function classify(request) {
     const message = String((error && error.message) || error);
     const denied = code === 'permission-denied' || /permission[_ -]denied/i.test(message);
     if (!denied) return { outcome: Outcome.other, message };
-    return { outcome: /evaluation error/i.test(message) ? Outcome.evaluationError : Outcome.permissionDenied, message };
+    return { outcome: /service call error/i.test(message) ? Outcome.evaluationError : Outcome.permissionDenied, message };
   }
 }
 

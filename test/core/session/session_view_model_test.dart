@@ -3,6 +3,8 @@
 // profileIncomplete / active / suspended; silinmiş hesap → signedOut), claim,
 // kullanıcı belgesi yenileme, tanıtım bayrağı, oturum sona erdi, hesap
 // değişimi ve yarış koruması (PLAN §12.2; architecture §6; CD-52, CD-133).
+// T-15: üyelik akışı (canlı; rol / erişim çözümü, güncelleme, dinleyici
+// ömrü, yarış) ve engellenenler (PLAN §10.6 #1, §12.2).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -23,7 +25,9 @@ import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
+import '../../fakes/fake_block_repository.dart';
 import '../../fakes/fake_feedback_service.dart';
+import '../../fakes/fake_membership_repository.dart';
 import '../../fakes/fake_url_launcher_service.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
@@ -911,6 +915,373 @@ void main() {
       await pumpEventQueue();
       expect(auth.watchAuthStateController.hasListener, isFalse);
       expect(auth.tokenErrorController.hasListener, isFalse);
+    });
+  });
+
+  group('T-15 · SessionViewModel · üyelik akışı ve roller', () {
+    late FakeMembershipRepository memberships;
+
+    setUp(() {
+      memberships = GetIt.I<MembershipRepository>() as FakeMembershipRepository;
+    });
+
+    MembershipModel membership(
+      String clubId, {
+      String uid = 'u1',
+      MembershipStatus status = MembershipStatus.active,
+      ClubRole role = ClubRole.member,
+    }) => MembershipModel(
+      clubId: clubId,
+      userId: uid,
+      applicant: const MembershipApplicantModel(
+        name: 'Mehmet',
+        avatarSeed: 's',
+      ),
+      status: status,
+      role: role,
+    );
+
+    test('aktif oturumda üyelikler canlı dinlenir ve kulüp kimliğiyle '
+        'eşlenir; üye / yönetici / başvuran rolleri çözülür', () async {
+      memberships
+        ..put(membership('c_member'))
+        ..put(membership('c_board', role: ClubRole.board))
+        ..put(membership('c_president', role: ClubRole.president))
+        ..put(membership('c_advisor', role: ClubRole.advisor))
+        ..put(membership('c_pending', status: MembershipStatus.pending))
+        ..put(membership('c_rejected', status: MembershipStatus.rejected))
+        ..put(membership('c_left', status: MembershipStatus.left))
+        // Başka kullanıcının üyeliği akışa girmez.
+        ..put(membership('c_other', uid: 'u2', role: ClubRole.president));
+      final container = await resolvedActive();
+      final notifier = notifierOf(container);
+
+      expect(memberships.callsTo('watchMyMemberships').single.args, ['u1']);
+      expect(memberships.activeListeners, 1);
+      expect(stateOf(container).memberships.keys, {
+        'c_member',
+        'c_board',
+        'c_president',
+        'c_advisor',
+        'c_pending',
+        'c_rejected',
+        'c_left',
+      });
+      expect(
+        {
+          for (final clubId in [
+            ...stateOf(container).memberships.keys,
+            'c_other',
+          ])
+            clubId: (notifier.roleIn(clubId), notifier.accessTo(clubId)),
+        },
+        {
+          'c_member': (ClubRole.member, ClubAccess.member),
+          'c_board': (ClubRole.board, ClubAccess.manager),
+          'c_president': (ClubRole.president, ClubAccess.manager),
+          'c_advisor': (ClubRole.advisor, ClubAccess.advisor),
+          // Yalnızca `active` üyelik rol taşır.
+          'c_pending': (null, ClubAccess.pending),
+          'c_rejected': (null, ClubAccess.rejected),
+          'c_left': (null, ClubAccess.visitor),
+          'c_other': (null, ClubAccess.visitor),
+        },
+      );
+    });
+
+    test('akış güncellemesi: başvuru onaylanınca rol kendiliğinden gelir; '
+        'ayrılınca düşer', () async {
+      memberships.put(membership('c01', status: MembershipStatus.pending));
+      final container = await resolvedActive();
+      expect(notifierOf(container).accessTo('c01'), ClubAccess.pending);
+
+      memberships.put(membership('c01', role: ClubRole.board));
+      await pumpEventQueue();
+      expect(notifierOf(container).roleIn('c01'), ClubRole.board);
+      expect(notifierOf(container).accessTo('c01'), ClubAccess.manager);
+
+      memberships.put(membership('c01', status: MembershipStatus.left));
+      await pumpEventQueue();
+      expect(notifierOf(container).roleIn('c01'), isNull);
+      expect(notifierOf(container).accessTo('c01'), ClubAccess.visitor);
+    });
+
+    test('süper admin üyelikten bağımsız superAdmin erişimi alır', () async {
+      auth.isSuperAdminResult = true;
+      memberships.put(membership('c01'));
+      final container = await resolvedActive();
+      expect(notifierOf(container).roleIn('c01'), ClubRole.member);
+      expect(notifierOf(container).accessTo('c01'), ClubAccess.superAdmin);
+    });
+
+    test('doğrulanmamış ve profili eksik oturumda dinleyici açılmaz; profil '
+        'tamamlanınca (refreshUser) açılır', () async {
+      memberships.put(membership('c01'));
+      auth.currentUser = _user(verified: false);
+      final container = await resolved();
+      expect(memberships.activeListeners, 0);
+
+      auth.currentUser = _user();
+      await notifierOf(container).resolve();
+      expect(stateOf(container).status, AuthStatus.profileIncomplete);
+      expect(memberships.activeListeners, 0);
+      expect(stateOf(container).memberships, isEmpty);
+
+      users.putActive('u1');
+      await notifierOf(container).refreshUser();
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 1);
+      expect(notifierOf(container).roleIn('c01'), ClubRole.member);
+    });
+
+    test('oturum kapanınca dinleyici bırakılır, üyelikler temizlenir; '
+        'kapanan oturumun geç gelen olayı yazılmaz', () async {
+      memberships.put(membership('c01'));
+      final container = await resolvedActive();
+      expect(stateOf(container).memberships, isNotEmpty);
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 0);
+      expect(stateOf(container).memberships, isEmpty);
+
+      memberships.put(membership('c01', role: ClubRole.president));
+      await pumpEventQueue();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+    });
+
+    test('başka hesaba geçiş: eski dinleyici kapanır, yeni hesabın '
+        'üyelikleri dinlenir; eski hesabın olayı karışmaz', () async {
+      memberships
+        ..put(membership('c01', role: ClubRole.president))
+        ..put(membership('c02', uid: 'u2'));
+      final container = await resolvedActive();
+      expect(notifierOf(container).roleIn('c01'), ClubRole.president);
+
+      users.putActive('u2');
+      final other = _user(uid: 'u2');
+      auth
+        ..currentUser = other
+        ..watchAuthStateController.add(other);
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 1);
+      expect(stateOf(container).uid, 'u2');
+      expect(stateOf(container).memberships.keys, {'c02'});
+
+      // Eski hesabın akışına düşen olay yeni oturuma yazılmaz.
+      memberships.put(membership('c03', role: ClubRole.board));
+      await pumpEventQueue();
+      expect(stateOf(container).memberships.keys, {'c02'});
+      expect(notifierOf(container).roleIn('c01'), isNull);
+    });
+
+    test('yarış: yeni hesap çözülürken (belge bekleniyor) eski hesabın '
+        'üyelikleri görünmez ve olayı yazılmaz', () async {
+      memberships.put(membership('c01', role: ClubRole.president));
+      final container = await resolvedActive();
+      final gate = Completer<void>();
+      users
+        ..putActive('u2')
+        ..getUserGate = gate;
+
+      final other = _user(uid: 'u2');
+      auth
+        ..currentUser = other
+        ..watchAuthStateController.add(other);
+      await pumpEventQueue();
+      expect(stateOf(container).isResolving, isTrue);
+      expect(stateOf(container).memberships, isEmpty);
+      expect(memberships.activeListeners, 0);
+
+      memberships.put(membership('c09', role: ClubRole.board));
+      await pumpEventQueue();
+      expect(stateOf(container).memberships, isEmpty);
+
+      gate.complete();
+      await pumpEventQueue();
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(stateOf(container).memberships, isEmpty);
+      expect(memberships.callsTo('watchMyMemberships').last.args, ['u2']);
+    });
+
+    test('akış hatası rolleri düşürmez; kopan dinleyiciyi refreshUser '
+        'yeniden bağlar', () async {
+      memberships.put(membership('c01', role: ClubRole.board));
+      final container = await resolvedActive();
+
+      memberships
+          .watchMyMembershipsController('u1')
+          .add(const FirebaseFailure(FirestoreError.unavailable));
+      await pumpEventQueue();
+      expect(notifierOf(container).roleIn('c01'), ClubRole.board);
+      expect(stateOf(container).isError, isFalse);
+      expect(memberships.activeListeners, 0);
+
+      memberships.memberships.clear();
+      await notifierOf(container).refreshUser();
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 1);
+      expect(stateOf(container).memberships, isEmpty);
+    });
+
+    test('akış oturumun düştüğünü bildirirse (unauthenticated) → '
+        'sessionExpired', () async {
+      final container = await resolvedActive();
+      memberships
+          .watchMyMembershipsController('u1')
+          .add(const FirebaseFailure(FirestoreError.unauthenticated));
+      await pumpEventQueue();
+      expect(stateOf(container).sessionExpired, isTrue);
+    });
+
+    test('signOut dinleyiciyi çıkıştan önce bırakır; çıkış başarısızsa '
+        'yeniden bağlar', () async {
+      memberships.put(membership('c01'));
+      final container = await resolvedActive();
+
+      auth.failNext(AuthError.network);
+      expect(await notifierOf(container).signOut(), isFalse);
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 1);
+      expect(notifierOf(container).roleIn('c01'), ClubRole.member);
+
+      expect(await notifierOf(container).signOut(), isTrue);
+      expect(memberships.activeListeners, 0);
+    });
+
+    test('hesap askıya alınınca dinleyici bırakılır', () async {
+      final container = await resolvedActive();
+      expect(memberships.activeListeners, 1);
+      users.users['u1'] = users.users['u1']!.copyWith(
+        status: UserStatus.suspended,
+      );
+      await notifierOf(container).refreshUser();
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 0);
+    });
+
+    test('kapsayıcı kapanınca üyelik dinleyicisi bırakılır', () async {
+      users.putActive('u1');
+      auth.currentUser = _user();
+      final container = ProviderContainer()..read(sessionViewModelProvider);
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 1);
+
+      container.dispose();
+      await pumpEventQueue();
+      expect(memberships.activeListeners, 0);
+    });
+  });
+
+  group('T-15 · SessionViewModel · engellenenler', () {
+    late FakeBlockRepository blocks;
+
+    setUp(() => blocks = GetIt.I<BlockRepository>() as FakeBlockRepository);
+
+    test('oturum çözülünce yürürlükteki engeller okunur (kaldırılmış engel '
+        've başkasının engeli hariç)', () async {
+      blocks
+        ..put('u1', 'u7')
+        ..put('u1', 'u8')
+        ..put('u2', 'u9');
+      await blocks.softDeleteBlock(blockerId: 'u1', blockedId: 'u8');
+      final container = await resolvedActive();
+
+      expect(stateOf(container).blockedUserIds, {'u7'});
+      expect(notifierOf(container).isBlocked('u7'), isTrue);
+      expect(notifierOf(container).isBlocked('u8'), isFalse);
+      expect(notifierOf(container).isBlocked('u9'), isFalse);
+    });
+
+    test('refreshUser engelleri yeniden okur; okunamazsa mevcut küme '
+        'korunur', () async {
+      blocks.put('u1', 'u7');
+      final container = await resolvedActive();
+
+      blocks.put('u1', 'u8');
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).blockedUserIds, {'u7', 'u8'});
+
+      blocks.failNext(FirestoreError.unavailable);
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).blockedUserIds, {'u7', 'u8'});
+      expect(stateOf(container).isError, isFalse);
+    });
+
+    test('kullanıcı belgesi okunamasa da refreshUser engelleri '
+        'yeniler', () async {
+      final container = await resolvedActive();
+      blocks.put('u1', 'u7');
+      users.failNext(FirestoreError.unavailable);
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).blockedUserIds, {'u7'});
+      expect(stateOf(container).status, AuthStatus.active);
+    });
+
+    test('aktif olmayan oturumda engeller okunmaz; oturum kapanınca küme '
+        'temizlenir', () async {
+      auth.currentUser = _user();
+      final container = await resolved();
+      expect(stateOf(container).status, AuthStatus.profileIncomplete);
+      expect(blocks.calls, isEmpty);
+
+      blocks.put('u1', 'u7');
+      users.putActive('u1');
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).blockedUserIds, {'u7'});
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      expect(stateOf(container).blockedUserIds, isEmpty);
+    });
+
+    test('yarış: engeller okunurken oturum kapanırsa geç gelen sonuç '
+        'yazılmaz', () async {
+      final gate = Completer<void>();
+      blocks
+        ..put('u1', 'u7')
+        ..fetchActiveBlocksGate = gate;
+      final container = await resolvedActive();
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(stateOf(container).blockedUserIds, isEmpty);
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      gate.complete();
+      await pumpEventQueue();
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+    });
+
+    test('yarış: eski yenilemenin engel sonucu yenisini ezmez', () async {
+      blocks.put('u1', 'u7');
+      final container = await resolvedActive();
+      final gate = Completer<void>();
+      blocks.fetchActiveBlocksGate = gate;
+
+      // İlk yenileme {u7} sonucunu kapıda bekletir.
+      final first = notifierOf(container).refreshUser();
+      await pumpEventQueue();
+      blocks
+        ..put('u1', 'u8')
+        ..fetchActiveBlocksGate = null;
+      await notifierOf(container).refreshUser();
+      expect(stateOf(container).blockedUserIds, {'u7', 'u8'});
+
+      gate.complete();
+      await first;
+      expect(stateOf(container).blockedUserIds, {'u7', 'u8'});
     });
   });
 

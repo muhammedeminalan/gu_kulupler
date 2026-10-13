@@ -89,8 +89,8 @@ enum FirestoreRuleCode {
   /// gelecekte) — TST-X4.
   retryCooldown,
 
-  /// Reddedilmiş ya da çıkarılmış kullanıcı anında katılamaz; başvuru akışına
-  /// yönlendirilir — SHT-05.
+  /// Reddedilmiş, çıkarılmış ya da başvurusunu iptal etmiş kullanıcı anında
+  /// katılamaz; başvuru akışına yönlendirilir — SHT-05.
   reapplyNeedsReview,
 
   /// Etkinlik kontenjanı dolu — DLG-15.

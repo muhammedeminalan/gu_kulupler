@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/models/enums/year_level.dart';
+import 'package:gu_data/src/models/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'membership_applicant_model.g.dart';
@@ -24,6 +25,17 @@ final class MembershipApplicantModel extends Equatable {
   /// Firestore haritasından üretir.
   factory MembershipApplicantModel.fromJson(Map<String, Object?> json) =>
       _$MembershipApplicantModelFromJson(json);
+
+  /// [user] profilinin şu anki anlık görüntüsü (ad, bölüm, sınıf, avatar
+  /// tohumu); başvuru ve katılma anında üyelik belgesine yazılır (PLAN
+  /// §10.4). Security Rules adın profil belgesindekiyle aynı olmasını ister.
+  factory MembershipApplicantModel.fromUser(UserModel user) =>
+      MembershipApplicantModel(
+        name: user.name,
+        avatarSeed: user.avatarSeed,
+        department: user.department,
+        year: user.year,
+      );
 
   /// Ad soyad (`users.name` kopyası).
   @JsonKey(name: FirestoreFields.name)

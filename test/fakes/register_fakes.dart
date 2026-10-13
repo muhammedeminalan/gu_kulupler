@@ -16,17 +16,23 @@ import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../helpers/fake_app_clock.dart';
+import 'fake_activity_repository.dart';
 import 'fake_app_info_service.dart';
 import 'fake_app_preferences_store.dart';
 import 'fake_auth_repository.dart';
 import 'fake_auth_service.dart';
+import 'fake_block_repository.dart';
+import 'fake_club_repository.dart';
 import 'fake_connectivity_service.dart';
 import 'fake_crash_service.dart';
 import 'fake_feedback_service.dart';
 import 'fake_firestore_service.dart';
 import 'fake_image_picker_service.dart';
+import 'fake_membership_repository.dart';
+import 'fake_notification_dispatcher.dart';
 import 'fake_permission_service.dart';
 import 'fake_remote_config_service.dart';
+import 'fake_report_repository.dart';
 import 'fake_settings_repository.dart';
 import 'fake_storage_service.dart';
 import 'fake_url_launcher_service.dart';
@@ -40,10 +46,14 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// sınıftır ve kayıtlı `FakeConnectivityService`'i okur. `FakeAuthRepository`
 /// kayıtlı `FakeAuthService` ve `FakeAppClock` üzerinde çalışır: servis
 /// fake'ine yazılan oturum durumu repository'den de görülür.
+/// `FakeMembershipRepository` kayıtlı `FakeClubRepository` ve `FakeAppClock`
+/// üzerinde çalışır: kulüp koşulları ve `memberCount` aynı kulüp kümesinden
+/// okunur / işlenir.
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
   final clock = FakeAppClock(kDefaultFakeNowUtc);
+  final clubs = FakeClubRepository();
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
@@ -64,6 +74,15 @@ void registerDefaultFakes() {
     )
     ..registerSingleton<UserRepository>(FakeUserRepository())
     ..registerSingleton<SettingsRepository>(FakeSettingsRepository())
+    // T-15 · kulüp, üyelik, şikayet, engel, günlük, bildirim dağıtıcısı
+    ..registerSingleton<ClubRepository>(clubs)
+    ..registerSingleton<MembershipRepository>(
+      FakeMembershipRepository(clock, clubs: clubs),
+    )
+    ..registerSingleton<ReportRepository>(FakeReportRepository())
+    ..registerSingleton<BlockRepository>(FakeBlockRepository())
+    ..registerSingleton<ActivityRepository>(FakeActivityRepository())
+    ..registerSingleton<NotificationDispatcher>(FakeNotificationDispatcher())
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
     // T-14 · izinler ve görsel seçimi

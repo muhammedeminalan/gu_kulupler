@@ -384,6 +384,97 @@ void main() {
     });
   });
 
+  group('T-15 · ProjectDependency · kulüp ve üyelik kayıtları', () {
+    test('beş repository gerçek uygulamalarıyla, bildirim dağıtıcısı Noop '
+        'olarak kaydedilir (CD-36); mixin getter’ları aynı örnekleri '
+        'döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(GetIt.I<ClubRepository>(), isA<FirebaseClubRepository>());
+      expect(
+        GetIt.I<MembershipRepository>(),
+        isA<FirebaseMembershipRepository>(),
+      );
+      expect(GetIt.I<ReportRepository>(), isA<FirebaseReportRepository>());
+      expect(GetIt.I<BlockRepository>(), isA<FirebaseBlockRepository>());
+      expect(GetIt.I<ActivityRepository>(), isA<FirebaseActivityRepository>());
+      expect(
+        GetIt.I<NotificationDispatcher>(),
+        isA<NoopNotificationDispatcher>(),
+      );
+
+      final consumer = _Consumer();
+      expect(consumer.clubRepository, same(GetIt.I<ClubRepository>()));
+      expect(
+        consumer.membershipRepository,
+        same(GetIt.I<MembershipRepository>()),
+      );
+      expect(consumer.reportRepository, same(GetIt.I<ReportRepository>()));
+      expect(consumer.blockRepository, same(GetIt.I<BlockRepository>()));
+      expect(consumer.activityRepository, same(GetIt.I<ActivityRepository>()));
+    });
+
+    test('üyelik geçişi kayıtlı FirestoreService üzerinde üyelik + sayaç + '
+        'günlüğü birlikte yazar; günlük kayıtlı ActivityRepository’den '
+        'okunur', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(
+          appClock: FakeAppClock(DateTime.utc(2026, 10, 13)),
+        ),
+      );
+      const applicant = UserModel(
+        uid: 'u_ayse',
+        name: 'Ayşe Işık',
+        nameLower: 'ayşe ışık',
+        avatarSeed: 'u_ayse',
+        profileComplete: true,
+      );
+      // Anlık görüntü işlem içinde güncel kullanıcı belgesinden okunur.
+      await firestore.db.doc('users/u_ayse').set(applicant.toJson());
+      await firestore.db
+          .doc('clubs/c01')
+          .set(
+            const ClubModel(
+              name: 'Satranç Kulübü',
+              nameLower: 'satranç kulübü',
+              categoryId: 'k01',
+              iconName: 'cpu',
+              palette: ClubPalette.red,
+              pattern: ClubPattern.dots,
+              founded: 2015,
+              presidentId: 'u_president',
+              memberCount: 4,
+              approvalRequired: false,
+            ).toJson(),
+          );
+      final consumer = _Consumer();
+
+      final joined = await consumer.membershipRepository.joinInstant(
+        clubId: 'c01',
+        applicant: applicant,
+        email: 'ayse@ogr.gumushane.edu.tr',
+      );
+
+      expect(joined.dataOrNull?.status, MembershipStatus.active);
+      final club = await consumer.clubRepository.getClub('c01');
+      expect(club.dataOrNull?.memberCount, 5);
+      final mine = await consumer.membershipRepository.listMine('u_ayse');
+      expect(mine.dataOrNull?.single.clubId, 'c01');
+      final log = await consumer.activityRepository.listActivity(
+        'c01',
+        const PageRequest(),
+      );
+      expect(log.dataOrNull?.items.single.kind, ActivityKind.memberJoined);
+    });
+  });
+
   group('T-11 · ProjectDependency · emülatör ortamı (W-53)', () {
     test('emülatörde Remote Config ve çökme servisi yereldir: Firebase '
         "SDK'sına dokunulmaz", () async {

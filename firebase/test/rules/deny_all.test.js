@@ -27,8 +27,12 @@ const budget = require('../helpers/budget');
 /**
  * Kuralları açılmış koleksiyonlar (`expectations` `collection` değeri); matrisleri kendi
  * `rules/<koleksiyon>.test.js` dosyasındadır. T-12: `users`, `users/private`, `settings`.
+ * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
  */
-const OPENED = ['users', 'users/private', 'settings'];
+const OPENED = [
+  'users', 'users/private', 'settings',
+  'clubs', 'memberships', 'memberships/private', 'reports', 'blocks', 'activity',
+];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
 const VARIANT_OF = { create: 'genericCreate', update: 'genericUpdate' };
@@ -91,11 +95,12 @@ describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e)
 );
 
 describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vakası süzgeçsiz ikiziyle koşar', () => {
-  const clubs = loadExpectations('clubs.json');
+  // Henüz kapalı bir koleksiyon (T-19): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
+  const posts = loadExpectations('posts.json');
   const filtered = { where: [['isDeleted', '==', false]], orderBy: [['createdAt', 'desc']] };
   runCases(
-    clubs,
-    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'CLB-01' })),
+    posts,
+    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'FED-01' })),
     { seed: seedTarget },
   );
 
@@ -103,13 +108,15 @@ describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vaka
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gu-exp-'));
     const write = (c) => {
       const file = path.join(dir, 'bad.json');
-      fs.writeFileSync(file, JSON.stringify({ ...clubs, cases: [c] }));
+      fs.writeFileSync(file, JSON.stringify({ ...posts, cases: [c] }));
       return file;
     };
     expect(() => loadExpectations(write({ role: 'member', op: 'remove', expect: 'deny' }))).toThrow(/geçersiz op/);
     expect(() => loadExpectations(write({ role: 'uye', op: 'get', expect: 'deny' }))).toThrow(/bilinmeyen Rules bağlamı/);
     expect(() => loadExpectations(write({ role: 'member', op: 'create', expect: 'allow' }))).toThrow(/variant zorunlu/);
     expect(() => loadExpectations(write({ role: 'member', op: 'get', expect: 'maybe' }))).toThrow(/geçersiz expect/);
+    expect(() => loadExpectations(write({ role: 'member', op: 'update', variant: 'x', batch: 'y', expect: 'deny' }))).toThrow(/birlikte verilemez/);
+    expect(() => loadExpectations(write({ role: 'member', op: 'get', batch: 'y', expect: 'deny' }))).toThrow(/yalnızca create\/update/);
   });
 });
 
@@ -130,17 +137,15 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: kulüp, gönderi, kendi
-  // üyeliği. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap /
-  // ayar belgesi T-12'de açıldı: users.test.js, settings.test.js.)
-  test.each(ALL_CONTEXTS)('%s · kulüp, gönderi ve kendi üyeliği → deny', async (role) => {
+  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: gönderi, etkinlik,
+  // kendi bildirimi. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap /
+  // ayar belgesi T-12'de; kulüp ve üyelik T-15'te açıldı: users / settings / clubs / memberships.test.js.)
+  test.each(ALL_CONTEXTS)('%s · gönderi, herkese açık etkinlik ve bildirim → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    const paths = ['clubs/c01', 'posts/p01'];
-    if (membership) paths.push(`memberships/${membership.clubId}_${uid}`);
-    for (const p of paths) await assertFails(getDoc(doc(db, p)));
+    for (const p of ['posts/p01', 'events/e_public', 'notifications/n01']) await assertFails(getDoc(doc(db, p)));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 

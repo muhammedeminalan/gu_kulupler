@@ -392,15 +392,20 @@ void main() {
   });
 
   group('T-08 · Anonymization.contactPayload', () {
-    test('iki anahtar, sırayla: email, emailLower', () {
+    test('üç anahtar, sırayla: email, emailLower, note (CD-137)', () {
       expect(Anonymization.contactPayload().keys.toList(), [
         'email',
         'emailLower',
+        'note',
       ]);
     });
 
-    test('iki alan da boş dizgi', () {
-      expect(Anonymization.contactPayload(), {'email': '', 'emailLower': ''});
+    test('üç alan da boş dizgi (başvuru notu e-postayla birlikte silinir)', () {
+      expect(Anonymization.contactPayload(), {
+        'email': '',
+        'emailLower': '',
+        'note': '',
+      });
     });
 
     test('accountPayload ile aynı e-posta değerleri; fcmTokens yok', () {
@@ -431,18 +436,27 @@ void main() {
       expect(_anonymizeChunkRow(), contains('`private/contact` `$span`'));
     });
 
-    test(
-      "Rules §3.4 private/contact güncelleme koşulunu sağlar (email=='')",
-      () {
-        expect(
-          readRepoFile('docs/firestore-rules-spec.md'),
-          contains(
-            '**U:** yalnızca anonimleştirme '
-            "(`email=='${Anonymization.contactPayload()['email']}'`)",
-          ),
-        );
-      },
-    );
+    test('Rules §3.4 private/contact anonimleştirme dalını sağlar (her alan '
+        'boş dizgi)', () {
+      final condition = [
+        for (final MapEntry(:key, :value)
+            in Anonymization.contactPayload().entries)
+          "$key=='$value'",
+      ].join(' && ');
+
+      expect(condition, "email=='' && emailLower=='' && note==''");
+      expect(
+        readRepoFile('docs/firestore-rules-spec.md'),
+        contains('**U (anonimleştirme — M14, T-29):** `$condition`'),
+      );
+    });
+
+    test('domain-model §11 adım 3 ile aynı: not da boşaltılır (CD-137)', () {
+      expect(
+        readRepoFile('docs/domain-model.md'),
+        contains("`private/contact` dokümanı: `email/emailLower/note=''`"),
+      );
+    });
   });
 
   group('T-08 · Anonymization.applicantPayload', () {

@@ -205,13 +205,13 @@ function convert(raw, { now, randomHex }) {
   for (const [id, membership] of entries(memberships)) {
     const user = users[membership.userId];
     const appliedAt = time(membership, 'appliedAt');
-    // `stale` atılır (DLG-18 çakışması çalışma zamanı davranışıdır).
+    // `stale` atılır (DLG-18 çakışması çalışma zamanı davranışıdır). Başvuru notu üyelik belgesine
+    // yazılmaz: belgeyi kulübün her aktif üyesi okuyabilir; not `private/contact`'tadır (CD-137).
     membershipDocs[id] = {
       clubId: membership.clubId,
       userId: membership.userId,
       status: membership.status,
       role: membership.role,
-      note: orNull(membership.note),
       applicant: {
         name: user.name,
         department: orNull(user.department),
@@ -227,7 +227,7 @@ function convert(raw, { now, randomHex }) {
       priorCount: orNull(membership.priorCount),
       ...base(appliedAt),
     };
-    contactDocs[id] = emailDoc(user, appliedAt);
+    contactDocs[id] = { ...emailDoc(user, appliedAt), note: orNull(membership.note) };
   }
 
   // ── posts · votes · comments ───────────────────────────────────────────────────────────────

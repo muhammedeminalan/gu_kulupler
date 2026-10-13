@@ -490,12 +490,16 @@ void main() {
       });
     });
 
+    // Hesap koşulları (`emailOk()`, yönetimde `activeUser()` — CD-137) rol
+    // tablosunun dışındadır: RolePolicy yalnızca rolü bilir; doğrulanmamış /
+    // askıdaki oturumu SessionState ve router ayıklar.
     test(
-      'seesInside = isSuper() || mActive(c): her aktif rol + süper admin',
+      'seesInside = emailOk() && (isSuper() || mActive(c)): her aktif rol + '
+      'süper admin',
       () {
         expect(
           _rulesFunction('seesInside'),
-          contains('return isSuper() || mActive(c);'),
+          contains('return emailOk() && (isSuper() || mActive(c));'),
         );
         expect(_rolesWith(ClubPermission.viewInside), ClubRole.values.toSet());
         expect(
@@ -506,10 +510,14 @@ void main() {
       },
     );
 
-    test('seesMgmt = isSuper() || isManager(c) || isAdvisor(c)', () {
+    test('seesMgmt = emailOk() && (isSuper() || (activeUser() && '
+        '(isManager(c) || isAdvisor(c))))', () {
       expect(
         _rulesFunction('seesMgmt'),
-        contains('return isSuper() || isManager(c) || isAdvisor(c);'),
+        contains(
+          'return emailOk() && (isSuper() || '
+          '(activeUser() && (isManager(c) || isAdvisor(c))));',
+        ),
       );
       expect(_rolesWith(ClubPermission.viewManagement), {
         ..._rulesRoles('isManager'),

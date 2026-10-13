@@ -32,8 +32,15 @@ part 'session_view_model.g.dart';
 ///
 /// Çözüm tamamlanana kadar `status` önceki değerinde kalır
 /// ([SessionState.isResolving]): doğrulanmış oturum, belgesi okunmadan
-/// `active` görünmez. Üyelikler ve engellenenler T-15'te bağlanır (gövdedeki
-/// sahipli notlar).
+/// `active` görünmez.
+///
+/// **Üyelikler (T-15):** oturum `active` çözülünce kullanıcının üyelikleri
+/// canlı dinlenir (`MembershipRepository.watchMyMemberships`, PLAN §10.6 #1)
+/// ve [SessionState.memberships]'e (kulüp kimliği → üyelik) yazılır; rol ve
+/// erişim ([roleIn], [accessTo]) buradan çözülür. Oturum kapanınca, hesap
+/// değişince ya da askıya alınınca dinleyici bırakılır. **Engellenenler**
+/// tek seferlik okunur (`BlockRepository.fetchActiveBlocks`): oturum
+/// çözülünce ve [refreshUser] ile.
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
     with ProjectDependencyMixin, SuspendedAccountMixin {
@@ -51,6 +58,11 @@ final class SessionViewModel extends _$SessionViewModel
   /// bir kez). Oturum kapanınca sıfırlanır.
   String? _claimsRefreshedFor;
 
+  /// Üyelik akışının aboneliği ve dinlenen kullanıcı ([_watchMemberships]).
+  StreamSubscription<FirestoreResult<List<MembershipModel>>>?
+  _membershipSubscription;
+  String? _membershipsFor;
+
   @override
   SessionState build() {
     final authSubscription = authRepository.watchAuthState().listen(
@@ -60,7 +72,8 @@ final class SessionViewModel extends _$SessionViewModel
     final tokenSubscription = authRepository.tokenErrors.listen(_onTokenError);
     ref
       ..onDispose(authSubscription.cancel)
-      ..onDispose(tokenSubscription.cancel);
+      ..onDispose(tokenSubscription.cancel)
+      ..onDispose(_stopMembershipWatch);
     return SessionState(onboardingSeen: appPreferencesStore.onboardingSeen);
   }
 
@@ -70,7 +83,9 @@ final class SessionViewModel extends _$SessionViewModel
 
   /// `users/{uid}` belgesini yeniden okur ve durumu ona göre yeniden çözer
   /// (AUT-05 bitişi, profil düzenleme sonrası): `profileIncomplete` ↔
-  /// `active`, askı, silinmiş hesap.
+  /// `active`, askı, silinmiş hesap. Aktif oturumda engellenenler de yeniden
+  /// okunur (engelle / engeli kaldır sonrası) ve kopmuş üyelik akışı yeniden
+  /// bağlanır.
   ///
   /// Oturum henüz çözülmediyse, doğrulanmamışsa ya da bir çözüm sürüyorsa tam
   /// çözüm çalışır ([resolve]). Çözülmüş oturumda belge okunamazsa mevcut
@@ -87,22 +102,21 @@ final class SessionViewModel extends _$SessionViewModel
       return resolve();
     }
     final epoch = ++_epoch;
-    // TODO(T-15): `blockRepository.fetchActiveBlocks(uid)` →
-    // `blockedUserIds`.
     final result = await userRepository.getUser(user.uid);
     if (!_isCurrent(epoch)) return;
     if (result case FirebaseFailure(
       :final error,
     ) when error != FirestoreError.unauthenticated) {
       AppLogger.warn('Kullanıcı belgesi yenilenemedi: ${error.name}');
-      return;
+    } else {
+      await _applyUser(
+        result,
+        epoch,
+        isSuperAdmin: state.isSuperAdmin,
+        isFullResolve: false,
+      );
     }
-    await _applyUser(
-      result,
-      epoch,
-      isSuperAdmin: state.isSuperAdmin,
-      isFullResolve: false,
-    );
+    await _refreshBlocks(user.uid, epoch);
   }
 
   /// `superadmin` claim'ini sunucudan yenileyerek okur. Oturum yoksa
@@ -148,6 +162,10 @@ final class SessionViewModel extends _$SessionViewModel
   /// `sessionExpired` inmez).
   Future<bool> signOut() async {
     // TODO(T-23): `localReminderService.cancelAll()`.
+    // Üyelik dinleyicisi çıkıştan önce bırakılır: kapanan oturumun açık
+    // dinleyicisi yetki hatası üretir.
+    final watched = _membershipsFor;
+    _stopMembershipWatch();
     final result = await authRepository.signOut();
     switch (result) {
       case FirebaseSuccess():
@@ -155,6 +173,13 @@ final class SessionViewModel extends _$SessionViewModel
         return true;
       case FirebaseFailure(:final error):
         AppLogger.warn('Oturum kapatılamadı: ${error.name}');
+        // Oturum açık kaldı: aktifse üyelikler yeniden dinlenir.
+        if (ref.mounted &&
+            watched != null &&
+            watched == state.uid &&
+            state.status == AuthStatus.active) {
+          _watchMemberships(watched);
+        }
         return false;
     }
   }
@@ -210,18 +235,24 @@ final class SessionViewModel extends _$SessionViewModel
     final onboardingSeen = appPreferencesStore.onboardingSeen;
     if (user == null) {
       _claimsRefreshedFor = null;
+      _stopMembershipWatch();
       state = _withoutUser(
         state,
       ).copyWith(status: AuthStatus.signedOut, onboardingSeen: onboardingSeen);
       return;
     }
     final base = user.uid == state.uid ? state : _withoutUser(state);
+    // Başka hesabın dinleyicisi yeni hesabın çözümünü beklemeden bırakılır.
+    if (_membershipsFor != user.uid) _stopMembershipWatch();
     if (!user.emailVerified) {
+      _stopMembershipWatch();
       state = base.copyWith(
         status: AuthStatus.unverified,
         uid: user.uid,
         onboardingSeen: onboardingSeen,
         isSuperAdmin: false,
+        memberships: const <String, MembershipModel>{},
+        blockedUserIds: const <String>{},
         isResolving: false,
         isError: false,
         sessionExpired: false,
@@ -244,6 +275,7 @@ final class SessionViewModel extends _$SessionViewModel
       isSuperAdmin: isSuperAdmin,
       isFullResolve: true,
     );
+    await _refreshBlocks(user.uid, epoch);
   }
 
   /// [uid] oturumunun `superadmin` claim'i. Çözüm bittiyse `null`: sonuç
@@ -339,19 +371,84 @@ final class SessionViewModel extends _$SessionViewModel
     required bool? sessionExpired,
     UserModel? user,
   }) {
-    // TODO(T-15): `membershipRepository.watchMyMemberships(uid)` canlı akışı
-    // → `memberships`; `blockRepository.fetchActiveBlocks(uid)` →
-    // `blockedUserIds`.
+    final uid = state.uid;
+    final isActive = status == AuthStatus.active && uid != null;
+    // Profili eksik kullanıcının üyeliği olamaz (Rules `activeUser()` ister):
+    // dinleyici yalnızca aktif oturumda açıktır.
+    if (!isActive) _stopMembershipWatch();
     state = state.copyWith(
       status: status,
       user: user,
       clearUser: user == null,
       clearSuspendReason: true,
       isSuperAdmin: isSuperAdmin,
+      memberships: isActive ? null : const <String, MembershipModel>{},
+      blockedUserIds: isActive ? null : const <String>{},
       isResolving: false,
       isError: false,
       sessionExpired: sessionExpired,
     );
+    if (isActive) _watchMemberships(uid);
+  }
+
+  /// [uid] kullanıcısının üyeliklerini canlı dinlemeye başlar (PLAN §10.6
+  /// #1). Aynı kullanıcı zaten dinleniyorsa etkisizdir; başka kullanıcının
+  /// dinleyicisi önce bırakılır.
+  void _watchMemberships(String uid) {
+    if (_membershipsFor == uid && _membershipSubscription != null) return;
+    _stopMembershipWatch();
+    _membershipsFor = uid;
+    _membershipSubscription = membershipRepository
+        .watchMyMemberships(uid)
+        .listen((event) => _onMemberships(uid, event));
+  }
+
+  void _stopMembershipWatch() {
+    unawaited(_membershipSubscription?.cancel());
+    _membershipSubscription = null;
+    _membershipsFor = null;
+  }
+
+  /// Üyelik akışının olayı. Kapanmış ya da değişmiş oturumun geç gelen olayı
+  /// yok sayılır.
+  void _onMemberships(
+    String uid,
+    FirestoreResult<List<MembershipModel>> event,
+  ) {
+    if (!ref.mounted || _membershipsFor != uid || state.uid != uid) return;
+    switch (event) {
+      case FirebaseSuccess(:final data):
+        state = state.copyWith(
+          memberships: {
+            for (final membership in data) membership.clubId: membership,
+          },
+        );
+      case FirebaseFailure(:final error):
+        // Son bilinen üyelikler korunur (yetkiyi Rules uygular). Firestore
+        // dinleyicisi hatadan sonra olay üretmez: abonelik bırakılır, bir
+        // sonraki çözüm ([resolve] / [refreshUser]) yeniden bağlar.
+        AppLogger.warn('Üyelik akışı hata verdi: ${error.name}');
+        _stopMembershipWatch();
+        if (error == FirestoreError.unauthenticated) onTokenExpired();
+    }
+  }
+
+  /// Aktif oturumun engellediği kullanıcıları okur (tek seferlik). Okunamazsa
+  /// mevcut küme korunur; eskimiş çözümün sonucu yazılmaz.
+  Future<void> _refreshBlocks(String uid, int epoch) async {
+    if (!_isCurrent(epoch) ||
+        state.uid != uid ||
+        state.status != AuthStatus.active) {
+      return;
+    }
+    final result = await blockRepository.fetchActiveBlocks(uid);
+    if (!_isCurrent(epoch) || state.uid != uid) return;
+    switch (result) {
+      case FirebaseSuccess(:final data):
+        state = state.copyWith(blockedUserIds: data);
+      case FirebaseFailure(:final error):
+        AppLogger.warn('Engellenenler okunamadı: ${error.name}');
+    }
   }
 
   /// Hesabı silinmiş (anonimleştirilmiş) kullanıcının oturumunu kapatır;
@@ -361,6 +458,7 @@ final class SessionViewModel extends _$SessionViewModel
   /// hata olur (R1 → SYS-01 → SYS-02 "Yeniden dene" kapatmayı yeniden dener).
   Future<void> _closeDeletedAccount(int epoch) async {
     // TODO(T-29): `accountDeletionRepository.resumeCleanup(uid)` + TST-22.
+    _stopMembershipWatch();
     final result = await authRepository.signOut();
     if (result.isSuccess || !_isCurrent(epoch)) return;
     AppLogger.warn(
@@ -370,6 +468,8 @@ final class SessionViewModel extends _$SessionViewModel
       status: AuthStatus.unknown,
       clearUser: true,
       isSuperAdmin: false,
+      memberships: const <String, MembershipModel>{},
+      blockedUserIds: const <String>{},
       isResolving: false,
       isError: true,
     );
@@ -395,6 +495,7 @@ final class SessionViewModel extends _$SessionViewModel
     // Bildirim bayrağı durumdan önce kalkar: durumu dinleyen giriş ekranı
     // bildirimi aynı anda isteyebilir.
     _suspendedNoticePending = true;
+    _stopMembershipWatch();
     state = state.copyWith(
       status: AuthStatus.suspended,
       user: user,

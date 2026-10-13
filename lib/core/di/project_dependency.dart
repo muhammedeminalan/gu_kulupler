@@ -141,6 +141,21 @@ abstract final class ProjectDependency {
       Random.secure(),
     );
     final settingsRepository = FirebaseSettingsRepository(firestoreService);
+    // T-15 · kulüp, üyelik, şikayet, engel, günlük. Bildirim dağıtıcısı
+    // T-25'e kadar hiçbir belge yazmaz (CD-36): üyelik geçişleri çalışır,
+    // bildirim üretilmez. Günlük repository'si üyelik geçişleriyle paylaşılır
+    // (kayıt asıl yazımla aynı işlemde eklenir).
+    const notificationDispatcher = NoopNotificationDispatcher();
+    final clubRepository = FirebaseClubRepository(firestoreService);
+    final activityRepository = FirebaseActivityRepository(firestoreService);
+    final membershipRepository = FirebaseMembershipRepository(
+      firestoreService,
+      activityRepository,
+      notificationDispatcher,
+      appClock,
+    );
+    final reportRepository = FirebaseReportRepository(firestoreService);
+    final blockRepository = FirebaseBlockRepository(firestoreService);
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -159,6 +174,13 @@ abstract final class ProjectDependency {
       ..registerSingleton<AuthRepository>(authRepository)
       ..registerSingleton<UserRepository>(userRepository)
       ..registerSingleton<SettingsRepository>(settingsRepository)
+      // T-15 · kulüp ve üyelik repository'leri + bildirim dağıtıcısı
+      ..registerSingleton<NotificationDispatcher>(notificationDispatcher)
+      ..registerSingleton<ClubRepository>(clubRepository)
+      ..registerSingleton<MembershipRepository>(membershipRepository)
+      ..registerSingleton<ReportRepository>(reportRepository)
+      ..registerSingleton<BlockRepository>(blockRepository)
+      ..registerSingleton<ActivityRepository>(activityRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)
