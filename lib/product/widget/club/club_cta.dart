@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
+import 'package:gu_kulupler/product/widget/club/adaptive_pair.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// [ClubCta]'nın çizdiği çıktı — prototip `ClubCTA` dalları
@@ -247,13 +248,22 @@ class ClubCta extends StatelessWidget {
         };
         if (badge == null) return button;
         // `<span class="row gap8">` (cards.js:26): rozet kendi genişliğinde,
-        // düğme kalan alanda.
+        // düğme kalan alanda. Tam genişlikte düğmeye yer kalmazsa (dar ızgara
+        // sütunu × büyük metin ölçeği) rozet üstte, düğme altta dizilir.
+        if (full) {
+          return AdaptivePair(
+            gap: GuSpacing.s8,
+            fill: AdaptivePairFill.trailing,
+            leading: badge,
+            trailing: button,
+          );
+        }
         return Row(
-          mainAxisSize: full ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           spacing: GuSpacing.s8,
           children: [
             badge,
-            if (full) Expanded(child: button) else Flexible(child: button),
+            Flexible(child: button),
           ],
         );
     }

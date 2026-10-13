@@ -234,4 +234,48 @@ void main() {
       expect(store.photoAccessExplained, isTrue);
     });
   });
+
+  group('T-17 · SharedAppPreferencesStore · recentSearches (CLB-02)', () {
+    test('anahtar adı; varsayılan boş (load öncesi ve boş diskte)', () async {
+      expect(AppPreferenceKeys.recentSearches, 'pref.recentSearches');
+      final store = SharedAppPreferencesStore();
+      expect(store.recentSearches, isEmpty);
+      await store.load();
+      expect(store.recentSearches, isEmpty);
+    });
+
+    test(
+      'yazılır, diske işler ve yeni depo okur; fazlası '
+      'Limits.recentSearchesMax sınırında kesilir; boş liste temizler',
+      () async {
+        final store = SharedAppPreferencesStore();
+        await store.load();
+        final terms = [for (var i = 0; i < 8; i++) 'arama $i'];
+
+        expect(await store.setRecentSearches(terms), isTrue);
+        expect(store.recentSearches, terms.take(6));
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getStringList(AppPreferenceKeys.recentSearches),
+          terms.take(6),
+        );
+
+        final reopened = SharedAppPreferencesStore();
+        await reopened.load();
+        expect(reopened.recentSearches, terms.take(6));
+
+        expect(await reopened.setRecentSearches(const []), isTrue);
+        expect(reopened.recentSearches, isEmpty);
+      },
+    );
+
+    test('yanlış tipte değer boş listeye düşer', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.recentSearches: 'hackathon',
+      });
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      expect(store.recentSearches, isEmpty);
+    });
+  });
 }

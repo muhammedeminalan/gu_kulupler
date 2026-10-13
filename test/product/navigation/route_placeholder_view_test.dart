@@ -52,7 +52,8 @@ void main() {
       const owners = {
         // T-13: ONB-01 / AUT-01, T-14: AUT-03 / AUT-05 gerçek view'a bağlandı.
         'lib/product/navigation/routes/auth_routes.dart': 0,
-        'lib/product/navigation/routes/clubs_routes.dart': 1,
+        // T-17: Kulüpler sekme kökü gerçek view'a bağlandı (CLB-01).
+        'lib/product/navigation/routes/clubs_routes.dart': 0,
         'lib/product/navigation/routes/events_routes.dart': 1,
         'lib/product/navigation/routes/notifications_routes.dart': 1,
         'lib/product/navigation/routes/admin_routes.dart': 1,

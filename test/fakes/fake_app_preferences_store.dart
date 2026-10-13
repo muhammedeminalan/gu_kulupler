@@ -7,6 +7,7 @@
 //   final store = FakeAppPreferencesStore()
 //     ..values[AppPreferenceKeys.themeMode] = 'dark';
 import 'package:flutter/material.dart' show Locale, ThemeMode;
+import 'package:gu_data/gu_data.dart' show Limits;
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -64,6 +65,15 @@ final class FakeAppPreferencesStore extends FakeBase
       values[AppPreferenceKeys.photoAccessExplained] == true;
 
   @override
+  List<String> get recentSearches =>
+      switch (values[AppPreferenceKeys.recentSearches]) {
+        final List<Object?> terms => List<String>.unmodifiable(
+          terms.whereType<String>().take(Limits.recentSearchesMax),
+        ),
+        _ => const <String>[],
+      };
+
+  @override
   Future<bool> setThemeMode(ThemeMode mode) =>
       _write('setThemeMode', mode, AppPreferenceKeys.themeMode, mode.name);
 
@@ -101,6 +111,14 @@ final class FakeAppPreferencesStore extends FakeBase
     value,
     AppPreferenceKeys.photoAccessExplained,
     value,
+  );
+
+  @override
+  Future<bool> setRecentSearches(List<String> terms) => _write(
+    'setRecentSearches',
+    List<String>.of(terms),
+    AppPreferenceKeys.recentSearches,
+    terms.take(Limits.recentSearchesMax).toList(),
   );
 
   /// Gerçek depo gibi: bellekteki değer her durumda güncellenir; bekleyen

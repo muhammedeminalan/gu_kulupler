@@ -321,10 +321,18 @@ service cloud.firestore {
       // `cancelled` belgeleri (c)'ye girmez).
       // (b) ve (c) de `emailOk()` ister; (b) ayrıca aktif hesap (`seesMgmt`): askıdaki yönetici başvuruları
       // listeleyemez. Askıdaki sıradan üye üye listesini okur (`seesInside`), kendi belgesini de ((a)).
+      // (d) yönetici görünürlüğü (T-17, CD-139): kulübün ETKİN yöneticileri — başkan, yönetim kurulu,
+      // danışman — doğrulanmış ve AKTİF her kullanıcıya okunur (CLB-03 "Yönetim kurulu", kulüp kartı avatar
+      // grubu). Sıradan üyeler ve `pending` / `rejected` / `removed` / `left` / `cancelled` belgeleri (d)'ye
+      // girmez: tam üye listesi üyelere özel kalır ((c)); `private/contact` bu daldan ETKİLENMEZ (kapalı).
+      function isVisibleManager() {
+        return resource.data.status == 'active' && resource.data.role in ['president', 'board', 'advisor'];
+      }
       function canReadMembership() {
         return (emailOk() && resource.data.userId == uid())
             || seesMgmt(resource.data.clubId)
-            || (resource.data.status == 'active' && seesInside(resource.data.clubId));
+            || (resource.data.status == 'active' && seesInside(resource.data.clubId))
+            || (isVisibleManager() && activeUser());
       }
 
       // Karar alanları boş mu (anahtar yok ya da açık null — W-51)?
@@ -458,7 +466,8 @@ service cloud.firestore {
       // sorusu yanıtlanmaz).
       allow get: if (resource == null && emailOk() && ownMembershipId()) || canReadMembership();
       // Sorgu sözleşmesi (rules-spec §6): `userId == uid` · `clubId` + `status == 'active'` (üye) ·
-      // `clubId` (yönetim). Süzgeçsiz sorgu yalnızca süper admine açıktır.
+      // `clubId` (yönetim) · `status == 'active'` + `role in ['board', 'president'(, 'advisor')]` (herkes —
+      // (d), `listManagers`). Süzgeçsiz sorgu yalnızca süper admine açıktır.
       allow list: if canReadMembership();
       allow create: if canApply() || canJoinInstant();
       allow update: if canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave();

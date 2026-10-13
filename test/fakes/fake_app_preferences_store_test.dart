@@ -92,6 +92,24 @@ void main() {
       expect(fake.locale, isNull);
     });
 
+    test('recentSearches: boşken boş; yazım AppPreferenceKeys anahtarıyla '
+        'saklanır, fazlası kesilir (gerçek depo gibi)', () async {
+      final fake = FakeAppPreferencesStore();
+      expect(fake.recentSearches, isEmpty);
+
+      final terms = [for (var i = 0; i < 8; i++) 'arama $i'];
+      expect(await fake.setRecentSearches(terms), isTrue);
+      expect(fake.recentSearches, terms.take(6));
+      expect(fake.values[AppPreferenceKeys.recentSearches], terms.take(6));
+      expect(fake.calls, [
+        FakeCall('setRecentSearches', [terms]),
+      ]);
+
+      fake.failNext();
+      expect(await fake.setRecentSearches(const []), isFalse);
+      expect(fake.recentSearches, isEmpty);
+    });
+
     test('failNext: yazım false döner ama bellekteki değer güncellenir '
         '(gerçek depo gibi)', () async {
       final fake = FakeAppPreferencesStore()..failNext();

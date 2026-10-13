@@ -9,8 +9,8 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_detail_state.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
-import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/mixin/club_join_mixin.dart';
 import 'package:gu_kulupler/product/mixin/external_link_mixin.dart';
 import 'package:gu_kulupler/product/mixin/membership_dialogs_mixin.dart';
 import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
@@ -26,10 +26,10 @@ part 'club_detail_view_model.g.dart';
 /// prototip `S['CLB-03']`, `screens-clubs.js:77–112`).
 ///
 /// * Kulübü açılışta okur; erişim kipi ve üyelik belgesi oturumdan canlı
-///   gelir (`SessionState.accessTo` / `.memberships`). Yönetim kurulu ve
-///   üye önizlemesi yalnızca kulübün içini görenlere yüklenir
-///   (`ClubDetailState.seesInside` — Rules üyelik belgelerini üye olmayana
-///   okutmaz).
+///   gelir (`SessionState.accessTo` / `.memberships`). Yönetim kurulu herkese
+///   yüklenir (Rules yönetici üyeliklerini doğrulanmış her kullanıcıya açar —
+///   CD-139); üye önizlemesi kulübün içini görende (`ClubDetailState
+///   .seesInside`) üye listesinden, görmeyende yöneticilerden kurulur.
 /// * Sheet açma ve gezinme view'dadır; ViewModel hangisinin gerektiğini
 ///   sonuç değeriyle söyler. Onay dialogları (DLG-08, DLG-09, DLG-12, DLG-32)
 ///   ve toast'lar buradan gösterilir.
@@ -56,15 +56,10 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     with
         ProjectDependencyMixin,
         WriteGuardMixin,
+        ClubJoinMixin,
         ExternalLinkMixin,
         MembershipDialogsMixin,
         ReportReceivedMixin {
-  static const Set<FirestoreError> _networkErrors = {
-    FirestoreError.offline,
-    FirestoreError.unavailable,
-    FirestoreError.timeout,
-  };
-
   /// Kulübün olmadığını söyleyen okuma hataları (→ SYS-04).
   static const Set<FirestoreError> _missingErrors = {
     FirestoreError.notFound,
@@ -136,10 +131,11 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
   /// "Katıl" (`CLB-03.join.*`): katılım akışının girişi (prototip
   /// `startJoin`, `cards.js:12–18`).
   ///
-  /// Sıra: başvurular kapalı → TST-X1; yeniden başvuru beklemesi sürüyor →
-  /// [JoinOutcome.waiting] (view CLB-05'e gider); kulüp onay istiyor ya da
-  /// kullanıcının eski kaydı var (ret / çıkarma / iptal — anında katılamaz)
-  /// → [JoinOutcome.needsApplication] (view SHT-05'i açar); aksi halde
+  /// Karar ortak çekirdektedir (`ClubJoinMixin.joinGate`): başvurular kapalı
+  /// → TST-X1; yeniden başvuru beklemesi sürüyor → [JoinOutcome.waiting]
+  /// (view CLB-05'e gider); kulüp onay istiyor ya da kullanıcının eski kaydı
+  /// var (ret / çıkarma / iptal — anında katılamaz) →
+  /// [JoinOutcome.needsApplication] (view SHT-05'i açar); aksi halde
   /// [joinInstant].
   ///
   /// [formatDate] TST-X4'ün `{date}` metnini üretir (yerel ayara göre
@@ -152,16 +148,7 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     if (club == null || club.isSuspended || state.isActing) {
       return JoinOutcome.failed;
     }
-    if (!club.applicationsOpen) {
-      showApplicationsClosed();
-      return JoinOutcome.closed;
-    }
-    if (state.retryAfterAt(appClock.nowUtc()) != null) {
-      return JoinOutcome.waiting;
-    }
-    if (club.approvalRequired || _needsReview(state.membership?.status)) {
-      return JoinOutcome.needsApplication;
-    }
+    if (joinGate(club, state.membership) case final outcome?) return outcome;
     return joinInstant(formatDate: formatDate, onOpenClub: onOpenClub);
   }
 
@@ -212,10 +199,6 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     feedback.showToast(ToastId.tst34, onAction: onOpenClub);
     unawaited(refresh());
   }
-
-  /// Devre dışı "Başvurular kapalı" düğmesine dokunma (`cards.js:22`) →
-  /// TST-X1.
-  void showApplicationsClosed() => feedback.showToast(ToastId.tstX1);
 
   /// "Kulüpten ayrıl" (SHT-06): DLG-08 onayı → `membershipRepository.leave`
   /// → TST-39. Başkan devretmeden ayrılamaz: onay sorulmadan DLG-09
@@ -352,17 +335,9 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     await showReportReceivedDialog();
   }
 
-  /// Reddedilmiş, çıkarılmış ya da başvurusunu geri çekmiş kullanıcı onaysız
-  /// kulübe de başvuruyla girer (`MembershipRepository.joinInstant` →
-  /// `reapplyNeedsReview`).
-  static bool _needsReview(MembershipStatus? status) =>
-      status == MembershipStatus.rejected ||
-      status == MembershipStatus.removed ||
-      status == MembershipStatus.cancelled;
-
   /// Başkan ve yönetim kurulu, başkan önde; kalanların sırası korunur
   /// (`actions.js:35`).
-  static List<MembershipModel> _presidentFirst(List<MembershipModel> all) => [
+  static List<MembershipModel> presidentFirst(List<MembershipModel> all) => [
     for (final m in all)
       if (m.role == ClubRole.president) m,
     for (final m in all)
@@ -400,31 +375,33 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     }
   }
 
-  /// Yönetim kurulunu ve üye önizlemesini okur. Kulübün içini görmeyen
-  /// kullanıcı için sorgu yapılmaz ve listeler boşaltılır. Okuma hatası
+  /// Yönetim kurulunu ve üye önizlemesini okur. Yöneticiler doğrulanmış her
+  /// kullanıcıya açıktır (Rules üyelik okuma dalı (d), CD-139); üye listesi
+  /// yalnızca kulübün içini görene okunur — görmeyen kullanıcıda önizleme
+  /// yöneticilerden kurulur ("+N" `memberCount`'tan gelir). Okuma hatası
   /// sayfayı bozmaz: önceki liste kalır.
   Future<void> _loadPeople() async {
-    if (!state.seesInside) {
-      if (state.managers.isNotEmpty || state.memberPreview.isNotEmpty) {
-        state = state.copyWith(managers: const [], memberPreview: const []);
-      }
-      return;
-    }
+    final inside = state.seesInside;
     final (managers, members) = await (
       membershipRepository.listManagers(clubId),
-      membershipRepository.listActiveMembers(
-        clubId,
-        const PageRequest(limit: GuSizes.avatarGroupMax),
-      ),
+      inside
+          ? membershipRepository.listActiveMembers(
+              clubId,
+              const PageRequest(limit: GuSizes.avatarGroupMax),
+            )
+          : Future<FirestoreResult<PageResult<MembershipModel>>?>.value(),
     ).wait;
-    // Okuma sürerken kullanıcı ayrılmış olabilir.
-    if (!ref.mounted || !state.seesInside) return;
+    // Okuma sürerken erişim kipi değişmiş olabilir (katıldı / ayrıldı): yeni
+    // kipin okuması `_onSession`'dan ayrıca başlar.
+    if (!ref.mounted || state.seesInside != inside) return;
+    final board = switch (managers) {
+      FirebaseSuccess(:final data) => presidentFirst(data),
+      FirebaseFailure() => state.managers,
+    };
     state = state.copyWith(
-      managers: switch (managers) {
-        FirebaseSuccess(:final data) => _presidentFirst(data),
-        FirebaseFailure() => state.managers,
-      },
+      managers: board,
       memberPreview: switch (members) {
+        null => board.take(GuSizes.avatarGroupMax).toList(growable: false),
         FirebaseSuccess(:final data) => data.items,
         FirebaseFailure() => state.memberPreview,
       },
@@ -442,39 +419,18 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     Object? detail,
     String Function(DateTime retryAfter) formatDate,
   ) async {
-    final rule =
-        error == FirestoreError.ruleViolation &&
-            detail is FirestoreFailureDetail
-        ? detail
-        : null;
-    switch (rule?.code) {
-      case FirestoreRuleCode.applicationsClosed:
-        showApplicationsClosed();
-        unawaited(refresh());
-        return JoinOutcome.closed;
-      case FirestoreRuleCode.retryCooldown:
-        final until = rule?.retryAfter ?? state.membership?.retryAfter;
-        if (until != null) {
-          feedback.showToast(
-            ToastId.tstX4,
-            params: ToastParams(date: formatDate(until)),
-          );
-        }
-        return JoinOutcome.cooldown;
-      case FirestoreRuleCode.reapplyNeedsReview:
-        return JoinOutcome.needsApplication;
-      case _:
-        break;
-    }
-    if (error == FirestoreError.conflict) {
-      // Kulüp bu arada onaya geçmiş ya da üyelik başka cihazda değişmiş
-      // olabilir: güncel kulüp okunur; onay istiyorsa başvuru formu açılır.
-      await refresh();
-      if (!ref.mounted) return JoinOutcome.failed;
-      return (state.club?.approvalRequired ?? false)
-          ? JoinOutcome.needsApplication
-          : JoinOutcome.failed;
-    }
+    final outcome = await joinRuleOutcome(
+      error: error,
+      detail: detail,
+      membership: state.membership,
+      formatDate: formatDate,
+      reloadClub: () async {
+        await refresh();
+        return ref.mounted ? state.club : null;
+      },
+    );
+    if (outcome != null) return outcome;
+    if (!ref.mounted) return JoinOutcome.failed;
     if (_missingErrors.contains(error)) {
       state = state.copyWith(isNotFound: true);
       return JoinOutcome.failed;
@@ -487,14 +443,7 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
   /// diğerleri günlüğe düşer ve kulüp yenilenir (ekran gerçek durumu
   /// gösterir).
   void _showWriteFailure(FirestoreError error, String? message, String what) {
-    if (_networkErrors.contains(error)) {
-      feedback.showToast(ToastId.tst24);
-      return;
-    }
-    if (error == FirestoreError.permissionDenied) {
-      feedback.showToast(ToastId.tstX18);
-      return;
-    }
+    if (showWriteFailureToast(error)) return;
     AppLogger.warn('$what: ${error.name}', error: message);
     unawaited(refresh());
   }

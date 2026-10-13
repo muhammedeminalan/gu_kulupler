@@ -14,6 +14,7 @@ import 'package:gu_kulupler/features/auth/view/register_view.dart';
 import 'package:gu_kulupler/features/auth/view/reset_password_view.dart';
 import 'package:gu_kulupler/features/auth/view/setup_profile_view.dart';
 import 'package:gu_kulupler/features/auth/view/verify_email_view.dart';
+import 'package:gu_kulupler/features/clubs/view/club_list_view.dart';
 import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/view/error_view.dart';
@@ -118,7 +119,7 @@ void main() {
       expect(app.location, '/clubs');
       expect(find.byType(AppShellView), findsOneWidget);
       expect(find.byType(SplashView), findsNothing);
-      expect(_placeholderTitle(tester), tr.navClubs);
+      expect(find.byType(ClubListView), findsOneWidget);
     });
 
     testWidgets('çözülünce: ilk açılış → /onboarding; tanıtım görülünce → '
@@ -444,7 +445,7 @@ void main() {
     testWidgets('DebugMenuRoute gövdesi derleme sabitiyle seçilir: bayrak '
         'kapalıyken SYS-04', (tester) async {
       await TestRouter.pump(tester);
-      final context = tester.element(find.byType(RoutePlaceholderView));
+      final context = tester.element(find.byType(ClubListView));
       expect(
         const DebugMenuRoute().build(context, GoRouterState.of(context)),
         isA<NotFoundView>(),
@@ -470,15 +471,13 @@ void main() {
   });
 
   group('T-11 · AppRouter · sekmeler (gerçek ağaç)', () {
-    testWidgets('beş sekme kökü yer tutucudur; başlık sekme adıdır', (
-      tester,
-    ) async {
+    testWidgets('Kulüpler kökü CLB-01 (T-17); kalan dört sekme kökü yer '
+        'tutucudur, başlık sekme adıdır', (tester) async {
       final app = await TestRouter.pump(
         tester,
         session: FakeSessionStates.activeSuper,
       );
       final titles = {
-        GuTab.clubs: tr.navClubs,
         GuTab.events: tr.navEvents,
         GuTab.notifications: tr.navNotifications,
         GuTab.admin: tr.navAdmin,
@@ -487,6 +486,10 @@ void main() {
       for (final tab in GuTab.values) {
         await app.tapTab(tab);
         expect(app.location, tab.rootPath, reason: tab.name);
+        if (tab == GuTab.clubs) {
+          expect(find.byType(ClubListView), findsOneWidget);
+          continue;
+        }
         expect(_placeholderTitle(tester), titles[tab], reason: tab.name);
       }
     });
@@ -537,7 +540,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(_placeholderTitle(tester), en.navClubs);
+      // Kulüpler kökü gerçek ekrandır (T-17); yer tutucu Etkinlikler'de.
+      container.read(appRouterProvider).go(AppPaths.events);
+      await tester.pumpAndSettle();
+      expect(_placeholderTitle(tester), en.navEvents);
       expect(
         tester.widget<GuBottomNav>(find.byType(GuBottomNav)).semanticLabel,
         en.a11yMainNav,

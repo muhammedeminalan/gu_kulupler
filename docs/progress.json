@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T17:49:14.198Z",
+  "updated": "2026-10-13T19:01:27.758Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -301,11 +301,13 @@
       "notes": ""
     },
     "T-17": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-13T17:49:52.569Z",
+      "finishedAt": "2026-10-13T19:01:27.757Z",
+      "commits": [
+        "3f7828c"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-18": {
@@ -1118,6 +1120,18 @@
       "resolveIn": [
         "T-17"
       ],
+      "status": "closed",
+      "closedIn": "T-17",
+      "closedAt": "2026-10-13T18:48:49.421Z",
+      "closeNote": "T-17: DebugDemoClubs, debug.club.*, ARB debugMenuDemoClubs ve testleri kaldırıldı; kulübe CLB-01'den ulaşılır"
+    },
+    {
+      "id": "W-68",
+      "declaredIn": "T-17",
+      "text": "CLB-01 'Kulüplerim' kartının okunmamış noktası (MyClubChip.unread) kulübe ait okunmamış bildirimden beslenir; o güne kadar nokta çizilmez (club_list_view.dart TODO(T-26)) → T-26",
+      "resolveIn": [
+        "T-26"
+      ],
       "status": "open"
     }
   ],
@@ -1230,6 +1244,21 @@
       "date": "2026-10-13",
       "task": "T-16",
       "text": "K-63 referans kapakları coverSeed'den üretilir (gradyan açısı tohumdan); Flutter şablon varlığı (CD-26/CD-124) → gradyan yönü farkı kabul"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-17",
+      "text": "K-64 .hscroll scroll-snap: referans yakalamada şerit 16 px kaymış (ilk çip kenara yapışık); Flutter 16 dp iç boşlukla başlar → kabul"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-17",
+      "text": "K-65 ızgara kulüp kartı rozeti kipten türetiliyor (çıkarılmış üye / süper admin 'Üye'); Flutter üyelik belgesini izler (ClubCard.gridStatusOf)"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-17",
+      "text": "K-66 MyClubChip 'Askıda' + yönetici rozeti üst üste; Flutter'da tek rozet, askı öncelikli"
     }
   ]
 }

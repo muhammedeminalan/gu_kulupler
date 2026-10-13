@@ -9,6 +9,7 @@ import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_detail_state.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
+import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_club_repository.dart';
@@ -82,9 +83,10 @@ final SessionState kSuperSession = FakeSessionStates.activeSuper.copyWith(
   user: kUser,
 );
 
-/// [session] oturumundaki kullanıcının gördüğü dolu ekran durumu: kulüp
-/// yüklü; kulübün içini gören kiplerde yönetim kurulu ve üye önizlemesi dolu
-/// (ViewModel'in ürettiği durumla aynı).
+/// [session] oturumundaki kullanıcının gördüğü dolu ekran durumu: kulüp ve
+/// yönetim kurulu yüklü (yöneticiler herkese okunur — CD-139); üye
+/// önizlemesi kulübün içini görende ilk etkin üyelerden, görmeyende
+/// yöneticilerden kurulur (ViewModel'in ürettiği durumla aynı).
 ClubDetailState loadedState(
   SessionState session, {
   ClubModel? club,
@@ -95,12 +97,12 @@ ClubDetailState loadedState(
     access: session.accessTo(kClubId),
     membership: session.memberships[kClubId],
   );
-  return state.seesInside
-      ? state.copyWith(
-          managers: kManagers,
-          memberPreview: [kPresident, kAdvisorMembership, ...kBoard.take(2)],
-        )
-      : state;
+  return state.copyWith(
+    managers: kManagers,
+    memberPreview: state.seesInside
+        ? [kPresident, kAdvisorMembership, ...kBoard.take(2)]
+        : kManagers.take(GuSizes.avatarGroupMax).toList(),
+  );
 }
 
 /// Kayıtlı fake'lere `c03` kulübünü ve yönetim üyeliklerini yazar; oturumun

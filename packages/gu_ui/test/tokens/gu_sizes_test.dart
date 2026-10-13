@@ -22,8 +22,8 @@ import '../helpers/design_sources.dart';
 /// + K-46 JS-derived 10 (8 + `viewerZoomScale`, `applicationLeaveOffsetX`)
 /// + K-47 `avatarGroupSizes` 1 + §8.7 ikon 11 = 402. (token-map'teki "aday
 /// 401", `miniChartFillOpacity`'yi hâlâ 353'ün içinde sayar ve 2 K-46 ekini
-/// içermez.)
-const int _gusizesCount = 402;
+/// içermez.) + T-17 `myClubsAllTileWidth` 1 = 403.
+const int _gusizesCount = 403;
 
 /// `GuOpacity`: §8.8 8 + `coverIcon` 1.
 const int _guOpacityCount = 9;
@@ -2857,6 +2857,13 @@ List<_Row> _sizesTable(CssMeasure css, _Js js) => [
   ]),
   _js('myClubCardWidth', GuSizes.myClubCardWidth, 132, const [
     _JsRef('cards.js', 42, 'style="width:132px;text-align:left"'),
+  ]),
+  _js('myClubsAllTileWidth', GuSizes.myClubsAllTileWidth, 100, const [
+    _JsRef(
+      'screens-clubs.js',
+      25,
+      'class="card is-tappable" style="width:100px',
+    ),
   ]),
   _js('applicationRowMinHeight', GuSizes.applicationRowMinHeight, 64, const [
     _JsRef('cards.js', 172, 'padding:6px 8px 6px 16px;min-height:64px'),

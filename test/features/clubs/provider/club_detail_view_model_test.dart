@@ -41,6 +41,14 @@ import '../club_detail_test_support.dart';
 /// TST-X4 tarih biçimleyicisinin test karşılığı.
 String _formatDate(DateTime instant) => 'D:${instant.toIso8601String()}';
 
+/// Kulübün içini görmeyen kullanıcının (ziyaretçi) dolu durumu: yönetim
+/// kurulu herkese okunur (CD-139), önizleme yöneticilerden kurulur.
+final ClubDetailState _visitorLoaded = ClubDetailState(
+  club: kClub,
+  managers: kManagers,
+  memberPreview: kManagers.take(4).toList(),
+);
+
 void main() {
   late FakeClubRepository clubs;
   late FakeMembershipRepository memberships;
@@ -148,15 +156,33 @@ void main() {
       );
     });
 
-    test('ziyaretçi: kulüp okunur; üyelik belgeleri sorgulanmaz', () async {
+    test('ziyaretçi: kulüp ve yönetim kurulu okunur (CD-139); üye listesi '
+        'sorgulanmaz, önizleme yöneticilerden kurulur', () async {
+      // Başkan fake'te sona yazılır: sıra sorgudan değil kuraldan gelir.
+      memberships.memberships
+        ..remove(kPresident.id)
+        ..[kPresident.id] = kPresident;
       final states = <ClubDetailState>[];
       final container = containerOf(kVisitorSession, states: states);
       await pumpEventQueue();
 
-      expect(stateOf(container), ClubDetailState(club: kClub));
-      expect(states, [ClubDetailState(club: kClub)]);
+      expect(stateOf(container), _visitorLoaded);
+      expect(states, [ClubDetailState(club: kClub), _visitorLoaded]);
+      expect(_visitorLoaded.managers, kManagers);
+      expect(_visitorLoaded.memberPreview, kManagers.take(4));
+      expect(_visitorLoaded.memberPreview.first.role, ClubRole.president);
       expect(clubs.callsTo('getClub'), hasLength(1));
-      expect(memberships.callsTo('listManagers'), isEmpty);
+      expect(memberships.callsTo('listManagers').single.args, [kClubId]);
+      expect(memberships.callsTo('listActiveMembers'), isEmpty);
+    });
+
+    test('ziyaretçi: yönetim kurulu okunamazsa sayfa bozulmaz, listeler boş '
+        'kalır', () async {
+      memberships.failNext(FirestoreError.permissionDenied);
+      final container = containerOf(kVisitorSession);
+      await pumpEventQueue();
+
+      expect(stateOf(container), ClubDetailState(club: kClub));
       expect(memberships.callsTo('listActiveMembers'), isEmpty);
     });
 
@@ -230,6 +256,7 @@ void main() {
       expect(states, [
         const ClubDetailState(isFetching: true),
         ClubDetailState(club: kClub),
+        _visitorLoaded,
       ]);
     });
 
@@ -239,7 +266,7 @@ void main() {
       await Future.wait([vmOf(container).fetch(), vmOf(container).fetch()]);
       await pumpEventQueue();
       expect(clubs.callsTo('getClub'), hasLength(1));
-      expect(stateOf(container), ClubDetailState(club: kClub));
+      expect(stateOf(container), _visitorLoaded);
     });
 
     test(
@@ -261,12 +288,15 @@ void main() {
 
   group('CLB-03 · ClubDetailViewModel · oturum', () {
     test(
-      'başvuru onaylanınca: kip üye olur, kişi listeleri yüklenir',
+      'başvuru onaylanınca: kip üye olur, önizleme üye listesinden yeniden '
+      'kurulur',
       () async {
         final container = await loaded(
           sessionWith(status: MembershipStatus.pending),
         );
-        expect(stateOf(container).managers, isEmpty);
+        // Başvuran da yönetim kurulunu görür (CD-139); önizleme yöneticiler.
+        expect(stateOf(container).managers, kManagers);
+        expect(stateOf(container).memberPreview, kManagers.take(4));
 
         final approved = sessionWith();
         setSession(container, approved);
@@ -275,23 +305,31 @@ void main() {
         await pumpEventQueue();
         expect(stateOf(container).managers, kManagers);
         expect(stateOf(container).memberPreview, hasLength(4));
+        expect(memberships.callsTo('listManagers'), hasLength(1));
+        expect(memberships.callsTo('listActiveMembers'), hasLength(1));
       },
     );
 
     test(
-      'üyelik bitince: kip ziyaretçi olur, kişi listeleri boşalır',
+      'üyelik bitince: kip ziyaretçi olur, yönetim kurulu kalır, önizleme '
+      'yöneticilere iner (üye listesi yeniden okunmaz)',
       () async {
         final container = await loaded(sessionWith());
         expect(stateOf(container).managers, isNotEmpty);
+        expect(
+          stateOf(container).memberPreview,
+          isNot(kManagers.take(4)),
+        );
 
         setSession(container, sessionWith(status: MembershipStatus.left));
         await pumpEventQueue();
         final state = stateOf(container);
         expect(state.access, ClubAccess.visitor);
         expect(state.membership?.status, MembershipStatus.left);
-        expect(state.managers, isEmpty);
-        expect(state.memberPreview, isEmpty);
-        expect(memberships.callsTo('listManagers'), isEmpty);
+        expect(state.managers, kManagers);
+        expect(state.memberPreview, kManagers.take(4));
+        expect(memberships.callsTo('listManagers'), hasLength(1));
+        expect(memberships.callsTo('listActiveMembers'), isEmpty);
       },
     );
 
@@ -942,7 +980,7 @@ void main() {
       clubs.failNext(FirestoreError.unavailable);
 
       await vmOf(container).refresh();
-      expect(stateOf(container), ClubDetailState(club: kClub));
+      expect(stateOf(container), _visitorLoaded);
       expect(logs.join('\n'), contains('Kulüp yenilenemedi: unavailable'));
     });
 

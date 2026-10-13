@@ -20,3 +20,16 @@ CLB-03.openManage    # design/prototype/app/screens-clubs.js:108–109 — alt �
 CLB-03.createEvent   # design/prototype/app/screens-clubs.js:108 — alt çubuk yalnızca yönetici / süper adminde; yakalama ziyaretçi
 CLB-03.eventSeg.*    # design/prototype/app/screens-clubs.js:102 — "Yaklaşan / Geçmiş" dilimi yalnızca Etkinlikler sekmesinde (`tab === 'events'`); yakalama Hakkında sekmesi
 CLB-03.allMembers    # design/prototype/app/screens-clubs.js:106 — "Tüm üyeler" yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`); yakalama ziyaretçi, Hakkında sekmesi
+CLB-01.myClub.*      # design/prototype/app/cards.js:42 — "Kulüplerim" kartı yalnızca etkin üyeliği olan kullanıcıda (`mine.length`, screens-clubs.js:25); yakalama üyeliksiz kullanıcı (u_ayse → "İlk kulübünü bul")
+CLB-01.myClubsAll    # design/prototype/app/screens-clubs.js:25 — "Kulüplerim" şeridinin sonundaki "Tümü" kartı yalnızca etkin üyeliği olan kullanıcıda; yakalama üyeliksiz kullanıcı
+CLB-01.status.*      # design/prototype/app/cards.js:23–25 — `ClubCTA` durum düğmesi yalnızca başvurusu bekleyen / reddedilen / çıkarılan kullanıcının kartında; yakalama ziyaretçi
+CLB-01.open.*        # design/prototype/app/cards.js:26 — `ClubCTA` "Aç" düğmesi yalnızca kulübün içini gören kullanıcının (üye / yönetici / danışman) kartında; yakalama ziyaretçi
+CLB-01.clearFilters  # design/prototype/app/screens-clubs.js:29,31 — "Filtreleri temizle" yalnızca süzgece uyan kulüp yokken çizilen boş durumda; yakalama dolu liste
+CLB-01.retry         # lib/features/clubs/view/club_list_view.dart — yalnızca kulüpler okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
+CLB-02.clear             # design/prototype/app/screens-clubs.js:45 — arama alanındaki "Temizle" (x) yalnızca alan doluyken (`q`); yakalama boş alan
+CLB-02.result.club.*     # design/prototype/app/screens-clubs.js:52 — kulüp sonuç satırı yalnızca terim doluyken (`dq`) ve Kulüpler sekmesinde; yakalama boş alan
+CLB-02.result.event.*    # design/prototype/app/screens-clubs.js:53 — etkinlik sonuç satırı yalnızca terim doluyken (`dq`) ve Etkinlikler sekmesinde; yakalama boş alan
+CLB-02.suggest.*         # design/prototype/app/screens-clubs.js:56 — "sonuç yok" bloğundaki öneri çipleri yalnızca eşleşme yokken; yakalama boş alan
+CLB-02.status.*          # design/prototype/app/cards.js:23–25 — önerilen kulüp kartında `ClubCTA` durum düğmesi yalnızca başvurusu bekleyen / reddedilen / çıkarılan kullanıcıda; yakalama ziyaretçi (u_ayse)
+CLB-02.open.*            # design/prototype/app/cards.js:26 — önerilen kulüp kartında "Aç" yalnızca kulübün içini gören kipte (kart üstünden katıldıktan sonra, süper admin, danışman); yakalama ziyaretçi (u_ayse)
+CLB-02.retry             # lib/features/search/view/search_view.dart — yalnızca arama havuzu okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

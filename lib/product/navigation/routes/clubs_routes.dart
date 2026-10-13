@@ -1,9 +1,10 @@
 part of 'shell_route.dart';
 
-// T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını kurar; kalan alt
-// rotalar PLAN §13.3.2 tablosundaki task'larda eklenir.
+// T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
+// kökünün gerçek ekranını ve aramayı kurar; kalan alt rotalar PLAN §13.3.2
+// tablosundaki task'larda eklenir.
 //
-// Sıra önemlidir: sabit parçalı kardeşler (`search`, `user/:userId` — T-17,
+// Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
 // T-18) `:clubId` kalıbından **önce** yazılır (go_router ilk eşleşeni alır).
 
 /// Kulüpler dalının rota ağacı (navigation.md §2.2). Alt rotalar sahip
@@ -11,6 +12,7 @@ part of 'shell_route.dart';
 const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
   path: AppPaths.clubs,
   routes: <TypedRoute<RouteData>>[
+    TypedGoRoute<ClubsSearchRoute>(path: ClubsSearchRoute.segment),
     TypedGoRoute<ClubDetailRoute>(
       path: ClubDetailRoute.segment,
       routes: <TypedRoute<RouteData>>[
@@ -21,16 +23,39 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
   ],
 );
 
-/// Kulüpler sekmesinin kökü — `/clubs`.
+/// CLB-01 Kulüpler — Kulüpler sekmesinin kökü, `/clubs` (guard `A`).
 final class ClubsRoute extends GoRouteData with $ClubsRoute, PlatformPageMixin {
   /// Sekme kökü rotası.
   const ClubsRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      // TODO(T-17): `ClubListView` (Kulüpler sekme kökü).
-      RoutePlaceholderView(title: (l10n) => l10n.navClubs);
+      const ClubListView();
 }
+
+/// CLB-02 Arama — `/clubs/search` (guard `A`). CLB-01 arama düğmesi `go` ile
+/// açar, geri CLB-01'e döner. Ekran paylaşılan yapraktır (PLAN §13.9):
+/// `EventsSearchRoute` aynı view'ı "Etkinlikler" sekmesiyle açar.
+final class ClubsSearchRoute extends GoRouteData
+    with $ClubsSearchRoute, PlatformPageMixin {
+  /// Kulüpler sekmesinden açılan arama.
+  const ClubsSearchRoute();
+
+  /// `/clubs` altındaki yol parçası.
+  static const String segment = 'search';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const SearchView(
+    scope: SearchScope.clubs,
+    applicationSheetBuilder: joinApplicationSheetBuilder,
+  );
+}
+
+/// Aramadaki kulüp kartının "Katıl" düğmesi için SHT-05 gövdesi: form
+/// `features/clubs`'tadır, arama (`features/search`) onu içe aktaramaz —
+/// rota (kompozisyon kökü) iki feature'ı burada bağlar.
+Widget joinApplicationSheetBuilder(String clubId) =>
+    JoinApplicationSheet(clubId: clubId);
 
 /// CLB-03 Kulüp (+ FED-01 gönderiler sekmesi) — `/clubs/:clubId?tab=`.
 ///

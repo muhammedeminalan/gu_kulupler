@@ -2,39 +2,16 @@ import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/product/form/form_field_error.dart';
 
+// `JoinApplicationOutcome` SHT-05'i açan her ekranla ortaktır (CLB-02 arama
+// `features/search` altındadır — `ClubJoinMixin` dosyası); bu dosyayı içe
+// aktaranlar aynı adı görmeye devam eder.
+export 'package:gu_kulupler/product/mixin/club_join_mixin.dart'
+    show JoinApplicationOutcome;
+
 /// SHT-05 formunun alanları.
 enum JoinApplicationField {
   /// "Neden katılmak istiyorsun?" notu.
   note,
-}
-
-/// `JoinApplicationViewModel.submit` çağrısının sonucu. Sheet yalnızca
-/// [applied] ve [joined] ile kapanır (`pop` değeri budur); diğerlerinde açık
-/// kalır.
-enum JoinApplicationOutcome {
-  /// Başvuru yazıldı (`pending`) → çağıran CLB-04'e gider.
-  applied,
-
-  /// Onaysız kulübe anında katılındı (`active`) → çağıran TST-34 gösterir.
-  joined,
-
-  /// Not eksik / geçersiz; alan hatası yazıldı.
-  invalid,
-
-  /// Çevrimdışı ya da ağ hatası (TST-24 gösterildi).
-  offline,
-
-  /// Kulüp başvuru almıyor (TST-X1 gösterildi).
-  closed,
-
-  /// Yeniden başvuru bekleme süresi dolmadı (TST-X4 gösterildi).
-  cooldown,
-
-  /// Sunucu reddetti; `submitError` yazıldı.
-  failed,
-
-  /// Kulüp henüz yüklenmedi ya da süren bir gönderim var.
-  ignored,
 }
 
 /// SHT-05 "Katılma başvurusu" formunun durumu.

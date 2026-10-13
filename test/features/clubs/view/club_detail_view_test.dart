@@ -309,10 +309,22 @@ void main() {
           ),
           (l10n.clubTypeApproval, GuBadgeKind.info, GuIcons.shieldCheck),
         ]);
-        expect(find.byType(GuRoleBadge), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(ClubHeader),
+            matching: find.byType(GuRoleBadge),
+          ),
+          findsNothing,
+        );
 
-        // Üye sayısı: ziyaretçide avatar yok, yalnızca metin.
-        expect(find.byType(GuAvatarGroup), findsNothing);
+        // Üye sayısı: ziyaretçide avatar grubu yöneticilerden kurulur
+        // (CD-139), "+N" üye sayısından gelir.
+        final group = tester.widget<GuAvatarGroup>(find.byType(GuAvatarGroup));
+        expect(group.avatars, hasLength(GuSizes.avatarGroupMax));
+        expect(
+          group.moreLabel,
+          '+${kClub.memberCount - GuSizes.avatarGroupMax}',
+        );
         expect(
           find.descendant(
             of: find.byKey(_memberCount),
@@ -371,7 +383,7 @@ void main() {
         }
 
         // Danışman: ünvanlı ad, rol alt satırı. Yönetim kurulu ziyaretçiye
-        // okunmaz.
+        // de okunur (CD-139).
         // "Danışman" hem bölüm başlığı hem satırın rol alt yazısıdır.
         expect(find.text(l10n.clubAdvisor), findsNWidgets(2));
         final advisor = tester.widget<ClubPersonRow>(
@@ -380,8 +392,10 @@ void main() {
         expect(advisor.name, 'Doç. Dr. Hakan Yalçın');
         expect(advisor.subtitle, l10n.roleAdvisor);
         expect(advisor.badge, isNull);
-        expect(find.text(l10n.clubBoard), findsNothing);
-        expect(find.byType(ClubPersonRow), findsOneWidget);
+        expect(
+          find.byType(ClubPersonRow),
+          findsNWidgets(1 + kManagers.length),
+        );
 
         // Katılım koşulları ve şikayet.
         expect(find.text(l10n.clubConditions), findsOneWidget);
@@ -433,7 +447,9 @@ void main() {
       expect(find.byKey(_linkEmail), findsNothing);
       expect(find.byKey(_linkInstagram), findsNothing);
       expect(find.byKey(_linkWeb), findsNothing);
-      expect(find.byType(GuCard), findsNothing);
+      // Tek kart yönetim kuruludur (herkese açık — CD-139).
+      expect(find.byType(GuCard), findsOneWidget);
+      expect(find.text(l10n.clubBoard), findsOneWidget);
       expect(find.text(l10n.clubAdvisor), findsNothing);
       expect(find.text(l10n.clubConditions), findsNothing);
       expect(find.byKey(_report), findsOneWidget);
@@ -453,15 +469,13 @@ void main() {
           advisor: const ClubAdvisorModel(name: 'Elif Aksoy', title: ''),
         ),
       );
-      final row = tester.widget<ClubPersonRow>(find.byType(ClubPersonRow));
+      final advisorRow = find.widgetWithText(ClubPersonRow, 'Elif Aksoy');
+      final row = tester.widget<ClubPersonRow>(advisorRow);
       expect(row.name, 'Elif Aksoy');
       expect(row.onTap, isNull);
       expect(row.key, isNull);
       expect(
-        find.descendant(
-          of: find.byType(ClubPersonRow),
-          matching: find.byType(GuIcon),
-        ),
+        find.descendant(of: advisorRow, matching: find.byType(GuIcon)),
         findsNothing,
       );
     });
@@ -1233,7 +1247,9 @@ void main() {
       expect(status.label, tester.l10n.clubsCardRemoved);
       expect(status.icon, GuIcons.userX);
       expect(find.textContaining('2026'), findsNothing);
-      expect(find.byType(GuAvatarGroup), findsNothing);
+      // Çıkarılan kullanıcı kulübün içini görmez: avatar grubu
+      // yöneticilerdendir (CD-139).
+      expect(find.byType(GuAvatarGroup), findsOneWidget);
     });
 
     testWidgets('üye: rol rozeti, avatar grubu (+N), yönetim kurulu; alt '
@@ -1401,7 +1417,9 @@ void main() {
         session: sessionWith(status: MembershipStatus.pending),
       );
       expect(find.byType(GuStickyCta), findsOneWidget);
-      expect(find.byType(GuAvatarGroup), findsNothing);
+      // Yönetim kurulu ve avatar grubu başvurana da görünür (CD-139).
+      expect(find.byType(GuAvatarGroup), findsOneWidget);
+      expect(find.text(tester.l10n.clubBoard), findsOneWidget);
 
       ProviderScope.containerOf(
         tester.element(find.byType(ClubDetailView)),
