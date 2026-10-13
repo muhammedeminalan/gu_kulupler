@@ -1,6 +1,9 @@
 // T-08 · EmailDomainValidator (D-27, CD-76): biçim denetimi (isWellFormed)
 // ve alan adı denetimi (isAllowedDomain → EmailDomainPolicy). İzinli iki
 // alan geçer; alt alan / benzer alan, boşluk ve bozuk biçim reddedilir.
+//
+// GEÇİCİ (W-61, CD-136): test süresince `gmail.com` de izinlidir; geri almada
+// bu dosyadaki "GEÇİCİ (W-61)" grubu silinir.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
@@ -59,14 +62,15 @@ const Map<String, String> _foreignDomain = {
   'benzer: yazım': 'a@gumushhane.edu.tr',
   'benzer: rakam': 'a@gumu5hane.edu.tr',
   // Başka alan adları.
-  'başka: gmail': 'a@gmail.com',
+  'başka: hotmail': 'a@hotmail.com',
+  'başka: outlook': 'a@outlook.com',
   'başka: edu.tr': 'a@edu.tr',
   'başka: başka üniversite': 'a@ogr.atauni.edu.tr',
   'başka: iki etiket': 'a@x.y',
   'başka: sayısal etiketler': 'a@127.0.0.1',
   'başka: iç tire': 'kulup@ornek-alan.com.tr',
-  'izinli alan adı yerel kısımda': 'gumushane.edu.tr@gmail.com',
-  'şema önekli yerel kısım': 'mailto:a@gmail.com',
+  'izinli alan adı yerel kısımda': 'gumushane.edu.tr@hotmail.com',
+  'şema önekli yerel kısım': 'mailto:a@hotmail.com',
 };
 
 /// Biçimi bozuk olduğu hâlde `EmailDomainPolicy.isAllowed`'ın tek başına
@@ -101,7 +105,7 @@ const Map<String, String> _brokenAndForeign = {
   '@ yok': 'gumushane.edu.tr',
   '@ yok (bitişik)': 'agumushane.edu.tr',
   'alan adı boş': 'a@',
-  'iki @ (son alan başka)': 'a@gumushane.edu.tr@gmail.com',
+  'iki @ (son alan başka)': 'a@gumushane.edu.tr@hotmail.com',
   // Boşluk (girdi kırpılmaz).
   'sonda boşluk': 'a@gumushane.edu.tr ',
   '@ sonrası boşluk': 'a@ gumushane.edu.tr',
@@ -536,6 +540,67 @@ void main() {
         emails.where((email) => !EmailDomainValidator.isWellFormed(email)),
         isEmpty,
       );
+    });
+  });
+
+  // Geri almada (`EmailDomainPolicy.temporaryTestDomains = []`) bu grup silinir.
+  group('GEÇİCİ (W-61) · EmailDomainValidator · gmail.com', () {
+    bool accepted(String email) =>
+        EmailDomainValidator.isWellFormed(email) &&
+        EmailDomainValidator.isAllowedDomain(email);
+
+    test('gmail.com adresi biçimce geçerli ve geçici olarak izinlidir', () {
+      for (final email in [
+        'ayse.demir@gmail.com',
+        'a@gmail.com',
+        'a.b+etiket@gmail.com',
+        'Ayse.Demir@Gmail.Com',
+        'a@GMAIL.COM',
+      ]) {
+        expect(EmailDomainValidator.isWellFormed(email), isTrue, reason: email);
+        expect(
+          EmailDomainValidator.isAllowedDomain(email),
+          isTrue,
+          reason: email,
+        );
+        expect(accepted(email), isTrue, reason: email);
+      }
+    });
+
+    test('gmail benzerleri biçimce geçerli ama izinsizdir', () {
+      for (final email in [
+        'a@gmail.com.evil.com',
+        'a@xgmail.com',
+        'a@mail.gmail.com',
+        'a@gmail.co',
+        'a@gmail.com.tr',
+        'a@googlemail.com',
+        'a@g-mail.com',
+        'gmail.com@hotmail.com',
+      ]) {
+        expect(EmailDomainValidator.isWellFormed(email), isTrue, reason: email);
+        expect(
+          EmailDomainValidator.isAllowedDomain(email),
+          isFalse,
+          reason: email,
+        );
+        expect(accepted(email), isFalse, reason: email);
+      }
+    });
+
+    test('biçimi bozuk gmail adresi kayıt için kabul edilmez', () {
+      for (final email in [
+        '@gmail.com',
+        'a@b@gmail.com',
+        ' a@gmail.com',
+        'a@gmail.com ',
+        'ayşe@gmail.com',
+        'a@gmail.com.',
+        'a@.gmail.com',
+        'gmail.com',
+      ]) {
+        expect(accepted(email), isFalse, reason: _show(email));
+      }
     });
   });
 

@@ -17,7 +17,7 @@
 const fs = require('node:fs');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { deleteObject, getBytes, getMetadata, listAll, ref, updateMetadata, uploadBytes } = require('firebase/storage');
-const { getAdminContext } = require('../setup/env');
+const { getAdminContext, getTestEnv } = require('../setup/env');
 const { rulesPath } = require('../setup/emulator_ports');
 const { CONTEXTS, VARIANTS, contextFor, definition, uidOf } = require('../helpers/contexts');
 const { buildFixture, seedDocs } = require('../helpers/fixtures');
@@ -468,6 +468,37 @@ describe('storage users/{uid}/{file} · repository sözleşmesi (UserRepository.
     expect(await fileExists(path)).toBe(true);
     // Yüklenen dosya profil görüntülenirken tek dosya olarak okunur.
     await assertSucceeds(getBytes(ref(contextFor('member').storage(), path)));
+  });
+});
+
+// GEÇİCİ (W-61, CD-136): test süresince `gmail.com` de izinli alan adıdır (`signedInVerified()` deseni
+// EmailDomainPolicy.rulesRegex() ile aynı). Geri almada bu blok silinir.
+describe('GEÇİCİ (W-61) · storage users/{uid}/{file} · gmail.com geçici izinli', () => {
+  const UID = 'u_gmail';
+  const own = `users/${UID}/${NEW_FILE}`;
+  const verified = (email) => ({ email, email_verified: true });
+  /** Verilen token claim'leriyle istemci (roles.json bağlamlarının dışındaki e-postalar için). */
+  const storageWith = (token) => getTestEnv().authenticatedContext(UID, token).storage();
+
+  // Yükleme `accountActive()` ister: `u_gmail` için etkin bir profil belgesi kurulur.
+  beforeEach(() => seedDocs({ ...USER_DOCS, [`users/${UID}`]: USER_DOCS[`users/${uidOf(OWNER)}`] }));
+
+  test.each([
+    ['gmail.com', 'allow', verified('ad.soyad@gmail.com')],
+    ['büyük harfli gmail.com', 'allow', verified('Ad.Soyad@Gmail.COM')],
+    ['gmail.com ama email_verified: false', 'deny', { email: 'ad.soyad@gmail.com', email_verified: false }],
+    ['gmail önek olarak (gmail.com.evil.com)', 'deny', verified('ad@gmail.com.evil.com')],
+    ['sonu gmail.com ile biten alan adı (xgmail.com)', 'deny', verified('ad@xgmail.com')],
+    ['gmail alt alan adı (mail.gmail.com)', 'deny', verified('ad@mail.gmail.com')],
+    ['hotmail.com (kontrol)', 'deny', verified('ad@hotmail.com')],
+  ])('%s · avatar okuma + kendi klasörüne yükleme → %s', async (_title, expected, token) => {
+    await seedFile(ownerPath(EXISTING_FILE));
+    const storage = storageWith(token);
+    const check = expected === 'allow' ? assertSucceeds : assertFails;
+
+    await check(getBytes(ref(storage, ownerPath(EXISTING_FILE))));
+    await check(uploadBytes(ref(storage, own), PNG, IMAGE));
+    expect(await fileExists(own)).toBe(expected === 'allow');
   });
 });
 

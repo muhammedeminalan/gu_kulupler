@@ -30,11 +30,33 @@ void main() {
       expect(form.emailError('   '), FormFieldError.required);
       expect(form.emailError('a@b'), FormFieldError.invalidEmail);
       expect(form.emailError('ayse@'), FormFieldError.invalidEmail);
-      expect(form.emailError('x@gmail.com'), FormFieldError.domainNotAllowed);
+      expect(form.emailError('x@hotmail.com'), FormFieldError.domainNotAllowed);
+      expect(form.emailError('x@outlook.com'), FormFieldError.domainNotAllowed);
       for (final domain in EmailDomainPolicy.allowedDomains) {
         expect(form.emailError('ad.soyad@$domain'), isNull, reason: domain);
         expect(form.emailError('  ad.soyad@$domain '), isNull, reason: domain);
       }
+    });
+
+    // Geri almada (`EmailDomainPolicy.temporaryTestDomains = []`) bu test
+    // silinir.
+    test('GEÇİCİ (W-61) · emailError: gmail.com geçici izinli; benzerleri '
+        'izinsiz', () {
+      expect(form.emailError('ad.soyad@gmail.com'), isNull);
+      expect(form.emailError('  Ad.Soyad@Gmail.Com '), isNull);
+      for (final email in [
+        'x@gmail.com.evil.com',
+        'x@xgmail.com',
+        'x@mail.gmail.com',
+        'x@googlemail.com',
+      ]) {
+        expect(
+          form.emailError(email),
+          FormFieldError.domainNotAllowed,
+          reason: email,
+        );
+      }
+      expect(form.emailError('@gmail.com'), FormFieldError.invalidEmail);
     });
 
     test('passwordError: Limits.passwordPattern (8 karakter + büyük harf + '

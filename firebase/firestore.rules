@@ -28,7 +28,8 @@ service cloud.firestore {
     function isSuper() { return signedIn() && request.auth.token.get('superadmin', false) == true; }
     function emailOk() {
       return signedIn() && request.auth.token.email_verified == true
-          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+          // GEÇİCİ (test): gmail.com — W-61, teslimden önce kaldırılır
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr|gmail\\.com)');
     }
     function userPath(id) { return /databases/$(database)/documents/users/$(id); }
     function me() { return get(userPath(uid())).data; }

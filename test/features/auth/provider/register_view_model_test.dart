@@ -216,7 +216,7 @@ void main() {
       expect(of('@gumushane.edu.tr'), FormFieldError.invalidEmail);
       expect(of('a@b@gumushane.edu.tr'), FormFieldError.invalidEmail);
       expect(of('ayşe@gumushane.edu.tr'), FormFieldError.invalidEmail);
-      expect(of('ayse@gmail.com'), FormFieldError.domainNotAllowed);
+      expect(of('ayse@hotmail.com'), FormFieldError.domainNotAllowed);
       expect(of('ayse@x.gumushane.edu.tr'), FormFieldError.domainNotAllowed);
       expect(
         of('ayse@gumushane.edu.tr.evil.com'),
@@ -227,6 +227,21 @@ void main() {
       expect(of('AYSE@OGR.GUMUSHANE.EDU.TR'), isNull);
       // Baştaki / sondaki boşluk kırpılarak doğrulanır.
       expect(of('  ayse@ogr.gumushane.edu.tr '), isNull);
+    });
+
+    // Geri almada (`EmailDomainPolicy.temporaryTestDomains = []`) bu test
+    // silinir.
+    test('GEÇİCİ (W-61) · e-posta: gmail.com geçici izinli; benzerleri '
+        'izinsiz', () {
+      FormFieldError? of(String email) =>
+          _errorAfter(RegisterField.email, (vm) => vm.setEmail(email));
+      expect(of('ayse@gmail.com'), isNull);
+      expect(of('AYSE@GMAIL.COM'), isNull);
+      expect(of('  ayse@gmail.com '), isNull);
+      expect(of('ayse@gmail.com.evil.com'), FormFieldError.domainNotAllowed);
+      expect(of('ayse@xgmail.com'), FormFieldError.domainNotAllowed);
+      expect(of('ayse@mail.gmail.com'), FormFieldError.domainNotAllowed);
+      expect(of('@gmail.com'), FormFieldError.invalidEmail);
     });
 
     test('şifre: en az 8 karakter + büyük harf + rakam', () {

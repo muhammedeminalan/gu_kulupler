@@ -42,6 +42,10 @@ const String _validEmail = 'ayse.yilmaz@ogr.gumushane.edu.tr';
 const Duration _cooldown = Duration(seconds: 60);
 
 /// Hatalı form: alan hatası + alana bağlanamayan sunucu hatası.
+///
+/// Enjekte edilen sabit görünüm durumudur (doğrulayıcı çalışmaz). Adres
+/// `AUT-04__errors` golden'ında görünür ve D-27'nin kalıcı hâlini yansıtır;
+/// geçici `gmail.com` izni (W-61, CD-136) bu fixture'ı değiştirmez.
 const ResetPasswordState _errorState = ResetPasswordState(
   email: 'ayse@gmail.com',
   errors: {ResetField.email: FormFieldError.domainNotAllowed},
@@ -476,7 +480,7 @@ void main() {
       for (final (value, message) in [
         ('', l10n.authErrRequired),
         ('ayse', l10n.authErrEmail),
-        ('ayse@gmail.com', l10n.authErrDomain),
+        ('ayse@hotmail.com', l10n.authErrDomain),
       ]) {
         FocusManager.instance.primaryFocus?.unfocus();
         await tester.pump();

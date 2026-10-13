@@ -1,5 +1,11 @@
-// T-08 · EmailDomainPolicy (CD-76, D-27): izinli iki alan adı, alt alan ve
-// benzer alan reddi, Rules regex paritesi.
+// T-08 · EmailDomainPolicy (CD-76, D-27): izinli iki üniversite alan adı, alt
+// alan ve benzer alan reddi, Rules regex paritesi.
+//
+// GEÇİCİ (W-61, CD-136): test süresince `gmail.com` de izinlidir
+// (`EmailDomainPolicy.temporaryTestDomains`). Geri almada o liste boşaltılır
+// ve bu dosyadaki "GEÇİCİ (W-61)" grubu silinir; diğer testler kalıcı listeyi
+// (`universityDomains`) sabitler ve geçici listeden türetildiği için aynen
+// geçer.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
@@ -47,13 +53,14 @@ const Map<String, String> _rejected = {
   'benzer: çift nokta': 'a@gumushane..edu.tr',
   'benzer: yazım': 'a@gumushhane.edu.tr',
   // Başka alan adları.
-  'başka: gmail': 'a@gmail.com',
+  'başka: hotmail': 'a@hotmail.com',
+  'başka: outlook': 'a@outlook.com',
   'başka: edu.tr': 'a@edu.tr',
   'başka: tr': 'a@tr',
   'başka: başka üniversite': 'a@ogr.atauni.edu.tr',
   // İzinli alan adı yerel kısımda.
-  'yerel kısımda alan adı': 'gumushane.edu.tr@gmail.com',
-  'son @ başka alan': 'a@gumushane.edu.tr@gmail.com',
+  'yerel kısımda alan adı': 'gumushane.edu.tr@hotmail.com',
+  'son @ başka alan': 'a@gumushane.edu.tr@hotmail.com',
   // @ işareti eksik ya da alan adı boş.
   '@ yok': 'gumushane.edu.tr',
   '@ yok (bitişik)': 'agumushane.edu.tr',
@@ -77,6 +84,28 @@ const Map<String, String> _rejected = {
   'ideografik nokta (U+3002)': 'a@gumushane。edu。tr',
 };
 
+/// GEÇİCİ (W-61): `gmail.com` izinliyken de reddedilmesi gereken benzerleri
+/// (neden → adres).
+const Map<String, String> _gmailLookalikes = {
+  'sonek alanı': 'a@gmail.com.evil.com',
+  'önek x': 'a@xgmail.com',
+  'alt alan: mail.': 'a@mail.gmail.com',
+  'alt alan: boş etiket': 'a@.gmail.com',
+  'başka TLD': 'a@gmail.co',
+  'com.tr': 'a@gmail.com.tr',
+  'googlemail': 'a@googlemail.com',
+  'nokta eksik': 'a@gmailcom',
+  'kaçışsız nokta': 'a@gmailXcom',
+  'tire': 'a@g-mail.com',
+  'sondaki nokta': 'a@gmail.com.',
+  'sonda boşluk': 'a@gmail.com ',
+  'yerel kısımda': 'gmail.com@hotmail.com',
+  'son @ başka alan': 'a@gmail.com@hotmail.com',
+  '@ yok': 'gmail.com',
+  'Kiril а (U+0430)': 'a@gm\u0430il.com',
+  'tam genişlik g (U+FF47)': 'a@\uFF47mail.com',
+};
+
 /// Rules `email.lower().matches(regex)` davranışının Dart karşılığı:
 /// `matches` tüm dizgiyi eşler.
 bool _rulesMatches(String loweredEmail) =>
@@ -90,11 +119,25 @@ String _asciiLower(String value) => value.replaceAllMapped(
 
 void main() {
   group('T-08 · EmailDomainPolicy · allowedDomains', () {
-    test('tam olarak iki alan adı, sırayla', () {
-      expect(EmailDomainPolicy.allowedDomains, [
+    test('kalıcı liste tam olarak iki üniversite alan adı, sırayla', () {
+      expect(EmailDomainPolicy.universityDomains, [
         'ogr.gumushane.edu.tr',
         'gumushane.edu.tr',
       ]);
+    });
+
+    test('allowedDomains = universityDomains + temporaryTestDomains '
+        '(üniversite alan adları başta, aynı sırayla)', () {
+      expect(EmailDomainPolicy.allowedDomains, [
+        ...EmailDomainPolicy.universityDomains,
+        ...EmailDomainPolicy.temporaryTestDomains,
+      ]);
+      expect(
+        EmailDomainPolicy.allowedDomains.take(
+          EmailDomainPolicy.universityDomains.length,
+        ),
+        EmailDomainPolicy.universityDomains,
+      );
     });
 
     test('tasarım sabiti ALLOWED_EMAIL_DOMAINS ile aynı (registry.json)', () {
@@ -103,7 +146,7 @@ void main() {
               as Map<String, Object?>;
 
       expect(
-        EmailDomainPolicy.allowedDomains,
+        EmailDomainPolicy.universityDomains,
         constants['ALLOWED_EMAIL_DOMAINS'],
       );
     });
@@ -113,7 +156,7 @@ void main() {
         readRepoFile('docs/decisions.md'),
         contains(
           '`ALLOWED_EMAIL_DOMAINS = '
-          '${EmailDomainPolicy.allowedDomains.join(', ')}`',
+          '${EmailDomainPolicy.universityDomains.join(', ')}`',
         ),
       );
     });
@@ -129,17 +172,23 @@ void main() {
           matches(RegExp(r'^[a-z0-9]+(?:\.[a-z0-9]+)+$')),
           reason: domain,
         );
+      }
+      for (final domain in EmailDomainPolicy.universityDomains) {
         expect(domain, endsWith('.edu.tr'));
       }
     });
 
-    test('liste değiştirilemez', () {
+    test('listeler değiştirilemez', () {
+      for (final list in [
+        EmailDomainPolicy.allowedDomains,
+        EmailDomainPolicy.universityDomains,
+        EmailDomainPolicy.temporaryTestDomains,
+      ]) {
+        expect(() => list.add('example.com'), throwsUnsupportedError);
+        expect(list.clear, throwsUnsupportedError);
+      }
       expect(
-        () => EmailDomainPolicy.allowedDomains.add('gmail.com'),
-        throwsUnsupportedError,
-      );
-      expect(
-        () => EmailDomainPolicy.allowedDomains[0] = 'gmail.com',
+        () => EmailDomainPolicy.allowedDomains[0] = 'example.com',
         throwsUnsupportedError,
       );
     });
@@ -188,7 +237,7 @@ void main() {
         isTrue,
       );
       expect(
-        EmailDomainPolicy.isAllowed('a@gumushane.edu.tr@gmail.com'),
+        EmailDomainPolicy.isAllowed('a@gumushane.edu.tr@hotmail.com'),
         isFalse,
       );
     });
@@ -207,17 +256,21 @@ void main() {
       expect(emails.where((e) => !EmailDomainPolicy.isAllowed(e)), isEmpty);
       expect(
         {for (final email in emails) email.split('@').last},
-        EmailDomainPolicy.allowedDomains.toSet(),
+        EmailDomainPolicy.universityDomains.toSet(),
       );
     });
   });
 
   group('T-08 · EmailDomainPolicy · rulesRegex', () {
-    test(r'değer .*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)', () {
-      expect(
-        EmailDomainPolicy.rulesRegex(),
-        r'.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)',
-      );
+    test(r'değer: kalıcı .*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr) + '
+        'geçici listenin alternatifleri', () {
+      const permanent = r'ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr';
+      final temporary = [
+        for (final domain in EmailDomainPolicy.temporaryTestDomains)
+          '|${RegExp.escape(domain)}',
+      ].join();
+
+      expect(EmailDomainPolicy.rulesRegex(), '.*@($permanent$temporary)');
     });
 
     test('allowedDomains listesinden üretilir (sıra ve sayı aynı)', () {
@@ -295,6 +348,86 @@ void main() {
       expect(_rulesMatches('a@gumushane.edu.tr'), isTrue);
       expect(_rulesMatches('a@gumushane.edu.tr.evil.com'), isFalse);
       expect(_rulesMatches('a@gumushaneXeduXtr'), isFalse);
+    });
+  });
+
+  // Geri almada (`temporaryTestDomains = []`) bu grup silinir.
+  group('GEÇİCİ (W-61) · EmailDomainPolicy · temporaryTestDomains', () {
+    test('geçici liste yalnızca gmail.com içerir', () {
+      expect(EmailDomainPolicy.temporaryTestDomains, ['gmail.com']);
+    });
+
+    test('gmail.com geçici olarak izinlidir (alan adı harf duyarsız)', () {
+      for (final email in [
+        'ayse.demir@gmail.com',
+        'a@gmail.com',
+        'a@GMAIL.COM',
+        'a@Gmail.Com',
+        'a.b+etiket@gmail.com',
+      ]) {
+        expect(EmailDomainPolicy.isAllowed(email), isTrue, reason: email);
+        expect(_rulesMatches(_asciiLower(email)), isTrue, reason: email);
+        expect(_rulesMatches(email.toLowerCase()), isTrue, reason: email);
+      }
+    });
+
+    for (final MapEntry(key: reason, value: email)
+        in _gmailLookalikes.entries) {
+      test('gmail benzeri reddedilir ($reason): ${Uri.encodeFull(email)}', () {
+        expect(EmailDomainPolicy.isAllowed(email), isFalse);
+        expect(_rulesMatches(_asciiLower(email)), isFalse);
+        expect(_rulesMatches(email.toLowerCase()), isFalse);
+      });
+    }
+
+    test('Rules deseni kalıcı iki alan adı + gmail.com alternatifidir', () {
+      expect(
+        EmailDomainPolicy.rulesRegex(),
+        r'.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr|gmail\.com)',
+      );
+    });
+
+    test('geçici liste boşaltılınca üniversite alan adları aynen kalır '
+        '(geri alma tek satır)', () {
+      final withoutTemporary = [
+        for (final domain in EmailDomainPolicy.allowedDomains)
+          if (!EmailDomainPolicy.temporaryTestDomains.contains(domain)) domain,
+      ];
+
+      expect(withoutTemporary, EmailDomainPolicy.universityDomains);
+      expect(withoutTemporary, ['ogr.gumushane.edu.tr', 'gumushane.edu.tr']);
+      expect(
+        EmailDomainPolicy.universityDomains.toSet().intersection(
+          EmailDomainPolicy.temporaryTestDomains.toSet(),
+        ),
+        isEmpty,
+        reason: 'kalıcı alan adı geçici listeye yazılmaz',
+      );
+      // Desenden geçici alternatifler çıkınca D-27'nin kalıcı deseni kalır.
+      expect(
+        '.*@(${withoutTemporary.map(RegExp.escape).join('|')})',
+        r'.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)',
+      );
+      // `allowedDomains` iki listenin yayılımıdır: ikinci bir kopya yok.
+      expect(
+        readRepoFile(
+          'packages/gu_data/lib/src/constants/email_domain_policy.dart',
+        ),
+        contains(
+          'static const List<String> allowedDomains = [\n'
+          '    ...universityDomains,\n'
+          '    ...temporaryTestDomains,\n'
+          '  ];',
+        ),
+      );
+    });
+
+    test('üniversite alan adları geçici izinden etkilenmez', () {
+      for (final domain in EmailDomainPolicy.universityDomains) {
+        expect(EmailDomainPolicy.isAllowed('kisi@$domain'), isTrue);
+        expect(EmailDomainPolicy.isAllowed('kisi@gmail.$domain'), isFalse);
+        expect(EmailDomainPolicy.isAllowed('kisi@$domain.gmail.com'), isFalse);
+      }
     });
   });
 }

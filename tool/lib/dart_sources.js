@@ -108,11 +108,29 @@ function readLimits(root) {
   return out;
 }
 
-/** `EmailDomainPolicy.allowedDomains`. */
+/**
+ * `EmailDomainPolicy.allowedDomains`.
+ * Liste ya doğrudan dizgi literal'leri taşır ya da aynı dosyadaki başka `List<String>` sabitlerini
+ * yayar (`[...universityDomains, ...temporaryTestDomains]` — CD-136); yayılan listeler de aynı kuralla
+ * çözülür. Yayılan liste boş olabilir (geçici liste boşaltıldığında); çözülemeyen öğe hata fırlatır.
+ */
 function readEmailDomains(root) {
   const source = stripComments(read(root, 'emailDomainPolicy'));
-  const m = /allowedDomains\s*=\s*\[([^\]]*)\]/.exec(source);
-  const domains = m ? [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]) : [];
+  const resolve = (name, trail) => {
+    if (trail.includes(name)) throw new Error(`${PATHS.emailDomainPolicy}: ${name} kendine yayılıyor`);
+    const m = new RegExp(`\\b${name}\\s*=\\s*(?:<String>\\s*)?\\[([^\\]]*)\\]`).exec(source);
+    if (!m) throw new Error(`${PATHS.emailDomainPolicy}: ${name} bulunamadı`);
+    const out = [];
+    for (const item of m[1].split(',').map((x) => x.trim()).filter(Boolean)) {
+      const literal = /^'([^']+)'$/.exec(item);
+      const spread = /^\.\.\.(\w+)$/.exec(item);
+      if (literal) out.push(literal[1]);
+      else if (spread) out.push(...resolve(spread[1], [...trail, name]));
+      else throw new Error(`${PATHS.emailDomainPolicy}: ${name} öğesi çözülemedi (${item})`);
+    }
+    return out;
+  };
+  const domains = resolve('allowedDomains', []);
   if (domains.length === 0) throw new Error(`${PATHS.emailDomainPolicy}: allowedDomains bulunamadı`);
   return domains;
 }
@@ -122,7 +140,7 @@ function regExpEscape(text) {
   return text.replace(/[\\^$.|?*+()[\]{}]/g, '\\$&');
 }
 
-/** `EmailDomainPolicy.rulesRegex()` değeri: `.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)`. */
+/** `EmailDomainPolicy.rulesRegex()` değeri: `.*@(<alan adı>|<alan adı>|…)` (noktalar kaçışlı). */
 function emailRulesRegex(domains) {
   return `.*@(${domains.map(regExpEscape).join('|')})`;
 }

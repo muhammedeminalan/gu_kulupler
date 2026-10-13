@@ -115,7 +115,8 @@ void main() {
     }
 
     for (final email in [
-      'ayse@gmail.com',
+      'ayse@hotmail.com',
+      'ayse@outlook.com',
       'ayse@x.gumushane.edu.tr',
       'ayse@mail.ogr.gumushane.edu.tr',
       'ayse@evilgumushane.edu.tr',
@@ -395,7 +396,7 @@ void main() {
         for (var i = 0; i < 6; i++) {
           expect(
             (await repository.signIn(
-              email: 'ayse@gmail.com',
+              email: 'ayse@hotmail.com',
               password: _password,
             )).errorOrNull,
             AuthError.domainNotAllowed,
@@ -410,9 +411,77 @@ void main() {
         );
 
         expect(auth.calls, isEmpty);
-        expect(repository.loginLockRemaining('ayse@gmail.com'), isNull);
+        expect(repository.loginLockRemaining('ayse@hotmail.com'), isNull);
       },
     );
+  });
+
+  // Geri almada (`EmailDomainPolicy.temporaryTestDomains = []`) bu grup silinir.
+  group('GEÇİCİ (W-61) · AuthRepository · gmail.com geçici izinli', () {
+    for (final email in ['ayse@gmail.com', 'Ayse.Yilmaz@Gmail.Com']) {
+      test('register: gmail.com adresi hesap açar ve doğrulama e-postası '
+          'gönderir: $email', () async {
+        final result = await repository.register(
+          email: '  $email ',
+          password: _password,
+          name: _name,
+        );
+
+        expect(
+          result.dataOrNull,
+          AuthUserInfo(
+            uid: 'u_ayse',
+            email: email,
+            emailVerified: false,
+            displayName: _name,
+          ),
+        );
+        expect(auth.calls, ['register:$email', 'sendEmailVerification']);
+        expect(auth.registeredNames, [_name]);
+      });
+    }
+
+    for (final email in [
+      'ayse@gmail.com.evil.com',
+      'ayse@xgmail.com',
+      'ayse@mail.gmail.com',
+      'ayse@googlemail.com',
+    ]) {
+      test('register: gmail benzeri servise gitmeden domainNotAllowed: '
+          '$email', () async {
+        final result = await repository.register(
+          email: email,
+          password: _password,
+          name: _name,
+        );
+
+        expect(result.errorOrNull, AuthError.domainNotAllowed);
+        expect(auth.calls, isEmpty);
+        expect(auth.currentUser, isNull);
+      });
+    }
+
+    test('signIn: gmail.com adresi servise gider; benzeri gitmez', () async {
+      final signedIn = await repository.signIn(
+        email: 'ayse@gmail.com',
+        password: _password,
+      );
+
+      expect(signedIn.isSuccess, isTrue);
+      expect(auth.calls, ['signIn:ayse@gmail.com']);
+
+      for (final email in ['ayse@mail.gmail.com', 'ayse@gmail.com.evil.com']) {
+        expect(
+          (await repository.signIn(
+            email: email,
+            password: _password,
+          )).errorOrNull,
+          AuthError.domainNotAllowed,
+          reason: email,
+        );
+      }
+      expect(auth.calls, hasLength(1));
+    });
   });
 
   group('T-12 · AuthRepository · sendEmailVerification (60 sn bekleme)', () {

@@ -152,7 +152,11 @@ void main() {
   group('T-08 · gu_data barrel · her dosyadan bir ad erişilebilir', () {
     test('sabitler', () {
       expect(Anonymization.deletedUserName, isNotEmpty);
-      expect(EmailDomainPolicy.allowedDomains, hasLength(2));
+      expect(EmailDomainPolicy.universityDomains, hasLength(2));
+      expect(
+        EmailDomainPolicy.allowedDomains,
+        containsAll(EmailDomainPolicy.universityDomains),
+      );
       expect(FirestoreCollections.users, 'users');
       expect(FirestoreFields.isDeleted, 'isDeleted');
       expect(FirestoreIds.membership('c01', 'u1'), 'c01_u1');
@@ -435,7 +439,7 @@ void main() {
         expect(accepted('a@b@$domain'), isFalse, reason: domain);
         expect(accepted('a@x.$domain'), isFalse, reason: domain);
       }
-      expect(accepted('ayse@gmail.com'), isFalse);
+      expect(accepted('ayse@hotmail.com'), isFalse);
     });
 
     test('silme yükleri yalnızca FirestoreFields ortak alanlarına dokunur', () {
