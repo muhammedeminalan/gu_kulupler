@@ -24,6 +24,11 @@
 //     transaction'dır (okumalar da kurallardan geçer: var olmayan kendi belgesi boş döner). `denied`
 //     aynı çağrının kasıtlı bozuk biçimleridir (sayaçsız, yanlış durum, başkası adına …): reddedilir ve
 //     hiçbir belge değişmez.
+//  5. T-16 — ekranların gerçek çağrıları aynı listelerdedir: `updateApplicationNote` (CLB-05 "Kaydet";
+//     yalnızca `private/contact.note`), CLB-03 kulüp şikayeti (`ReportRepository.report · kulüp`: hedef
+//     kulübün kendisi) `t15.scenarios` içinde; SHT-07'nin üç `updateClubSettings` yazımı (tümünü sessize
+//     al / sessizi kaldır / tek tür) öykü adımlarında (`steps`). SHT-05 `apply` / `joinInstant`
+//     senaryoları T-15'ten beri listededir (M1–M4).
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,

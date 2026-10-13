@@ -1,6 +1,7 @@
 // T-15 · FakeMembershipRepository sözleşmesi (PLAN §16.3): `memberships`,
 // `contacts`, `applied`, `watchMyMembershipsController(uid)`,
-// `activeListeners`; listeler ve sayfalama.
+// `activeListeners`; listeler ve sayfalama. T-16: `noteUpdates`
+// (`updateApplicationNote`).
 //
 // Fake durum makinesini (M1–M4, M7, M8) kendi içinde uygular; kuralların
 // gerçek `FirebaseMembershipRepository` ile **aynı** olduğu karşılaştırmalı
@@ -125,6 +126,16 @@ _operations = {
   'cancelApplication': (repository) =>
       repository.cancelApplication(clubId: _clubId, userId: _uid),
   'leave': (repository) => repository.leave(clubId: _clubId, userId: _uid),
+  'updateApplicationNote (notlu)': (repository) => repository
+      .updateApplicationNote(clubId: _clubId, userId: _uid, note: 'Güncel.'),
+  'updateApplicationNote (boş)': (repository) =>
+      repository.updateApplicationNote(clubId: _clubId, userId: _uid, note: ''),
+  'updateApplicationNote (çok uzun)': (repository) =>
+      repository.updateApplicationNote(
+        clubId: _clubId,
+        userId: _uid,
+        note: 'a' * (Limits.applicationNoteMax + 1),
+      ),
 };
 
 /// Bir çağrının gözlenen sonucu ve bıraktığı durum.
@@ -357,6 +368,68 @@ void main() {
         fake.memberships['${_clubId}_$_uid']!.status,
         MembershipStatus.active,
       );
+    });
+
+    test('updateApplicationNote: bekleyen başvurunun notu değişir, '
+        '`noteUpdates`e düşer; üyelik ve akış değişmez; e-posta '
+        'korunur', () async {
+      clubs.put(_clubId, memberCount: _memberCount);
+      fake.put(
+        _membership(status: MembershipStatus.pending),
+        email: _email,
+        note: 'Eski not',
+      );
+      final events = <FakeMembershipEvent>[];
+      final subscription = fake.watchMyMemberships(_uid).listen(events.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+      final before = fake.memberships['${_clubId}_$_uid'];
+
+      final result = await fake.updateApplicationNote(
+        clubId: _clubId,
+        userId: _uid,
+        note: 'Güncel not.',
+      );
+      await pumpEventQueue();
+
+      expect(result.isSuccess, isTrue);
+      expect(fake.noteUpdates, [
+        (clubId: _clubId, userId: _uid, note: 'Güncel not.'),
+      ]);
+      final contact = fake.contacts['${_clubId}_$_uid']!;
+      expect(contact.note, 'Güncel not.');
+      expect(contact.email, _email);
+      expect(contact.updatedAt, _now);
+      expect(fake.memberships['${_clubId}_$_uid'], same(before));
+      // Yalnızca ilk anlık görüntü: not düzenleme üyelik akışını tetiklemez.
+      expect(events, hasLength(1));
+      expect(clubs.clubs[_clubId]!.memberCount, _memberCount);
+    });
+
+    test('updateApplicationNote: bekleyen değilse conflict, iletişim belgesi '
+        'yoksa notFound, failNext düşürür; `noteUpdates` boş kalır', () async {
+      clubs.put(_clubId);
+      Future<FirestoreResult<void>> edit() => fake.updateApplicationNote(
+        clubId: _clubId,
+        userId: _uid,
+        note: 'Güncel not.',
+      );
+
+      expect((await edit()).errorOrNull, FirestoreError.conflict);
+      fake.put(_membership(), email: _email);
+      expect((await edit()).errorOrNull, FirestoreError.conflict);
+
+      fake
+        ..put(_membership(status: MembershipStatus.pending))
+        ..contacts.clear();
+      expect((await edit()).errorOrNull, FirestoreError.notFound);
+
+      fake
+        ..put(_membership(status: MembershipStatus.pending), email: _email)
+        ..failNext(FirestoreError.unavailable);
+      expect((await edit()).errorOrNull, FirestoreError.unavailable);
+      expect(fake.noteUpdates, isEmpty);
+      expect(fake.contacts['${_clubId}_$_uid']!.note, '');
     });
 
     test('geçersiz kimlik invalidArgument; failNext sıradaki çağrıyı '

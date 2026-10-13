@@ -252,6 +252,63 @@
           }
         }
       ]
+    },
+    {
+      "call": "SettingsRepository.updateClubSettings · SHT-07 tümünü sessize al",
+      "note": "T-16 · ClubNotificationPrefsViewModel.toggle(muted, true): üç tür kapanır, `muted` açılır (sheets.js:38) — tek alan yolu clubs.<clubId>",
+      "writes": [
+        {
+          "op": "update",
+          "path": "settings/u_student",
+          "data": {
+            "clubs.c01": {
+              "announcements": false,
+              "events": false,
+              "posts": false,
+              "muted": true
+            },
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "SettingsRepository.updateClubSettings · SHT-07 sessizi kaldır",
+      "note": "T-16 · ClubNotificationPrefsViewModel.toggle(muted, false): üç tür yeniden açılır",
+      "writes": [
+        {
+          "op": "update",
+          "path": "settings/u_student",
+          "data": {
+            "clubs.c01": {
+              "announcements": true,
+              "events": true,
+              "posts": true,
+              "muted": false
+            },
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "SettingsRepository.updateClubSettings · SHT-07 tek tür (duyurular kapalı)",
+      "note": "T-16 · ClubNotificationPrefsViewModel.toggle(announcements, false): diğer türler olduğu gibi yazılır (belgenin tamamı gönderilir)",
+      "writes": [
+        {
+          "op": "update",
+          "path": "settings/u_student",
+          "data": {
+            "clubs.c01": {
+              "announcements": false,
+              "events": true,
+              "posts": true,
+              "muted": false
+            },
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
     }
   ],
   "standalone": [
@@ -420,6 +477,7 @@
         "expect": { "clubs/c01": { "memberCount": 12 } },
         "denied": [
           { "name": "not boş (requireNote kulübü)", "patch": { "1": { "note": "" } } },
+          { "name": "not yalnızca boşluk (requireNote kulübü)", "patch": { "1": { "note": " " } } },
           { "name": "private/contact yazılmadan", "without": [1] },
           { "name": "onaylı kulüpte doğrudan active", "patch": { "0": { "status": "active" } } },
           { "name": "üyelik belgesinde note anahtarı (CD-137)", "patch": { "0": { "note": "Kulübe katılmak istiyorum." } } },
@@ -814,6 +872,42 @@
         ]
       },
       {
+        "call": "MembershipRepository.updateApplicationNote · not düzenleme (pending)",
+        "note": "T-16 · rules-spec §3.4 contact U(b): üyelik + kulüp okunur; yalnızca private/contact.note (+ updatedAt) yazılır — üyelik belgesi, sayaç ve günlük yok (CD-137). Kulüp not istiyor: dolu not geçer",
+        "seed": {
+          "users/u_student": { "$fixture": "user" },
+          "clubs/c01": { "$fixture": "club", "requireNote": true },
+          "memberships/c01_u_student": { "$fixture": "membership" },
+          "memberships/c01_u_student/private/contact": { "$fixture": "contact" }
+        },
+        "tx": true,
+        "reads": ["memberships/c01_u_student", "clubs/c01"],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_student/private/contact",
+            "data": { "note": "Güncel not.", "updatedAt": "@serverTimestamp" }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_student/private/contact": { "note": "Güncel not.", "email": "student@ogr.gumushane.edu.tr" },
+          "memberships/c01_u_student": { "status": "pending" },
+          "clubs/c01": { "memberCount": 12 }
+        },
+        "denied": [
+          { "name": "onaylanmış başvuruda (active)", "seed": { "memberships/c01_u_student": { "status": "active" } } },
+          { "name": "iptal edilmiş başvuruda (cancelled)", "seed": { "memberships/c01_u_student": { "status": "cancelled" } } },
+          { "name": "reddedilmiş başvuruda (rejected)", "seed": { "memberships/c01_u_student": { "status": "rejected" } } },
+          { "name": "not boş (requireNote kulübü)", "patch": { "0": { "note": "" } } },
+          { "name": "not yalnızca boşluk (requireNote kulübü)", "patch": { "0": { "note": " " } } },
+          { "name": "not yalnızca satır sonu (requireNote kulübü)", "patch": { "0": { "note": "\n\n" } } },
+          { "name": "not ile birlikte e-posta", "patch": { "0": { "email": "baska@ogr.gumushane.edu.tr", "emailLower": "baska@ogr.gumushane.edu.tr" } } },
+          { "name": "not dizgi değil", "patch": { "0": { "note": 42 } } },
+          { "name": "askıdaki hesap", "seed": { "users/u_student": { "status": "suspended" } } },
+          { "name": "başka kullanıcı (member)", "role": "member" }
+        ]
+      },
+      {
         "call": "MembershipRepository.leave · M8",
         "note": "üyelik (left) + clubs.memberCount −1 + günlük (sabit kimlik: {clubId}_{uid}_{kind}_{priorCount}) — tek transaction",
         "seed": {
@@ -924,6 +1018,41 @@
           }
         ],
         "denied": [{ "name": "kullanıcı hedefinde kulüp verilmiş", "patch": { "0": { "targetClubId": "c01" } } }]
+      },
+      {
+        "call": "ReportRepository.report · kulüp (CLB-03 → SHT-10)",
+        "note": "T-16 · CLB-03 'Bu kulübü şikayet et' (ClubDetailViewModel.submitReport): hedef kulübün kendisidir — targetClubId == targetId (CD-137 madde 8j / 8u), hedef kulüp belgesi vardır; neden 'Diğer' + açıklama (SHT-10)",
+        "seed": { "users/u_student": { "$fixture": "user" }, "clubs/c01": { "$fixture": "club" } },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "reports/u_student_club_c01",
+            "data": {
+              "targetType": "club",
+              "targetId": "c01",
+              "targetClubId": "c01",
+              "reporterId": "u_student",
+              "reason": "other",
+              "note": "Kulüp sayfasındaki bilgiler yanıltıcı.",
+              "status": "open",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": { "reports/u_student_club_c01": { "targetType": "club", "targetClubId": "c01", "status": "open" } },
+        "denied": [
+          { "name": "kulüp başka kulübe atfedilmiş (targetClubId ≠ targetId)", "patch": { "0": { "targetClubId": "c02" } } },
+          { "name": "kulüp hedefinde targetClubId yok", "patch": { "0": { "targetClubId": null } } },
+          { "name": "açıklama sınırı aşıyor (301 karakter)", "patch": { "0": { "note": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" } } },
+          { "name": "tanınmayan neden", "patch": { "0": { "reason": "diger" } } },
+          { "name": "askıdaki hesap", "seed": { "users/u_student": { "status": "suspended" } } },
+          { "name": "başka kullanıcı adına (member)", "role": "member" }
+        ]
       },
       {
         "call": "ReportRepository.hasReported · şikayet yok",

@@ -54,7 +54,7 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 | CLB-01 | `/clubs` | `ClubsRoute` | T | A | `/clubs` |
 | CLB-02 | `/clubs/search` | `ClubsSearchRoute` | CLB-01 | A | `/clubs/search` |
 | CLB-07 | `/clubs/user/:userId?clubId=` | `ClubUserProfileRoute` | CLB-01 | A (+ `clubId` varsa üyelik bağlamı) | `/users/:id` |
-| CLB-03 (+FED-01) | `/clubs/:id?tab=about\|posts\|events` | `ClubDetailRoute` | CLB-01 | A | `/clubs/:id` |
+| CLB-03 (+FED-01) | `/clubs/:id?tab=about\|events\|posts\|members` | `ClubDetailRoute` | CLB-01 | A | `/clubs/:id` |
 | CLB-04 | `/clubs/:id/applied` | `ClubAppliedRoute` | CLB-03 | A | `/clubs/:id/applied` |
 | CLB-05 | `/clubs/:id/application` | `ClubApplicationRoute` | CLB-03 | A | `…/application` |
 | CLB-06 | `/clubs/:id/members` | `ClubMembersRoute` | CLB-03 | üye (`seesInside`) | `…/members` |

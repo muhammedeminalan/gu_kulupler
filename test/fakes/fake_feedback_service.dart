@@ -4,6 +4,9 @@
 //   await viewModel.leave();
 //   expect(feedback.dialogs, [DialogId.dlg08]);
 //   expect(feedback.toasts, [ToastId.tst39]);
+//
+// Zincirli dialoglar: `nextDialogResult` ilk dialogu, `dialogResults[id]`
+// kimliğe göre sonrakileri yanıtlar (DLG-01 → DLG-32).
 import 'package:flutter/widgets.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/dialogs/dialog_spec.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart';
@@ -49,6 +52,13 @@ final class FakeFeedbackService extends FakeBase implements FeedbackService {
 
   /// Bir sonraki `showDialog` sonucu (tek seferlik; varsayılan `null`).
   Object? nextDialogResult;
+
+  /// Kimliğe bağlı `showDialog` sonuçları: [nextDialogResult] verilmemişken
+  /// açılan dialog burada kaydı varsa o sonucu döndürür (kalıcı; her açılışta
+  /// aynı). Zincirli akışlar içindir — ör. DLG-01 "Destekle iletişime geç"
+  /// (`nextDialogResult = true`) ardından dış bağlantı onayı:
+  /// `dialogResults[DialogId.dlg32] = true`.
+  final Map<DialogId, Object?> dialogResults = <DialogId, Object?>{};
 
   /// Bir sonraki `showMenu` sonucu (tek seferlik; varsayılan `null`).
   Object? nextMenuResult;
@@ -98,7 +108,7 @@ final class FakeFeedbackService extends FakeBase implements FeedbackService {
     dialogs.add(id);
     dialogParams.add(params);
     lastDialogBuilder = builder;
-    final result = nextDialogResult;
+    final result = nextDialogResult ?? dialogResults[id];
     nextDialogResult = null;
     return result as T?;
   }
@@ -151,6 +161,7 @@ final class FakeFeedbackService extends FakeBase implements FeedbackService {
     lastDialogBuilder = null;
     nextSheetResult = null;
     nextDialogResult = null;
+    dialogResults.clear();
     nextMenuResult = null;
     visibleToast = null;
     _toastAction = null;

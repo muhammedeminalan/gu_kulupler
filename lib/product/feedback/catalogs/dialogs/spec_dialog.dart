@@ -30,7 +30,7 @@ class SpecDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final secondary = spec.secondary;
+    final secondary = spec.secondaryLabel(l10n, params);
     return GuDialogFrame(
       title: spec.title(l10n, params),
       body: spec.body?.call(l10n, params),
@@ -49,7 +49,7 @@ class SpecDialog extends StatelessWidget {
         if (secondary != null)
           GuButton(
             key: FeedbackKeys.of(id.designId, spec.secondaryAction),
-            label: secondary(l10n),
+            label: secondary,
             variant: GuButtonVariant.text,
             onPressed: () => Navigator.of(context).pop(false),
           ),

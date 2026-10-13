@@ -1,12 +1,14 @@
 // `MembershipRepository` fake'i (PLAN §16.3): üyelikleri ve iletişim
 // belgelerini bellekte tutar; üyelik durum makinesinin başvuran / üye
-// satırlarını (M1–M4, M7, M8) gerçek repository ile aynı sonuçlarla uygular.
+// satırlarını (M1–M4, M7, M8) ve bekleyen başvurunun not düzenlemesini
+// (T-16) gerçek repository ile aynı sonuçlarla uygular.
 //
 //   final clubs = FakeClubRepository()..put('c01');
 //   final memberships = FakeMembershipRepository(clock, clubs: clubs);
 //   memberships.put(MembershipModel(clubId: 'c01', userId: 'u1', …));
 //   memberships.watchMyMembershipsController('u1').add(const FirebaseFailure(…));
 //   expect(memberships.applied.single.status, MembershipStatus.pending);
+//   expect(memberships.noteUpdates.single.note, 'Güncel not.');
 //
 // Kulüp koşulları (onay, not zorunluluğu, başvuruya açıklık, askı) ve
 // `memberCount` sayacı [FakeMembershipRepository.clubRepository] üzerinden
@@ -18,8 +20,9 @@
 // Canlı akış: `watchMyMemberships(uid)` dinlenince o anki üyelikleri yayar,
 // her değişiklikte yeniden yayar; test `watchMyMembershipsController(uid)`
 // ile elle olay (hata dahil) yazabilir. `activeListeners` açık dinleyici
-// sayısıdır. Not düzenleme (`noteUpdates`) T-16'da `updateApplicationNote`
-// ile birlikte eklenir. Silme metodu yoktur (D-10).
+// sayısıdır. Başarılı `updateApplicationNote` çağrıları `noteUpdates`
+// listesine düşer; not `contacts` içinde değişir, üyelik belgesi ve akış
+// değişmez. Silme metodu yoktur (D-10).
 import 'dart:async';
 
 import 'package:gu_data/gu_data.dart';
@@ -36,6 +39,9 @@ typedef FakeApplication = ({
   String note,
   MembershipStatus status,
 });
+
+/// Başarılı `updateApplicationNote` çağrısı.
+typedef FakeNoteUpdate = ({String clubId, String userId, String note});
 
 /// Akış olayı: kullanıcının üyelikleri ya da okuma hatası.
 typedef FakeMembershipEvent = FirestoreResult<List<MembershipModel>>;
@@ -62,6 +68,9 @@ final class FakeMembershipRepository extends FakeBase
 
   /// Başarılı `apply` / `joinInstant` çağrıları, sırasıyla.
   final List<FakeApplication> applied = <FakeApplication>[];
+
+  /// Başarılı `updateApplicationNote` çağrıları, sırasıyla.
+  final List<FakeNoteUpdate> noteUpdates = <FakeNoteUpdate>[];
 
   /// Açık `watchMyMemberships` dinleyicisi sayısı.
   int activeListeners = 0;
@@ -163,6 +172,37 @@ final class FakeMembershipRepository extends FakeBase
     final current = memberships[_key(clubId, userId)];
     if (current?.status != MembershipStatus.pending) return _conflict();
     _write(current!.copyWith(status: MembershipStatus.cancelled));
+    return const FirebaseSuccess(null);
+  }
+
+  @override
+  Future<FirestoreResult<void>> updateApplicationNote({
+    required String clubId,
+    required String userId,
+    required String note,
+  }) async {
+    record('updateApplicationNote', [clubId, userId, note]);
+    if (_rejected<void>([clubId, userId]) case final failure?) return failure;
+    if (FieldValidators.applicationNote(note, requireNote: false) != null) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final key = _key(clubId, userId);
+    if (memberships[key]?.status != MembershipStatus.pending) {
+      return _conflict();
+    }
+    final club = clubRepository.clubs[clubId];
+    final contact = contacts[key];
+    // İletişim belgesi olmayan başvuruda gerçek güncelleme `not-found` verir.
+    if (club == null || club.isDeleted || contact == null) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    if (FieldValidators.applicationNote(note, requireNote: club.requireNote) !=
+        null) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    // Üyelik belgesi yazılmaz: akış yeniden yayılmaz (CD-137).
+    contacts[key] = contact.copyWith(note: note, updatedAt: _clock.nowUtc());
+    noteUpdates.add((clubId: clubId, userId: userId, note: note));
     return const FirebaseSuccess(null);
   }
 

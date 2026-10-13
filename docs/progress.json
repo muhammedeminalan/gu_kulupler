@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T14:44:06.815Z",
+  "updated": "2026-10-13T17:03:27.781Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-16",
   "statusValues": [
     "pending",
     "planning",
@@ -291,8 +291,8 @@
       "notes": ""
     },
     "T-16": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-13T14:44:51.657Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1084,6 +1084,39 @@
         "T-30"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-65",
+      "declaredIn": "T-16",
+      "text": "CLB-04 'Başvurularım' → PRF-03 'Kulüplerim' bekleyenler sekmesi (MyClubsRoute(tab: pending)); o güne kadar Profil sekmesinin kökü (openInTab) → T-27",
+      "resolveIn": [
+        "T-27"
+      ],
+      "status": "open",
+      "actions": [
+        "CLB-04.myApplications"
+      ]
+    },
+    {
+      "id": "W-66",
+      "declaredIn": "T-16",
+      "text": "CLB-03 yönetim kurulu / danışman satırı → CLB-07 (UserProfileRoute); ClubPersonRow (F26) → UserRow (P1); 'Üyeler' sekmesi önizleme satırları MemberRow (P2) → T-18",
+      "resolveIn": [
+        "T-18"
+      ],
+      "status": "open",
+      "actions": [
+        "CLB-03.about.person.*"
+      ]
+    },
+    {
+      "id": "W-67",
+      "declaredIn": "T-16",
+      "text": "DebugMenu 'Demo kulüpler' kısayolları (DebugDemoClubs, debug.club.*, ARB debugMenuDemoClubs + testleri) Kulüpler listesi (CLB-01) gelince kaldırılır → T-17",
+      "resolveIn": [
+        "T-17"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [
@@ -1175,6 +1208,26 @@
       "date": "2026-10-11",
       "task": "T-13",
       "text": "K-59 .hscroll kısayol dolgusu .py8/.pb16 değiştiricilerini ezer (css:102, 105) — AUT-06 çip şeridi 3 px; diğer şeritler kendi task'ında referans görüntüden ölçülür"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-16",
+      "text": "K-60 'Reddedildi' düğmesinde .c-danger etkisiz (css:98 < css:143) → ClubCta düz tonal"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-16",
+      "text": "K-61 CLB-04/CLB-05 koyu referans yakalama artefaktı (kare köşe, yarım onay işareti) → koyu referanstan yalnızca renkler"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-16",
+      "text": "K-62 toast açık alt sayfanın son satırını örter (css:288 z-index 200) → prototiple aynı; akış testleri toast'ı bekler"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-16",
+      "text": "K-63 referans kapakları coverSeed'den üretilir (gradyan açısı tohumdan); Flutter şablon varlığı (CD-26/CD-124) → gradyan yönü farkı kabul"
     }
   ]
 }

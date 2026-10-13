@@ -611,6 +611,15 @@
   "@appliedMyApplications": {
     "description": "Key applied.myApplications"
   },
+  "appliedNoteQuote": "“{note}”",
+  "@appliedNoteQuote": {
+    "description": "Key applied.noteQuote",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "appliedSentAt": "Gönderildi: {date}",
   "@appliedSentAt": {
     "description": "Key applied.sentAt",
@@ -1707,6 +1716,10 @@
   "debugMenuDemoAccounts": "Demo hesaplar",
   "@debugMenuDemoAccounts": {
     "description": "Key debugMenu.demoAccounts"
+  },
+  "debugMenuDemoClubs": "Demo kulüpler",
+  "@debugMenuDemoClubs": {
+    "description": "Key debugMenu.demoClubs"
   },
   "debugMenuSignInError": "Giriş yapılamadı ({code}). Emülatör ve demo veri (seed) çalışıyor mu?",
   "@debugMenuSignInError": {
@@ -4393,6 +4406,18 @@
   "sht04Title": "Filtre ve sıralama",
   "@sht04Title": {
     "description": "Key sht.04.title"
+  },
+  "sht05ClubMeta": "{category} · {type}",
+  "@sht05ClubMeta": {
+    "description": "Key sht.05.clubMeta",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "sht05Privacy": "Adın, bölümün ve sınıfın kulüp yönetimiyle paylaşılır.",
   "@sht05Privacy": {

@@ -27,6 +27,8 @@ test/
     design_files.dart     # repo kökünden JSON/metin okuyucu
     test_l10n.dart        # tester.l10n, l10nFor(locale), loadL10n
     test_container.dart   # createContainer({overrides})
+    test_asset_bundle.dart# TestAssetBundle: pumpApp / pumpAppRouter ağacının DefaultAssetBundle'ı — varlıkları depo kökünden eşzamanlı okur (50 KB üstü kapak şablonları sahte zamanlı testte rootBundle ile tamamlanmaz; T-16, CD-138). Gerçek GuApp kuran akış testleri GuApp'i aynı paketle sarar
+  flows/                  # gerçek GuApp + sahte servislerle uçtan uca akışlar: auth_flow_test.dart (T-13 / T-14), club_flow_test.dart (T-16)
   features/ … core/ … product/ …
 packages/gu_data/test/    # model, servis, repository, soft delete, RolePolicy
 packages/gu_ui/test/      # token, widget, golden (goldens/ altında); helpers/: pump_app.dart (alt küme: GetIt/Riverpod/AppLocalizations yok) · golden_helper.dart (goldenForWidget) · css_measure.dart · design_sources.dart — CD-122(3)

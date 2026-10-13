@@ -11,6 +11,11 @@
 // yazılmaz, günlük kimliği sabittir, iptal edilen başvuru anında katılıma
 // dönüşmez, anlık görüntü güncel kullanıcı belgesinden kurulur.
 //
+// T-16 · `updateApplicationNote`: bekleyen başvurunun notu yalnızca
+// `private/contact` belgesinde değişir (üyelik, sayaç, günlük ve bildirim
+// yok); bekleyen dışındaki her durumda çakışma; not zorunlu kulüpte boş not
+// ve üst sınırı aşan not reddedilir (PLAN §10.4; rules-spec §3.4 U(b)).
+//
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); yazım kümesi kayıt tutan
 // servis çiftiyle (`test/fakes/recording_firestore_service.dart`), hata
 // yolları el yazımı SDK çiftleriyle (`test/fakes/sdk_firestore_stubs.dart`).
@@ -290,6 +295,9 @@ void main() {
   Future<FirestoreResult<void>> leave() =>
       repository.leave(clubId: _clubId, userId: _uid);
 
+  Future<FirestoreResult<void>> editNote(String note) => repository
+      .updateApplicationNote(clubId: _clubId, userId: _uid, note: note);
+
   /// [result] iş kuralı reddi mi ve `detail` [code] kodunu taşıyor mu?
   void expectViolation(
     FirestoreResult<Object?> result,
@@ -328,10 +336,12 @@ void main() {
   });
 
   group('T-15 · MembershipRepository · sözleşme', () {
-    test('PLAN §10.4 tablosunun T-15 üyeleri arayüzde aynı imzayla var; '
-        'sonraki task üyeleri yok', () {
+    test('PLAN §10.4 tablosunun T-15 ve T-16 üyeleri arayüzde aynı imzayla '
+        'var; sonraki task üyeleri yok', () {
       final plan = readPlanRepositoryMembers('$MembershipRepository');
-      final now = plan.where((row) => row.note == '(T-15)').toList();
+      final now = plan
+          .where((row) => row.note == '(T-15)' || row.note == '(T-16)')
+          .toList();
       // `reapply` ayrı bir üye değildir: `apply` ile aynı metottur.
       final reapply = now.singleWhere((row) => row.member == 'reapply');
       expect(reapply.signature, 'apply');
@@ -345,6 +355,7 @@ void main() {
         'cancelApplication',
         'leave',
         'listActiveMembers',
+        'updateApplicationNote',
         'listManagers',
         'listPending',
         'listMine',
@@ -804,6 +815,110 @@ void main() {
     });
   });
 
+  group('T-16 · updateApplicationNote · bekleyen başvurunun notu', () {
+    test('yalnızca private/contact.note + updatedAt yazılır; üyelik, sayaç, '
+        'günlük ve bildirim yok', () async {
+      await seedClub();
+      await seedMembership(MembershipStatus.pending);
+      await seedContact();
+
+      final result = await editNote('Güncel not.');
+
+      expect(result.isSuccess, isTrue);
+      expect(writes(), [
+        _write('update', _contactPath, _contactNote('Güncel not.')),
+      ]);
+      expect(service.transactions, 1);
+      expect(service.outsideWrites, 0);
+      final contact = (await read(_contactPath))!;
+      expect(contact['note'], 'Güncel not.');
+      // E-posta yeniden yazılmaz.
+      expect(contact['email'], _oldEmail);
+      expect(contact['emailLower'], _oldEmail);
+      expect((await read(_membershipPath))!['status'], 'pending');
+      expect(await activity(), isEmpty);
+      expect((await read(_clubPath))!['memberCount'], _memberCount);
+      expect(dispatcher.calls, isEmpty);
+    });
+
+    test('pending olmayan (ya da olmayan) başvuruda conflict; not '
+        'değişmez', () async {
+      await seedClub();
+      await seedContact();
+
+      expect(
+        (await editNote('Güncel not.')).errorOrNull,
+        FirestoreError.conflict,
+      );
+      for (final status in MembershipStatus.values) {
+        if (status == MembershipStatus.pending) continue;
+        await seedMembership(status);
+        expect(
+          (await editNote('Güncel not.')).errorOrNull,
+          FirestoreError.conflict,
+          reason: status.json,
+        );
+      }
+      expect((await read(_contactPath))!['note'], 'eski not');
+      await expectNothingWritten();
+    });
+
+    test('not zorunlu kulüpte boş not invalidArgument; dolu not geçer; not '
+        'istemeyen kulüpte not boşaltılabilir', () async {
+      await seedClub(requireNote: true);
+      await seedMembership(MembershipStatus.pending);
+      await seedContact();
+
+      // Yalnızca boşluk da "boş" sayılır (Rules `noteGiven` kırpılmış metni
+      // ölçer — CD-138 madde 3).
+      for (final empty in ['', ' ', '\n\n']) {
+        expect(
+          (await editNote(empty)).errorOrNull,
+          FirestoreError.invalidArgument,
+        );
+      }
+      expect(service.writes, isEmpty);
+      expect((await editNote('Yeni not.')).isSuccess, isTrue);
+
+      await seedClub();
+      expect((await editNote('')).isSuccess, isTrue);
+      expect((await read(_contactPath))!['note'], '');
+    });
+
+    test('üst sınır: applicationNoteMax geçer, +1 işlem açılmadan '
+        'invalidArgument', () async {
+      await seedClub();
+      await seedMembership(MembershipStatus.pending);
+      await seedContact();
+
+      final atLimit = 'a' * Limits.applicationNoteMax;
+      expect((await editNote(atLimit)).isSuccess, isTrue);
+      expect(service.transactions, 1);
+
+      expect(
+        (await editNote('${atLimit}a')).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+      expect(service.transactions, 1);
+      expect((await read(_contactPath))!['note'], atLimit);
+    });
+
+    test('kulüp belgesi yok ya da kulüp silinmiş → notFound; askıdaki ve '
+        'başvuruya kapalı kulüpte not düzenlenir', () async {
+      await seedMembership(MembershipStatus.pending);
+      await seedContact();
+
+      expect((await editNote('x')).errorOrNull, FirestoreError.notFound);
+      await seedClub(isDeleted: true);
+      expect((await editNote('x')).errorOrNull, FirestoreError.notFound);
+      expect(service.writes, isEmpty);
+
+      await seedClub(status: ClubStatus.suspended, applicationsOpen: false);
+      expect((await editNote('Güncel not.')).isSuccess, isTrue);
+      expect((await read(_contactPath))!['note'], 'Güncel not.');
+    });
+  });
+
   group('T-15 · leave · M8 (active → left)', () {
     for (final role in [ClubRole.member, ClubRole.board]) {
       test(
@@ -1099,6 +1214,16 @@ void main() {
           await repository.cancelApplication(clubId: _clubId, userId: id),
           await repository.leave(clubId: id, userId: _uid),
           await repository.leave(clubId: _clubId, userId: id),
+          await repository.updateApplicationNote(
+            clubId: id,
+            userId: _uid,
+            note: '',
+          ),
+          await repository.updateApplicationNote(
+            clubId: _clubId,
+            userId: id,
+            note: '',
+          ),
           await repository.listActiveMembers(id, const PageRequest()),
           await repository.listManagers(id),
           await repository.listPending(id, const PageRequest()),
@@ -1135,6 +1260,7 @@ void main() {
         await apply(),
         await cancel(),
         await leave(),
+        await editNote('Not.'),
       ];
 
       for (final result in results) {
@@ -1165,6 +1291,11 @@ void main() {
         ),
         await denied.cancelApplication(clubId: _clubId, userId: _uid),
         await denied.leave(clubId: _clubId, userId: _uid),
+        await denied.updateApplicationNote(
+          clubId: _clubId,
+          userId: _uid,
+          note: 'Not.',
+        ),
       ];
 
       for (final result in results) {

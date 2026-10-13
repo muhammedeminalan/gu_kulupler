@@ -18,6 +18,9 @@
 //  8. Yönetim okuması (CD-137 madde 8r): doğrulanmamış / alan adı dışı jetonlu yönetici başvuruları,
 //     `private/contact` belgesini ve günlüğü okuyamaz (askıdaki yönetici matristedir).
 //
+//  9. Not düzenleme (T-16; `private/contact` U(b) `canEditNote()`): bekleyen başvurunun sahibi yalnızca
+//     `note` + `updatedAt` yazar; üyelik önce ve sonra `pending`; `requireNote` kulübünde not boşaltılamaz.
+//
 // Sayaç eşliği (`memberCount ±1`, üyelik yolu oturumdan türetilir) `counters.test.js`, günlük `activity.test.js`,
 // sorgu sözleşmesi ve indeksler `queries.test.js` dosyasındadır.
 const path = require('node:path');
@@ -47,6 +50,8 @@ const M_PENDING = payloads.membershipPath(CLUB, PENDING);
 const M_MEMBER = payloads.membershipPath(CLUB, MEMBER);
 const C_STUDENT = payloads.contactPath(CLUB, STUDENT);
 const C_FORMER = payloads.contactPath(CLUB, FORMER);
+const C_PENDING = payloads.contactPath(CLUB, PENDING);
+const C_MEMBER = payloads.contactPath(CLUB, MEMBER);
 const DECISION_KEYS = Object.keys(payloads.DECISION_NULLS);
 
 const dbOf = (role) => contextFor(role).firestore();
@@ -133,6 +138,9 @@ describe('M1 apply creates pending — alan beyaz listesi, eşlik eden contact, 
     ['contact createdAt istemci saati', c({ createdAt: clientTime() }), 'deny'],
     ['not boş, kulüp not istemiyor', c({ note: '' }), 'allow'],
     ['not boş, kulüp not istiyor (requireNote)', c({ note: '' }), 'deny', REQUIRE_NOTE],
+    ['not yalnızca boşluk, kulüp not istiyor (requireNote)', c({ note: ' ' }), 'deny', REQUIRE_NOTE],
+    ['not yalnızca satır sonu / sekme, kulüp not istiyor (requireNote)', c({ note: '\n\t \n' }), 'deny', REQUIRE_NOTE],
+    ['not yalnızca boşluk, kulüp not istemiyor', c({ note: ' ' }), 'allow'],
     ['not dolu, kulüp not istiyor (requireNote)', c({ note: 'Katılmak istiyorum.' }), 'allow', REQUIRE_NOTE],
     ['kulüp başvurulara kapalı (applicationsOpen: false)', (w) => w, 'deny', { patch: { [CLUB_PATH]: { applicationsOpen: false } } }],
     ['kulüp askıda', (w) => w, 'deny', { patch: { [CLUB_PATH]: { status: 'suspended' } } }],
@@ -226,6 +234,7 @@ describe('M3 reapply after left — alan beyaz listesi, priorCount, not yeniden 
     ['contact güncellemesi e-postayı değiştiriyor', (w) => ({ ...w, contact: withData(w.contact, { email: 'x@ogr.gumushane.edu.tr' }) }), 'deny'],
     ['contact.note applicationNoteMax + 1', (w) => ({ ...w, contact: withData(w.contact, { note: text(limits.applicationNoteMax + 1) }) }), 'deny'],
     ['not boş, kulüp not istiyor (requireNote)', (w) => ({ ...w, contact: withData(w.contact, { note: '' }) }), 'deny', REQUIRE_NOTE],
+    ['not yalnızca boşluk, kulüp not istiyor (requireNote)', (w) => ({ ...w, contact: withData(w.contact, { note: ' ' }) }), 'deny', REQUIRE_NOTE],
     ['not dolu, kulüp not istiyor (requireNote)', (w) => w, 'allow', REQUIRE_NOTE],
     ['kulüp başvurulara kapalı', (w) => w, 'deny', { patch: { [CLUB_PATH]: { applicationsOpen: false } } }],
   ])('%s', async (_title, mutate, expected, edit = NO_EDIT) => {
@@ -275,6 +284,20 @@ describe('M4 reapply after cooldown — retryAfter', () => {
     const after = await readDoc(M_FORMER);
     if (expected === 'allow') expect(after).toMatchObject({ status: 'pending', priorCount: 1, ...payloads.DECISION_NULLS });
     else expect(after.status).toBe(from);
+  });
+
+  // `noteGiven` kırpılmış metni ölçer (CD-138 madde 3): bekleme dolmuş olsa da boş / yalnızca boşluk not geçmez.
+  test.each([
+    ['not boş', '', 'deny'],
+    ['not yalnızca boşluk', ' ', 'deny'],
+    ['not yalnızca satır sonu', '\n\n', 'deny'],
+    ['not dolu', 'Yeniden başvuruyorum.', 'allow'],
+  ])('bekleme dolmuş, kulüp not istiyor (requireNote): %s', async (_title, value, expected) => {
+    await seedFixture('base', undefined, {
+      patch: { ...rejected({ retryAfter: fromNow(-MINUTE_MS) }).patch, ...REQUIRE_NOTE.patch },
+    });
+    await expectWrite(commit('former', formerReapply({ note: value })), expected);
+    expect((await readDoc(M_FORMER)).status).toBe(expected === 'allow' ? 'pending' : 'rejected');
   });
 
   test('başvuran bekleme süresini kendisi sıfırlayamaz (retryAfter / status tek başına yazılamaz)', async () => {
@@ -393,6 +416,111 @@ describe('M7 cancel own application — yalnızca status', () => {
     await assertFails(commit('pending', writes));
     expect((await readDoc(M_PENDING)).status).toBe('pending');
     expect((await readDoc(CLUB_PATH)).memberCount).toBe(5);
+  });
+});
+
+// ── M7 · not düzenleme (private/contact U(b)) — T-16 ─────────────────────────────────────────
+
+describe('M7 edit note while pending — private/contact U(b): yalnızca note, üyelik pending kalır', () => {
+  const note = (value, extra) => ({ note: value, ...payloads.baseUpdate(), ...extra });
+  const OTHER_EMAIL = { email: 'baska@ogr.gumushane.edu.tr', emailLower: 'baska@ogr.gumushane.edu.tr' };
+
+  test('taban yazım: not değişir; e-posta, üyelik belgesi ve sayaç aynı kalır', async () => {
+    const docs = await seedFixture('base');
+    const membership = await readDoc(M_PENDING);
+    await assertSucceeds(updateDoc(doc(dbOf('pending'), C_PENDING), note('Güncel not.')));
+
+    const contact = await readDoc(C_PENDING);
+    expect(contact).toMatchObject({ note: 'Güncel not.', email: docs[C_PENDING].email, emailLower: docs[C_PENDING].emailLower });
+    expect(contact.createdAt.toMillis()).toBeLessThan(contact.updatedAt.toMillis());
+    expect(await readDoc(M_PENDING)).toEqual(membership);
+    expect((await readDoc(CLUB_PATH)).memberCount).toBe(5);
+  });
+
+  // Satır: [başlık, yük üreticisi (zaman test anında hesaplanır), beklenti, veri düzenlemesi?].
+  test.each([
+    ['not applicationNoteMax', () => note(text(limits.applicationNoteMax)), 'allow'],
+    ['not applicationNoteMax + 1', () => note(text(limits.applicationNoteMax + 1)), 'deny'],
+    ['not boş, kulüp not istemiyor', () => note(''), 'allow'],
+    ['not boş, kulüp not istiyor (requireNote)', () => note(''), 'deny', REQUIRE_NOTE],
+    ['not yalnızca boşluk, kulüp not istiyor (requireNote)', () => note(' '), 'deny', REQUIRE_NOTE],
+    ['not yalnızca satır sonu, kulüp not istiyor (requireNote)', () => note('\n\n'), 'deny', REQUIRE_NOTE],
+    ['not yalnızca sekme / boşluk, kulüp not istiyor (requireNote)', () => note('\t  \t'), 'deny', REQUIRE_NOTE],
+    ['not yalnızca boşluk, kulüp not istemiyor', () => note(' '), 'allow'],
+    ['not baştan / sondan boşluklu ama dolu, kulüp not istiyor (requireNote)', () => note('  Katılmak istiyorum.  '), 'allow', REQUIRE_NOTE],
+    ['not dolu, kulüp not istiyor (requireNote)', () => note('Katılmak istiyorum.'), 'allow', REQUIRE_NOTE],
+    ['not dizgi değil', () => note(42), 'deny'],
+    ['not null', () => note(null), 'deny'],
+    ['not anahtarı kaldırılıyor', () => note(deleteField()), 'deny'],
+    ['updatedAt yok', () => ({ note: 'Güncel not.' }), 'deny'],
+    ['updatedAt istemci saati', () => note('Güncel not.', { updatedAt: clientTime() }), 'deny'],
+    ['not ile birlikte e-posta', () => note('Güncel not.', OTHER_EMAIL), 'deny'],
+    ['yalnızca e-posta', () => ({ ...OTHER_EMAIL, ...payloads.baseUpdate() }), 'deny'],
+    ['beyaz liste dışı alan (phone)', () => note('Güncel not.', { phone: '+90' }), 'deny'],
+    ['not ile birlikte isDeleted (silme taklidi)', () => note('Güncel not.', { isDeleted: true }), 'deny'],
+    ['not ile birlikte createdAt', () => note('Güncel not.', { createdAt: serverTimestamp() }), 'deny'],
+    ['başvuru onaylanmış (active)', () => note('Güncel not.'), 'deny', { patch: { [M_PENDING]: { status: 'active' } } }],
+    ['başvuru iptal edilmiş (cancelled)', () => note('Güncel not.'), 'deny', { patch: { [M_PENDING]: { status: 'cancelled' } } }],
+    ['başvuru reddedilmiş (rejected)', () => note('Güncel not.'), 'deny', { patch: { [M_PENDING]: { status: 'rejected' } } }],
+    ['üyelikten çıkarılmış (removed)', () => note('Güncel not.'), 'deny', { patch: { [M_PENDING]: { status: 'removed' } } }],
+    ['ayrılmış (left)', () => note('Güncel not.'), 'deny', { patch: { [M_PENDING]: { status: 'left' } } }],
+    ['başvuranın hesabı askıda (activeUser)', () => note('Güncel not.'), 'deny', { patch: { [`users/${PENDING}`]: { status: 'suspended' } } }],
+    ['başvuranın profili tamamlanmamış (activeUser)', () => note('Güncel not.'), 'deny', { patch: { [`users/${PENDING}`]: { profileComplete: false } } }],
+    // Not düzenleme yeni başvuru değildir: kulüp başvuruya kapansa da bekleyen başvurunun notu düzenlenir.
+    ['kulüp başvurulara kapalı', () => note('Güncel not.'), 'allow', { patch: { [CLUB_PATH]: { applicationsOpen: false } } }],
+    ['kulüp askıda', () => note('Güncel not.'), 'allow', { patch: { [CLUB_PATH]: { status: 'suspended' } } }],
+  ])('%s', async (_title, payload, expected, edit = NO_EDIT) => {
+    await seedFixture('base', undefined, edit);
+    const before = await readDoc(C_PENDING);
+    await expectWrite(updateDoc(doc(dbOf('pending'), C_PENDING), payload()), expected);
+    if (expected === 'deny') expect(await readDoc(C_PENDING)).toEqual(before);
+    else expect((await readDoc(C_PENDING)).email).toBe(before.email);
+  });
+
+  test('aktif üye kendi notunu düzenleyemez (başvuru bitmiştir)', async () => {
+    await seedFixture('base');
+    const before = await readDoc(C_MEMBER);
+    await assertFails(updateDoc(doc(dbOf('member'), C_MEMBER), note('Güncel not.')));
+    expect(await readDoc(C_MEMBER)).toEqual(before);
+  });
+
+  test('doğrulanmamış / alan adı dışı jetonla sahibi notunu düzenleyemez', async () => {
+    await seedFixture('base');
+    const before = await readDoc(C_PENDING);
+    for (const token of [
+      { email: payloads.emailOf('pending'), email_verified: false },
+      { email: 'pending@hotmail.com', email_verified: true },
+    ]) {
+      const db = getTestEnv().authenticatedContext(PENDING, token).firestore();
+      await assertFails(updateDoc(doc(db, C_PENDING), note('Güncel not.')));
+    }
+    expect(await readDoc(C_PENDING)).toEqual(before);
+  });
+
+  test('aynı batch\'te iptal (M7) + not: yazım-sonrası üyelik pending değildir → ikisi de reddedilir', async () => {
+    await seedFixture('base');
+    const before = [await readDoc(M_PENDING), await readDoc(C_PENDING)];
+    const writes = {
+      membership: { op: 'update', path: M_PENDING, data: { status: 'cancelled', ...payloads.baseUpdate() } },
+      contact: { op: 'update', path: C_PENDING, data: note('Son söz.') },
+    };
+    await assertFails(commit('pending', writes));
+    expect([await readDoc(M_PENDING), await readDoc(C_PENDING)]).toEqual(before);
+  });
+
+  test('yönetim başvuranın notunu okur ama yazamaz; not üyelik belgesine yazılamaz', async () => {
+    await seedFixture('base');
+    const before = await readDoc(C_PENDING);
+    for (const role of ['board', 'president', 'advisor', 'super']) {
+      await assertSucceeds(getDoc(doc(dbOf(role), C_PENDING)));
+      await assertFails(updateDoc(doc(dbOf(role), C_PENDING), note('Yönetici notu.')));
+    }
+    expect(await readDoc(C_PENDING)).toEqual(before);
+
+    // CD-137: `note` üyelik belgesinin alanı değildir (M7 yalnızca `status` yazar).
+    const membership = await readDoc(M_PENDING);
+    await assertFails(updateDoc(doc(dbOf('pending'), M_PENDING), note('Güncel not.')));
+    expect(await readDoc(M_PENDING)).toEqual(membership);
   });
 });
 

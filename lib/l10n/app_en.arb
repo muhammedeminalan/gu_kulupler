@@ -611,6 +611,15 @@
   "@appliedMyApplications": {
     "description": "Key applied.myApplications"
   },
+  "appliedNoteQuote": "“{note}”",
+  "@appliedNoteQuote": {
+    "description": "Key applied.noteQuote",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
   "appliedSentAt": "Sent: {date}",
   "@appliedSentAt": {
     "description": "Key applied.sentAt",
@@ -1707,6 +1716,10 @@
   "debugMenuDemoAccounts": "Demo accounts",
   "@debugMenuDemoAccounts": {
     "description": "Key debugMenu.demoAccounts"
+  },
+  "debugMenuDemoClubs": "Demo clubs",
+  "@debugMenuDemoClubs": {
+    "description": "Key debugMenu.demoClubs"
   },
   "debugMenuSignInError": "Sign-in failed ({code}). Are the emulator and the demo data (seed) running?",
   "@debugMenuSignInError": {
@@ -4393,6 +4406,18 @@
   "sht04Title": "Filter & sort",
   "@sht04Title": {
     "description": "Key sht.04.title"
+  },
+  "sht05ClubMeta": "{category} · {type}",
+  "@sht05ClubMeta": {
+    "description": "Key sht.05.clubMeta",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
   },
   "sht05Privacy": "Your name, department and year are shared with the club board.",
   "@sht05Privacy": {

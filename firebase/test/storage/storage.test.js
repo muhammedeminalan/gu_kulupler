@@ -14,6 +14,10 @@
 //    yükleyemez; `profileComplete` aranmaz (AUT-05 sırası: createProfile → yama → yükleme);
 //  - boş dosya, `contentEncoding` (gzip…), `contentDisposition` (attachment / dosya adı) ve `users/`
 //    yolunda özel üst veri reddedilir (D-10: yüklenen dosya sonradan silinemez).
+//
+// T-16 — `clubs/{clubId}/{file}` (logo / kapak): tek dosya okuması doğrulanmış her kullanıcıya açık
+// (CLB-01, CLB-03), klasör listesi kapalı; yükleme, üzerine yazma, üst veri güncelleme ve silme
+// herkes için ret — kulübün başkanı ve süper admin dahil (yükleme T-36'da açılır).
 const fs = require('node:fs');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { deleteObject, getBytes, getMetadata, listAll, ref, updateMetadata, uploadBytes } = require('firebase/storage');
@@ -23,8 +27,11 @@ const { CONTEXTS, VARIANTS, contextFor, definition, uidOf } = require('../helper
 const { buildFixture, seedDocs } = require('../helpers/fixtures');
 const { STORAGE_PREFIX, parseMatches } = require('../helpers/matrix');
 
-/** Okuma/yükleme kuralları açılmış yol kökleri. T-14: users/. */
+/** Yükleme (`create`) kuralı açılmış yol kökleri. T-14: users/. */
 const OPENED = ['users'];
+
+/** Tek dosya okuması (`get`) açılmış yol kökleri. T-14: users/ · T-16: clubs/. */
+const READABLE = ['users', 'clubs'];
 
 /** PLAN §11.5'in beş yol kökü (StoragePaths ile aynı). */
 const ROOTS = ['users', 'clubs', 'events', 'posts', 'support'];
@@ -115,17 +122,33 @@ describe('storage · storage.rules yapısı', () => {
     expect(rulesText.match(/firestore\.(get|exists)\(/g)).toHaveLength(1);
   });
 
-  test('users/ bloğu: okuma `get` ile açılır, `list` kapalıdır (`allow read` yazılmaz)', () => {
-    const block = /match \/users\/\{uid\}\/\{file\} \{([^}]*)\}/.exec(rulesText);
+  test.each([
+    ['users', 'uid'],
+    ['clubs', 'clubId'],
+  ])('%s/ bloğu: okuma `get` ile açılır, `list` kapalıdır (`allow read` yazılmaz)', (root, id) => {
+    const block = new RegExp(`match \\/${root}\\/\\{${id}\\}\\/\\{file\\} \\{([^}]*)\\}`).exec(rulesText);
     expect(block).not.toBeNull();
     const allows = block[1].split(';').map((rule) => rule.trim()).filter((rule) => rule.startsWith('allow ')).map((rule) => `${rule};`);
     expect(allows.map((line) => line.slice(0, line.indexOf(':')))).toEqual(['allow get', 'allow list', 'allow create', 'allow update, delete']);
+    expect(allows[0]).toBe('allow get: if signedInVerified();');
     expect(allows[1]).toBe('allow list: if false;');
     expect(allows[3]).toBe('allow update, delete: if false;');
   });
+
+  test('okuması açılan kökler: users/ ve clubs/; `allow read` hiçbir açık yolda yazılmaz', () => {
+    const reads = (rulesText.match(/^\s*allow (?:get|read)[^:]*:[^;]*;/gm) || []).map((rule) => rule.trim());
+    expect(reads.filter((rule) => rule.startsWith('allow get'))).toHaveLength(READABLE.length);
+    for (const rule of reads.filter((rule) => rule.startsWith('allow read'))) expect(rule).toMatch(/: if false;$/);
+  });
+
+  test('clubs/ yüklemesi kapalıdır (T-36\'da açılır)', () => {
+    const create = /match \/clubs\/\{clubId\}\/\{file\} \{[^}]*?(allow create:[^;]*;)/.exec(rulesText);
+    expect(create).not.toBeNull();
+    expect(create[1]).toBe('allow create: if false;');
+  });
 });
 
-describe.each(ROOTS.filter((r) => !OPENED.includes(r)))('storage deny-all · %s/{id}/{file}', (root) => {
+describe.each(ROOTS.filter((r) => !OPENED.includes(r) && !READABLE.includes(r)))('storage deny-all · %s/{id}/{file}', (root) => {
   const existing = `${root}/id1/${EXISTING_FILE}`;
   const created = `${root}/id1/${NEW_FILE}`;
 
@@ -477,6 +500,68 @@ describe('storage users/{uid}/{file} · repository sözleşmesi (UserRepository.
     expect(await fileExists(path)).toBe(true);
     // Yüklenen dosya profil görüntülenirken tek dosya olarak okunur.
     await assertSucceeds(getBytes(ref(contextFor('member').storage(), path)));
+  });
+});
+
+// ── clubs/{clubId}/{file} — logo ve kapak (T-16: yalnızca okuma) ──────────────────────────────
+
+describe('storage clubs/{clubId}/{file} · okuma', () => {
+  const CLUB_ID = 'c01';
+  const logo = `clubs/${CLUB_ID}/${EXISTING_FILE}`;
+  const otherClubCover = `clubs/c02/${EXISTING_FILE}`;
+
+  test.each(VERIFIED)('%s · kulüp görselini (tek dosya) okur → allow', async (role) => {
+    await seedFile(logo);
+    await seedFile(otherClubCover);
+    const storage = contextFor(role).storage();
+    // Üyelik aranmaz: kulüp belgesi doğrulanmış herkese açıktır (CLB-01 keşif listesi).
+    for (const path of [logo, otherClubCover]) {
+      await assertSucceeds(getBytes(ref(storage, path)));
+      await assertSucceeds(getMetadata(ref(storage, path)));
+    }
+  });
+
+  test.each(UNVERIFIED)('%s · okuyamaz → deny', async (role) => {
+    await seedFile(logo);
+    const storage = contextFor(role).storage();
+    await assertFails(getBytes(ref(storage, logo)));
+    await assertFails(getMetadata(ref(storage, logo)));
+  });
+
+  test.each(ALL_ROLES)('%s · klasör listelenemez (eski logo / kapak sızmaz) → deny', async (role) => {
+    await seedFile(logo);
+    const storage = contextFor(role).storage();
+    await assertFails(listAll(ref(storage, `clubs/${CLUB_ID}`)));
+    await assertFails(listAll(ref(storage, 'clubs')));
+  });
+
+  test('alt klasör ve kök düzeyi dosya `clubs/{clubId}/{file}` kalıbına girmez → deny', async () => {
+    await seedFile(`clubs/${CLUB_ID}/alt/${EXISTING_FILE}`);
+    await seedFile(`clubs/${EXISTING_FILE}`);
+    const storage = contextFor('member').storage();
+    await assertFails(getBytes(ref(storage, `clubs/${CLUB_ID}/alt/${EXISTING_FILE}`)));
+    await assertFails(getBytes(ref(storage, `clubs/${EXISTING_FILE}`)));
+  });
+});
+
+describe('storage clubs/{clubId}/{file} · yükleme / üzerine yazma / üst veri / silme (kapalı — yükleme T-36)', () => {
+  const CLUB_ID = 'c01';
+  const existing = `clubs/${CLUB_ID}/${EXISTING_FILE}`;
+  const created = `clubs/${CLUB_ID}/${NEW_FILE}`;
+
+  // Yönetici rolleri (board, president), danışman ve süper admin dahil: yükleme kuralı henüz yok.
+  test.each(ALL_ROLES)('%s · create / üzerine yazma / metadata / delete → deny', async (role) => {
+    await seedUsers();
+    await seedFile(existing);
+    const storage = contextFor(role).storage();
+    await assertFails(uploadBytes(ref(storage, created), PNG, IMAGE));
+    await assertFails(uploadBytes(ref(storage, existing), PNG, IMAGE));
+    await assertFails(updateMetadata(ref(storage, existing), { contentType: 'image/jpeg' }));
+    await assertFails(updateMetadata(ref(storage, existing), { customMetadata: { clubId: CLUB_ID } }));
+    // D-10 ret vakası: dosya silme yalnızca burada, reddedildiğini kanıtlamak için denenir.
+    await assertFails(deleteObject(ref(storage, existing)));
+    expect(await fileExists(existing)).toBe(true);
+    expect(await fileExists(created)).toBe(false);
   });
 });
 

@@ -12,3 +12,11 @@ AUT-05.year              # design/prototype/app/screens-auth.js:144 — yalnızc
 AUT-05.toggleInterest.*  # design/prototype/app/screens-auth.js:145 — yalnızca 3. adımda (`f.step === 3`), ilgi alanı başına bir anahtar; yakalama 1. adım
 AUT-05.back              # design/prototype/app/screens-auth.js:147 — yalnızca 2. ve 3. adımda (`f.step > 1`); yakalama 1. adım
 AUT-05.finish            # design/prototype/app/screens-auth.js:147 — yalnızca 3. adımda ("Devam" yerine "Tamamla"); yakalama 1. adım
+CLB-05.reapply  # design/prototype/app/screens-clubs.js:135,137 — yalnızca reddedilmiş / çıkarılmış ("Tekrar başvur") ya da başvurusu olmayan ("Katıl") durumda; yakalama bekleyen başvuru
+CLB-05.retry    # lib/features/clubs/view/club_application_view.dart — yalnızca kulüp / not okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+CLB-04.retry    # lib/features/clubs/view/club_applied_view.dart — yalnızca kulüp / not okunamadığında (`isError`) başvuru kartının yerine çizilen hata bandının "Yeniden dene" eylemi; prototip verisi eşzamanlıdır, hata durumu yoktur
+CLB-03.status.*      # design/prototype/app/cards.js:23–25 — `ClubCTA` durum düğmesi yalnızca başvurusu bekleyen / reddedilen / çıkarılan kullanıcıda; yakalama ziyaretçi (u_ayse → c03)
+CLB-03.openManage    # design/prototype/app/screens-clubs.js:108–109 — alt çubuk yalnızca yönetici / süper admin ("Yönetim") ve danışmanda ("Yönetimi görüntüle"); yakalama ziyaretçi
+CLB-03.createEvent   # design/prototype/app/screens-clubs.js:108 — alt çubuk yalnızca yönetici / süper adminde; yakalama ziyaretçi
+CLB-03.eventSeg.*    # design/prototype/app/screens-clubs.js:102 — "Yaklaşan / Geçmiş" dilimi yalnızca Etkinlikler sekmesinde (`tab === 'events'`); yakalama Hakkında sekmesi
+CLB-03.allMembers    # design/prototype/app/screens-clubs.js:106 — "Tüm üyeler" yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`); yakalama ziyaretçi, Hakkında sekmesi

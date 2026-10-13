@@ -14,13 +14,29 @@ typedef DialogTextBuilder =
 /// Dialog düğme metni.
 typedef DialogLabelBuilder = String Function(AppLocalizations l10n);
 
+/// Değişkene bağlı dialog düğmesi: metni çağıranın değerlerinden üretir;
+/// `null` dönerse düğme çizilmez.
+typedef DialogOptionalLabelBuilder =
+    String? Function(AppLocalizations l10n, DialogParams params);
+
+/// Katalog metinlerinin okuduğu [DialogParams] anahtarları (ARB yer tutucu
+/// adlarıyla aynı).
+abstract final class DialogParamKeys {
+  /// Kulüp adı — DLG-07, DLG-08 gövdesi (`{club}`).
+  static const String club = 'club';
+
+  /// Kullanıcı adı — DLG-12 "… kullanıcısını da engelle" (`{name}`).
+  static const String name = 'name';
+}
+
 /// Standart (başlık + gövde + en çok iki düğme) bir dialogun katalog kaydı —
 /// prototip `simple(id, {…})` (`dialogs.js:6`).
 ///
 /// Özel gövdeli dialoglar (DLG-02 geri sayım — `LoginLockDialog`, DLG-19 /
 /// 28 / 30 girdi, DLG-21 adımlar, DLG-22 onay kutusu, DLG-23 seçenekler,
-/// DLG-25 üç eylem — `UnsavedChangesDialog`, DLG-32 bağlantı) katalogdan
-/// değil `FeedbackService.showDialog(builder:)` ile açılır.
+/// DLG-25 üç eylem — `UnsavedChangesDialog`, DLG-32 bağlantı —
+/// `ExternalLinkDialog`) katalogdan değil
+/// `FeedbackService.showDialog(builder:)` ile açılır.
 @immutable
 final class DialogSpec {
   const DialogSpec({
@@ -28,6 +44,7 @@ final class DialogSpec {
     required this.primary,
     this.body,
     this.secondary,
+    this.secondaryFor,
     this.icon,
     this.destructive = false,
     this.primaryDanger,
@@ -47,6 +64,20 @@ final class DialogSpec {
 
   /// İkincil (metin) düğme; `null` → yok. Dokunuş `false` ile kapatır.
   final DialogLabelBuilder? secondary;
+
+  /// Değişkene bağlı ikincil düğme; verilirse [secondary] yerine kullanılır
+  /// ve `null` döndürdüğünde düğme çizilmez (DLG-12: "{name} kullanıcısını
+  /// da engelle" yalnızca şikayet bir kullanıcıya bağlıysa —
+  /// `dialogs.js:28`).
+  final DialogOptionalLabelBuilder? secondaryFor;
+
+  /// [params] ile çizilecek ikincil düğmenin metni; `null` → düğme yok.
+  String? secondaryLabel(AppLocalizations l10n, DialogParams params) {
+    final conditional = secondaryFor;
+    return conditional != null
+        ? conditional(l10n, params)
+        : secondary?.call(l10n);
+  }
 
   /// Üstteki ikon kutusu.
   final GuIcons? icon;
@@ -83,8 +114,8 @@ final class DialogSpec {
 abstract final class DialogCatalog {
   static final Map<DialogId, DialogSpec> _specs = <DialogId, DialogSpec>{
     /// Design: DLG-01 — Hesabın askıya alındı (`dialogs.js:18`): ikon
-    /// `danger`, birincil düğme olağan. Sonuç `true` → destek e-postası
-    /// (`SuspendedAccountMixin`).
+    /// `danger`, birincil düğme olağan. Sonuç `true` → destek e-postası,
+    /// dış bağlantı onayıyla (DLG-32; `SuspendedAccountMixin`).
     DialogId.dlg01: DialogSpec(
       title: (l10n, _) => l10n.dlg01Title,
       body: (l10n, _) => l10n.dlg01Body,
@@ -149,6 +180,65 @@ abstract final class DialogCatalog {
       primaryAction: 'logout',
     ),
 
+    /// Design: DLG-07 — İsteği iptal et? (`dialogs.js:22`): ikon ve birincil
+    /// düğme `danger`; gövde kulüp adını taşır ([DialogParamKeys.club]).
+    /// Sonuç `true` → başvuru geri çekilir
+    /// (`MembershipDialogsMixin.confirmCancelApplication`).
+    DialogId.dlg07: DialogSpec(
+      title: (l10n, _) => l10n.dlg07Title,
+      body: (l10n, params) =>
+          l10n.dlg07Body(_text(params, DialogParamKeys.club)),
+      primary: (l10n) => l10n.applicationCancel,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.x,
+      destructive: true,
+    ),
+
+    /// Design: DLG-08 — Kulüpten ayrıl? (`dialogs.js:24`): ikon ve birincil
+    /// düğme `danger`; gövde kulüp adını taşır. Sonuç `true` → üyelik sona
+    /// erer (`MembershipDialogsMixin.confirmLeaveClub`).
+    DialogId.dlg08: DialogSpec(
+      title: (l10n, _) => l10n.dlg08Title,
+      body: (l10n, params) =>
+          l10n.dlg08Body(_text(params, DialogParamKeys.club)),
+      primary: (l10n) => l10n.clubLeave,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.logOut,
+      destructive: true,
+    ),
+
+    /// Design: DLG-09 — Ayrılamazsın (`dialogs.js:25`): başkan devretmeden
+    /// ayrılamaz. Sonuç `true` → "Başkanlığı devret"
+    /// (`MembershipDialogsMixin.showSolePresidentDialog`; devir akışı
+    /// SHT-25 → DLG-21, T-33).
+    DialogId.dlg09: DialogSpec(
+      title: (l10n, _) => l10n.dlg09Title,
+      body: (l10n, _) => l10n.dlg09Body,
+      primary: (l10n) => l10n.mgtMembersTransfer,
+      secondary: (l10n) => l10n.commonOk,
+      icon: GuIcons.crown,
+      primaryAction: 'transfer',
+      secondaryAction: 'ok',
+    ),
+
+    /// Design: DLG-12 — Şikayetin alındı (`dialogs.js:28`). "Tamam" → `true`.
+    /// Şikayet bir kullanıcıya bağlıysa ([DialogParamKeys.name] verildiyse)
+    /// altında "{name} kullanıcısını da engelle" çizilir → `false`
+    /// (`ReportReceivedMixin.showReportReceivedDialog`; engelleme onayı
+    /// DLG-13, T-18).
+    DialogId.dlg12: DialogSpec(
+      title: (l10n, _) => l10n.dlg12Title,
+      body: (l10n, _) => l10n.dlg12Body,
+      primary: (l10n) => l10n.commonOk,
+      secondaryFor: (l10n, params) => switch (params[DialogParamKeys.name]) {
+        final String name when name.isNotEmpty => l10n.dlg12Block(name),
+        _ => null,
+      },
+      icon: GuIcons.shieldCheck,
+      primaryAction: 'ok',
+      secondaryAction: 'block',
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,
@@ -168,6 +258,12 @@ abstract final class DialogCatalog {
       dismissible: false,
       primaryAction: 'login',
     ),
+  };
+
+  /// [params] içindeki [key] metni; verilmediyse (ya da metin değilse) boş.
+  static String _text(DialogParams params, String key) => switch (params[key]) {
+    final String value => value,
+    _ => '',
   };
 
   /// [id] kaydı; yoksa `null`.

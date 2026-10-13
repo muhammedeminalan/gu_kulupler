@@ -20,6 +20,7 @@ import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -32,6 +33,7 @@ import '../../fakes/fake_firestore_service.dart';
 import '../../fakes/fake_image_picker_service.dart';
 import '../../fakes/fake_permission_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
+import '../../fakes/fake_share_service.dart';
 import '../../fakes/fake_storage_service.dart';
 import '../../fakes/fake_url_launcher_service.dart';
 import '../../helpers/design_files.dart';
@@ -104,6 +106,8 @@ void main() {
       expect(GetIt.I<AppPreferencesStore>(), same(prefs));
       // T-13 · verilmediyse gerçek uygulama (platform çağrısı kurulumda yok).
       expect(GetIt.I<UrlLauncherService>(), isA<DeviceUrlLauncherService>());
+      // T-16 · sistem paylaşım sayfası (aynı kural).
+      expect(GetIt.I<ShareService>(), isA<DeviceShareService>());
       // T-14 · izinler ve görsel seçimi (aynı kural).
       expect(GetIt.I<PermissionService>(), isA<DevicePermissionService>());
       expect(GetIt.I<ImagePickerService>(), isA<DeviceImagePickerService>());
@@ -206,6 +210,28 @@ void main() {
 
       expect(GetIt.I<UrlLauncherService>(), same(launcher));
       expect(_Consumer().urlLauncherService, same(launcher));
+    });
+
+    test('ShareService verilen örnekle kaydedilir; mixin onu görür '
+        '(T-16)', () async {
+      final share = FakeShareService();
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: ProjectDependencyOverrides(
+          authService: auth,
+          firestoreService: firestore,
+          storageService: storage,
+          connectivityService: connectivity,
+          appInfoService: appInfo,
+          appPreferencesStore: prefs,
+          shareService: share,
+        ),
+      );
+
+      expect(GetIt.I<ShareService>(), same(share));
+      expect(_Consumer().shareService, same(share));
     });
 
     test('FeedbackService verilen kök gezgine ve toast denetleyicisine '

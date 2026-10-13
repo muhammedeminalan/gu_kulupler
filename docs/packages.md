@@ -30,7 +30,7 @@
 | `connectivity_plus` | çevrimdışı banner (SYS-03), yazma kapısı (`ConnectivityService`) | kök katman; TST-24, TST-25 | — |
 | `package_info_plus` | sürüm/build (`AppInfoService`) | DLG-26, SET-04 | — |
 | `url_launcher` | e-posta/Instagram/web, Google Takvim, Ayarlar (`UrlLauncherService`, T-13) | DLG-01 (`mailto:` destek), CLB-03, DLG-32, SHT-14, SET-04/05 | — |
-| `share_plus` | .ics / bağlantı paylaşma | SHT-14, SHT-15 | — |
+| `share_plus` | .ics / bağlantı paylaşma (`ShareService`, T-16; iOS SPM: `Package.swift` var; ek manifest / `Info.plist` girdisi gerekmez) | SHT-14, SHT-15 | — |
 | `path_provider` | .ics geçici dosyası | SHT-14 | — |
 | `permission_handler` | kamera/bildirim izni, "Ayarlara git" (`PermissionService`, T-14; galeri için izin istenmez — CD-16; iOS SPM: `Package.swift` var, izin modülü `Info.plist` anahtarından derlenir) | DLG-03/04/05, TST-32 | — |
 | `mobile_scanner` | QR okuma | MGT-07 | — |

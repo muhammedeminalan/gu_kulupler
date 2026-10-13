@@ -5,6 +5,7 @@
 // includeShell: true)`). `pumpAppRouter` bir `GoRouter`'ı aynı sarmalayıcıyla
 // çizer; verilmezse uygulamanın gerçek router'ı (`appRouterProvider`) kurulur
 // (rota / yönlendirme testleri — `test/fakes/test_router.dart`).
+// Ağaç `TestAssetBundle` ile sarılır: varlıklar depo kökünden eşzamanlı okunur.
 // `GuSkeleton.debugAnimate` test boyunca `false`'tur (CD-122(2)).
 // gu_ui'nin alt küme kopyası: `packages/gu_ui/test/helpers/pump_app.dart`
 // (paket sınırı, CD-122(3)).
@@ -24,6 +25,7 @@ import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../fakes/register_fakes.dart';
+import 'test_asset_bundle.dart';
 
 /// `pumpApp` çocuğunu saran `KeyedSubtree` anahtarı: çocuğun bağlamı
 /// (`tester.l10n`, `test_l10n.dart`). `GuKey.pattern`'e uymaz → aksiyon
@@ -158,23 +160,14 @@ extension PumpApp on WidgetTester {
         platform: platform,
         child: ProviderScope(
           overrides: overrides,
-          child: RepaintBoundary(
-            key: kPumpAppBoundaryKey,
-            child: routerOf == null
-                ? MaterialApp(
-                    debugShowCheckedModeBanner: false,
-                    theme: lightTheme,
-                    darkTheme: darkTheme,
-                    themeMode: theme,
-                    locale: locale,
-                    supportedLocales: AppLocalizations.supportedLocales,
-                    localizationsDelegates:
-                        AppLocalizations.localizationsDelegates,
-                    builder: mediaBuilder,
-                    home: home,
-                  )
-                : Consumer(
-                    builder: (context, ref, _) => MaterialApp.router(
+          // Varlıklar depo kökünden eşzamanlı okunur (kapak şablonları > 50 KB;
+          // `test_asset_bundle.dart`).
+          child: DefaultAssetBundle(
+            bundle: TestAssetBundle.instance,
+            child: RepaintBoundary(
+              key: kPumpAppBoundaryKey,
+              child: routerOf == null
+                  ? MaterialApp(
                       debugShowCheckedModeBanner: false,
                       theme: lightTheme,
                       darkTheme: darkTheme,
@@ -184,9 +177,23 @@ extension PumpApp on WidgetTester {
                       localizationsDelegates:
                           AppLocalizations.localizationsDelegates,
                       builder: mediaBuilder,
-                      routerConfig: routerOf(ref),
+                      home: home,
+                    )
+                  : Consumer(
+                      builder: (context, ref, _) => MaterialApp.router(
+                        debugShowCheckedModeBanner: false,
+                        theme: lightTheme,
+                        darkTheme: darkTheme,
+                        themeMode: theme,
+                        locale: locale,
+                        supportedLocales: AppLocalizations.supportedLocales,
+                        localizationsDelegates:
+                            AppLocalizations.localizationsDelegates,
+                        builder: mediaBuilder,
+                        routerConfig: routerOf(ref),
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),

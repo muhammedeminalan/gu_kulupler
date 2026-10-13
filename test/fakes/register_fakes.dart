@@ -13,6 +13,7 @@ import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../helpers/fake_app_clock.dart';
@@ -34,6 +35,7 @@ import 'fake_permission_service.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_report_repository.dart';
 import 'fake_settings_repository.dart';
+import 'fake_share_service.dart';
 import 'fake_storage_service.dart';
 import 'fake_url_launcher_service.dart';
 import 'fake_user_repository.dart';
@@ -85,6 +87,8 @@ void registerDefaultFakes() {
     ..registerSingleton<NotificationDispatcher>(FakeNotificationDispatcher())
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
+    // T-16 · sistem paylaşım sayfası
+    ..registerSingleton<ShareService>(FakeShareService())
     // T-14 · izinler ve görsel seçimi
     ..registerSingleton<PermissionService>(FakePermissionService())
     ..registerSingleton<ImagePickerService>(FakeImagePickerService());

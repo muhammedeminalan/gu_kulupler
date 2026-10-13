@@ -1,10 +1,18 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gu_kulupler/features/clubs/view/club_application_view.dart';
+import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
+import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/navigation/gu_page_transitions.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
+import 'package:gu_kulupler/product/navigation/route_guards.dart';
 import 'package:gu_kulupler/product/navigation/routes/route_placeholder_view.dart';
 import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
+
+export 'package:gu_kulupler/product/navigation/club_detail_tab.dart'
+    show ClubDetailTab;
 
 // Dal dosyaları bu kütüphanenin parçasıdır: go_router_builder bir rota
 // sınıfının üretilen mixin'ini, ağacını taşıyan bildirimin kütüphanesine

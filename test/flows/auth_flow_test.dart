@@ -410,15 +410,25 @@ void main() {
       );
     });
 
-    testWidgets('"Destekle iletişime geç" destek adresine e-posta açar', (
-      tester,
-    ) async {
+    testWidgets('"Destekle iletişime geç" → dış bağlantı onayı (DLG-32) → '
+        '"Aç" destek adresine e-posta açar', (tester) async {
       await _launch(tester, arrange: _arrangeSuspendedAccount);
       await tester.pumpAndSettle();
       await _fillLogin(tester);
       await _tap(tester, _k('AUT-01.login'));
 
       await tester.tap(find.byKey(FeedbackKeys.of('DLG-01', 'support')));
+      await tester.pumpAndSettle();
+      // DLG-01 kapanır; adres onaylanmadan açılmaz (dialogs.js:19).
+      final link = tester.widget<GuDialogFrame>(find.byType(GuDialogFrame));
+      expect(link.title, _l10n(tester).dlg32Title);
+      expect(
+        find.text(AppConstants.supportMailUri.toString()),
+        findsOneWidget,
+      );
+      expect(_launcher().opened, isEmpty);
+
+      await tester.tap(find.byKey(FeedbackKeys.of('DLG-32', 'open')));
       await tester.pumpAndSettle();
       expect(find.byType(GuDialogFrame), findsNothing);
       expect(_launcher().opened, [AppConstants.supportMailUri]);
