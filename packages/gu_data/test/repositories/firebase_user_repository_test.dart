@@ -247,7 +247,7 @@ void main() {
             'alan adı dışı e-posta',
             (r) => r.createProfile(
               uid: _uid,
-              email: 'ayse@gmail.com',
+              email: 'ayse@hotmail.com',
               name: 'Ayşe',
               nameLower: 'ayşe',
               avatarSeed: _uid,
@@ -333,6 +333,34 @@ void main() {
         expect(await read(settingsRef()), isNull);
       });
     }
+
+    // Geri almada (`EmailDomainPolicy.temporaryTestDomains = []`) bu test
+    // silinir.
+    test('GEÇİCİ (W-61): gmail.com adresiyle profil açılır; benzeri yazmadan '
+        'invalidArgument', () async {
+      for (final email in [
+        'ayse@gmail.com.evil.com',
+        'ayse@xgmail.com',
+        'ayse@mail.gmail.com',
+      ]) {
+        expect(
+          (await create(email: email)).errorOrNull,
+          FirestoreError.invalidArgument,
+          reason: email,
+        );
+        expect(await read(userRef()), isNull, reason: email);
+        expect(await read(accountRef()), isNull, reason: email);
+        expect(await read(settingsRef()), isNull, reason: email);
+      }
+
+      expect((await create(email: 'Ayse.Isik@Gmail.com')).isSuccess, isTrue);
+
+      final account = (await read(accountRef()))!;
+      expect(account, containsPair('email', 'Ayse.Isik@Gmail.com'));
+      expect(account, containsPair('emailLower', 'ayse.isik@gmail.com'));
+      expect(await read(userRef()), isNotNull);
+      expect(await read(settingsRef()), isNotNull);
+    });
 
     test('batch reddedilirse hata döner (permission-denied → '
         'permissionDenied)', () async {

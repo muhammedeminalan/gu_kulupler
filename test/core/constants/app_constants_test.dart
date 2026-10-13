@@ -26,11 +26,18 @@ void main() {
       );
     });
 
-    test('izinli iki alan adı, sırayla', () {
-      expect(AppConstants.allowedEmailDomains, [
+    test('iki üniversite alan adı başta ve sırayla; ardından yalnızca '
+        'geçici test alan adları (CD-136)', () {
+      expect(AppConstants.allowedEmailDomains.take(2), [
         'ogr.gumushane.edu.tr',
         'gumushane.edu.tr',
       ]);
+      expect(
+        AppConstants.allowedEmailDomains.skip(2),
+        EmailDomainPolicy.temporaryTestDomains,
+      );
+      // AUT-01 / AUT-02 yer tutucusu ilk alan adını kullanır.
+      expect(AppConstants.allowedEmailDomains.first, 'ogr.gumushane.edu.tr');
     });
 
     test('tasarım sabiti ALLOWED_EMAIL_DOMAINS ile birebir', () {
@@ -39,7 +46,13 @@ void main() {
               as Map<String, dynamic>;
 
       expect(
-        AppConstants.allowedEmailDomains,
+        AppConstants.allowedEmailDomains.take(
+          EmailDomainPolicy.universityDomains.length,
+        ),
+        constants['ALLOWED_EMAIL_DOMAINS'],
+      );
+      expect(
+        EmailDomainPolicy.universityDomains,
         constants['ALLOWED_EMAIL_DOMAINS'],
       );
     });

@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { TOOL_DIR, fixture, runTool, runJson } = require('./helpers');
+const dart = require('../lib/dart_sources');
 
 const CLEAN = fixture('check_rules_parity', 'clean');
 const VIOLATING = fixture('check_rules_parity', 'violating');
@@ -58,6 +59,66 @@ test('check_rules_parity · ihlalli ağaç: her kural kendi satırında yakalan�
   assert.match(at(json, ST, 8)[0].msg, /sayı 4194304, Limits\.imageMaxBytes \(5242880\)/);
   // isSoftDelete listesi doğru: yalnızca isRestore (13) ve touches (7) işaretlenir
   assert.deepEqual(rulesAt(json, FS, 10), []);
+});
+
+/** Kalıcı + geçici liste biçimindeki (CD-136) `email_domain_policy.dart` kaynağı. */
+const spreadPolicy = (temporary) => `abstract final class EmailDomainPolicy {
+  static const List<String> universityDomains = [
+    'ogr.gumushane.edu.tr',
+    'gumushane.edu.tr',
+  ];
+
+  /// Yorumdaki \`temporaryTestDomains = ['yorum.com']\` okunmaz.
+  static const List<String> temporaryTestDomains = ${temporary};
+
+  static const List<String> allowedDomains = [
+    ...universityDomains,
+    ...temporaryTestDomains,
+  ];
+}
+`;
+
+/** Temiz ağacın, `email_domain_policy.dart` dosyası [source] ile değiştirilmiş geçici kopyası. */
+function withPolicy(source) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gu-rp-policy-'));
+  fs.cpSync(CLEAN, root, { recursive: true });
+  fs.writeFileSync(path.join(root, dart.PATHS.emailDomainPolicy), source);
+  return root;
+}
+
+test('dart_sources.readEmailDomains · yayılımlı liste çözülür; geçici liste boşalınca kalıcı liste aynen kalır (CD-136)', () => {
+  const university = ['ogr.gumushane.edu.tr', 'gumushane.edu.tr'];
+  assert.deepEqual(dart.readEmailDomains(withPolicy(spreadPolicy("['gmail.com']"))), [...university, 'gmail.com']);
+  assert.deepEqual(dart.readEmailDomains(withPolicy(spreadPolicy('[]'))), university);
+  assert.deepEqual(dart.readEmailDomains(withPolicy(spreadPolicy('<String>[]'))), university);
+  // düz literal liste (fixture'lardaki biçim) okunmaya devam eder
+  assert.deepEqual(dart.readEmailDomains(CLEAN), university);
+  // deponun gerçek kaynağı: üniversite alan adları başta ve sırayla
+  assert.deepEqual(dart.readEmailDomains(REPO).slice(0, university.length), university);
+
+  // okuyucu sessizce boş dönmez: eksik liste, çözülemeyen öğe, boş sonuç
+  const broken = (body) => withPolicy(`abstract final class EmailDomainPolicy {\n  static const List<String> allowedDomains = ${body};\n}\n`);
+  assert.throws(() => dart.readEmailDomains(broken('[...missingDomains]')), /missingDomains bulunamadı/);
+  assert.throws(() => dart.readEmailDomains(broken('[...allowedDomains]')), /allowedDomains kendine yayılıyor/);
+  assert.throws(() => dart.readEmailDomains(broken('[kDomain]')), /allowedDomains öğesi çözülemedi \(kDomain\)/);
+  assert.throws(() => dart.readEmailDomains(broken('[]')), /allowedDomains bulunamadı/);
+});
+
+test('check_rules_parity · geçici alan adı Dart listesinde olup Rules deseninde yoksa (ya da tersi) RP03', () => {
+  // Dart'a gmail.com eklendi, Rules eski desende kaldı → iki dosyada da RP03
+  const added = runJson('check_rules_parity.js', ['--root', withPolicy(spreadPolicy("['gmail.com']"))]);
+  assert.equal(added.code, 1);
+  assert.deepEqual([...new Set(added.json.map((v) => `${v.file}:${v.rule}`))], ['firebase/firestore.rules:RP03', 'firebase/storage.rules:RP03']);
+  for (const v of added.json) assert.ok(v.msg.includes('gumushane\\\\.edu\\\\.tr|gmail\\\\.com)'), v.msg);
+
+  // geçici liste boşaltıldı, Rules eski (iki alan adlı) desende → temiz
+  const emptied = runTool('check_rules_parity.js', ['--root', withPolicy(spreadPolicy('[]'))]);
+  assert.equal(emptied.code, 0, emptied.stdout + emptied.stderr);
+  assert.match(emptied.stdout, /check_rules_parity: temiz/);
+
+  // geri alma yarım kaldı: Dart listesi boş ama Rules'ta gmail duruyor → RP03 (ihlalli fixture, satır 5)
+  const leftover = runJson('check_rules_parity.js', ['--root', VIOLATING]);
+  assert.ok(leftover.json.some((v) => v.rule === 'RP03' && v.file === 'firebase/firestore.rules' && v.line === 5));
 });
 
 test('check_rules_parity · Rules dosyası yoksa uyarıyla atlar; bütçe dosyası yoksa RP05/RP06 atlanır', () => {

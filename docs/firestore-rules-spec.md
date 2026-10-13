@@ -14,7 +14,8 @@
 7. **Rules filtre değildir.** Liste sorgusu, kuralın koşulunu **kanıtlayabilmek** için gereken `where` süzgeçlerini taşımak zorundadır (§6 Sorgu sözleşmesi). Aksi halde `permission-denied`.
 8. **Erişim çağrısı bütçesi:** tek işlem başına en çok 10, tek istek (batch/transaction) toplamında en çok 20 `get/exists/getAfter`. Kurallar bu yüzden **az sayıda belgeye** bakar (kullanıcı belgesi, o kulübün üyelik belgesi, kulüp belgesi). Aynı belgeye tekrar bakmak tek sayılıyorsa bile bütçe **emülatörde ölçülür**; hesap silme gibi çok işlemli akışlar **parçalara bölünür** (≤ 5 üyelik/parça). Bütçe aşımı bir tasarım hatasıdır, kuralı gevşetmek değil işlemi bölmek çözümdür.
 9. Süper admin **yalnızca claim**: `request.auth.token.superadmin == true` (D-28). Firestore alanı yetki vermez.
-10. E-posta alan adı kısıtı **Rules'ta da** (D-27): `request.auth.token.email_verified == true` ve `email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)')`. Alan adı listesi `ALLOWED_EMAIL_DOMAINS` ile aynı; parite testi zorunlu.
+10. E-posta alan adı kısıtı **Rules'ta da** (D-27): `request.auth.token.email_verified == true` ve `email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr|gmail\\.com)')`. Alan adı listesi `ALLOWED_EMAIL_DOMAINS` ile aynı; parite testi zorunlu.
+    > **GEÇİCİ (kullanıcı kararı 2026-10-13 · K-M, CD-136 · borç W-61):** test süresince desende `gmail\\.com` de vardır (`EmailDomainPolicy.temporaryTestDomains`). Kalıcı liste yalnızca iki üniversite alan adıdır (`ALLOWED_EMAIL_DOMAINS`, `EmailDomainPolicy.universityDomains`); `gmail\\.com` teslimden önce (T-45) desenden çıkarılır ve kurallar yeniden yüklenir.
 
 ## 2. Yardımcı fonksiyonlar (taslak)
 
@@ -27,8 +28,9 @@ service cloud.firestore {
     function signedIn()   { return request.auth != null; }
     function uid()        { return request.auth.uid; }
     function isSuper()    { return signedIn() && request.auth.token.get('superadmin', false) == true; }
+    // GEÇİCİ (test): gmail.com — W-61, teslimden önce kaldırılır
     function emailOk()    { return signedIn() && request.auth.token.email_verified == true
-                              && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)'); }
+                              && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr|gmail\\.com)'); }
     function userPath(id) { return /databases/$(database)/documents/users/$(id); }
     function me()         { return get(userPath(uid())).data; }
     // aktif = e-posta doğrulanmış + kullanıcı belgesi var + askıda/silinmiş değil + profil tamam

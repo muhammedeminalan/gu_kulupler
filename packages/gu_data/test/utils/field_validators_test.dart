@@ -102,7 +102,7 @@ Map<String, List<_Case>> _table() => {
     ),
     ('boş', FieldValidators.universityEmail(''), _empty),
     ('bozuk', FieldValidators.universityEmail('a@@gumushane.edu.tr'), _format),
-    ('yabancı alan', FieldValidators.universityEmail('a@gmail.com'), _range),
+    ('yabancı alan', FieldValidators.universityEmail('a@hotmail.com'), _range),
   ],
   'emailLower': [
     (

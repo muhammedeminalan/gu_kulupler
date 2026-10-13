@@ -613,7 +613,7 @@ void main() {
       expect(_input(tester, _email).errorText, l10n.authErrEmail);
       expect(_input(tester, _password).errorText, l10n.authErrPassword);
 
-      await tester.enterText(find.byKey(_email), 'ayse@gmail.com');
+      await tester.enterText(find.byKey(_email), 'ayse@hotmail.com');
       await tester.pump();
       expect(_input(tester, _email).errorText, isNull);
       expect(_input(tester, _password).errorText, l10n.authErrPassword);

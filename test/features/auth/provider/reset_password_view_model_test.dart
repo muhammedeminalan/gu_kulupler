@@ -123,7 +123,8 @@ void main() {
       ('ayse@', FormFieldError.invalidEmail),
       ('ayse@ogr', FormFieldError.invalidEmail),
       ('ayse demir@ogr.gumushane.edu.tr', FormFieldError.invalidEmail),
-      ('ayse@gmail.com', FormFieldError.domainNotAllowed),
+      ('ayse@hotmail.com', FormFieldError.domainNotAllowed),
+      ('ayse@mail.gmail.com', FormFieldError.domainNotAllowed),
       ('ayse@gumushane.edu.tr.evil.com', FormFieldError.domainNotAllowed),
     ]) {
       test('"$value" → ${error.name}', () {
@@ -153,7 +154,7 @@ void main() {
       'geçersiz form gönderilmez: istek, toast ve görünüm değişimi yok',
       () async {
         final container = containerOf();
-        vmOf(container).setEmail('ayse@gmail.com');
+        vmOf(container).setEmail('ayse@hotmail.com');
         await vmOf(container).submit();
         expect(sentTo(), isEmpty);
         expect(feedback.toasts, isEmpty);

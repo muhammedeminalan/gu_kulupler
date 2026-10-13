@@ -122,7 +122,7 @@ void main() {
     test('register: izinli olmayan alan adı reddedilir, `registered` '
         'değişmez', () async {
       final result = await fake.register(
-        email: 'ayse@gmail.com',
+        email: 'ayse@hotmail.com',
         password: _password,
         name: _name,
       );

@@ -642,7 +642,7 @@ void main() {
       expect(_input(tester, _password2).errorText, l10n.authErrMismatch);
       expect(find.text(l10n.authErrLegal), findsOneWidget);
 
-      await tester.enterText(find.byKey(_email), 'ayse@gmail.com');
+      await tester.enterText(find.byKey(_email), 'ayse@hotmail.com');
       await _submitForm(tester);
       expect(_input(tester, _email).errorText, l10n.authErrDomain);
       expect(_auth().callsTo('register'), isEmpty);

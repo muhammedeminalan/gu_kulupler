@@ -3,6 +3,8 @@
 //
 // `emailOk()` = oturum + `email_verified == true` + izinli alan adı (EmailDomainPolicy.allowedDomains:
 // `ogr.gumushane.edu.tr`, `gumushane.edu.tr`; desen paritesi statik olarak RP03 ve parity.test.js'te).
+// GEÇİCİ (W-61, CD-136): test süresince `gmail.com` de izinlidir (EmailDomainPolicy.temporaryTestDomains).
+// Geri almada `GEÇİCİ (W-61)` satırları silinir ve `gmail.com` yeniden ret vakası olur.
 // Bu dosya davranışı emülatörde kanıtlar: aynı token ile T-12'nin üç koleksiyonunda okuma ve
 // `createProfile` batch'i (users + private/account + settings) birlikte geçer ya da birlikte reddedilir.
 // Ayrıca belgeleri ZATEN VAR olan kullanıcı doğrulamayı / izinli alan adını yitirince (token) yazamaz ve
@@ -37,7 +39,15 @@ describe('e-posta alan adı (D-27) · users / private/account / settings', () =>
     ['öğrenci alan adı (ogr.gumushane.edu.tr)', verified('ad.soyad@ogr.gumushane.edu.tr'), 'allow'],
     ['personel alan adı (gumushane.edu.tr)', verified('ad.soyad@gumushane.edu.tr'), 'allow'],
     ['büyük harfli adres (alan adı küçük harfe çevrilerek eşlenir)', verified('Ad.Soyad@OGR.Gumushane.EDU.TR'), 'allow'],
-    ['gmail.com', verified('ad.soyad@gmail.com'), 'deny'],
+    ['hotmail.com', verified('ad.soyad@hotmail.com'), 'deny'],
+    ['outlook.com', verified('ad.soyad@outlook.com'), 'deny'],
+    ['GEÇİCİ (W-61): gmail.com', verified('ad.soyad@gmail.com'), 'allow'],
+    ['GEÇİCİ (W-61): büyük harfli gmail.com (küçük harfe çevrilerek eşlenir)', verified('Ad.Soyad@Gmail.COM'), 'allow'],
+    ['GEÇİCİ (W-61): gmail.com ama email_verified: false', { email: 'ad.soyad@gmail.com', email_verified: false }, 'deny'],
+    ['GEÇİCİ (W-61): gmail önek olarak (gmail.com.evil.com)', verified('ad@gmail.com.evil.com'), 'deny'],
+    ['GEÇİCİ (W-61): sonu gmail.com ile biten alan adı (xgmail.com)', verified('ad@xgmail.com'), 'deny'],
+    ['GEÇİCİ (W-61): gmail alt alan adı (mail.gmail.com)', verified('ad@mail.gmail.com'), 'deny'],
+    ['GEÇİCİ (W-61): @ işaretsiz gmail.com', verified('gmail.com'), 'deny'],
     ['sonu benzeyen alan adı (evilgumushane.edu.tr)', verified('ad@evilgumushane.edu.tr'), 'deny'],
     ['izinsiz alt alan adı (sub.gumushane.edu.tr)', verified('ad@sub.gumushane.edu.tr'), 'deny'],
     ['izinli ad önek olarak (gumushane.edu.tr.evil.com)', verified('ad@gumushane.edu.tr.evil.com'), 'deny'],
@@ -45,7 +55,7 @@ describe('e-posta alan adı (D-27) · users / private/account / settings', () =>
     ['izinli alan adı ama email_verified: false', { email: 'ad@ogr.gumushane.edu.tr', email_verified: false }, 'deny'],
     ['izinli alan adı ama email_verified claim\'i yok', { email: 'ad@ogr.gumushane.edu.tr' }, 'deny'],
     ['email claim\'i yok', { email_verified: true }, 'deny'],
-    ['süper admin claim\'i alan adı kısıtını aşmaz', { ...verified('ad@gmail.com'), superadmin: true }, 'deny'],
+    ['süper admin claim\'i alan adı kısıtını aşmaz', { ...verified('ad@hotmail.com'), superadmin: true }, 'deny'],
   ])('%s → %s', async (_title, token, expected) => {
     await seedDocs({ [PROFILE]: baseDocs()[PROFILE] });
     const db = dbWith(token);
@@ -102,7 +112,7 @@ describe('e-posta alan adı (D-27) · belgeleri var olan kullanıcı: emailOk() 
   test.each([
     ['izinli alan adı, doğrulanmış (kontrol)', verified(ALLOWED), 'allow'],
     ['aynı adres ama email_verified: false', { email: ALLOWED, email_verified: false }, 'deny'],
-    ['hesap e-postası izinsiz alan adına taşınmış', verified('ad.soyad@gmail.com'), 'deny'],
+    ['hesap e-postası izinsiz alan adına taşınmış', verified('ad.soyad@hotmail.com'), 'deny'],
   ])('%s → %s', async (_title, token, expected) => {
     await seedOwnDocs();
     const db = dbWith(token);

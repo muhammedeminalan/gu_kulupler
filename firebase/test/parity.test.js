@@ -37,7 +37,10 @@ describe('parite (b) · EmailDomainPolicy ↔ Rules e-posta regex\'i', () => {
   const literal = `matches('${dart.toRulesLiteral(regex)}')`;
 
   test('firestore.rules emailOk() ve storage.rules signedInVerified() aynı deseni taşır', () => {
-    expect(domains).toEqual(['ogr.gumushane.edu.tr', 'gumushane.edu.tr']);
+    // Kalıcı liste (D-27) başta ve sırayla; ardından yalnızca geçici test alan adları gelir.
+    expect(domains.slice(0, 2)).toEqual(['ogr.gumushane.edu.tr', 'gumushane.edu.tr']);
+    // GEÇİCİ (W-61, CD-136): `gmail.com` — geri almada bu beklenti `[]` olur.
+    expect(domains.slice(2)).toEqual(['gmail.com']);
     expect(firestoreRules).toContain(literal);
     expect(storageRules).toContain(literal);
   });
@@ -46,7 +49,16 @@ describe('parite (b) · EmailDomainPolicy ↔ Rules e-posta regex\'i', () => {
     const full = new RegExp(`^(?:${regex})$`);
     for (const domain of domains) expect(full.test(`ad.soyad@${domain}`)).toBe(true);
     for (const email of [
-      'x@gmail.com',
+      'x@hotmail.com',
+      'x@outlook.com',
+      // gmail benzerleri: geçici izin (W-61) yalnızca tam `gmail.com` alan adınadır.
+      'x@gmail.com.evil.com',
+      'x@xgmail.com',
+      'x@mail.gmail.com',
+      'x@googlemail.com',
+      'x@gmailXcom',
+      'x@gmail.com ',
+      'gmail.com',
       'x@evilgumushane.edu.tr',
       'x@sub.gumushane.edu.tr',
       'x@gumushane.edu.tr.evil.com',

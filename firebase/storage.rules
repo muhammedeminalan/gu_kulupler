@@ -25,7 +25,8 @@ service firebase.storage {
     // ── Yardımcı fonksiyonlar (PLAN §11.5) ──────────────────────────────────────────────────────
     function signedInVerified() {
       return request.auth != null && request.auth.token.email_verified == true
-          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr)');
+          // GEÇİCİ (test): gmail.com — W-61, teslimden önce kaldırılır
+          && request.auth.token.email.lower().matches('.*@(ogr\\.gumushane\\.edu\\.tr|gumushane\\.edu\\.tr|gmail\\.com)');
     }
     function isSuperAdmin() {
       return request.auth != null && request.auth.token.get('superadmin', false) == true;

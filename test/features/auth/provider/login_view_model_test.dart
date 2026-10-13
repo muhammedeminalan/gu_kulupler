@@ -187,7 +187,7 @@ void main() {
         );
       }
       for (final foreign in [
-        'ayse@gmail.com',
+        'ayse@hotmail.com',
         'ayse@x.gumushane.edu.tr',
         'ayse@gumushane.edu.tr.evil.com',
       ]) {
@@ -222,7 +222,7 @@ void main() {
     test('validate hataları state’e yazar; geçerli formda temizler', () {
       final container = containerOf();
       vmOf(container)
-        ..setEmail('ayse@gmail.com')
+        ..setEmail('ayse@hotmail.com')
         ..setPassword('kisa');
       expect(vmOf(container).validate(), isFalse);
       expect(stateOf(container).errors, {

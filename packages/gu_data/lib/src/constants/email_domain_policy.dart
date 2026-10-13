@@ -5,11 +5,34 @@
 /// `emailOk()` regex'i [rulesRegex] ile parite testine tabidir
 /// (`tool/check_rules_parity.js` RP03). Biçim denetimi (tek `@`, yerel kısım
 /// uzunluğu) burada **yapılmaz**: `EmailDomainValidator.isWellFormed`.
+///
+/// Kalıcı liste ([universityDomains]) ile geçici test listesi
+/// ([temporaryTestDomains]) **ayrı** tutulur; tüketiciler yalnızca
+/// [allowedDomains], [isAllowed] ve [rulesRegex] kullanır (CD-136).
 abstract final class EmailDomainPolicy {
-  /// İzinli alan adları (küçük harf, tam eşleşme; alt alan adı izinli değil).
-  static const List<String> allowedDomains = [
+  /// Kalıcı üniversite alan adları (D-27; küçük harf, tam eşleşme; alt alan
+  /// adı izinli değil). Tasarım sabiti `ALLOWED_EMAIL_DOMAINS` ile aynıdır.
+  static const List<String> universityDomains = [
     'ogr.gumushane.edu.tr',
     'gumushane.edu.tr',
+  ];
+
+  /// **GEÇİCİ** — test süresince izinli ek alan adları (kullanıcı talebi
+  /// 2026-10-13: öğrenci e-postası geç geliyor; D-27'den geçici sapma,
+  /// CD-136).
+  ///
+  /// Borç **W-61** ile teslimden önce (T-45) boşaltılır; geri alma tek
+  /// satırdır: `temporaryTestDomains = []`. Ardından `firebase/firestore.rules`
+  /// ve `firebase/storage.rules` regex'inden `gmail\\.com` çıkarılır (RP03
+  /// bunu zorlar) ve kurallar gerçek projeye yeniden yüklenir.
+  static const List<String> temporaryTestDomains = ['gmail.com'];
+
+  /// İzinli alan adları: [universityDomains] + [temporaryTestDomains]
+  /// (küçük harf, tam eşleşme; alt alan adı izinli değil). Üniversite alan
+  /// adları her zaman başta ve aynı sıradadır.
+  static const List<String> allowedDomains = [
+    ...universityDomains,
+    ...temporaryTestDomains,
   ];
 
   /// [email] adresinin alan adı [allowedDomains] içinde mi?
@@ -26,8 +49,10 @@ abstract final class EmailDomainPolicy {
     return allowedDomains.contains(_asciiLower(email.substring(at + 1)));
   }
 
-  /// Security Rules `emailOk()` içindeki `matches(...)` deseninin değeri:
-  /// `.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)`.
+  /// Security Rules `emailOk()` içindeki `matches(...)` deseninin değeri.
+  /// Kalıcı biçimi `.*@(ogr\.gumushane\.edu\.tr|gumushane\.edu\.tr)`;
+  /// [temporaryTestDomains] doluyken sonuna o alan adları eklenir
+  /// (GEÇİCİ, W-61: `|gmail\.com`).
   ///
   /// [allowedDomains] listesinden üretilir (ikinci kopya yok). Rules kaynak
   /// metninde dizgi literal'i olduğu için ters bölüler çiftlenir (`\\.`);

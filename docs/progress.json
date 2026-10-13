@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-12T18:33:14.161Z",
+  "updated": "2026-10-13T09:50:07.285Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -1040,6 +1040,15 @@
       "text": "T-14 güvenlik incelemesi (CD-135 madde 8) → T-46 konsol kontrol listesi (kullanıcıyla): Authentication → Settings → User actions → Email enumeration protection AÇIK; Authentication kota / kullanım uyarısı (doğrulama + sıfırlama e-postaları); storage.rules deploy'unda çapraz servis (Storage → Firestore, accountActive()) izni onayı; App Check önerisi (CD-64)",
       "resolveIn": [
         "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-61",
+      "declaredIn": "T-14",
+      "text": "GEÇİCİ gmail.com izinli alan adı (kullanıcı talebi 2026-10-13, test): EmailDomainPolicy.temporaryTestDomains boşaltılır, firestore.rules + storage.rules regex'inden gmail çıkarılır, kurallar gerçek projeye yeniden yüklenir (kullanıcı onayıyla)",
+      "resolveIn": [
+        "T-45"
       ],
       "status": "open"
     }

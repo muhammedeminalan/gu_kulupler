@@ -58,7 +58,7 @@
     "outsideDomain": {
       "uid": "u_outside",
       "token": {
-        "email": "outside@gmail.com",
+        "email": "outside@hotmail.com",
         "email_verified": true
       },
       "user": null,
