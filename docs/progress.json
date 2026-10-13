@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T20:05:42.911Z",
+  "updated": "2026-10-13T22:03:51.386Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -321,11 +321,13 @@
       "notes": ""
     },
     "T-19": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-13T20:06:51.076Z",
+      "finishedAt": "2026-10-13T22:03:51.385Z",
+      "commits": [
+        "1a637d8"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-20": {
@@ -940,7 +942,9 @@
       "resolveIn": [
         "T-19"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-19",
+      "closedAt": "2026-10-13T21:39:03.107Z"
     },
     {
       "id": "W-51",
@@ -1154,6 +1158,28 @@
         "CLB-07.copyEmail",
         "CLB-07.changeRole",
         "CLB-07.remove"
+      ]
+    },
+    {
+      "id": "W-70",
+      "declaredIn": "T-19",
+      "text": "T-19 güvenlik incelemesi (CD-141 madde 11): (a) gizleme sabitlemeye dokunmaz — clubs.pinnedPostId gizlenen gönderiyi göstermeye devam eder; FED-01 sabit gönderi okumasında (getPost / watchPost) permissionDenied ve notFound sonucunu 'sabit gönderi yok' sayar, hata durumu göstermez. (b) Yorumlar gönderinin görünürlüğünü izler: FED-02 watchComments permissionDenied olayını (dinleme sürerken gönderi gizlendi / silindi) SYS-04 'içerik yok' sayar → T-20",
+      "resolveIn": [
+        "T-20"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-71",
+      "declaredIn": "T-19",
+      "text": "T-19 güvenlik incelemesi (CD-141 madde 11): FED-03 düzenleme modu — (a) ankette soru (text) yayından sonra DEĞİŞMEZ (Rules reddeder; prototip düzenlemeye izin veriyordu → kullanıcı teyidi final raporda): soru alanı salt okunur gösterilir, PostEditPatch.text ankette gönderilmez ya da aynı değerle gönderilir; (b) askıdaki / silinmiş kulüpte PostRepository.update permissionDenied döner — SHT-08 'Düzenle' ve kaydet bu sonucu toast ile karşılar → T-21",
+      "resolveIn": [
+        "T-21"
+      ],
+      "status": "open",
+      "actions": [
+        "FED-03.publish",
+        "SHT-08.edit"
       ]
     }
   ],

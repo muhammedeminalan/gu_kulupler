@@ -18,12 +18,14 @@ import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../helpers/fake_app_clock.dart';
 import 'fake_activity_repository.dart';
+import 'fake_announcement_counter_repository.dart';
 import 'fake_app_info_service.dart';
 import 'fake_app_preferences_store.dart';
 import 'fake_auth_repository.dart';
 import 'fake_auth_service.dart';
 import 'fake_block_repository.dart';
 import 'fake_club_repository.dart';
+import 'fake_comment_repository.dart';
 import 'fake_connectivity_service.dart';
 import 'fake_crash_service.dart';
 import 'fake_feedback_service.dart';
@@ -32,8 +34,10 @@ import 'fake_image_picker_service.dart';
 import 'fake_membership_repository.dart';
 import 'fake_notification_dispatcher.dart';
 import 'fake_permission_service.dart';
+import 'fake_post_repository.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_report_repository.dart';
+import 'fake_saved_post_repository.dart';
 import 'fake_settings_repository.dart';
 import 'fake_share_service.dart';
 import 'fake_storage_service.dart';
@@ -50,12 +54,17 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// fake'ine yazılan oturum durumu repository'den de görülür.
 /// `FakeMembershipRepository` kayıtlı `FakeClubRepository` ve `FakeAppClock`
 /// üzerinde çalışır: kulüp koşulları ve `memberCount` aynı kulüp kümesinden
-/// okunur / işlenir.
+/// okunur / işlenir. T-19 fake'leri de paylaşımlıdır: `FakePostRepository`
+/// bildirimli duyuruda kayıtlı `FakeAnnouncementCounterRepository` sayacını
+/// artırır; `FakeCommentRepository` ve `FakeSavedPostRepository` gönderiyi
+/// (varlık, `commentCount`) kayıtlı `FakePostRepository`'den okur / işler.
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
   final clock = FakeAppClock(kDefaultFakeNowUtc);
   final clubs = FakeClubRepository();
+  final counters = FakeAnnouncementCounterRepository(clock);
+  final posts = FakePostRepository(clock, counters: counters);
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
@@ -85,6 +94,15 @@ void registerDefaultFakes() {
     ..registerSingleton<BlockRepository>(FakeBlockRepository())
     ..registerSingleton<ActivityRepository>(FakeActivityRepository())
     ..registerSingleton<NotificationDispatcher>(FakeNotificationDispatcher())
+    // T-19 · gönderi, yorum, kayıt, duyuru sayacı
+    ..registerSingleton<PostRepository>(posts)
+    ..registerSingleton<CommentRepository>(
+      FakeCommentRepository(clock, posts: posts),
+    )
+    ..registerSingleton<SavedPostRepository>(
+      FakeSavedPostRepository(clock, posts: posts),
+    )
+    ..registerSingleton<AnnouncementCounterRepository>(counters)
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
     // T-16 · sistem paylaşım sayfası

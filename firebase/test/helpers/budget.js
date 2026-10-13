@@ -30,7 +30,8 @@ const BATCH_OPS = Object.freeze(['set', 'update']);
 /**
  * Yazım listesinden tek bir `WriteBatch` kurar (commit etmez).
  * @param {import('firebase/firestore').Firestore} db bağlamın Firestore'u
- * @param {{op: 'set'|'update', path: string, data: object}[]} writes
+ * @param {{op: 'set'|'update', path: string, data: object, merge?: boolean}[]} writes
+ *   `merge: true` → `set(…, {merge: true})` (duyuru sayacı — T-19)
  */
 function buildBatch(db, writes) {
   const batch = writeBatch(db);
@@ -39,7 +40,8 @@ function buildBatch(db, writes) {
       throw new Error(`geçersiz batch işlemi: ${write.op} (yalnızca ${BATCH_OPS.join(', ')}; silme yok — D-10)`);
     }
     const ref = doc(db, write.path);
-    if (write.op === 'set') batch.set(ref, write.data);
+    if (write.op === 'set' && write.merge) batch.set(ref, write.data, { merge: true });
+    else if (write.op === 'set') batch.set(ref, write.data);
     else batch.update(ref, write.data);
   }
   return batch;

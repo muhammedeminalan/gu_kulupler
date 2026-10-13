@@ -301,8 +301,40 @@ describe('parite (g) · enum değerleri ↔ Rules değer listeleri (T-15)', () =
     expect(used.status).toEqual(expect.arrayContaining([...membershipStatuses, 'open']));
     for (const value of used.status) expect([value, statuses.includes(value)]).toEqual([value, true]);
     expect(used.role.sort()).toEqual(clubRoles);
-    expect(used.kind.sort()).toEqual(['application_received', 'member_joined', 'member_left']);
+    // T-15: kendi üyelik geçişi · T-19: gönderi yayını (`post_created`, `announcement`, `poll`).
+    expect(used.kind.sort()).toEqual(['announcement', 'application_received', 'member_joined', 'member_left', 'poll', 'post_created']);
     for (const value of used.kind) expect([value, enumValues('activity_kind.dart').includes(value)]).toEqual([value, true]);
+  });
+});
+
+describe('parite (g) · enum değerleri ve desenler ↔ Rules (T-19)', () => {
+  const ENUMS = path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', 'models', 'enums');
+  const enumValues = (file) => [...fs.readFileSync(path.join(ENUMS, file), 'utf8').matchAll(/^\s+\w+\('([^']+)'[,)]/gm)].map((m) => m[1]);
+  const quoted = (source) => [...source.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  const readDart = (rel) => fs.readFileSync(path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', rel), 'utf8');
+
+  test('posts.type değer listesi = PostType (3); `type == \'…\'` karşılaştırmaları da enum değeridir', () => {
+    const at = firestoreRules.indexOf('// PostType (3)');
+    expect(at).toBeGreaterThan(0);
+    const open = firestoreRules.indexOf('[', at);
+    const types = enumValues('post_type.dart');
+    expect(quoted(firestoreRules.slice(open, firestoreRules.indexOf(']', open)))).toEqual(types);
+    const compared = [...firestoreRules.matchAll(/\btype\s*==\s*'([^']*)'/g)].map((m) => m[1]);
+    expect(compared.length).toBeGreaterThan(0);
+    for (const value of compared) expect([value, types.includes(value)]).toEqual([value, true]);
+  });
+
+  test('posts.images[].path deseni = posts/{postId}/ + StoragePaths.fileNamePattern (avatarPath ile aynı yazım — CD-39)', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`i.path.matches('posts/' + postId + '/${dart.toRulesLiteral(pattern[1])}')`);
+  });
+
+  test('anket seçenek kimlikleri: gönderi kuralının sabitlediği sıra = oy kuralının kabul ettiği liste (o1…oN, N = pollOptionsMax)', () => {
+    const limits = dart.readLimits(REPO_ROOT);
+    const ids = Array.from({ length: limits.ints.pollOptionsMax }, (_, i) => `o${i + 1}`);
+    expect(firestoreRules).toContain(`d.optionId in [${ids.map((id) => `'${id}'`).join(', ')}][0:p.poll.options.size()]`);
+    expect([...firestoreRules.matchAll(/optionHeadOk\(\w+, '(o\d)'\)/g)].map((m) => m[1])).toEqual(ids);
   });
 });
 

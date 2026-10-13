@@ -1,3 +1,4 @@
+import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/limits.dart';
 
 /// Bileşik belge ID üreticileri ve biçim desenleri (PLAN §9.4, §10.3; D-25,
@@ -73,6 +74,33 @@ abstract final class FirestoreIds {
 
   /// `posts/{postId}/votes/{uid}` — bir kullanıcı bir oy.
   static String vote(String uid) => uid;
+
+  /// `activity/{clubId}_{actorId}_{kind}_{postId}` — gönderi yayınının günlük
+  /// kaydı (`post_created`, `announcement`, `poll`). [kind] enum'un JSON
+  /// değeridir.
+  ///
+  /// Kimlik sabittir ve Security Rules alanlarla karşılaştırır: bir gönderi
+  /// yalnızca bir kez oluşturulduğundan yayına tek günlük düşer; aynı
+  /// işlemde ya da sonradan ikinci kayıt aynı kimliğe düşer ve reddedilir
+  /// (günlük değiştirilemez — CD-137).
+  static String postActivity(
+    String clubId,
+    String actorId,
+    String kind,
+    String postId,
+  ) => '$clubId$_separator$actorId$_separator$kind$_separator$postId';
+
+  // ── Sayaç işaretçileri (CD-41) ───────────────────────────────────────
+
+  /// `posts.lastCommentRef` değeri: `comments/{commentId}` — `commentCount`
+  /// sayacını son değiştiren yorumun belge yolu (başında `/` yok).
+  static String commentRef(String commentId) =>
+      '${FirestoreCollections.comments}$_pathSeparator$commentId';
+
+  /// `announcementCounters.lastPostRef` değeri: `posts/{postId}` — sayacı son
+  /// artıran duyurunun belge yolu (başında `/` yok).
+  static String postRef(String postId) =>
+      '${FirestoreCollections.posts}$_pathSeparator$postId';
 
   // ── Tohumlar ve gömülü ID'ler ────────────────────────────────────────
 

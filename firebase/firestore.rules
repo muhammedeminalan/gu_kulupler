@@ -11,6 +11,8 @@ rules_version = '2';
 // T-15 → clubs (okuma + `memberCount` sayaç dalı), memberships (okuma + başvuran geçişleri M1–M4, M7, M8),
 // memberships/private/contact (okuma + başvuranın C / yeniden başvuru notu), reports (C + okuma),
 // blocks, activity (okuma + başvuranın / üyenin kendi geçiş günlüğü).
+// T-19 → posts, posts/votes, comments, savedPosts, announcementCounters; clubs `pinnedPostId` dalı;
+// activity gönderi yayını türleri (`post_created`, `announcement`, `poll`).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -94,6 +96,39 @@ service cloud.firestore {
     // DURMAZ). `exists` / `get` yazım-öncesi durumu verir (M2'de üyelik henüz yoktur).
     function clubPath(c) { return /databases/$(database)/documents/clubs/$(c); }
     function delta(field) { return request.resource.data[field] - resource.data[field]; }
+
+    // ---- içerik (T-19: gönderi, yorum, oy, kayıt, duyuru sayacı) ----
+    function postPath(p) { return /databases/$(database)/documents/posts/$(p); }
+    function commentPath(c) { return /databases/$(database)/documents/comments/$(c); }
+    function counterPath(id) { return /databases/$(database)/documents/announcementCounters/$(id); }
+    // Gizlenmiş (`isHidden`) ya da silinmiş gönderi / yorumu okuma ayrıcalığı: süper admin; hesabı AKTİF yazar
+    // ve kulüp yöneticisi. Sıradan üye, danışman ve askıdaki hesap kaldırılmış içeriği okuyamaz.
+    function seesRemoved(c, author) { return isSuper() || (activeUser() && (author == uid() || isManager(c))); }
+    // Gizle / göster (yalnızca süper admin çağırır): `false → true` gizleyeni ve sunucu zamanını yazar;
+    // `true → false` ikisini `null`'a çeker. Sayaç, sabitleme ve silme alanları beyaz listede yoktur.
+    function isHideToggle() {
+      let d = request.resource.data;
+      return touches(['isHidden', 'hiddenBy', 'hiddenAt'])
+          && ((resource.data.isHidden == false && d.isHidden == true
+               && d.hiddenBy == uid() && d.hiddenAt == request.time)
+              || (resource.data.isHidden == true && d.isHidden == false
+                  && d.get('hiddenBy', null) == null && d.get('hiddenAt', null) == null));
+    }
+    // Rules'ta döngü yoktur: liste baştan birer eleman soyularak denetlenir (ilk eleman + kuyruk).
+    function tail(l) { return l.size() <= 1 ? [] : l[1:l.size()]; }
+    // Istanbul günü (CD-129): sunucu saati + 3 sa; gün eşitliği TOLERANSSIZDIR (komşu gün anahtarı ret —
+    // istemci gün sınırı penceresinde bir kez komşu günle yeniden dener, W-50). `yyyyMMdd` = sayaç belge
+    // kimliğinin eki (FirestoreIds.announcementCounter), `yyyy-MM-dd` = `day` alanı (AppClock.istanbulDay).
+    function pad2(n) { return string(n).size() == 1 ? '0' + string(n) : string(n); }
+    function istanbulNow() { return request.time + duration.value(3, 'h'); }   // limit: istanbulUtcOffset
+    function istanbulDayKey() {
+      let t = istanbulNow();
+      return string(t.year()) + pad2(t.month()) + pad2(t.day());
+    }
+    function istanbulDay() {
+      let t = istanbulNow();
+      return string(t.year()) + '-' + pad2(t.month()) + '-' + pad2(t.day());
+    }
 
     // ── Koleksiyonlar (PLAN §11.1 — 18 satır) ───────────────────────────────────────────────────
 
@@ -257,6 +292,7 @@ service cloud.firestore {
     // Okuma yolları: ClubRepository.fetchActiveClubs (L: `isDeleted == false`) · getClub (G) · getClubs
     // (L: `documentId in […]` + `isDeleted == false`) · üyelik işlemlerinin kulüp okuması (G).
     // Yazma yolu (T-15): yalnızca sayaç dalı — MembershipRepository.joinInstant (+1) / leave (−1).
+    // Yazma yolu (T-19): `pinnedPostId` dalı — PostRepository.pin / unpin / softDeletePost (sabit gönderi).
     // Kapalı kalan dallar: C (süper admin, ADM-03 — T-37) · U yönetim alanları ve `presidentId` devri (T-30) ·
     // U süper admin `status` / `suspendReason` / ad alanları (T-37) · sayaç dalının yönetici ve süper admin
     // aktörü (M5 / M9 / M12 — T-30; M9 süper — T-37) ve hesap silme (M14 — T-29).
@@ -280,6 +316,29 @@ service cloud.firestore {
                 || (d == -1 && m.status == 'left' && get(ref).data.status == 'active'));
       }
 
+      // U (`pinnedPostId` dalı, T-19) — yalnızca `pinnedPostId` (+ `updatedAt`), gönderi yazımıyla AYNI işlemde.
+      // İki yönlü bağ: bu dal yeni sabit gönderinin yazım-sonrası `pinned == true` (bu kulübün, silinmemiş)
+      // ve eski sabit gönderinin `pinned == false` olduğunu görür; gönderi dalı (`canTogglePin`) da kulübün
+      // yazım-sonrası `pinnedPostId` değerine bakar. Tek başına `pinnedPostId` yazan ya da başka kulübün
+      // gönderisini gösteren işlem reddedilir; aynı anda iki gönderi sabit kalamaz.
+      // Değer `null`'a çekilirken aktör yönetici olmayabilir: eski sabit gönderi BU işlemde siliniyorsa
+      // (süper adminin moderasyon silmesi — gönderi kuralı yetkilendirir) dal ona da açıktır.
+      // Değer rastgele gönderi kimliğidir (kullanıcı kimliği taşımaz); üye olmayan o gönderiyi okuyamaz.
+      // En çok 4 erişim yolu: users/{uid} · üyelik · yeni gönderi · eski gönderi.
+      function pinnedNow(p) { return p.clubId == clubId && p.pinned == true && p.isDeleted == false; }
+      function removedNow(p) { return get(postPath(p)).data.isDeleted == false && getAfter(postPath(p)).data.isDeleted == true; }
+      function canSetPin() {
+        let now = request.resource.data.get('pinnedPostId', null);
+        let was = resource.data.get('pinnedPostId', null);
+        return touches(['pinnedPostId'])
+            && now != was
+            && (was == null || !existsAfter(postPath(was)) || getAfter(postPath(was)).data.pinned == false)
+            && (now != null
+                ? (now is string && now.matches('[A-Za-z0-9_-]+') && pinnedNow(getAfter(postPath(now)).data)
+                   && activeUser() && isManager(clubId))
+                : ((activeUser() && isManager(clubId)) || removedNow(was)));
+      }
+
       // R — doğrulanmış her kullanıcı; silinmiş kulübü yalnızca süper admin okur. Askıdaki kulüp okunur
       // (kart "askıda" görünümü; listeden ayıklamak arayüzdedir — rules-spec §9.5). Liste sorgusu
       // `isDeleted == false` süzgecini taşımak zorundadır (rules-spec §6). Olmayan kulübün tekil okuması
@@ -289,7 +348,7 @@ service cloud.firestore {
       allow get: if emailOk() && (resource == null || resource.data.isDeleted == false || isSuper());
       allow list: if emailOk() && (resource.data.isDeleted == false || isSuper());
       allow create: if false;
-      allow update: if canBumpMemberCount();
+      allow update: if canBumpMemberCount() || canSetPin();
       allow delete: if false;
     }
 
@@ -547,24 +606,335 @@ service cloud.firestore {
       }
     }
 
-    // 6 · posts/{postId} — T-19
+    // 6 · posts/{postId} — T-19 (yayın bildirimi ve içerik yönetimi kompozisyonu T-30, şikayet çözümü T-37)
+    // rules-spec §3.5 · sözleşme docs/plans/T-19.md §6.
+    // Yazma yolları: PostRepository.create (C; gönderi + günlük, bildirimli duyuruda + duyuru sayacı) ·
+    // update (U düzenleme) · like / unlike (U beğeni) · pin / unpin (U + `clubs.pinnedPostId`) ·
+    // softDeletePost / restorePost · hide / unhide (süper admin) · CommentRepository.add /
+    // softDeleteComment / restoreComment (U sayaç dalı: `commentCount ±1` + `lastCommentRef`).
+    // Beğeni ayrı belge DEĞİLDİR (`likes` dizisi); oy sayacı alanı YOKTUR (sayım `votes` üzerinde `count()`).
+    // Null olabilen alanlar (W-51): `title`, `poll`, `lastCommentRef`, `hiddenBy`, `hiddenAt`, `editedAt`.
+    // Dal sırası: her dal önce ucuz ayırıcıya (beyaz liste, önceki / sonraki değer) bakar; erişim çağrıları
+    // sonra gelir. En ağır işlem (bildirimli duyuru yayını): 5 ayrı yol (users · üyelik · kulüp · sayaç · gönderi).
     match /posts/{postId} {
-      allow read: if false;
-      allow create, update: if false;
+      // R — kulübün içini gören (`seesInside`: aktif üyelik ya da süper admin; askıdaki üye okur). Gizli /
+      // silinmiş gönderiyi yalnızca `seesRemoved` okur. Liste sorgusu `clubId` + `isDeleted == false`
+      // (+ üye için `isHidden == false`) süzgeçlerini taşımak zorundadır (rules-spec §6 FED-01 / MGT-08).
+      // Olmayan gönderinin tekil okuması reddedilir (kulübü bilinemez); süper admine boş döner.
+      function canReadPost() {
+        let d = resource.data;
+        return seesInside(d.clubId)
+            && ((d.isDeleted == false && d.isHidden == false) || seesRemoved(d.clubId, d.authorId));
+      }
+
+      // Metin: kırpılmış hali boş olamaz (FieldValidators.postText ile aynı).
+      function postTextOk(t) { return t is string && t.trim().size() > 0 && t.size() <= 1000; }   // limit: postTextMax
+      // Başlık yalnızca duyuruda vardır (zorunlu); diğer türlerde yok / null.
+      function titleOk(d) {
+        return d.type == 'announcement'
+            ? (d.title is string && d.title.trim().size() > 0 && d.title.size() <= 80)   // limit: postTitleMax
+            : d.get('title', null) == null;
+      }
+      // `images[i]` = PostImageModel {path, w, h}. Yol yalnızca BU gönderinin klasörüdür (CD-39):
+      // posts/{postId}/ + StoragePaths.fileNamePattern (parity.test.js karşılaştırır). `postId` desene
+      // gömülür; kimlik karakter kümesi create'te sabitlenir (aşağıda).
+      function imageOk(i) {
+        return i is map && i.keys().hasOnly(['path', 'w', 'h'])
+            && i.path is string
+            && i.path.matches('posts/' + postId + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)')
+            && i.w is int && i.w > 0 && i.h is int && i.h > 0;
+      }
+      function imageHeadOk(l) { return l.size() == 0 || imageOk(l[0]); }
+      function imagesOk(l) {
+        let t1 = tail(l);
+        let t2 = tail(t1);
+        let t3 = tail(t2);
+        return l is list && l.size() <= 4   // limit: postImagesMax
+            && imageHeadOk(l) && imageHeadOk(t1) && imageHeadOk(t2) && imageHeadOk(t3);
+      }
+      // Anket: seçenek kimlikleri sıralı ve sabittir (`o1`…`oN`) — oy kuralı kimliği seçenek sayısından
+      // doğrular. `endsAt` istemci saatinden hesaplanır: sunucu zamanı + 1 / 3 / 7 gün, ± saat kayması (CD-32).
+      function near(t, target) {
+        return t >= target - duration.value(5, 'm') && t <= target + duration.value(5, 'm');   // limit: clockSkewTolerance
+      }
+      function pollEndsOk(t) {
+        return t is timestamp
+            && (near(t, request.time + duration.value(1, 'd'))   // limit: pollDurationsDays
+                || near(t, request.time + duration.value(3, 'd'))   // limit: pollDurationsDays
+                || near(t, request.time + duration.value(7, 'd')));   // limit: pollDurationsDays
+      }
+      function optionHeadOk(l, id) {
+        return l.size() == 0
+            || (l[0] is map && l[0].keys().hasOnly(['id', 'text']) && l[0].id == id
+                && l[0].text is string && l[0].text.trim().size() > 0 && l[0].text.size() <= 60);   // limit: pollOptionTextMax
+      }
+      function pollShapeOk(p) {
+        let o = p.options;
+        let t1 = tail(o);
+        let t2 = tail(t1);
+        let t3 = tail(t2);
+        return p is map && p.keys().hasOnly(['options', 'endsAt', 'showResultsAfterVote'])
+            && p.showResultsAfterVote is bool
+            && pollEndsOk(p.endsAt)
+            && o is list && o.size() >= 2 && o.size() <= 4   // limit: pollOptionsMin, pollOptionsMax
+            && optionHeadOk(o, 'o1') && optionHeadOk(t1, 'o2') && optionHeadOk(t2, 'o3') && optionHeadOk(t3, 'o4');
+      }
+      function pollOk(d) { return d.type == 'poll' ? pollShapeOk(d.poll) : d.get('poll', null) == null; }
+
+      // Bildirimli duyuru (`pushSent`): günün sayacı AYNI işlemde tam +1 oynar ve BU gönderiyi gösterir.
+      // Sayaç yolu sunucu gününden türetilir (istemcinin seçtiği gün belgesi değil): başka günün sayacını
+      // artırarak sınır dolanılamaz. Sınır (`count <= 2`) ve sayaç biçimi sayaç kuralındadır; işaretçi iki
+      // yönlüdür — tek sayaç artışıyla iki bildirimli duyuru yazılamaz. 1 erişim yolu: sayaç belgesi.
+      function counterBumped(c) {
+        let ref = counterPath(c + '_' + istanbulDayKey());
+        let after = getAfter(ref).data;
+        return after.get('lastPostRef', null) == 'posts/' + postId
+            && after.count == (exists(ref) ? get(ref).data.count : 0) + 1;
+      }
+      // Yayın kabul eden kulüp: silinmemiş ve askıda değil.
+      function clubLive(c) {
+        let club = get(clubPath(c)).data;
+        return club.isDeleted == false && club.status == 'active';
+      }
+
+      // C — yalnızca kulüp yönetimi (yönetim kurulu / başkan), kendi adına. Sayaçlar sıfır, moderasyon ve
+      // düzenleme alanları boş başlar. Günlük (activity) bu belgeyi ister; bu belge günlüğü istemez.
+      function canCreatePost() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['clubId', 'authorId', 'type', 'title', 'text', 'images', 'poll', 'pinned',
+                                 'pushSent', 'likes', 'likeCount', 'commentCount', 'lastCommentRef',
+                                 'isHidden', 'hiddenBy', 'hiddenAt', 'editedAt',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            // kimlik görsel yolu desenine gömülür: düzenli ifade karakteri taşıyamaz
+            && postId.matches('[A-Za-z0-9_-]+')
+            && d.authorId == uid()
+            && d.clubId is string
+            // PostType (3)
+            && d.type in ['post', 'announcement', 'poll']
+            && postTextOk(d.text) && titleOk(d) && imagesOk(d.images) && pollOk(d)
+            && d.pinned == false && d.isHidden == false
+            && d.likes is list && d.likes.size() == 0 && d.likeCount == 0 && d.commentCount == 0
+            && d.get('lastCommentRef', null) == null && d.get('hiddenBy', null) == null
+            && d.get('hiddenAt', null) == null && d.get('editedAt', null) == null
+            && d.pushSent is bool
+            && activeUser() && isManager(d.clubId) && clubLive(d.clubId)
+            && (d.pushSent == false || (d.type == 'announcement' && counterBumped(d.clubId)));
+      }
+
+      // U (düzenleme) — yazar, hâlâ yöneticiyken: `text`, `title`, `images` + `editedAt`. `type`, `poll`,
+      // `pushSent`, `pinned`, sayaçlar ve moderasyon alanları beyaz listede yoktur → değişemez (anket
+      // seçenekleri oy başladıktan sonra da değişmez). Yönetimden ayrılan yazar düzenleyemez.
+      // Anket SORUSU ankette `text` alanıdır ve yayından sonra DEĞİŞMEZ: oylar değiştirilemez (TST-10) ve
+      // üyelerce okunur — soru değişirse üyeler vermedikleri bir karara oy vermiş görünür (CD-141 madde 11).
+      // Düzenleme de yayındır: askıdaki / silinmiş kulüpte reddedilir (`clubLive`) — yayın yasağı eski bir
+      // gönderi yeniden yazılarak dolanılamaz. 3 erişim yolu: users/{uid} · üyelik · kulüp.
+      function canEditPost() {
+        let d = request.resource.data;
+        return resource.data.isDeleted == false
+            && resource.data.authorId == uid()
+            && touches(['text', 'title', 'images', 'editedAt'])
+            && d.editedAt == request.time
+            && postTextOk(d.text) && titleOk(d) && imagesOk(d.images)
+            && (resource.data.type != 'poll' || d.text == resource.data.text)
+            && activeUser() && isManager(resource.data.clubId) && clubLive(resource.data.clubId);
+      }
+
+      // U (beğeni, PLAN §11.2b) — yalnızca `likes` + `likeCount`; `updatedAt` DEĞİŞMEZ (beyaz listede yok).
+      // Oturum yalnızca KENDİ kimliğini ekler / çıkarır ve sayaç dizi uzunluğuyla birlikte tam ±1 oynar:
+      // çift beğeni, başkasının kimliği, yinelenen eleman ve mutlak sayaç yazımı reddedilir.
+      // Sayaç ayrıca İŞLEMİN TAMAMINDA tam `step` kadar oynar (`counterDelta`: `get` ↔ `getAfter`): aynı
+      // işlemde aynı gönderiye yinelenen beğeni yazımı (`arrayUnion` diziyi bir kez büyütür, `increment` her
+      // yazımda sayar) değerlendirme sırasından bağımsız reddedilir (CD-141 madde 11).
+      // Danışman ve süper admin beğenemez (`isMember`). 3 erişim yolu: gönderi · users/{uid} · üyelik.
+      function canLike() {
+        let d = request.resource.data;
+        let was = resource.data.likes;
+        let step = delta('likeCount');
+        return d.diff(resource.data).affectedKeys().hasOnly(['likes', 'likeCount'])
+            && resource.data.isDeleted == false && resource.data.isHidden == false
+            && step in [-1, 1] && d.likeCount >= 0
+            && d.likes is list && d.likes.size() - was.size() == step
+            && d.likes.toSet().size() == d.likes.size()
+            && ((step == 1 && !(uid() in was) && uid() in d.likes && d.likes.hasAll(was))
+                || (step == -1 && uid() in was && !(uid() in d.likes) && was.hasAll(d.likes)))
+            && counterDelta(postPath(postId), 'likeCount', step)
+            && activeUser() && isMember(resource.data.clubId);
+      }
+
+      // U (sayaç dalı, PLAN §11.2b) — yalnızca `commentCount ±1` + `lastCommentRef` (+ `updatedAt`).
+      // İşaretçinin gösterdiği yorum BU gönderinindir ve AYNI işlemde doğru geçişi yapar: +1 = yeni yorum ya
+      // da geri alınan silme, −1 = silme. Aktör burada ayrıca denetlenmez: geçişi yapan yazımı yorum kuralı
+      // yetkilendirir ve yorum kuralı da bu belgenin tam ±1 oynadığını ve KENDİSİNİ gösterdiğini görür
+      // (iki yönlü bağ: tek artışla iki yorum, yorumsuz artış, başka gönderinin yorumu reddedilir).
+      // İşaretçi rastgele yorum kimliğidir, kullanıcı kimliği taşımaz (CD-137 madde 8q dersi); bu belgeyi
+      // okuyan kitle (`seesInside`) yorum listesini zaten görür. 1 erişim yolu: yorum belgesi.
+      function commentMoved(ref, step) {
+        let c = getAfter(ref).data;
+        return c.postId == postId
+            && ((step == 1 && c.isDeleted == false && (!exists(ref) || get(ref).data.isDeleted == true))
+                || (step == -1 && c.isDeleted == true && get(ref).data.isDeleted == false));
+      }
+      function canBumpCommentCount() {
+        let ref = request.resource.data.get('lastCommentRef', null);
+        let step = delta('commentCount');
+        return touches(['commentCount', 'lastCommentRef'])
+            && step in [-1, 1] && request.resource.data.commentCount >= 0
+            && ref is string && ref.matches('comments/[A-Za-z0-9_-]+')
+            && commentMoved(commentPath(ref.split('/')[1]), step);
+      }
+
+      // U (sabitleme) — yönetim: yalnızca `pinned` (+ `updatedAt`), `clubs.pinnedPostId` ile AYNI işlemde.
+      // `true`: gönderi silinmemiş ve gizli değil, kulüp yazım-sonrası BU gönderiyi gösterir; `false`: kulüp
+      // artık bu gönderiyi göstermez. Yazım gerçek bir değişiklik taşır (`pinned` ya da kulübün gösterdiği
+      // gönderi bu işlemde değişir): yalnızca `updatedAt` yenileyen boş yazım reddedilir.
+      // 3 erişim yolu: kulüp (get + getAfter) · users/{uid} · üyelik.
+      function canTogglePin() {
+        let d = request.resource.data;
+        let club = clubPath(resource.data.clubId);
+        let pinnedId = getAfter(club).data.get('pinnedPostId', null);
+        return touches(['pinned'])
+            && (d.pinned != resource.data.pinned || get(club).data.get('pinnedPostId', null) != pinnedId)
+            && ((d.pinned == true && resource.data.isDeleted == false && resource.data.isHidden == false
+                 && pinnedId == postId)
+                || (d.pinned == false && pinnedId != postId))
+            && activeUser() && isManager(resource.data.clubId);
+      }
+
+      // U (soft delete) — kulüp yönetimi (herhangi bir gönderi) ya da süper admin. Sabit gönderi aynı
+      // yazımda sabitlikten çıkar ve kulüp belgesi artık onu göstermez. Yorumlar, oylar, `commentCount` ve
+      // duyuru sayacı değişmez (günlük hak iade edilmez).
+      function canRemovePost() {
+        return isSoftDelete(['pinned'])
+            && request.resource.data.pinned == false
+            && (resource.data.pinned == false
+                || getAfter(clubPath(resource.data.clubId)).data.get('pinnedPostId', null) != postId)
+            && (isSuper() || (activeUser() && isManager(resource.data.clubId)));
+      }
+
+      // U (restore) — süper admin ya da silmeyi yapan yönetici (Geri al). Gönderi yeniden sabitlenmez.
+      function canRestorePost() {
+        return isRestore([])
+            && (isSuper() || (resource.data.get('deletedBy', null) == uid()
+                              && activeUser() && isManager(resource.data.clubId)));
+      }
+
+      allow read: if canReadPost();
+      allow create: if canCreatePost();
+      allow update: if canLike() || canBumpCommentCount() || canEditPost() || canTogglePin()
+                    || canRemovePost() || canRestorePost() || (isSuper() && isHideToggle());
       allow delete: if false;
 
-      // 7 · posts/{postId}/votes/{uid} — T-19
+      // 7 · posts/{postId}/votes/{uid} — T-19 · rules-spec §3.5
+      // Yazma yolu: PostRepository.vote (C). Belge kimliği oy verenin uid'idir; alanlar `optionId`,
+      // `createdAt` (BaseFields ve sayaç yok). Oy DEĞİŞTİRİLEMEZ ve silinemez (TST-10): U / D herkese kapalı.
+      // Oy belgelerini gönderiyi görebilen herkes okur (sonuç sayımı; anonimlik arayüzdedir — rules-spec §9.2).
       match /votes/{voterId} {
-        allow read: if false;
-        allow create, update: if false;
+        function votedPost() { return get(postPath(postId)).data; }
+
+        // R — gönderiyle aynı görünürlük (gizli / silinmiş gönderinin oyları `seesRemoved`'a). Olmayan oyun
+        // tekil okuması boş döner (myVote → null): kural oy belgesine değil gönderiye bakar.
+        function canReadVotes() {
+          let p = votedPost();
+          return seesInside(p.clubId)
+              && ((p.isDeleted == false && p.isHidden == false) || seesRemoved(p.clubId, p.authorId));
+        }
+
+        // C — kulübün yazma yetkili üyesi (danışman ve süper admin oy veremez), kendi adına, açık ankete,
+        // var olan seçeneğe (kimlikler `o1`…`oN` — gönderi kuralı sabitler). İkinci `set` update sayılır ve
+        // reddedilir. 3 erişim yolu: gönderi · users/{uid} · üyelik.
+        function canVote() {
+          let d = request.resource.data;
+          let p = votedPost();
+          return voterId == uid()
+              && d.keys().hasOnly(['optionId', 'createdAt'])
+              && d.createdAt == request.time
+              && p.type == 'poll' && p.isDeleted == false && p.isHidden == false
+              && request.time < p.poll.endsAt
+              && d.optionId is string && d.optionId in ['o1', 'o2', 'o3', 'o4'][0:p.poll.options.size()]
+              && activeUser() && isMember(p.clubId);
+        }
+
+        allow read: if canReadVotes();
+        allow create: if canVote();
+        allow update: if false;
         allow delete: if false;
       }
     }
 
-    // 8 · comments/{commentId} — T-19
+    // 8 · comments/{commentId} — T-19 (şikayet çözümü T-37) · rules-spec §3.6
+    // Yazma yolları: CommentRepository.add (C) · softDeleteComment · restoreComment — üçü de
+    // `posts.commentCount ±1` + `lastCommentRef` ile AYNI batch'te · hide (süper admin).
+    // Yorum düzenlenemez: `text`, `postId`, `clubId`, `authorId` hiçbir update beyaz listesinde yoktur.
+    // Null olabilen alanlar (W-51): `hiddenBy`, `hiddenAt`.
     match /comments/{commentId} {
-      allow read: if false;
-      allow create, update: if false;
+      // Gönderinin sayacı AYNI işlemde tam `step` kadar oynar VE işaretçisi BU yorumu gösterir (iki yönlü
+      // bağ; karşılığı gönderideki `canBumpCommentCount`). 1 erişim yolu: gönderi (get + getAfter).
+      function countMoved(p, step) {
+        let after = getAfter(postPath(p)).data;
+        return after.commentCount == get(postPath(p)).data.commentCount + step
+            && after.get('lastCommentRef', null) == 'comments/' + commentId;
+      }
+
+      // R — kulübün içini gören; gizli / silinmiş yorumu yalnızca `seesRemoved` (yazarı, yönetim, süper
+      // admin): moderasyonla kaldırılan yorumun içeriği ve kimin sildiği (`deletedBy`) üyelere sızmaz.
+      // Yorum GÖNDERİSİNİN görünürlüğünü de izler (oylarla aynı — CD-141 madde 11): gizlenmiş / silinmiş
+      // gönderinin yorum dizisini yalnızca o gönderiyi görebilen (gönderinin yazarı, yönetim, süper admin)
+      // okur; yorumun kendi yazarı da okuyamaz. Liste sorgusu `postId`, `clubId`, `isDeleted == false`,
+      // `isHidden == false` süzgeçlerini taşır (`postId` gönderi yolunu bağlar). Süper admin gönderiye
+      // bakılmadan okur. En çok 3 erişim yolu: üyelik · gönderi · users/{uid}.
+      function postOpen(p) {
+        let post = get(postPath(p)).data;
+        return (post.isDeleted == false && post.isHidden == false) || seesRemoved(post.clubId, post.authorId);
+      }
+      function canReadComment() {
+        let d = resource.data;
+        return seesInside(d.clubId)
+            && ((d.isDeleted == false && d.isHidden == false) || seesRemoved(d.clubId, d.authorId))
+            && (isSuper() || postOpen(d.postId));
+      }
+
+      // C — kulübün yazma yetkili üyesi (danışman ve süper admin yorum yazamaz), kendi adına, silinmemiş ve
+      // gizlenmemiş gönderiye; `clubId` gönderinin kulübüdür. 3 erişim yolu: gönderi · users/{uid} · üyelik.
+      function canAddComment() {
+        let d = request.resource.data;
+        let p = get(postPath(d.postId)).data;
+        return d.keys().hasOnly(['postId', 'clubId', 'authorId', 'text', 'isHidden', 'hiddenBy', 'hiddenAt',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.authorId == uid()
+            && d.postId is string && d.clubId is string
+            // kırpılmış hali boş olamaz (FieldValidators.comment ile aynı)
+            && d.text is string && d.text.trim().size() > 0 && d.text.size() <= 500   // limit: commentMax
+            && d.isHidden == false && d.get('hiddenBy', null) == null && d.get('hiddenAt', null) == null
+            && p.clubId == d.clubId && p.isDeleted == false && p.isHidden == false
+            && countMoved(d.postId, 1)
+            && activeUser() && isMember(d.clubId);
+      }
+
+      // Silme yetkisi: süper admin · kulüp yöneticisi (herhangi bir yorum) · yazarın kendisi (hâlâ yazma
+      // yetkili üyeyken). Kulüpten ayrılan / çıkarılan yazar ve danışman silemez.
+      function mayRemove() {
+        let d = resource.data;
+        return isSuper()
+            || (activeUser() && ((d.authorId == uid() && isMember(d.clubId)) || isManager(d.clubId)));
+      }
+
+      // U (soft delete) — `commentCount −1` aynı batch'te. Çift silme reddedilir (`isSoftDelete`).
+      function canRemoveComment() {
+        return isSoftDelete([]) && countMoved(resource.data.postId, -1) && mayRemove();
+      }
+
+      // U (restore, Geri al) — `commentCount +1` aynı batch'te; süper admin ya da silmeyi yapan (silme
+      // yetkisi sürüyorsa).
+      function canRestoreComment() {
+        return isRestore([]) && countMoved(resource.data.postId, 1)
+            && (isSuper() || (resource.data.get('deletedBy', null) == uid() && mayRemove()));
+      }
+
+      allow read: if canReadComment();
+      allow create: if canAddComment();
+      allow update: if canRemoveComment() || canRestoreComment() || (isSuper() && isHideToggle());
       allow delete: if false;
     }
 
@@ -645,12 +1015,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 13 · activity/{activityId} — T-15 (yönetici türleri T-30) · rules-spec §3.11
+    // 13 · activity/{activityId} — T-15 · T-19 (gönderi yayını) · yönetici türleri T-30 · rules-spec §3.11
     // Değiştirilemez günlük: BaseFields YOK (yalnızca `createdAt`), update ve delete herkese kapalı.
-    // Yazma yolu: ActivityRepository.addToBatch — asıl yazımla AYNI batch'te (apply / joinInstant / leave).
+    // Yazma yolu: ActivityRepository.addToBatch — asıl yazımla AYNI batch'te (apply / joinInstant / leave;
+    // T-19: PostRepository.create).
     // Kapalı kalan türler: `application_approved`, `application_rejected`, `member_removed`, `role_changed`,
-    // `event_published`, `event_cancelled`, `post_created`, `announcement`, `poll`, `settings_changed`
-    // (yazan yönetici / süper admin — T-30, T-37).
+    // `event_published`, `event_cancelled`, `settings_changed` (yazan yönetici / süper admin — T-30, T-37).
     match /activity/{activityId} {
       // `refs` (ActivityRefsModel): üyelik türlerinde yalnızca `userId` (= oturum); diğerleri yok / null.
       function ownRefs(r) {
@@ -684,10 +1054,41 @@ service cloud.firestore {
                 || (d.kind == 'member_left' && now == 'left' && was == 'active'));
       }
 
+      // `refs`: gönderi türlerinde yalnızca `postId`; diğerleri yok / null.
+      function postRefs(r) {
+        return r is map && r.keys().hasOnly(['userId', 'eventId', 'postId', 'role'])
+            && r.postId is string
+            && r.get('userId', null) == null && r.get('eventId', null) == null && r.get('role', null) == null;
+      }
+
+      // C (T-19) — oturumun AYNI işlemde yayınladığı gönderinin günlüğü: `post_created` ⇒ `post`,
+      // `announcement` ⇒ `announcement`, `poll` ⇒ `poll`. Gönderi yazım-öncesi YOKTUR, yazım-sonrası vardır,
+      // bu kulübündür ve yazarı oturumdur (yayın yetkisini — yönetici, aktif hesap, askıda olmayan kulüp —
+      // gönderi kuralı doğrular; burada yeniden okunmaz). Belge kimliği SABİTTİR (FirestoreIds.postActivity):
+      // `{clubId}_{uid}_{kind}_{postId}` — bir yayına tek günlük düşer; serbest kimlik, ikinci kayıt ve
+      // sonradan yeniden yazım reddedilir (CD-137 madde 8t). 1 erişim yolu: gönderi (exists + getAfter).
+      function canLogOwnPost() {
+        let d = request.resource.data;
+        let ref = postPath(d.refs.postId);
+        let p = getAfter(ref).data;
+        return d.kind in ['post_created', 'announcement', 'poll']
+            && d.keys().hasOnly(['clubId', 'actorId', 'kind', 'refs', 'createdAt'])
+            && d.createdAt == request.time
+            && d.actorId == uid()
+            && d.clubId is string
+            && postRefs(d.refs)
+            && activityId == d.clubId + '_' + uid() + '_' + d.kind + '_' + d.refs.postId
+            && !exists(ref)
+            && p.clubId == d.clubId && p.authorId == uid()
+            && ((d.kind == 'post_created' && p.type == 'post')
+                || (d.kind == 'announcement' && p.type == 'announcement')
+                || (d.kind == 'poll' && p.type == 'poll'));
+      }
+
       // R — kulüp yönetimi, danışman (ikisi de aktif hesap) ve süper admin; doğrulanmış e-posta şarttır
       // (`seesMgmt`). Sorgu `clubId` süzgecini taşır (rules-spec §6 MGT-10).
       allow read: if seesMgmt(resource.data.clubId);
-      allow create: if canLogOwnMembership();
+      allow create: if canLogOwnMembership() || canLogOwnPost();
       allow update: if false;
       allow delete: if false;
     }
@@ -776,10 +1177,50 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 16 · savedPosts/{userId}_{postId} — T-19
+    // 16 · savedPosts/{userId}_{postId} — T-19 · rules-spec §3.14
+    // Yazma yolları: SavedPostRepository.save (C; silinmiş kayıt varsa restore + `savedAt` yenilenir) ·
+    // softDeleteSaved (kaldır) · restoreSaved (Geri al; `savedAt` değişmez). Kayıt yalnızca sahibine
+    // açıktır: süper admin dahil başkası okuyamaz, yazamaz. Yol oturumdan türetilir (`{uid}_{postId}`).
     match /savedPosts/{savedPostId} {
-      allow read: if false;
-      allow create, update: if false;
+      function ownSavedId() {
+        let prefix = uid() + '_';
+        return savedPostId.size() > prefix.size() && savedPostId[0:prefix.size()] == prefix;
+      }
+
+      // C — gönderiyi görebilen aktif kullanıcı (üye, yönetim, danışman, süper admin), kendi adına;
+      // `clubId` gönderinin kulübüdür; gönderi silinmemiş ve gizli değildir.
+      // 3 erişim yolu: gönderi · users/{uid} · üyelik.
+      function canSavePost() {
+        let d = request.resource.data;
+        let p = get(postPath(d.postId)).data;
+        return d.keys().hasOnly(['userId', 'postId', 'clubId', 'savedAt',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.userId == uid()
+            && d.postId is string && d.clubId is string
+            && savedPostId == d.userId + '_' + d.postId
+            && d.savedAt == request.time
+            && p.clubId == d.clubId && p.isDeleted == false && p.isHidden == false
+            && activeUser() && seesInside(d.clubId);
+      }
+
+      // U — yalnızca soft delete (kaldır) ve restore (Geri al / yeniden kaydet). `userId`, `postId`,
+      // `clubId` değişemez. Yeniden kaydetmede `savedAt` sunucu zamanına yenilenir; Geri al'da dokunulmaz.
+      // Üyelik aranmaz: kulüpten ayrılan kullanıcı listesini temizleyebilir (gönderiyi zaten okuyamaz).
+      // Askıdaki / silinmiş hesap yazamaz.
+      function canToggleSaved() {
+        let d = request.resource.data;
+        return activeUser() && resource.data.userId == uid()
+            && (isSoftDelete([])
+                || (isRestore(['savedAt']) && (d.savedAt == resource.data.savedAt || d.savedAt == request.time)));
+      }
+
+      // R — yalnızca sahibi (kaldırılmış kayıt dahil: `save()` yeniden kaydederken okur). Olmayan kendi
+      // kaydının tekil okuması boş döner (isSaved → false). Sorgu `userId == uid` süzgecini taşır.
+      allow get: if emailOk() && ((resource == null && ownSavedId()) || resource.data.userId == uid());
+      allow list: if emailOk() && resource.data.userId == uid();
+      allow create: if canSavePost();
+      allow update: if canToggleSaved();
       allow delete: if false;
     }
 
@@ -790,10 +1231,56 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 18 · announcementCounters/{clubId}_{yyyyMMdd} — T-19
+    // 18 · announcementCounters/{clubId}_{yyyyMMdd} — T-19 · rules-spec §3.16 (Q-10, CD-129)
+    // Günlük bildirimli duyuru sayacı. Alanlar: `clubId`, `day` (`yyyy-MM-dd`), `count`, `lastPostRef`,
+    // `updatedAt` (BaseFields yok; belge silinmez ve sıfırlanmaz — yeni gün yeni belgedir).
+    // Yazma yolu: PostRepository.create — YALNIZCA bildirimli duyuru yayınıyla aynı işlemde (`set(merge)`).
     match /announcementCounters/{counterId} {
-      allow read: if false;
-      allow create, update: if false;
+      // Olmayan sayacın tekil okumasında kulüp kimliği belge kimliğinden çıkarılır (`_yyyyMMdd` eki atılır).
+      function counterClub() { return counterId[0:counterId.size() - '_yyyyMMdd'.size()]; }
+
+      // C / U ortak koşulları (PLAN §11.2b): sayaç bugünün (Istanbul, sunucu saati) belgesidir, günde en çok
+      // iki bildirimli duyuruya izin verir ve işaretçisi AYNI işlemde oluşturulan, bu kulübün, oturumun
+      // yazdığı bildirimli duyuruyu gösterir. Gönderi kuralı da bu belgenin tam +1 oynadığını ve kendisini
+      // gösterdiğini görür (iki yönlü bağ): sayaç tek başına ya da başka türde bir gönderiyle yazılamaz.
+      // İşaretçi rastgele gönderi kimliğidir; belgeyi yalnızca `seesMgmt` okur.
+      // 3 erişim yolu: users/{uid} · üyelik · gönderi.
+      function announcedNow(p, c) {
+        return p.clubId == c && p.authorId == uid() && p.type == 'announcement' && p.pushSent == true;
+      }
+      function counterShapeOk() {
+        let d = request.resource.data;
+        let ref = d.get('lastPostRef', null);
+        return d.clubId is string
+            && counterId == d.clubId + '_' + istanbulDayKey()
+            && d.day == istanbulDay()
+            && d.count is int && d.count <= 2   // limit: announcementDailyLimit
+            && ref is string && ref.matches('posts/[A-Za-z0-9_-]+')
+            && !exists(postPath(ref.split('/')[1]))
+            && announcedNow(getAfter(postPath(ref.split('/')[1])).data, d.clubId)
+            && activeUser() && isManager(d.clubId);
+      }
+      function canOpenCounter() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['clubId', 'day', 'count', 'lastPostRef', 'updatedAt'])
+            && d.updatedAt == request.time
+            && d.count == 1
+            && counterShapeOk();
+      }
+      function canBumpCounter() {
+        return touches(['count', 'lastPostRef'])
+            && request.resource.data.count == resource.data.count + 1
+            && counterShapeOk();
+      }
+
+      // R — kulüp yönetimi, danışman (aktif hesap) ve süper admin (FED-03 hak çubuğu). Olmayan sayacın
+      // tekil okuması o kulübün yönetimine boş döner (getToday → null: o gün bildirimli duyuru yok).
+      allow get: if resource == null
+                    ? (counterId.matches('.+_[0-9]{8}') && seesMgmt(counterClub()))
+                    : seesMgmt(resource.data.clubId);
+      allow list: if seesMgmt(resource.data.clubId);
+      allow create: if canOpenCounter();
+      allow update: if canBumpCounter();
       allow delete: if false;
     }
 

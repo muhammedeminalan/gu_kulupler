@@ -395,7 +395,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 17 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 20 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -417,6 +417,10 @@ void main() {
         'notification',
         'activity',
         'vote',
+        // T-19 · gönderi günlüğü kimliği ve sayaç işaretçileri (CD-141)
+        'postActivity',
+        'commentRef',
+        'postRef',
         'clubCoverSeed',
         'eventCoverSeed',
         'pollOption',
@@ -429,6 +433,19 @@ void main() {
       // Bileşik ID parçalanarak okunmaz (§9.4, §10.3): tek ayrıştırıcı QR.
       expect(members.where((m) => m.startsWith('parse')), ['parseTicketQr']);
       expect(members.where((m) => m.startsWith('split')), isEmpty);
+    });
+  });
+
+  group('T-19 · FirestoreIds · gönderi günlüğü ve sayaç işaretçileri', () {
+    test('postActivity = {clubId}_{actorId}_{kind}_{postId}; commentRef = '
+        'comments/{id}; postRef = posts/{id} (Security Rules aynı dizgileri '
+        'kurar)', () {
+      expect(
+        FirestoreIds.postActivity('c01', 'u_board', 'post_created', 'p01'),
+        'c01_u_board_post_created_p01',
+      );
+      expect(FirestoreIds.commentRef('cm01'), 'comments/cm01');
+      expect(FirestoreIds.postRef('p01'), 'posts/p01');
     });
   });
 

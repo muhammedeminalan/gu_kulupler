@@ -29,9 +29,19 @@
 //     kulübün kendisi) `t15.scenarios` içinde; SHT-07'nin üç `updateClubSettings` yazımı (tümünü sessize
 //     al / sessizi kaldır / tek tür) öykü adımlarında (`steps`). SHT-05 `apply` / `joinInstant`
 //     senaryoları T-15'ten beri listededir (M1–M4).
+//  6. T-19 — `contract.t19.scenarios`: FirebasePostRepository, FirebaseCommentRepository,
+//     FirebaseSavedPostRepository ve FirebaseAnnouncementCounterRepository'nin GERÇEK okuma + yazımları.
+//     Her senaryo kendi bağlamıyla (`role`: üye, yönetim, danışman, süper admin) koşar; bağlamların
+//     kullanıcı + üyelik belgeleri roles.json'dan, içerik belgeleri senaryonun `seed`'inden kurulur.
+//     Ek nöbetçiler: `{"@arrayUnion": [uid]}` / `{"@arrayRemove": [uid]}`, `@daysAhead:N`, `merge: true`
+//     (set(merge)), `@yyyyMMdd` / `@yyyy-MM-dd` (emülatörün Istanbul günü) ve koşu başına TEK `@autoId`
+//     (yorum yolu ↔ `lastCommentRef`). Bildirimli duyuru, oy, sabitleme ve gönderi silme repository'deki
+//     gibi tek transaction'dır: okumalar da kurallardan geçer.
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,
+  arrayRemove,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -45,24 +55,49 @@ const {
 const { getMetadata, ref, uploadBytes } = require('firebase/storage');
 const contract = require('../contracts/repository_payloads.json');
 const { contextFor, definition } = require('../helpers/contexts');
-const { readDoc, seedDocs } = require('../helpers/fixtures');
+const { baseDocs, readDoc, seedDocs } = require('../helpers/fixtures');
+const { istanbulDay } = require('../helpers/payloads');
 const { getAdminContext } = require('../setup/env');
 
 const SENTINEL = contract.serverTimestamp;
 const INCREMENT = contract.t15.increment;
+const ARRAY_UNION = contract.t19.arrayUnion;
+const ARRAY_REMOVE = contract.t19.arrayRemove;
+const DAYS_AHEAD = contract.t19.daysAhead;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Sözleşmedeki nöbetçileri SDK nöbetçisine çevirir (iç içe map / liste dahil): `@serverTimestamp` →
- * `serverTimestamp()`, `{"@increment": n}` → `increment(n)`.
+ * `serverTimestamp()`, `{"@increment": n}` → `increment(n)`, `{"@arrayUnion": [...]}` / `{"@arrayRemove":
+ * [...]}` → `arrayUnion(...)` / `arrayRemove(...)`, `@daysAhead:N` → şimdiden N gün sonrası (istemci saati).
  */
 function materialize(value) {
   if (value === SENTINEL) return serverTimestamp();
+  if (typeof value === 'string' && value.startsWith(DAYS_AHEAD)) {
+    return Timestamp.fromMillis(Date.now() + Number(value.slice(DAYS_AHEAD.length)) * DAY_MS);
+  }
   if (Array.isArray(value)) return value.map(materialize);
   if (value && typeof value === 'object') {
-    if (Object.keys(value).length === 1 && INCREMENT in value) return increment(value[INCREMENT]);
+    const keys = Object.keys(value);
+    if (keys.length === 1 && keys[0] === INCREMENT) return increment(value[INCREMENT]);
+    if (keys.length === 1 && keys[0] === ARRAY_UNION) return arrayUnion(...value[ARRAY_UNION]);
+    if (keys.length === 1 && keys[0] === ARRAY_REMOVE) return arrayRemove(...value[ARRAY_REMOVE]);
     return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, materialize(inner)]));
   }
   return value;
+}
+
+/** Tek yazımı `target`'a (batch / transaction) ya da — `target` yoksa — doğrudan gönderir. */
+function applyWrite(db, target, write) {
+  const ref = doc(db, write.path);
+  const data = materialize(write.data);
+  if (write.op === 'set') {
+    // `merge: true` = SetOptions(merge: true): var olan belgede kurallar için update'tir.
+    if (write.merge) return target ? target.set(ref, data, { merge: true }) : setDoc(ref, data, { merge: true });
+    return target ? target.set(ref, data) : setDoc(ref, data);
+  }
+  if (write.op === 'update') return target ? target.update(ref, data) : updateDoc(ref, data);
+  throw new Error(`bilinmeyen işlem: ${write.op}`);
 }
 
 /**
@@ -71,16 +106,9 @@ function materialize(value) {
  * yoludur.
  */
 function send(db, writes) {
-  const apply = (target, write) => {
-    const ref = doc(db, write.path);
-    const data = materialize(write.data);
-    if (write.op === 'set') return target ? target.set(ref, data) : setDoc(ref, data);
-    if (write.op === 'update') return target ? target.update(ref, data) : updateDoc(ref, data);
-    throw new Error(`bilinmeyen işlem: ${write.op}`);
-  };
-  if (writes.length === 1) return apply(null, writes[0]);
+  if (writes.length === 1) return applyWrite(db, null, writes[0]);
   const batch = writeBatch(db);
-  for (const write of writes) apply(batch, write);
+  for (const write of writes) applyWrite(db, batch, write);
   return batch.commit();
 }
 
@@ -265,7 +293,6 @@ describe('AUT-05 gerçek yazım sırası (SetupProfileViewModel.submit) — sahi
 
 describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, kurallar açık)', () => {
   const t15 = contract.t15;
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const DAYS_AGO = '@daysAgo:';
 
   /** Ön koşul belgesindeki nöbetçiler: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
@@ -376,6 +403,146 @@ describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, ku
       const before = await snapshot(paths);
 
       await assertFails(run(contextFor(variant.role || contract.role).firestore(), scenario, writesOf(scenario, variant)));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+});
+
+describe('T-19 · gönderi / yorum / oy / kayıt / duyuru sayacı — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t19 = contract.t19;
+  const DAYS_AGO = '@daysAgo:';
+
+  /** Bağlamların kullanıcı ve üyelik belgeleri (roles.json): `activeUser()` / `isMember()` bunları okur. */
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Koşunun yer tutucuları: üretilen TEK kimlik ve emülatörün (sunucunun) Istanbul günü. */
+  function tokensFor(db) {
+    const { key, day } = istanbulDay();
+    return { [t19.autoId]: doc(collection(db, 'comments')).id, [t19.dayKey]: key, [t19.day]: day };
+  }
+
+  /** Dizgilerdeki (yol ve yük; iç içe map / liste dahil, anahtarlar hariç) yer tutucuları doldurur. */
+  function fill(value, tokens) {
+    if (typeof value === 'string') {
+      return Object.entries(tokens).reduce((text, [token, actual]) => text.split(token).join(actual), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => fill(inner, tokens));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, fill(inner, tokens)]));
+    }
+    return value;
+  }
+
+  /** Ön koşul belgesindeki nöbetçiler: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  /** `{"$fixture": ad, …}` → `fixtures[ad]` + üzerine yazılan alanlar. */
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t19.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t19.fixtures[name]), ...fields };
+  }
+
+  /** Bağlam belgeleri + senaryonun içerik belgeleri; `variant.seed` yamaları üzerine yazılır. */
+  function seedOf(scenario, variant, tokens) {
+    const docs = Object.fromEntries(Object.entries(scenario.seed).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...patch };
+    }
+    const content = Object.fromEntries(
+      Object.entries(docs).map(([path, data]) => [fill(path, tokens), seedValue(fill(data, tokens))]),
+    );
+    return { ...identityDocs(), ...content };
+  }
+
+  /** Bozuk varyantın yazımları: `patch` alanları üzerine yazılır, `without` sıraları çıkarılır. */
+  function writesOf(scenario, variant, tokens) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    const writes = scenario.writes
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+    return fill(writes, tokens);
+  }
+
+  /**
+   * Senaryoyu repository'nin gönderdiği biçimde gönderir: `tx` ise okumalar + yazımlar tek transaction
+   * (yeniden deneme yok); değilse okumalar tekil `get`, yazımlar tek yazım ya da tek batch.
+   */
+  async function run(db, scenario, writes, tokens) {
+    const reads = fill(scenario.reads, tokens);
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of reads) await tx.get(doc(db, path));
+          for (const write of writes) applyWrite(db, tx, write);
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of reads) await getDoc(doc(db, path));
+    return writes.length === 0 ? undefined : send(db, writes);
+  }
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  test('sözleşme: nöbetçiler ve bağlamlar roles.json ile aynı', () => {
+    expect(t19.autoId).toBe(contract.t15.autoId);
+    expect(t19.increment).toBe(INCREMENT);
+    for (const [role, uid] of Object.entries(t19.actors)) expect(definition(role).uid).toBe(uid);
+    // Yer tutucular birbirinin alt dizgisi değildir (doldurma sırası sonucu değiştirmez).
+    expect(t19.dayKey.includes(t19.day) || t19.day.includes(t19.dayKey)).toBe(false);
+    // Gün yer tutucusu Rules'un gün biçimleriyle aynı uzunluktadır.
+    const { key, day } = istanbulDay();
+    expect(key).toMatch(/^\d{8}$/);
+    expect(day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  describe.each(t19.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      const tokens = tokensFor(db);
+      await seedDocs(seedOf(scenario, {}, tokens));
+      const writes = writesOf(scenario, {}, tokens);
+
+      await assertSucceeds(run(db, scenario, writes, tokens));
+
+      for (const write of writes) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(fill(path, tokens))).toMatchObject(fill(fields, tokens));
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const tokens = tokensFor(db);
+      const seed = seedOf(scenario, variant, tokens);
+      await seedDocs(seed);
+      const writes = writesOf(scenario, variant, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...writes.map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, scenario, writes, tokens));
 
       expect(await snapshot(paths)).toEqual(before);
     });

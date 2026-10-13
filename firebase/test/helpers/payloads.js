@@ -3,7 +3,7 @@
 // (packages/gu_data/lib/src/core/{base_fields,soft_delete}.dart). Anahtar kümeleri Dart ile birebirdir;
 // `parity.test.js` Dart kaynağını okuyup doğrular. Zaman damgaları istemci saatinden değil
 // `serverTimestamp()`'ten gelir: Rules bunları `request.time` ile karşılaştırır.
-const { Timestamp, serverTimestamp, increment } = require('firebase/firestore');
+const { Timestamp, arrayRemove, arrayUnion, increment, serverTimestamp } = require('firebase/firestore');
 const roles = require('../expectations/roles.json');
 
 /** Yeniden başvuru bekleme süresi (Dart `Limits.reapplyCooldown` = 7 gün) — yönetici yüklerindeki `retryAfter`. */
@@ -362,6 +362,180 @@ function clubCreate(uid) {
   };
 }
 
+// ── T-19 · gönderi, oy, yorum, kayıt, duyuru sayacı ───────────────────────────────────────────
+// Yazma yolları docs/plans/T-19.md §6.a tablosundaki içeriktir (PostRepository / CommentRepository /
+// SavedPostRepository). Çok belgeli işlemler `{ad: {op, path, data}}` döndürür (T-15 kalıbı).
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+/** Dart `Limits.istanbulUtcOffset` (3 sa). */
+const ISTANBUL_OFFSET_MS = 3 * HOUR_MS;
+
+/**
+ * Istanbul günü (Dart `AppClock.istanbulDayKey` / `istanbulDay`; Rules `request.time + 3 sa`).
+ * @param {number} [ms] an (epoch ms); varsayılan şimdi
+ * @returns {{key: string, day: string}} `yyyyMMdd` (sayaç belge kimliği eki) ve `yyyy-MM-dd` (`day` alanı)
+ */
+function istanbulDay(ms = Date.now()) {
+  const iso = new Date(ms + ISTANBUL_OFFSET_MS).toISOString().slice(0, 10);
+  return { key: iso.replace(/-/g, ''), day: iso };
+}
+
+/** Geçerli bir gönderi görseli (`PostImageModel`): `posts/{postId}/<StoragePaths.newFileName>`. */
+function postImage(postId, index = 0) {
+  return { path: `posts/${requireId(postId, 'postId')}/20261008T20150${index}Z_3f9a1c2b7d4e5f60.jpg`, w: 1200, h: 800 };
+}
+
+/** `PollModel.toJson()`: seçenek kimlikleri `o1`…`oN`; `endsAt` = istemci saati + gün (CD-32 toleransı). */
+function pollOf(texts = ['Evet', 'Hayır'], days = 7, skewMs = 0) {
+  return {
+    options: texts.map((text, i) => ({ id: `o${i + 1}`, text })),
+    endsAt: Timestamp.fromMillis(Date.now() + days * DAY_MS + skewMs),
+    showResultsAfterVote: true,
+  };
+}
+
+/**
+ * `PostRepository.create` → `posts/{postId}` (istemci biçimi: null alanların anahtarı yok — W-51).
+ * `title` yalnızca duyuruda, `poll` yalnızca ankette yazılır.
+ */
+function postCreate({ club, uid, type = 'post', pushSent = false }, extra) {
+  const data = {
+    clubId: club,
+    authorId: uid,
+    type,
+    text: 'Yeni gönderi metni.',
+    images: [],
+    pinned: false,
+    pushSent,
+    likes: [],
+    likeCount: 0,
+    commentCount: 0,
+    isHidden: false,
+    ...baseCreate(),
+  };
+  if (type === 'announcement') data.title = 'Duyuru başlığı';
+  if (type === 'poll') data.poll = pollOf();
+  return { ...data, ...extra };
+}
+
+/** Seed biçimi: null olabilen gönderi alanları açık `null` (W-51). */
+const POST_NULLS = Object.freeze({ title: null, poll: null, lastCommentRef: null, hiddenBy: null, hiddenAt: null, editedAt: null });
+
+/** Gönderi türü → günlük türü (`ActivityKind`). */
+const POST_ACTIVITY_KIND = Object.freeze({ post: 'post_created', announcement: 'announcement', poll: 'poll' });
+
+/** Temel veri kümesindeki `p01` anketinin sorusu (fixtures.js `posts/p01.text` ile aynı dizgi). */
+const POLL_QUESTION = 'Rules testi gönderisi.';
+
+/** Günlük belgesi yolu — Dart `FirestoreIds.postActivity`: `{clubId}_{actorId}_{kind}_{postId}`. */
+const postActivityPath = (club, uid, kind, postId) => `activity/${club}_${uid}_${kind}_${postId}`;
+
+/** Gönderi yayınının günlüğü: `refs` yalnızca `postId`. */
+function postActivity(club, uid, kind, postId, extra) {
+  return { clubId: club, actorId: uid, kind, refs: { postId }, createdAt: serverTimestamp(), ...extra };
+}
+
+/** Duyuru sayacı yükü (`set(merge)`): `count` mutlak değerdir (işlem önceki değeri okur). */
+function counterData({ club, postId, count, ms }, extra) {
+  return { clubId: club, day: istanbulDay(ms).day, count, lastPostRef: `posts/${postId}`, updatedAt: serverTimestamp(), ...extra };
+}
+
+/** Sayaç belgesi yolu — Dart `FirestoreIds.announcementCounter`. */
+const counterPath = (club, ms) => `announcementCounters/${club}_${istanbulDay(ms).key}`;
+
+/**
+ * `PostRepository.create` — gönderi + günlük; `pushSent` ise + günün sayacı (`set(merge)`, `count: önceki + 1`).
+ * @param {{club: string, uid: string, postId?: string, type?: string, pushSent?: boolean, previousCount?: number, ms?: number}} o
+ *   `ms` sayaç gününün hesaplandığı an (varsayılan şimdi)
+ */
+function createPostWrites({ club, uid, postId = 'p_new', type = 'post', pushSent = false, previousCount = 0, ms }) {
+  const kind = POST_ACTIVITY_KIND[type];
+  const writes = {
+    post: set(`posts/${postId}`, postCreate({ club, uid, type, pushSent })),
+    activity: set(postActivityPath(club, uid, kind, postId), postActivity(club, uid, kind, postId)),
+  };
+  if (pushSent) {
+    writes.counter = { op: 'set', merge: true, path: counterPath(club, ms), data: counterData({ club, postId, count: previousCount + 1, ms }) };
+  }
+  return writes;
+}
+
+/** `PostRepository.update` — düzenleme: verilen alanlar + `editedAt` + `updatedAt`. */
+function postEdit(extra) {
+  return { text: 'Düzenlenmiş metin.', editedAt: serverTimestamp(), ...baseUpdate(), ...extra };
+}
+
+/** `PostRepository.like` / `unlike` — kör update; `updatedAt` YAZILMAZ. */
+const postLike = (uid) => ({ likes: arrayUnion(uid), likeCount: increment(1) });
+const postUnlike = (uid) => ({ likes: arrayRemove(uid), likeCount: increment(-1) });
+
+/** `hide` / `unhide` (süper admin) — gönderi ve yorumda aynı alanlar. */
+const hidePayload = (uid) => ({ isHidden: true, hiddenBy: uid, hiddenAt: serverTimestamp(), ...baseUpdate() });
+const unhidePayload = () => ({ isHidden: false, hiddenBy: null, hiddenAt: null, ...baseUpdate() });
+
+/** `PostRepository.vote` → `posts/{id}/votes/{uid}`. */
+const voteCreate = (optionId, extra) => ({ optionId, createdAt: serverTimestamp(), ...extra });
+
+/** `PostRepository.pin` — eski sabit (varsa) `pinned: false` + yeni `pinned: true` + `clubs.pinnedPostId`. */
+function pinWrites({ club, postId, oldPostId }) {
+  const writes = {};
+  if (oldPostId) writes.old = update(`posts/${oldPostId}`, { pinned: false, ...baseUpdate() });
+  writes.post = update(`posts/${postId}`, { pinned: true, ...baseUpdate() });
+  writes.club = update(`clubs/${club}`, { pinnedPostId: postId, ...baseUpdate() });
+  return writes;
+}
+
+/** `PostRepository.unpin` — `pinned: false` + `clubs.pinnedPostId: null`. */
+function unpinWrites({ club, postId }) {
+  return {
+    post: update(`posts/${postId}`, { pinned: false, ...baseUpdate() }),
+    club: update(`clubs/${club}`, { pinnedPostId: null, ...baseUpdate() }),
+  };
+}
+
+/** `PostRepository.softDeletePost` — sabitse aynı yazımda `pinned: false` + `clubs.pinnedPostId: null`. */
+function removePostWrites({ club, uid, postId, pinned = false }) {
+  const writes = { post: update(`posts/${postId}`, { ...softDelete(uid), ...(pinned ? { pinned: false } : {}) }) };
+  if (pinned) writes.club = update(`clubs/${club}`, { pinnedPostId: null, ...baseUpdate() });
+  return writes;
+}
+
+/** `CommentRepository.add` → `comments/{id}` (istemci biçimi: `hiddenBy` / `hiddenAt` anahtarı yok). */
+function commentCreate({ club, uid, postId }, extra) {
+  return { postId, clubId: club, authorId: uid, text: 'Yeni yorum.', isHidden: false, ...baseCreate(), ...extra };
+}
+
+/** Gönderinin yorum sayacı yazımı: `commentCount ±1` + `lastCommentRef` + `updatedAt`. */
+const commentCountBump = (postId, commentId, delta) =>
+  update(`posts/${postId}`, counterBump('commentCount', delta, 'lastCommentRef', `comments/${commentId}`));
+
+/** `CommentRepository.add` — yorum + `posts.commentCount +1`. */
+function addCommentWrites({ club, uid, postId = 'p01', commentId = 'cm_new' }) {
+  return {
+    comment: set(`comments/${commentId}`, commentCreate({ club, uid, postId })),
+    post: commentCountBump(postId, commentId, 1),
+  };
+}
+
+/** `CommentRepository.softDeleteComment` — soft delete + `posts.commentCount −1`. */
+function removeCommentWrites({ uid, postId = 'p01', commentId = 'cm01' }) {
+  return { comment: update(`comments/${commentId}`, softDelete(uid)), post: commentCountBump(postId, commentId, -1) };
+}
+
+/** `CommentRepository.restoreComment` — restore + `posts.commentCount +1`. */
+function restoreCommentWrites({ postId = 'p01', commentId = 'cm01' }) {
+  return { comment: update(`comments/${commentId}`, restore()), post: commentCountBump(postId, commentId, 1) };
+}
+
+/** `SavedPostRepository.save` → `savedPosts/{userId}_{postId}`. */
+function savedCreate({ club, uid, postId = 'p01' }, extra) {
+  return { userId: uid, postId, clubId: club, savedAt: serverTimestamp(), ...baseCreate(), ...extra };
+}
+
+/** `save` — silinmiş kayıt: restore + `savedAt` yenilenir. */
+const savedResave = () => ({ ...restore(), savedAt: serverTimestamp() });
+
 /**
  * `expectations/*.json` vakalarındaki `variant` adları → yük üreticisi `(ctx) => data`.
  * `ctx` = { role, uid, club, otherClub }. Koleksiyon task'ları kendi varyantlarını aşağıya ekler
@@ -421,6 +595,30 @@ const variants = new Map([
   ['activityPostCreated', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'post_created', refs: { postId: 'p01' }, createdAt: serverTimestamp() })],
   ['activityRoleChanged', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'role_changed', refs: { userId: MEMBER_TARGET, role: 'board' }, createdAt: serverTimestamp() })],
   ['activitySettingsChanged', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'settings_changed', refs: {}, createdAt: serverTimestamp() })],
+  // T-19 · clubs (`pinnedPostId` tek başına: eşlik eden gönderi yazımı yok)
+  ['clubPinAlone', () => ({ pinnedPostId: 'p01', ...baseUpdate() })],
+  // T-19 · posts (tek yazımlı yollar; çok yazımlılar aşağıda `batches`)
+  ['postCreate', (ctx) => postCreate({ club: ctx.club, uid: ctx.uid })],
+  ['postCreateSeedNulls', (ctx) => postCreate({ club: ctx.club, uid: ctx.uid }, POST_NULLS)],
+  ['postEdit', () => postEdit()],
+  // Ankette (`p01`) soru aynı kalır, yalnızca görsel değişir (anket sorusu yayından sonra değişmez).
+  ['postEditKeepText', () => postEdit({ text: POLL_QUESTION, images: [postImage('p01')] })],
+  ['postLike', (ctx) => postLike(ctx.uid)],
+  ['postPinAlone', () => ({ pinned: true, ...baseUpdate() })],
+  ['postHide', (ctx) => hidePayload(ctx.uid)],
+  ['postUnhide', () => unhidePayload()],
+  ['postCommentCountAlone', () => counterBump('commentCount', 1, 'lastCommentRef', 'comments/cm01')],
+  // T-19 · posts/votes
+  ['voteO1', () => voteCreate('o1')],
+  ['voteO2', () => voteCreate('o2')],
+  // T-19 · comments
+  ['commentAddAlone', (ctx) => commentCreate({ club: ctx.club, uid: ctx.uid, postId: 'p01' })],
+  ['commentEditText', () => ({ text: 'Değişmiş yorum.', ...baseUpdate() })],
+  ['commentHide', (ctx) => hidePayload(ctx.uid)],
+  ['commentUnhide', () => unhidePayload()],
+  // T-19 · savedPosts
+  ['savedCreate', (ctx) => savedCreate({ club: ctx.club, uid: ctx.uid })],
+  ['savedResave', () => savedResave()],
 ]);
 
 /**
@@ -435,6 +633,16 @@ const batches = new Map([
   ['leaveBatch', (ctx) => leaveWrites({ club: ctx.club, uid: ctx.uid })],
   ['approveBatch', (ctx) => approveWrites({ club: ctx.club, uid: ctx.uid })],
   ['removeBatch', (ctx) => removeWrites({ club: ctx.club, uid: ctx.uid })],
+  // T-19
+  ['postCreateBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid })],
+  ['pollCreateBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid, type: 'poll' })],
+  ['announcementBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid, type: 'announcement' })],
+  ['announcementPushBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid, type: 'announcement', pushSent: true })],
+  ['counterAloneBatch', (ctx) => ({ counter: createPostWrites({ club: ctx.club, uid: ctx.uid, type: 'announcement', pushSent: true }).counter })],
+  ['pinBatch', (ctx) => pinWrites({ club: ctx.club, postId: 'p01' })],
+  ['commentAddBatch', (ctx) => addCommentWrites({ club: ctx.club, uid: ctx.uid })],
+  ['commentRemoveBatch', (ctx) => removeCommentWrites({ uid: ctx.uid })],
+  ['commentRestoreBatch', () => restoreCommentWrites({})],
 ]);
 
 /** Batch varyantının yazım listesini üretir; bilinmeyen ad hatadır. */
@@ -498,6 +706,35 @@ module.exports = {
   removeWrites,
   reportCreate,
   blockCreate,
+  DAY_MS,
+  POST_NULLS,
+  POST_ACTIVITY_KIND,
+  istanbulDay,
+  POLL_QUESTION,
+  postImage,
+  pollOf,
+  postCreate,
+  postActivity,
+  postActivityPath,
+  counterData,
+  counterPath,
+  createPostWrites,
+  postEdit,
+  postLike,
+  postUnlike,
+  hidePayload,
+  unhidePayload,
+  voteCreate,
+  pinWrites,
+  unpinWrites,
+  removePostWrites,
+  commentCreate,
+  commentCountBump,
+  addCommentWrites,
+  removeCommentWrites,
+  restoreCommentWrites,
+  savedCreate,
+  savedResave,
   registerVariant,
   payloadFor,
   batchFor,

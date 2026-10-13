@@ -196,8 +196,8 @@ function memberCount(docs, clubId) {
 }
 
 /**
- * Temel veri kümesi: bağlamların kullanıcı/üyelik belgeleri, iki kulüp (`c01`, `c02`), bir gönderi
- * (anketli) + oy + yorum, üç etkinlik (public, members, draft), bir katılım, bildirim, şikayet,
+ * Temel veri kümesi: bağlamların kullanıcı/üyelik belgeleri, iki kulüp (`c01`, `c02`), iki gönderi
+ * (`p01` anketli, seed biçimi + oy + yorum; `p02` düz, istemci biçimi + yorum), üç etkinlik (public, members, draft), bir katılım, bildirim, şikayet,
  * faaliyet, engel, kayıt, destek talebi ve duyuru sayacı. Koleksiyon task'ları genişletir.
  * @param {{formerStatus?: string}} [options] `former` bağlamının üyelik durumu (varsayılan `left`)
  * @returns {Record<string, object>} belge yolu → veri
@@ -247,6 +247,29 @@ function baseDocs(options = {}) {
     hiddenAt: null,
   });
 
+  // İstemci biçimli gönderi ve yorum (W-51, CD-130): null olabilen alanların anahtarı YOKTUR (`title`,
+  // `poll`, `lastCommentRef`, `hiddenBy`, `hiddenAt`, `editedAt`); `p01` / `cm01` açık `null` taşır (seed).
+  docs['posts/p02'] = base({
+    clubId: CLUB,
+    authorId: 'u_president',
+    type: 'post',
+    text: 'İstemci biçimli gönderi.',
+    images: [],
+    pinned: false,
+    pushSent: false,
+    likes: ['u_member'],
+    likeCount: 1,
+    commentCount: 1,
+    isHidden: false,
+  });
+  docs['comments/cm02'] = base({
+    postId: 'p02',
+    clubId: CLUB,
+    authorId: 'u_board',
+    text: 'İstemci biçimli yorum.',
+    isHidden: false,
+  });
+
   docs['events/e_public'] = eventDoc('public', 'published', 1);
   docs['events/e_members'] = eventDoc('members', 'published', 0);
   docs['events/e_draft'] = eventDoc('public', 'draft', 0);
@@ -291,6 +314,10 @@ function baseDocs(options = {}) {
     clubId: CLUB,
     savedAt: serverTimestamp(),
   });
+  // Askıdaki ve kulüpten ayrılmış kullanıcının ÖNCEDEN kaydettiği gönderiler (§6.d: okur; ayrılan kaldırabilir).
+  for (const uid of ['u_susp', 'u_former']) {
+    docs[`savedPosts/${uid}_p01`] = base({ userId: uid, postId: 'p01', clubId: CLUB, savedAt: serverTimestamp() });
+  }
   docs['supportTickets/t01'] = base({
     userId: 'u_student',
     ticketNo: 'GU-ABC234',

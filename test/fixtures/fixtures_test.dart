@@ -6,6 +6,7 @@ import 'package:gu_data/gu_data.dart';
 
 import '../helpers/design_files.dart';
 import 'club_model_fixtures.dart';
+import 'comment_model_fixtures.dart';
 import 'demo_data.dart';
 import 'event_model_fixtures.dart';
 import 'membership_model_fixtures.dart';
@@ -84,6 +85,29 @@ void main() {
         ClubRole.president,
       );
       expect(() => ClubModelFixtures.byId('yok'), throwsArgumentError);
+    });
+
+    test('T-19 · gönderi ve yorum fixture’ları birbirine bağlıdır: sayaç = '
+        'yorum sayısı, akış en yeni üstte, yorumlar eskiden yeniye', () {
+      final p01 = PostModelFixtures.p01;
+      final comments = CommentModelFixtures.ofPost(p01.id);
+
+      expect(comments.map((comment) => comment.id), ['cm03', 'cm02', 'cm01']);
+      expect(p01.commentCount, comments.length);
+      expect(comments.every((comment) => comment.clubId == p01.clubId), isTrue);
+      expect(CommentModelFixtures.cm01, comments.last);
+      expect(PostModelFixtures.p02.images, hasLength(2));
+      expect(
+        PostModelFixtures.p04.poll!.options.map((option) => option.id),
+        ['o1', 'o2', 'o3', 'o4'],
+      );
+      final feed = PostModelFixtures.ofClub(p01.clubId);
+      expect(feed.map((post) => post.id), containsAll(['p01', 'p02', 'p04']));
+      expect(feed.every((post) => post.likeCount == post.likes.length), isTrue);
+      for (var i = 1; i < feed.length; i++) {
+        expect(feed[i - 1].createdAt!.isBefore(feed[i].createdAt!), isFalse);
+      }
+      expect(() => CommentModelFixtures.byId('yok'), throwsArgumentError);
     });
   });
 }

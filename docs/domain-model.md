@@ -88,7 +88,8 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 - Demo'daki `stale` **saklanmaz**: çakışma, işlem sırasında beklenen durumun (`pending`) değişmiş olmasıdır → DLG-18.
 
 ### 2.5 `posts/{postId}`
-`clubId`, `authorId`, `type` (`post·announcement·poll`), `title?` (≤80; duyuruda zorunlu), `text` (≤1000), `images` (L<M{path,w,h}> ≤4), `poll?` M{`options` L<M{id,text}> (2–4), `endsAt`, `showResultsAfterVote`}, `pinned` (kulüp başına **en çok 1**), `pushSent` (b), `likes` (L<s> uid), `likeCount` (i), `commentCount` (i), `isHidden` (moderasyon; `hiddenBy`, `hiddenAt`), `editedAt?`, + `BaseFields`.
+`clubId`, `authorId`, `type` (`post·announcement·poll`), `title?` (≤80; duyuruda zorunlu), `text` (≤1000), `images` (L<M{path,w,h}> ≤4), `poll?` M{`options` L<M{id,text}> (2–4), `endsAt`, `showResultsAfterVote`}, `pinned` (kulüp başına **en çok 1**), `pushSent` (b), `likes` (L<s> uid), `likeCount` (i), `commentCount` (i), `lastCommentRef?` (s, `comments/{commentId}` — `commentCount`'u son değiştiren yorum; Rules sayaç ↔ yorum eşliğini bununla **iki yönlü** doğrular, kullanıcı kimliği taşımaz — CD-41, CD-141), `isHidden` (moderasyon; `hiddenBy`, `hiddenAt`), `editedAt?`, + `BaseFields`.
+- **Yetki (T-19, CD-141):** yayın / sabitleme = kulüp yönetimi; düzenleme = yazar **ve** hâlâ yönetici; soft delete = yönetim (herhangi bir gönderi) ya da süper admin, restore = silen yönetici ya da süper admin; gizle / göster = yalnız süper admin; beğeni / oy / yorum = yazma yetkili üye (danışman ve süper admin yapamaz). Gizli / silinmiş içeriği yazarı, yönetim ve süper admin okur (danışman okumaz); yorumlar **gönderinin** görünürlüğünü de izler (gizli / silinmiş gönderinin yorumlarını yalnızca o gönderiyi görebilen okur). Askıdaki kulüpte yayın **ve düzenleme** kapalıdır; anket sorusu (ankette `text`) yayından sonra değişmez (CD-141 madde 11). Beğeni ayrı belge değildir (`likes` dizisi + `likeCount` tek yazımda ±1); oy sayacı alanı yoktur.
 - `posts/{postId}/votes/{uid}`: `optionId`, `createdAt`. **Değiştirilemez, silinemez** (oy değiştirilemez kuralı). Sonuç sayımı: oy dokümanları istemcide toplanır (kulüp boyutu küçük) veya `count()` toplama sorgusu.
 
 ### 2.6 `comments/{commentId}`
@@ -138,7 +139,7 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 `ticketNo` (örn. `GU-7K3Q9X`, CSPRNG; kullanıcıya `#GU-7K3Q9X` gösterilir), `userId`, `subject` (`bug·suggestion·account·club·other`), `message` (≤500), `attachmentPaths` (L<s> ≤1), `status` (`open·closed`), + `BaseFields`. Sahibi oluşturur/okur; süper admin okur.
 
 ### 2.16 `announcementCounters/{clubId}_{yyyyMMdd}`  (Istanbul günü)
-`clubId`, `day` (s, `yyyy-MM-dd`), `count` (i, 0–2), `updatedAt`. Bkz. §7.
+`clubId`, `day` (s, `yyyy-MM-dd`), `count` (i, 0–2), `lastPostRef?` (s, `posts/{postId}` — sayacı son artıran bildirimli duyuru; iki yönlü eşlik, CD-141), `updatedAt`. Yalnızca bildirimli duyuru yayınıyla aynı işlemde yazılır; belge silinmez, sıfırlanmaz. Bkz. §7.
 
 ## 3. Roller ve yetki matrisi
 

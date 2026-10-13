@@ -32,6 +32,15 @@
 // üç `updateClubSettings` yazımı (tümünü sessize al / sessizi kaldır / tek
 // tür) öykü adımlarında (`steps`).
 //
+// T-19: `t19.scenarios` — `FirebasePostRepository`, `FirebaseCommentRepository`,
+// `FirebaseSavedPostRepository`, `FirebaseAnnouncementCounterRepository`. Her
+// senaryo kendi bağlamıyla koşar (`role`: üye, yönetim, danışman, süper admin
+// — uid `t19.actors` içinde). Ek nöbetçiler: `{"@arrayUnion": [uid]}` /
+// `{"@arrayRemove": [uid]}` (beğeni), `@daysAhead:N` (anket bitişi: senaryo
+// saatinden N gün sonrası), `@yyyyMMdd` / `@yyyy-MM-dd` (duyuru sayacının
+// Istanbul günü: Dart tarafında senaryo saatinin, jest tarafında emülatörün
+// günü) ve `merge: true` (`set(merge)` — sayaç artışı).
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:typed_data';
@@ -59,11 +68,22 @@ const String _autoId = '@autoId';
 /// Ön koşul belgelerindeki göreli zaman nöbetçisinin öneki (`@daysAgo:N`).
 const String _daysAgo = '@daysAgo:';
 
+/// Sözleşmedeki dizi işlemi anahtarları (`{"@arrayUnion": [uid]}`).
+const String _arrayUnion = '@arrayUnion';
+const String _arrayRemove = '@arrayRemove';
+
+/// Sözleşmede "senaryo saatinden N gün sonrası" nöbetçisinin öneki.
+const String _daysAhead = '@daysAhead:';
+
+/// Sözleşmede duyuru sayacının Istanbul günü: belge kimliği eki ve `day`.
+const String _dayKeyToken = '@yyyyMMdd';
+const String _dayToken = '@yyyy-MM-dd';
+
 /// Repository'nin sayaçlara yazabildiği deltalar (CD-41: yalnızca ±1).
 const List<int> _counterDeltas = [1, -1];
 
-/// SDK'ya giden tek yazım.
-typedef _Write = ({String op, String path, Object? data});
+/// SDK'ya giden tek yazım; `merge` yalnızca `set(merge: true)` için `true`.
+typedef _Write = ({String op, String path, Object? data, bool merge});
 
 /// Yazımları [log]'a, okumaları [reads]'e kaydeden veritabanı; okumalar
 /// [docs] içindeki belgeyi, yoksa "belge yok" döner.
@@ -137,12 +157,16 @@ final class _RecordingReference implements DocumentReference<Json> {
   }
 
   @override
-  Future<void> set(Json data, [SetOptions? options]) async =>
-      _db.log.add((op: 'set', path: path, data: data));
+  Future<void> set(Json data, [SetOptions? options]) async => _db.log.add((
+    op: 'set',
+    path: path,
+    data: data,
+    merge: options?.merge ?? false,
+  ));
 
   @override
   Future<void> update(Map<Object, Object?> data) async =>
-      _db.log.add((op: 'update', path: path, data: data));
+      _db.log.add((op: 'update', path: path, data: data, merge: false));
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -174,7 +198,12 @@ final class _RecordingTransaction implements Transaction {
     T data, [
     SetOptions? options,
   ]) {
-    pending.add((op: 'set', path: documentReference.path, data: data));
+    pending.add((
+      op: 'set',
+      path: documentReference.path,
+      data: data,
+      merge: options?.merge ?? false,
+    ));
     return this;
   }
 
@@ -183,7 +212,12 @@ final class _RecordingTransaction implements Transaction {
     DocumentReference<Object?> documentReference,
     Map<Object, Object?> data,
   ) {
-    pending.add((op: 'update', path: documentReference.path, data: data));
+    pending.add((
+      op: 'update',
+      path: documentReference.path,
+      data: data,
+      merge: false,
+    ));
     return this;
   }
 
@@ -221,11 +255,20 @@ final class _RecordingBatch implements WriteBatch {
 
   @override
   void set<T>(DocumentReference<T> document, T data, [SetOptions? options]) =>
-      _pending.add((op: 'set', path: document.path, data: data));
+      _pending.add((
+        op: 'set',
+        path: document.path,
+        data: data,
+        merge: options?.merge ?? false,
+      ));
 
   @override
-  void update<T>(DocumentReference<T> document, T data) =>
-      _pending.add((op: 'update', path: document.path, data: data));
+  void update<T>(DocumentReference<T> document, T data) => _pending.add((
+    op: 'update',
+    path: document.path,
+    data: data,
+    merge: false,
+  ));
 
   @override
   Future<void> commit() async => _log.addAll(_pending);
@@ -235,29 +278,84 @@ final class _RecordingBatch implements WriteBatch {
 }
 
 /// Ham yükü sözleşme dosyasının biçimine çevirir: sunucu zamanı nöbetçisi
-/// [_serverTimestamp], sayaç deltası `{"@increment": n}` olur; başka her
-/// `FieldValue` hatadır (sözleşmede yok).
-Object? _normalize(Object? value) => switch (value) {
-  final FieldValue field when field == FieldValue.serverTimestamp() =>
-    _serverTimestamp,
-  final FieldValue field => {_increment: _deltaOf(field)},
-  final Map<Object?, Object?> map => {
-    for (final entry in map.entries) entry.key: _normalize(entry.value),
-  },
-  final List<Object?> list => [for (final item in list) _normalize(item)],
-  _ => value,
-};
+/// [_serverTimestamp], sayaç deltası `{"@increment": n}`, dizi işlemi
+/// `{"@arrayUnion": [uid]}` / `{"@arrayRemove": [uid]}` ([uids] içindeki tek
+/// kimlikle), ileri tarihli an `@daysAhead:N` olur; başka her `FieldValue`
+/// hatadır (sözleşmede yok).
+Object? _normalize(Object? value, {List<String> uids = const []}) =>
+    switch (value) {
+      final FieldValue field when field == FieldValue.serverTimestamp() =>
+        _serverTimestamp,
+      final FieldValue field => _sentinelOf(field, uids),
+      final Timestamp instant => _aheadOf(instant),
+      final Map<Object?, Object?> map => {
+        for (final entry in map.entries)
+          entry.key: _normalize(entry.value, uids: uids),
+      },
+      final List<Object?> list => [
+        for (final item in list) _normalize(item, uids: uids),
+      ],
+      _ => value,
+    };
 
-/// [field] nöbetçisinin sayaç deltası; ±1 değilse hata (CD-41).
-int _deltaOf(FieldValue field) => _counterDeltas.firstWhere(
-  (delta) => field == FieldValue.increment(delta),
-  orElse: () => throw StateError('beklenmeyen FieldValue: $field'),
-);
+/// [field] nöbetçisinin sözleşme karşılığı: sayaç deltası (yalnızca ±1 —
+/// CD-41) ya da [uids] içindeki tek kimliği ekleyen / çıkaran dizi işlemi.
+Map<String, Object?> _sentinelOf(FieldValue field, List<String> uids) {
+  for (final delta in _counterDeltas) {
+    if (field == FieldValue.increment(delta)) return {_increment: delta};
+  }
+  for (final uid in uids) {
+    if (field == FieldValue.arrayUnion([uid])) {
+      return {
+        _arrayUnion: [uid],
+      };
+    }
+    if (field == FieldValue.arrayRemove([uid])) {
+      return {
+        _arrayRemove: [uid],
+      };
+    }
+  }
+  throw StateError('beklenmeyen FieldValue: $field');
+}
 
-List<Object?> _normalized(List<_Write> writes) => [
+/// [instant] anının senaryo saatine ([_scenarioNow]) göre `@daysAhead:N`
+/// karşılığı; tam gün değilse hata (repository yalnızca gün ekler).
+String _aheadOf(Timestamp instant) {
+  final ahead = instant.toDate().toUtc().difference(_scenarioNow);
+  if (ahead != Duration(days: ahead.inDays)) {
+    throw StateError('tam gün değil: ${instant.toDate().toUtc()}');
+  }
+  return '$_daysAhead${ahead.inDays}';
+}
+
+List<Object?> _normalized(
+  List<_Write> writes, {
+  List<String> uids = const [],
+}) => [
   for (final write in writes)
-    {'op': write.op, 'path': write.path, 'data': _normalize(write.data)},
+    {
+      'op': write.op,
+      'path': write.path,
+      'data': _normalize(write.data, uids: uids),
+      if (write.merge) 'merge': true,
+    },
 ];
+
+/// [value] içindeki her dizgiyi (iç içe map / liste dahil; anahtarlar hariç)
+/// [convert] ile değiştirir.
+Object? _mapStrings(Object? value, String Function(String text) convert) =>
+    switch (value) {
+      final String text => convert(text),
+      final Map<Object?, Object?> map => <String, Object?>{
+        for (final entry in map.entries)
+          entry.key! as String: _mapStrings(entry.value, convert),
+      },
+      final List<Object?> list => [
+        for (final item in list) _mapStrings(item, convert),
+      ],
+      _ => value,
+    };
 
 /// `updateAvatar` dosya adının girdileri (sözleşmedeki yol bunlardan çıkar).
 final DateTime _uploadedAt = DateTime.utc(2026, 10, 8, 20, 15, 2);
@@ -308,6 +406,39 @@ Json _seedDoc(Map<String, Object?> fixtures, Object? entry) {
         ...fields,
       })!
       as Json;
+}
+
+/// Her senaryonun bozuk varyantları (`denied`) yalnızca var olan yazım
+/// sıralarına dokunur, bilinen anahtarları taşır ve adından başka en az bir
+/// değişiklik içerir.
+void _expectWellFormedVariants(List<Map<String, Object?>> scenarios) {
+  for (final scenario in scenarios) {
+    final writes = scenario['writes']! as List<Object?>;
+    final denied = (scenario['denied'] as List<Object?>? ?? const [])
+        .cast<Map<String, Object?>>();
+    for (final variant in denied) {
+      final indexes = [
+        ...(variant['without'] as List<Object?>? ?? const []).cast<int>(),
+        ...(variant['patch'] as Map<String, Object?>? ?? const {}).keys.map(
+          int.parse,
+        ),
+      ];
+      final reason = '${scenario['call']} · ${variant['name']}';
+      expect(indexes, everyElement(lessThan(writes.length)), reason: reason);
+      expect(
+        variant.keys.toSet().difference({
+          'name',
+          'without',
+          'patch',
+          'seed',
+          'role',
+        }),
+        isEmpty,
+        reason: reason,
+      );
+      expect(variant.length, greaterThan(1), reason: reason);
+    }
+  }
 }
 
 void main() {
@@ -674,37 +805,256 @@ void main() {
 
     test('bozuk varyantlar yalnızca var olan yazım sıralarına ve ön koşul '
         'belgelerine dokunur', () {
-      for (final scenario in scenarios) {
-        final writes = scenario['writes']! as List<Object?>;
-        final denied = (scenario['denied'] as List<Object?>? ?? const [])
-            .cast<Map<String, Object?>>();
-        for (final variant in denied) {
-          final indexes = [
-            ...(variant['without'] as List<Object?>? ?? const []).cast<int>(),
-            ...(variant['patch'] as Map<String, Object?>? ?? const {}).keys.map(
-              int.parse,
+      _expectWellFormedVariants(scenarios);
+    });
+  });
+
+  group('T-19 · Rules yük sözleşmesi (gönderi / yorum / oy / kayıt / sayaç)', () {
+    final t19 = contract['t19']! as Map<String, Object?>;
+    final fixtures = t19['fixtures']! as Map<String, Object?>;
+    final actors = (t19['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t19['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+    // Sayaç günü: senaryo saatinin Istanbul günü sözleşmede yer tutucudur
+    // (jest emülatörün gününü koyar).
+    final dayKey = clock.istanbulDayKey(_scenarioNow);
+    final day = clock.istanbulDay(_scenarioNow);
+    String withDay(String text) =>
+        text.replaceAll(_dayKeyToken, dayKey).replaceAll(_dayToken, day);
+    String dayless(String text) =>
+        text.replaceAll(dayKey, _dayKeyToken).replaceAll(day, _dayToken);
+
+    const postId = 'p01';
+    const newPostId = 'p_new';
+    const commentId = 'cm01';
+    PostImageModel imageOf(String id) => PostImageModel(
+      path: 'posts/$id/20261008T201502Z_0a1b2c3d4e5f6071.jpg',
+      w: 1200,
+      h: 800,
+    );
+
+    late PostRepository posts;
+    late CommentRepository comments;
+    late SavedPostRepository saved;
+    late AnnouncementCounterRepository counters;
+
+    Future<FirestoreResult<PostModel>> publish(String uid, PostDraft draft) =>
+        posts.create(draft, authorId: uid, clubId: clubId, postId: newPostId);
+    const pushed = PostDraft(
+      type: PostType.announcement,
+      title: 'Genel kurul',
+      text: 'Genel kurul cuma günü 14.00’te.',
+      pushSent: true,
+    );
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı; argüman
+    /// senaryonun `role` bağlamının uid'idir.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'PostRepository.create · gönderi (görselli)': (uid) => publish(
+            uid,
+            PostDraft(
+              type: PostType.post,
+              text: 'Yeni gönderi.',
+              images: [imageOf(newPostId)],
             ),
-          ];
-          final reason = '${scenario['call']} · ${variant['name']}';
-          expect(
-            indexes,
-            everyElement(lessThan(writes.length)),
-            reason: reason,
+          ),
+          'PostRepository.create · bildirimsiz duyuru': (uid) => publish(
+            uid,
+            const PostDraft(
+              type: PostType.announcement,
+              title: 'Toplantı',
+              text: 'Haftalık toplantı salı günü.',
+            ),
+          ),
+          'PostRepository.create · bildirimli duyuru (günün ilki)': (uid) =>
+              publish(uid, pushed),
+          'PostRepository.create · bildirimli duyuru (günün ikincisi)': (uid) =>
+              publish(uid, pushed),
+          'PostRepository.create · anket': (uid) => publish(
+            uid,
+            const PostDraft(
+              type: PostType.poll,
+              text: 'Hangi gün buluşalım?',
+              poll: PollDraft(
+                options: ['Cuma', 'Cumartesi', 'Pazar'],
+                durationDays: 3,
+              ),
+            ),
+          ),
+          'PostRepository.update · metin + görsel': (uid) => posts.update(
+            postId,
+            PostEditPatch(
+              text: 'Düzenlenmiş metin.',
+              images: [imageOf(postId)],
+            ),
+            authorId: uid,
+          ),
+          'PostRepository.update · duyuru başlığı': (uid) => posts.update(
+            postId,
+            const PostEditPatch(title: 'Yeni başlık'),
+            authorId: uid,
+          ),
+          'PostRepository.like': (uid) => posts.like(postId, uid: uid),
+          'PostRepository.unlike': (uid) => posts.unlike(postId, uid: uid),
+          'PostRepository.vote': (uid) =>
+              posts.vote(postId, uid: uid, optionId: 'o2'),
+          'PostRepository.myVote · oy yok': (uid) =>
+              posts.myVote(postId, uid: uid),
+          'PostRepository.pin · ilk sabit': (_) =>
+              posts.pin(postId, clubId: clubId),
+          'PostRepository.pin · eski sabit değişir': (_) =>
+              posts.pin(postId, clubId: clubId),
+          'PostRepository.unpin': (_) => posts.unpin(postId, clubId: clubId),
+          'PostRepository.softDeletePost · başkasının gönderisi (sabit değil)':
+              (uid) =>
+                  posts.softDeletePost(postId, actorId: uid, clubId: clubId),
+          'PostRepository.softDeletePost · sabit gönderi': (uid) =>
+              posts.softDeletePost(postId, actorId: uid, clubId: clubId),
+          'PostRepository.softDeletePost · süper admin (sabit gönderi)':
+              (uid) =>
+                  posts.softDeletePost(postId, actorId: uid, clubId: clubId),
+          'PostRepository.restorePost · silen yönetici': (_) =>
+              posts.restorePost(postId),
+          'PostRepository.restorePost · süper admin': (_) =>
+              posts.restorePost(postId),
+          'PostRepository.hide': (uid) => posts.hide(postId, actorId: uid),
+          'PostRepository.unhide': (_) => posts.unhide(postId),
+          'PostRepository.getPost': (_) => posts.getPost(postId),
+          'CommentRepository.add': (uid) => comments.add(
+            postId: postId,
+            clubId: clubId,
+            authorId: uid,
+            text: 'Yeni yorum.',
+          ),
+          'CommentRepository.softDeleteComment · yazar': (uid) => comments
+              .softDeleteComment(commentId, postId: postId, actorId: uid),
+          'CommentRepository.softDeleteComment · yönetici (başkasının yorumu)':
+              (uid) => comments.softDeleteComment(
+                commentId,
+                postId: postId,
+                actorId: uid,
+              ),
+          'CommentRepository.softDeleteComment · süper admin': (uid) => comments
+              .softDeleteComment(commentId, postId: postId, actorId: uid),
+          'CommentRepository.restoreComment': (_) =>
+              comments.restoreComment(commentId, postId: postId),
+          'CommentRepository.hide': (uid) =>
+              comments.hide(commentId, actorId: uid),
+          'SavedPostRepository.save · yeni kayıt': (uid) =>
+              saved.save(userId: uid, postId: postId, clubId: clubId),
+          'SavedPostRepository.save · danışman': (uid) =>
+              saved.save(userId: uid, postId: postId, clubId: clubId),
+          'SavedPostRepository.save · kaldırılmış kaydı geri yükler': (uid) =>
+              saved.save(userId: uid, postId: postId, clubId: clubId),
+          'SavedPostRepository.softDeleteSaved': (uid) =>
+              saved.softDeleteSaved(userId: uid, postId: postId),
+          'SavedPostRepository.restoreSaved': (uid) =>
+              saved.restoreSaved(userId: uid, postId: postId),
+          'SavedPostRepository.isSaved · kayıt yok': (uid) =>
+              saved.isSaved(userId: uid, postId: postId),
+          'AnnouncementCounterRepository.getToday · sayaç yok': (_) =>
+              counters.getToday(clubId),
+          'AnnouncementCounterRepository.getToday · sayaç var': (_) =>
+              counters.getToday(clubId),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      final counterRepository = FirebaseAnnouncementCounterRepository(
+        service,
+        clock,
+      );
+      counters = counterRepository;
+      posts = FirebasePostRepository(
+        service,
+        FirebaseActivityRepository(service),
+        counterRepository,
+        clock,
+      );
+      comments = FirebaseCommentRepository(service, clock);
+      saved = FirebaseSavedPostRepository(service);
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t19['autoId'], _autoId);
+      expect(t19['increment'], _increment);
+      expect(t19['arrayUnion'], _arrayUnion);
+      expect(t19['arrayRemove'], _arrayRemove);
+      expect(t19['daysAhead'], _daysAhead);
+      expect(t19['dayKey'], _dayKeyToken);
+      expect(t19['day'], _dayToken);
+      // Her senaryonun bağlamı tanımlıdır.
+      expect(
+        scenarios.map((scenario) => scenario['role']),
+        everyElement(isIn(actors.keys)),
+      );
+    });
+
+    test('her yazma metodu en az bir senaryoda: PLAN §10.4 T-19 yazma '
+        'yüzeyi', () {
+      final covered = {
+        for (final scenario in scenarios)
+          if ((scenario['writes']! as List<Object?>).isNotEmpty)
+            (scenario['call']! as String).split(' · ').first,
+      };
+
+      expect(covered, {
+        'PostRepository.create',
+        'PostRepository.update',
+        'PostRepository.like',
+        'PostRepository.unlike',
+        'PostRepository.vote',
+        'PostRepository.pin',
+        'PostRepository.unpin',
+        'PostRepository.softDeletePost',
+        'PostRepository.restorePost',
+        'PostRepository.hide',
+        'PostRepository.unhide',
+        'CommentRepository.add',
+        'CommentRepository.softDeleteComment',
+        'CommentRepository.restoreComment',
+        'CommentRepository.hide',
+        'SavedPostRepository.save',
+        'SavedPostRepository.softDeleteSaved',
+        'SavedPostRepository.restoreSaved',
+      });
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okumalar ve yazımlar sözleşmeyle birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[withDay(path)] = _seedDoc(
+            fixtures,
+            _mapStrings(entry, withDay),
           );
-          expect(
-            variant.keys.toSet().difference({
-              'name',
-              'without',
-              'patch',
-              'seed',
-              'role',
-            }),
-            isEmpty,
-            reason: reason,
-          );
-          expect(variant.length, greaterThan(1), reason: reason);
         }
-      }
+        final uid = actors[scenario['role']]!;
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads.map(dayless), scenario['reads']);
+        expect(
+          _mapStrings(_normalized(db.log, uids: [uid]), dayless),
+          scenario['writes'],
+        );
+        // Birden çok belgeyi okuyup yazan yollar tek transaction'dır.
+        expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+      });
+    }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
+      _expectWellFormedVariants(scenarios);
     });
   });
 }

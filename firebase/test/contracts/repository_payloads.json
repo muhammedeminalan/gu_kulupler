@@ -1144,5 +1144,1855 @@
         "denied": [{ "name": "askıdaki hesap", "seed": { "users/u_student": { "status": "suspended" } } }]
       }
     ]
+  },
+  "t19": {
+    "_doc": "T-19 — gönderi / yorum / oy / kayıt / duyuru sayacı repository'lerinin GERÇEK okuma + yazımları (FirebasePostRepository, FirebaseCommentRepository, FirebaseSavedPostRepository, FirebaseAnnouncementCounterRepository). Biçim `t15` ile aynıdır; farklar: (1) her senaryo kendi bağlamıyla koşar — `role` (roles.json adı; uid'ler `actors` içinde). jest tarafı bağlamların kullanıcı + üyelik belgelerini roles.json'dan kurar, `seed` yalnızca içerik belgeleridir (kulüp, gönderi, yorum, kayıt, sayaç). (2) Ek nöbetçiler: `{\"@arrayUnion\": [uid]}` / `{\"@arrayRemove\": [uid]}` (FieldValue.arrayUnion / arrayRemove), `@daysAhead:N` (yazımda: istemci saatinden N gün sonrası — anket bitişi), `@yyyyMMdd` / `@yyyy-MM-dd` (duyuru sayacının Istanbul günü: belge kimliği eki ve `day` alanı; Dart tarafında senaryo saatinin, jest tarafında emülatörün günü), `merge: true` (set(merge) — var olan belgede kurallar için update). `@autoId` bir koşuda TEK kimliktir: yol ve yük içindeki her geçişi aynı değeri alır (`comments/@autoId` ↔ `lastCommentRef`). (3) `denied` varyantında `role` gönderen bağlamı değiştirir; `seed` ön koşul belgesine yamadır. Yazımı olmayan senaryolar okuma yollarıdır (olmayan belgenin tekil okuması yetkili bağlama boş dönmelidir).",
+    "autoId": "@autoId",
+    "increment": "@increment",
+    "arrayUnion": "@arrayUnion",
+    "arrayRemove": "@arrayRemove",
+    "daysAhead": "@daysAhead:",
+    "dayKey": "@yyyyMMdd",
+    "day": "@yyyy-MM-dd",
+    "actors": {
+      "student": "u_student",
+      "member": "u_member",
+      "board": "u_board",
+      "president": "u_president",
+      "advisor": "u_advisor",
+      "super": "u_super"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "post": {
+        "clubId": "c01",
+        "authorId": "u_board",
+        "type": "post",
+        "text": "Sözleşme gönderisi.",
+        "images": [],
+        "pinned": false,
+        "pushSent": false,
+        "likes": [],
+        "likeCount": 0,
+        "commentCount": 0,
+        "isHidden": false,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "announcement": {
+        "clubId": "c01",
+        "authorId": "u_board",
+        "type": "announcement",
+        "title": "Genel kurul",
+        "text": "Sözleşme duyurusu.",
+        "images": [],
+        "pinned": false,
+        "pushSent": true,
+        "likes": [],
+        "likeCount": 0,
+        "commentCount": 0,
+        "isHidden": false,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "poll": {
+        "clubId": "c01",
+        "authorId": "u_board",
+        "type": "poll",
+        "text": "Sözleşme anketi?",
+        "images": [],
+        "poll": {
+          "options": [
+            {
+              "id": "o1",
+              "text": "Evet"
+            },
+            {
+              "id": "o2",
+              "text": "Hayır"
+            }
+          ],
+          "endsAt": "@daysAgo:-5",
+          "showResultsAfterVote": true
+        },
+        "pinned": false,
+        "pushSent": false,
+        "likes": [],
+        "likeCount": 0,
+        "commentCount": 0,
+        "isHidden": false,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "comment": {
+        "postId": "p01",
+        "clubId": "c01",
+        "authorId": "u_member",
+        "text": "Sözleşme yorumu.",
+        "isHidden": false,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "saved": {
+        "userId": "u_member",
+        "postId": "p01",
+        "clubId": "c01",
+        "savedAt": "@daysAgo:1",
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "counter": {
+        "clubId": "c01",
+        "day": "@yyyy-MM-dd",
+        "count": 1,
+        "lastPostRef": "posts/p00",
+        "updatedAt": "@serverTimestamp"
+      }
+    },
+    "scenarios": [
+      {
+        "call": "PostRepository.create · gönderi (görselli)",
+        "role": "board",
+        "note": "tek batch: gönderi + günlük (post_created). Görsel yolu posts/{postId}/… (CD-39); null alanların (title, poll, lastCommentRef, hiddenBy, hiddenAt, editedAt) anahtarı yazılmaz (W-51)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "posts/p_new",
+            "data": {
+              "clubId": "c01",
+              "authorId": "u_board",
+              "type": "post",
+              "text": "Yeni gönderi.",
+              "images": [
+                {
+                  "path": "posts/p_new/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+                  "w": 1200,
+                  "h": 800
+                }
+              ],
+              "pinned": false,
+              "pushSent": false,
+              "likes": [],
+              "likeCount": 0,
+              "commentCount": 0,
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_post_created_p_new",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "post_created",
+              "refs": {
+                "postId": "p_new"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "üye yayınlayamaz (yönetim değil; günlüksüz tek yazım)",
+            "role": "member",
+            "without": [
+              1
+            ],
+            "patch": {
+              "0": {
+                "authorId": "u_member"
+              }
+            }
+          },
+          {
+            "name": "görsel başka gönderinin klasöründe (CD-39)",
+            "patch": {
+              "0": {
+                "images": [
+                  {
+                    "path": "posts/p01/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+                    "w": 1200,
+                    "h": 800
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.create · bildirimsiz duyuru",
+        "role": "president",
+        "note": "tek batch: duyuru (title dolu, pushSent false) + günlük (announcement). Sayaç yazılmaz, hak harcanmaz",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "posts/p_new",
+            "data": {
+              "clubId": "c01",
+              "authorId": "u_president",
+              "type": "announcement",
+              "title": "Toplantı",
+              "text": "Haftalık toplantı salı günü.",
+              "images": [],
+              "pinned": false,
+              "pushSent": false,
+              "likes": [],
+              "likeCount": 0,
+              "commentCount": 0,
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_announcement_p_new",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "announcement",
+              "refs": {
+                "postId": "p_new"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.create · bildirimli duyuru (günün ilki)",
+        "role": "board",
+        "note": "tek transaction: günün sayacı okunur (belge yok → yönetime boş döner), sayaç set(merge) count 1 + lastPostRef, duyuru, günlük",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "announcementCounters/c01_@yyyyMMdd"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "announcementCounters/c01_@yyyyMMdd",
+            "data": {
+              "clubId": "c01",
+              "day": "@yyyy-MM-dd",
+              "count": 1,
+              "lastPostRef": "posts/p_new",
+              "updatedAt": "@serverTimestamp"
+            },
+            "merge": true
+          },
+          {
+            "op": "set",
+            "path": "posts/p_new",
+            "data": {
+              "clubId": "c01",
+              "authorId": "u_board",
+              "type": "announcement",
+              "title": "Genel kurul",
+              "text": "Genel kurul cuma günü 14.00’te.",
+              "images": [],
+              "pinned": false,
+              "pushSent": true,
+              "likes": [],
+              "likeCount": 0,
+              "commentCount": 0,
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_announcement_p_new",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "announcement",
+              "refs": {
+                "postId": "p_new"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "announcementCounters/c01_@yyyyMMdd": {
+            "count": 1,
+            "lastPostRef": "posts/p_new"
+          }
+        },
+        "denied": [
+          {
+            "name": "sayaç yazılmadan (hak harcanmadan bildirim)",
+            "without": [
+              0
+            ]
+          },
+          {
+            "name": "sayaç başka gönderiyi gösteriyor",
+            "patch": {
+              "0": {
+                "lastPostRef": "posts/p_other"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.create · bildirimli duyuru (günün ikincisi)",
+        "role": "board",
+        "note": "tek transaction: sayaç okunur (count 1), set(merge) count 2; var olan belgede set(merge) kurallarda update'tir",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "announcementCounters/c01_@yyyyMMdd": {
+            "$fixture": "counter"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "announcementCounters/c01_@yyyyMMdd"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "announcementCounters/c01_@yyyyMMdd",
+            "data": {
+              "clubId": "c01",
+              "day": "@yyyy-MM-dd",
+              "count": 2,
+              "lastPostRef": "posts/p_new",
+              "updatedAt": "@serverTimestamp"
+            },
+            "merge": true
+          },
+          {
+            "op": "set",
+            "path": "posts/p_new",
+            "data": {
+              "clubId": "c01",
+              "authorId": "u_board",
+              "type": "announcement",
+              "title": "Genel kurul",
+              "text": "Genel kurul cuma günü 14.00’te.",
+              "images": [],
+              "pinned": false,
+              "pushSent": true,
+              "likes": [],
+              "likeCount": 0,
+              "commentCount": 0,
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_announcement_p_new",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "announcement",
+              "refs": {
+                "postId": "p_new"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "announcementCounters/c01_@yyyyMMdd": {
+            "count": 2,
+            "lastPostRef": "posts/p_new"
+          }
+        },
+        "denied": [
+          {
+            "name": "günün hakkı dolmuş (count 2 → 3)",
+            "seed": {
+              "announcementCounters/c01_@yyyyMMdd": {
+                "count": 2
+              }
+            },
+            "patch": {
+              "0": {
+                "count": 3
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.create · anket",
+        "role": "board",
+        "note": "tek batch: anket (seçenek kimlikleri o1…oN, endsAt = istemci saati + 3 gün) + günlük (poll)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "posts/p_new",
+            "data": {
+              "clubId": "c01",
+              "authorId": "u_board",
+              "type": "poll",
+              "text": "Hangi gün buluşalım?",
+              "images": [],
+              "poll": {
+                "options": [
+                  {
+                    "id": "o1",
+                    "text": "Cuma"
+                  },
+                  {
+                    "id": "o2",
+                    "text": "Cumartesi"
+                  },
+                  {
+                    "id": "o3",
+                    "text": "Pazar"
+                  }
+                ],
+                "endsAt": "@daysAhead:3",
+                "showResultsAfterVote": true
+              },
+              "pinned": false,
+              "pushSent": false,
+              "likes": [],
+              "likeCount": 0,
+              "commentCount": 0,
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_poll_p_new",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "poll",
+              "refs": {
+                "postId": "p_new"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.update · metin + görsel",
+        "role": "board",
+        "note": "tek update: yalnızca verilen alanlar + editedAt + updatedAt (yazar ve hâlâ yönetici)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "text": "Düzenlenmiş metin.",
+              "images": [
+                {
+                  "path": "posts/p01/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+                  "w": 1200,
+                  "h": 800
+                }
+              ],
+              "editedAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "yazar olmayan yönetici düzenleyemez",
+            "role": "president"
+          },
+          {
+            "name": "askıdaki kulüpte düzenleme yok (yayın yasağı dolanılamaz)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "anket sorusu yayından sonra değişmez (oylar başka soruya taşınamaz)",
+            "seed": {
+              "posts/p01": {
+                "type": "poll",
+                "poll": {
+                  "options": [
+                    {
+                      "id": "o1",
+                      "text": "Evet"
+                    },
+                    {
+                      "id": "o2",
+                      "text": "Hayır"
+                    }
+                  ],
+                  "endsAt": "@daysAgo:-5",
+                  "showResultsAfterVote": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.update · duyuru başlığı",
+        "role": "board",
+        "note": "tek update: title + editedAt + updatedAt (başlık yalnızca duyuruda)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "announcement"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "title": "Yeni başlık",
+              "editedAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.like",
+        "role": "member",
+        "note": "tek kör update: likes arrayUnion([uid]) + likeCount +1; updatedAt YAZILMAZ",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "likes": {
+                "@arrayUnion": [
+                  "u_member"
+                ]
+              },
+              "likeCount": {
+                "@increment": 1
+              }
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "likes": [
+              "u_member"
+            ],
+            "likeCount": 1
+          }
+        },
+        "denied": [
+          {
+            "name": "üye olmayan beğenemez",
+            "role": "student",
+            "patch": {
+              "0": {
+                "likes": {
+                  "@arrayUnion": [
+                    "u_student"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "çift beğeni",
+            "seed": {
+              "posts/p01": {
+                "likes": [
+                  "u_member"
+                ],
+                "likeCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.unlike",
+        "role": "member",
+        "note": "tek kör update: likes arrayRemove([uid]) + likeCount −1",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "likes": [
+              "u_board",
+              "u_member"
+            ],
+            "likeCount": 2
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "likes": {
+                "@arrayRemove": [
+                  "u_member"
+                ]
+              },
+              "likeCount": {
+                "@increment": -1
+              }
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "likes": [
+              "u_board"
+            ],
+            "likeCount": 1
+          }
+        }
+      },
+      {
+        "call": "PostRepository.vote",
+        "role": "member",
+        "note": "tek transaction: oy belgesi okunur (yok → boş döner), set {optionId, createdAt}. Sayaç alanı yok",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "poll"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "posts/p01/votes/u_member"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "posts/p01/votes/u_member",
+            "data": {
+              "optionId": "o2",
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "süresi dolmuş anket",
+            "seed": {
+              "posts/p01": {
+                "poll": {
+                  "options": [
+                    {
+                      "id": "o1",
+                      "text": "Evet"
+                    },
+                    {
+                      "id": "o2",
+                      "text": "Hayır"
+                    }
+                  ],
+                  "endsAt": "@daysAgo:1",
+                  "showResultsAfterVote": true
+                }
+              }
+            }
+          },
+          {
+            "name": "ankette olmayan seçenek",
+            "patch": {
+              "0": {
+                "optionId": "o3"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.myVote · oy yok",
+        "role": "member",
+        "note": "tekil okuma: olmayan oy belgesi üyeye boş döner (kural gönderiye bakar)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "poll"
+          }
+        },
+        "reads": [
+          "posts/p01/votes/u_member"
+        ],
+        "writes": []
+      },
+      {
+        "call": "PostRepository.pin · ilk sabit",
+        "role": "board",
+        "note": "tek transaction: kulüp + gönderi okunur; posts.pinned true + clubs.pinnedPostId",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "clubs/c01",
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "pinned": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "pinnedPostId": "p01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "pinnedPostId": "p01"
+          },
+          "posts/p01": {
+            "pinned": true
+          }
+        },
+        "denied": [
+          {
+            "name": "kulüp işaretçisi yazılmadan",
+            "without": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.pin · eski sabit değişir",
+        "role": "president",
+        "note": "tek transaction: kulüp + gönderi + eski sabit okunur; eski pinned false, yeni pinned true, işaretçi yeni gönderi",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "pinnedPostId": "p00"
+          },
+          "posts/p00": {
+            "$fixture": "post",
+            "pinned": true
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "clubs/c01",
+          "posts/p01",
+          "posts/p00"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p00",
+            "data": {
+              "pinned": false,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "pinned": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "pinnedPostId": "p01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "pinnedPostId": "p01"
+          },
+          "posts/p00": {
+            "pinned": false
+          },
+          "posts/p01": {
+            "pinned": true
+          }
+        },
+        "denied": [
+          {
+            "name": "eski sabit kaldırılmadan (iki sabit gönderi)",
+            "without": [
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.unpin",
+        "role": "board",
+        "note": "tek transaction: posts.pinned false + clubs.pinnedPostId null (anahtar kaldırılmaz, açık null)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "pinnedPostId": "p01"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "pinned": true
+          }
+        },
+        "tx": true,
+        "reads": [
+          "clubs/c01",
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "pinned": false,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "pinnedPostId": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "pinnedPostId": null
+          },
+          "posts/p01": {
+            "pinned": false
+          }
+        }
+      },
+      {
+        "call": "PostRepository.softDeletePost · başkasının gönderisi (sabit değil)",
+        "role": "board",
+        "note": "tek transaction: gönderi okunur; yalnızca soft delete yazımı (yönetici herhangi bir gönderiyi kaldırır)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "authorId": "u_president"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "isDeleted": true,
+            "deletedBy": "u_board"
+          }
+        },
+        "denied": [
+          {
+            "name": "üye gönderi kaldıramaz",
+            "role": "member",
+            "patch": {
+              "0": {
+                "deletedBy": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.softDeletePost · sabit gönderi",
+        "role": "president",
+        "note": "tek transaction: soft delete + pinned false AYNI yazımda; clubs.pinnedPostId null",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "pinnedPostId": "p01"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "pinned": true
+          }
+        },
+        "tx": true,
+        "reads": [
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_president",
+              "updatedAt": "@serverTimestamp",
+              "pinned": false
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "pinnedPostId": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "pinnedPostId": null
+          },
+          "posts/p01": {
+            "isDeleted": true,
+            "pinned": false
+          }
+        },
+        "denied": [
+          {
+            "name": "kulüp işaretçisi sabit gönderide bırakılırsa",
+            "without": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.softDeletePost · süper admin (sabit gönderi)",
+        "role": "super",
+        "note": "moderasyon silmesi: süper admin yönetici değildir; kulüp işaretçisi dalı 'eski sabit bu işlemde siliniyor' koşuluyla açılır",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "pinnedPostId": "p01"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "pinned": true
+          }
+        },
+        "tx": true,
+        "reads": [
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_super",
+              "updatedAt": "@serverTimestamp",
+              "pinned": false
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "pinnedPostId": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "pinnedPostId": null
+          },
+          "posts/p01": {
+            "isDeleted": true,
+            "deletedBy": "u_super"
+          }
+        }
+      },
+      {
+        "call": "PostRepository.restorePost · silen yönetici",
+        "role": "board",
+        "note": "tek update: restore (yeniden sabitlenmez)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_board"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "isDeleted": false,
+            "deletedBy": null
+          }
+        },
+        "denied": [
+          {
+            "name": "silmeyen yönetici geri alamaz",
+            "role": "president"
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.restorePost · süper admin",
+        "role": "super",
+        "note": "süper admin başkasının sildiğini geri alır",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_board"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.hide",
+        "role": "super",
+        "note": "tek update: isHidden true + hiddenBy + hiddenAt + updatedAt (yalnız süper admin)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isHidden": true,
+              "hiddenBy": "u_super",
+              "hiddenAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "yönetici gizleyemez",
+            "role": "board",
+            "patch": {
+              "0": {
+                "hiddenBy": "u_board"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "PostRepository.unhide",
+        "role": "super",
+        "note": "tek update: isHidden false + hiddenBy null + hiddenAt null (anahtarlar kaldırılmaz, açık null)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "isHidden": true,
+            "hiddenBy": "u_super",
+            "hiddenAt": "@daysAgo:1"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isHidden": false,
+              "hiddenBy": null,
+              "hiddenAt": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "isHidden": false,
+            "hiddenBy": null,
+            "hiddenAt": null
+          }
+        }
+      },
+      {
+        "call": "PostRepository.getPost",
+        "role": "member",
+        "note": "tekil okuma: üye silinmemiş, gizli olmayan gönderiyi okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [
+          "posts/p01"
+        ],
+        "writes": []
+      },
+      {
+        "call": "CommentRepository.add",
+        "role": "member",
+        "note": "tek kör batch: yorum set (rastgele kimlik) + posts {commentCount +1, lastCommentRef: 'comments/{id}', updatedAt}",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "comments/@autoId",
+            "data": {
+              "postId": "p01",
+              "clubId": "c01",
+              "authorId": "u_member",
+              "text": "Yeni yorum.",
+              "isHidden": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "commentCount": {
+                "@increment": 1
+              },
+              "lastCommentRef": "comments/@autoId",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "commentCount": 1,
+            "lastCommentRef": "comments/@autoId"
+          }
+        },
+        "denied": [
+          {
+            "name": "sayaç yazılmadan",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "işaretçi başka yorumu gösteriyor",
+            "patch": {
+              "1": {
+                "lastCommentRef": "comments/cm_other"
+              }
+            }
+          },
+          {
+            "name": "danışman yorum yazamaz",
+            "role": "advisor",
+            "patch": {
+              "0": {
+                "authorId": "u_advisor"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "CommentRepository.softDeleteComment · yazar",
+        "role": "member",
+        "note": "tek kör batch: yorum soft delete + posts {commentCount −1, lastCommentRef, updatedAt}",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "commentCount": 1,
+            "lastCommentRef": "comments/cm01"
+          },
+          "comments/cm01": {
+            "$fixture": "comment"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "comments/cm01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "commentCount": {
+                "@increment": -1
+              },
+              "lastCommentRef": "comments/cm01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "commentCount": 0
+          },
+          "comments/cm01": {
+            "isDeleted": true,
+            "deletedBy": "u_member"
+          }
+        },
+        "denied": [
+          {
+            "name": "sayaç yazılmadan",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "çift kaldırma (yorum zaten silinmiş)",
+            "seed": {
+              "comments/cm01": {
+                "isDeleted": true,
+                "deletedAt": "@daysAgo:0",
+                "deletedBy": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "CommentRepository.softDeleteComment · yönetici (başkasının yorumu)",
+        "role": "board",
+        "note": "aynı yazımlar; yetki Rules'ta (yönetici herhangi bir yorumu kaldırır)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "commentCount": 1,
+            "lastCommentRef": "comments/cm01"
+          },
+          "comments/cm01": {
+            "$fixture": "comment"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "comments/cm01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "commentCount": {
+                "@increment": -1
+              },
+              "lastCommentRef": "comments/cm01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "comments/cm01": {
+            "isDeleted": true,
+            "deletedBy": "u_board"
+          }
+        }
+      },
+      {
+        "call": "CommentRepository.softDeleteComment · süper admin",
+        "role": "super",
+        "note": "aynı yazımlar; süper admin (moderasyon)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "commentCount": 1,
+            "lastCommentRef": "comments/cm01"
+          },
+          "comments/cm01": {
+            "$fixture": "comment"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "comments/cm01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_super",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "commentCount": {
+                "@increment": -1
+              },
+              "lastCommentRef": "comments/cm01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "CommentRepository.restoreComment",
+        "role": "member",
+        "note": "tek kör batch: yorum restore + posts {commentCount +1, lastCommentRef, updatedAt} (Geri al: silen kişi)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "commentCount": 0,
+            "lastCommentRef": "comments/cm01"
+          },
+          "comments/cm01": {
+            "$fixture": "comment",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_member"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "comments/cm01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "commentCount": {
+                "@increment": 1
+              },
+              "lastCommentRef": "comments/cm01",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "commentCount": 1
+          },
+          "comments/cm01": {
+            "isDeleted": false
+          }
+        },
+        "denied": [
+          {
+            "name": "silmeyen üye geri alamaz",
+            "seed": {
+              "comments/cm01": {
+                "deletedBy": "u_board"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "CommentRepository.hide",
+        "role": "super",
+        "note": "tek update: isHidden true + hiddenBy + hiddenAt + updatedAt; gönderiye dokunulmaz (sayaç silinmemişi sayar)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post",
+            "commentCount": 1,
+            "lastCommentRef": "comments/cm01"
+          },
+          "comments/cm01": {
+            "$fixture": "comment"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "comments/cm01",
+            "data": {
+              "isHidden": true,
+              "hiddenBy": "u_super",
+              "hiddenAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "commentCount": 1
+          }
+        }
+      },
+      {
+        "call": "SavedPostRepository.save · yeni kayıt",
+        "role": "member",
+        "note": "kayıt okunur (yok → sahibine boş döner), set {userId, postId, clubId, savedAt} + ortak alanlar",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [
+          "savedPosts/u_member_p01"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "savedPosts/u_member_p01",
+            "data": {
+              "userId": "u_member",
+              "postId": "p01",
+              "clubId": "c01",
+              "isDeleted": false,
+              "savedAt": "@serverTimestamp",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "clubId gönderinin kulübü değil",
+            "patch": {
+              "0": {
+                "clubId": "c02"
+              }
+            }
+          },
+          {
+            "name": "gizlenmiş gönderi kaydedilemez",
+            "seed": {
+              "posts/p01": {
+                "isHidden": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "SavedPostRepository.save · danışman",
+        "role": "advisor",
+        "note": "danışman gönderiyi görür (seesInside) ve kaydedebilir",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [
+          "savedPosts/u_advisor_p01"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "savedPosts/u_advisor_p01",
+            "data": {
+              "userId": "u_advisor",
+              "postId": "p01",
+              "clubId": "c01",
+              "isDeleted": false,
+              "savedAt": "@serverTimestamp",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ]
+      },
+      {
+        "call": "SavedPostRepository.save · kaldırılmış kaydı geri yükler",
+        "role": "member",
+        "note": "kayıt okunur (silinmiş), tek update: restore + savedAt yenilenir (belge yeniden oluşturulmaz)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          },
+          "savedPosts/u_member_p01": {
+            "$fixture": "saved",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_member"
+          }
+        },
+        "reads": [
+          "savedPosts/u_member_p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "savedPosts/u_member_p01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp",
+              "savedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "savedPosts/u_member_p01": {
+            "isDeleted": false,
+            "deletedBy": null
+          }
+        }
+      },
+      {
+        "call": "SavedPostRepository.softDeleteSaved",
+        "role": "member",
+        "note": "tek update: soft delete (deletedBy = sahibi)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          },
+          "savedPosts/u_member_p01": {
+            "$fixture": "saved"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "savedPosts/u_member_p01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "başkası kaydı kaldıramaz",
+            "role": "board",
+            "patch": {
+              "0": {
+                "deletedBy": "u_board"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "SavedPostRepository.restoreSaved",
+        "role": "member",
+        "note": "tek update: saf restore (Geri al; savedAt değişmez)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          },
+          "savedPosts/u_member_p01": {
+            "$fixture": "saved",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_member"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "savedPosts/u_member_p01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ]
+      },
+      {
+        "call": "SavedPostRepository.isSaved · kayıt yok",
+        "role": "member",
+        "note": "tekil okuma: olmayan kendi kaydı boş döner (isSaved → false)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "post"
+          }
+        },
+        "reads": [
+          "savedPosts/u_member_p01"
+        ],
+        "writes": []
+      },
+      {
+        "call": "AnnouncementCounterRepository.getToday · sayaç yok",
+        "role": "board",
+        "note": "tekil okuma: olmayan sayaç belgesi kulübün yönetimine boş döner (kulüp kimliği belge kimliğinden)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [
+          "announcementCounters/c01_@yyyyMMdd"
+        ],
+        "writes": []
+      },
+      {
+        "call": "AnnouncementCounterRepository.getToday · sayaç var",
+        "role": "advisor",
+        "note": "tekil okuma: danışman günün sayacını okur (FED-03 hak çubuğu)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "announcementCounters/c01_@yyyyMMdd": {
+            "$fixture": "counter"
+          }
+        },
+        "reads": [
+          "announcementCounters/c01_@yyyyMMdd"
+        ],
+        "writes": []
+      }
+    ]
   }
 }
