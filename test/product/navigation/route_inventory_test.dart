@@ -10,6 +10,7 @@
 // (`/events/search`) — aynı `SearchView`, başlangıç sekmesi farklı.
 // T-18 · `ClubMembersRoute` (`/clubs/:clubId/members`),
 // `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`).
+// T-20 · `PostDetailRoute` (`/clubs/:clubId/posts/:postId`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -23,7 +24,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17 + T-18).
+/// T-14 + T-16 + T-17 + T-18 + T-20).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -43,13 +44,15 @@ const Map<GoRouteData, String> _routes = {
   // Kabuk: beş sekme kökü
   ClubsRoute(): '/clubs',
   // Kulüpler dalı (T-17: CLB-02; T-18: CLB-07, CLB-06; T-16: CLB-03,
-  // CLB-04, CLB-05)
+  // CLB-04, CLB-05; T-20: FED-02)
   ClubsSearchRoute(): '/clubs/search',
   ClubUserProfileRoute(userId: _userId): '/clubs/user/:userId',
   ClubDetailRoute(clubId: _clubId): '/clubs/:clubId',
   ClubAppliedRoute(clubId: _clubId): '/clubs/:clubId/applied',
   ClubApplicationRoute(clubId: _clubId): '/clubs/:clubId/application',
   ClubMembersRoute(clubId: _clubId): '/clubs/:clubId/members',
+  PostDetailRoute(clubId: _clubId, postId: _postId):
+      '/clubs/:clubId/posts/:postId',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak)
   EventsSearchRoute(): '/events/search',
@@ -63,6 +66,9 @@ const String _clubId = 'c01';
 
 /// Parametreli kullanıcı rotalarının örnek kimliği.
 const String _userId = 'u01';
+
+/// Parametreli gönderi rotalarının örnek kimliği.
+const String _postId = 'p01';
 
 /// Yol parametresi işareti (`/clubs/:clubId`).
 const String _parameterMark = ':';
@@ -107,10 +113,26 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 24 yol (T-11: 14, T-13: +2, '
-        'T-14: +1, T-16: +3, T-17: +2, T-18: +2)', () {
+    test('router yolları = kapsamdaki 25 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(24));
+      expect(_routes, hasLength(25));
+    });
+
+    test('T-20 · gönderi detayı rotası: `clubId` ve `postId` yol '
+        'parametresidir; guard kulübün içini görmeyi (üye) ister', () {
+      const post = PostDetailRoute(clubId: _clubId, postId: _postId);
+      expect(post.location, '/clubs/c01/posts/p01');
+      final match = RouteAccessTable.match(Uri.parse(post.location));
+      expect(match.pattern, '/clubs/:clubId/posts/:postId');
+      expect(match.access, RouteAccess.member);
+      expect(match.clubId, _clubId);
+      expect(PostDetailRoute.segment, 'posts/:postId');
+      // Kimlikler yolda kodlanır (ayırıcı içeren değer yolu bölmez).
+      expect(
+        const PostDetailRoute(clubId: _clubId, postId: 'a/b').location,
+        '/clubs/c01/posts/a%2Fb',
+      );
     });
 
     test('T-18 · üye listesi ve profil rotaları: `user` parçası `:clubId` '

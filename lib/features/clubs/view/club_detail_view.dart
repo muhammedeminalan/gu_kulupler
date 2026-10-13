@@ -47,13 +47,23 @@ import 'package:gu_ui/gu_ui.dart';
 /// Design: CLB-03
 class ClubDetailView extends ConsumerStatefulWidget {
   /// [clubId] kulübünün sayfası; [tab] ilk açılan sekmedir (`?tab=`).
-  const ClubDetailView({required this.clubId, this.tab, super.key});
+  const ClubDetailView({
+    required this.clubId,
+    this.tab,
+    this.commentsSheetBuilder,
+    super.key,
+  });
 
   /// Kulüp kimliği (`ClubDetailRoute.clubId`).
   final String clubId;
 
   /// İlk açılan sekme; `null` → hakkında.
   final ClubDetailTab? tab;
+
+  /// "Gönderiler" sekmesindeki yorum sayfasının (SHT-09) gövdesi. Sayfa
+  /// `features/feed` altındadır ve feature'lar birbirini içe aktaramaz;
+  /// gövdeyi rota (kompozisyon kökü) verir (`ClubFeedTab`'a aktarılır).
+  final Widget Function(String clubId, String postId)? commentsSheetBuilder;
 
   @override
   ConsumerState<ClubDetailView> createState() => _ClubDetailViewState();
@@ -116,7 +126,10 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
       ),
       ClubDetailTab.posts =>
         state.seesInside
-            ? ClubFeedTab(clubId: club.id)
+            ? ClubFeedTab(
+                clubId: club.id,
+                commentsSheetBuilder: widget.commentsSheetBuilder,
+              )
             : ClubLockedTab(
                 text: l10n.clubPostsLocked,
                 cta: _cta(state, inBar: false),

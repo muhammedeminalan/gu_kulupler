@@ -38,3 +38,9 @@ CLB-06.menu.*   # design/prototype/app/cards.js:168, screens-clubs.js:147 — ü
 CLB-06.retry    # lib/features/clubs/view/club_members_view.dart — yalnızca üyeler okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
 CLB-07.unblock  # design/prototype/app/screens-clubs.js:156 — "Engeli kaldır" yalnızca kullanıcı engelliyken çizilen uyarı bandında (`blocked`); yakalama engellenmemiş kullanıcı (u_burak → u001)
 CLB-07.retry    # lib/features/clubs/view/user_profile_view.dart — yalnızca kullanıcı okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+FED-01.compose  # design/prototype/app/screens-clubs.js:66,69,70 — "Kulübüne bir şey yaz…" girişi ve boş durumdaki "İlk gönderini yaz" yalnızca yöneticide (`manager`); yakalama sıradan üye (u_mehmet → c01)
+FED-01.more.*   # design/prototype/app/cards.js:118 — "Devamı" yalnızca metni 280 karakteri aşan gönderide (`long && !more`); yakalamadaki yedi gönderi kısa
+FED-01.retry    # lib/features/clubs/view/widget/club_feed_tab.dart — yalnızca akış okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
+FED-02.image.*  # design/prototype/app/cards.js:93 — görsel hücresi (`ImageGrid`) yalnızca görselli gönderide (`post.images.length`); yakalama görselsiz duyuru (p01)
+FED-02.vote.*   # design/prototype/app/cards.js:87 — anket seçeneği (`PollBlock`) yalnızca anket gönderisinde (`post.poll`); yakalama duyuru (p01)
+FED-02.retry    # lib/features/feed/view/post_detail_view.dart — yalnızca gönderi ya da yorumlar okunamadığında (`isError` / `isCommentsError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

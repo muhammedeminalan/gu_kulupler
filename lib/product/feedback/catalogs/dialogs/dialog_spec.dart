@@ -221,6 +221,30 @@ abstract final class DialogCatalog {
       secondaryAction: 'ok',
     ),
 
+    /// Design: DLG-10 — Gönderi silinsin mi? (`dialogs.js:26`): ikon ve
+    /// birincil düğme `danger`. Sonuç `true` → gönderi kaldırılır
+    /// (`PostActionsMixin.removePost`; ardından TST-45 "Geri al").
+    DialogId.dlg10: DialogSpec(
+      title: (l10n, _) => l10n.dlg10Title,
+      body: (l10n, _) => l10n.dlg10Body,
+      primary: (l10n) => l10n.commonDelete,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.trash2,
+      destructive: true,
+    ),
+
+    /// Design: DLG-11 — Yorum silinsin mi? (`dialogs.js:27`): ikon ve
+    /// birincil düğme `danger`. Sonuç `true` → yorum kaldırılır
+    /// (`PostDetailViewModel`; ardından TST-45 "Geri al").
+    DialogId.dlg11: DialogSpec(
+      title: (l10n, _) => l10n.dlg11Title,
+      body: (l10n, _) => l10n.dlg11Body,
+      primary: (l10n) => l10n.commonDelete,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.trash2,
+      destructive: true,
+    ),
+
     /// Design: DLG-12 — Şikayetin alındı (`dialogs.js:28`). "Tamam" → `true`.
     /// Şikayet bir kullanıcıya bağlıysa ([DialogParamKeys.name] verildiyse)
     /// altında "{name} kullanıcısını da engelle" çizilir → `false`

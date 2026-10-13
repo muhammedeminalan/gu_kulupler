@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T22:03:51.386Z",
+  "updated": "2026-10-13T22:55:40.070Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-20",
   "statusValues": [
     "pending",
     "planning",
@@ -331,8 +331,8 @@
       "notes": ""
     },
     "T-20": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-13T22:04:41.566Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -630,7 +630,10 @@
       "resolveIn": [
         "T-20"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-20",
+      "closedAt": "2026-10-13T22:53:35.941Z",
+      "closeNote": "CLB-03 'Gönderiler' sekmesi gerçek: ClubFeedTab + ClubFeedViewModel (FED-01: tür çipleri, sabit gönderi, sayfalama 20 + imleç, beğeni / kaydet / oy / menü — PostActionsMixin)"
     },
     {
       "id": "W-11",
@@ -732,7 +735,10 @@
       "resolveIn": [
         "T-20"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-20",
+      "closedAt": "2026-10-13T22:53:35.966Z",
+      "closeNote": "FED-02 / SHT-09 yorum menüsü: PostDetailViewModel.openCommentMenu — kendi yorumu → DLG-11 → softDeleteComment → TST-45 + Geri al; başkası → SHT-27 ('Yorumu sil' yalnızca yönetici / süper admin, 'Yorumu şikayet et' → SHT-10 hedef = yorum → DLG-12 → DLG-13)"
     },
     {
       "id": "W-24",
@@ -1167,7 +1173,10 @@
       "resolveIn": [
         "T-20"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-20",
+      "closedAt": "2026-10-13T22:53:35.990Z",
+      "closeNote": "(a) ClubFeedViewModel._readPinned: getPost permissionDenied / notFound / gizli / silinmiş / artık sabit değil → 'sabit yok', hata gösterilmez. (b) PostDetailViewModel._onComments: watchComments permissionDenied → isNotFound → SYS-04 (SHT-09'da sayfa kapanır)"
     },
     {
       "id": "W-71",
@@ -1180,6 +1189,18 @@
       "actions": [
         "FED-03.publish",
         "SHT-08.edit"
+      ]
+    },
+    {
+      "id": "W-72",
+      "declaredIn": "T-20",
+      "text": "FED-01.back: prototipte yalnızca QA sayfasından açılan bağımsız 'Akış' sayfasının geri düğmesi (screens-clubs.js:73, embedded: true). Uygulamada FED-01 bağımsız rota değil, CLB-03 'Gönderiler' sekmesi (design-contract §2, CD-10); geri = CLB-03.back → anahtarın karşılığı yok. Kalıcı çözüm KULLANICI ONAYI ister: tool/design_exempt_actions.txt satırı + docs/task-map.json muaf toplamı (12 → 13, T-20 0 → 1) + test/helpers/design_files_test.dart (5 → 6); o güne kadar AKS04 uyarısı. Final raporda sorulur",
+      "resolveIn": [
+        "T-47"
+      ],
+      "status": "open",
+      "actions": [
+        "FED-01.back"
       ]
     }
   ],
@@ -1240,6 +1261,11 @@
       "date": "2026-10-10",
       "task": "T-02",
       "text": "hızlı mod (kullanıcı 2026-10-10): inceleme ajanı yalnızca kritik task'larda (veri/Rules/güvenlik); basit UI'da tek tur; golden kapsamı ekran başına açık+koyu, widget durum/toast golden yok; planlar kısa"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "T-20 otonom kararlar CD-142: PostActionsMixin metot adları / state alanları PLAN §12'den farklı; widget'larda screenId yerine anahtar nesneleri; FED-01.newPosts çipi ve çek-yenile yok; FED-01.back W-72 ile ertelendi (kullanıcı onayı bekliyor)"
     }
   ],
   "knownIssuesAdded": [
@@ -1307,6 +1333,31 @@
       "date": "2026-10-13",
       "task": "T-17",
       "text": "K-66 MyClubChip 'Askıda' + yönetici rozeti üst üste; Flutter'da tek rozet, askı öncelikli"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "K-70 FED-01 bağımsız 'Akış' sayfası ve FED-01.back uygulanmaz (CLB-03 sekmesi); anahtar W-72 ile ertelendi — kullanıcı kararı"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "K-71 'Anket' tür rozeti tam genişlik (cards.js:114) — referanstaki gibi çizilir"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "K-72 SHT-34 girişi fadeIn yerine sheet kaydırması — açık nokta"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "K-73 demo veride tekrarlı beğeni / oy: sayaçlar referanstan farklı (44/46, 38/41), yorum sırası createdAt ↑"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-20",
+      "text": "K-74 göreli zamanda hafta: prototip yuvarlar, uygulama tam hafta (T-08) — kullanıcı kararı"
     }
   ]
 }

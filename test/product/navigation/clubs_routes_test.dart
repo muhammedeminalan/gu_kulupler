@@ -7,6 +7,8 @@
 // T-18 · CLB-06 `/clubs/:clubId/members` (guard `üye`), CLB-07
 // `/clubs/user/:userId?clubId=` (guard `A`; `user` parçası `:clubId`
 // kalıbından önce eşleşir).
+// T-20 · FED-02 `/clubs/:clubId/posts/:postId` (guard `üye`); SHT-09 gövdesi
+// kulüp sayfasına rotadan verilir (`commentsSheetBuilder`).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -17,21 +19,26 @@ import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_members_view.dart';
 import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
+import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
+import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_club_repository.dart';
+import '../../fakes/fake_post_repository.dart';
 import '../../fakes/fake_session_states.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/test_router.dart';
 import '../../fixtures/club_model_fixtures.dart';
+import '../../fixtures/post_model_fixtures.dart';
 
 /// Gerçek rota ağacını çizer, demo veriden kulüpleri (ve profil rotasının
 /// kullanıcılarını) sahte repository'ye yazar ve [location] yoluna gider.
-/// Kulüp ekranları kulübü, CLB-07 kullanıcıyı açılışta okur; bulunamayan
-/// kulüp / kullanıcı SYS-04'e yönlenir — bu yüzden veri yola gitmeden önce
-/// yazılır (fake'ler `pump` sırasında sıfırlanır).
+/// Kulüp ekranları kulübü, CLB-07 kullanıcıyı, FED-02 gönderiyi açılışta
+/// okur; bulunamayan kulüp / kullanıcı / gönderi SYS-04'e yönlenir — bu
+/// yüzden veri yola gitmeden önce yazılır (fake'ler `pump` sırasında
+/// sıfırlanır).
 Future<TestRouter> _pump(
   WidgetTester tester, {
   SessionState session = FakeSessionStates.active,
@@ -44,6 +51,9 @@ Future<TestRouter> _pump(
   }
   final users = GetIt.I<UserRepository>() as FakeUserRepository;
   const ['u01', 'u02'].forEach(users.putActive);
+  (GetIt.I<PostRepository>() as FakePostRepository)
+    ..put(PostModelFixtures.p01)
+    ..put(PostModelFixtures.p02);
   if (location != null) await app.go(location);
   return app;
 }
@@ -52,6 +62,54 @@ ClubDetailView _detail(WidgetTester tester) =>
     tester.widget<ClubDetailView>(find.byType(ClubDetailView));
 
 void main() {
+  group('T-20 · gönderi detayı rotası (FED-02)', () {
+    testWidgets('/clubs/:clubId/posts/:postId → PostDetailView(clubId, '
+        'postId); üye olmayan kulüp sayfasına yönlenir; geri kulübe '
+        'döner', (tester) async {
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeMember('c01'),
+        location: '/clubs/c01/posts/p01',
+      );
+      PostDetailView post() =>
+          tester.widget<PostDetailView>(find.byType(PostDetailView));
+      expect(app.location, '/clubs/c01/posts/p01');
+      expect(post().clubId, 'c01');
+      expect(post().postId, 'p01');
+      expect(find.byType(GuBottomNav), findsNothing);
+      expect(app.stackDepth(GuTab.clubs), 3);
+
+      const PostDetailRoute(
+        clubId: 'c01',
+        postId: 'p02',
+      ).go(tester.element(find.byType(PostDetailView)));
+      await tester.pumpAndSettle();
+      expect(app.location, '/clubs/c01/posts/p02');
+      expect(post().postId, 'p02');
+
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01');
+      expect(find.byType(PostDetailView), findsNothing);
+
+      await app.go('/clubs/c03/posts/p01');
+      expect(app.location, '/clubs/c03');
+      expect(find.byType(PostDetailView), findsNothing);
+    });
+
+    testWidgets('kulüp sayfası yorum sayfasının (SHT-09) gövdesini rotadan '
+        'alır: `commentsSheetBuilder` → CommentsSheet(clubId, postId)', (
+      tester,
+    ) async {
+      await _pump(tester, location: '/clubs/c01');
+      final builder = _detail(tester).commentsSheetBuilder;
+      expect(builder, isNotNull);
+      final sheet = builder!('c01', 'p01');
+      expect(sheet, isA<CommentsSheet>());
+      expect((sheet as CommentsSheet).clubId, 'c01');
+      expect(sheet.postId, 'p01');
+    });
+  });
+
   group('T-18 · üye listesi ve profil rotaları', () {
     testWidgets('/clubs/:clubId/members → ClubMembersView(clubId); üye '
         'olmayan kulüp sayfasına yönlenir', (tester) async {

@@ -1309,6 +1309,10 @@ abstract final class GuSizes {
   /// CLB-01 "Kulüplerim" şeridinin sonundaki "Tümü" kartı (T-17).
   static const double myClubsAllTileWidth = 100;
 
+  /// sheets.js:48 `<div style="min-height:200px">` —
+  /// SHT-09 yorum listesinin en az yüksekliği (T-20).
+  static const double commentsSheetMinHeight = 200;
+
   /// cards.js:172 `padding:6px 8px 6px 16px;min-height:64px` —
   /// K-31, K-46.
   static const double applicationRowMinHeight = 64;

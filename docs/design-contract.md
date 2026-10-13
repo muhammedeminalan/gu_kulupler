@@ -68,7 +68,8 @@ Varsayılan: tema parlaklığına göre (açık tema → koyu ikonlar; koyu tema
 | **CLB-03** Kulüp (kapak görseli üstte) | koyu kapak | **açık ikon** (her iki temada) |
 | **EVT-02** Etkinlik (kapaklı) | koyu kapak | **açık ikon**; kapaksız varyantta varsayılan |
 | **MGT-07** QR tarayıcı | siyah kamera | **açık ikon** |
-| Sheet/dialog scrim açıkken | scrim | alttaki ekranın stili korunur |
+| **SHT-34** Görsel görüntüleyici (tam ekran siyah; K-49, T-20) | siyah zemin | **açık ikon** (her iki temada; `ImageViewer` kendi `GuSystemUi` kapsayıcısını verir) |
+| Sheet/dialog scrim açıkken | scrim | alttaki ekranın stili korunur (SHT-34 hariç — üst satır) |
 
 Referans ölçüm: `design/reference-shots/screens/*__light__tr.webp` üst 54 px parlaklığı (yalnızca bu üç ekran < 110). Splash (SYS-01) ve onboarding (ONB-01) **açık zemin** üzerindedir (varsayılan).
 
