@@ -57,9 +57,9 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
   /// İçeriğin kuşağı: her tam okumada artar; eski kuşağın sayfası yazılmaz.
   int _generation = 0;
 
-  /// Bu ekranda yapılan engel değişiklikleri (kimlik → engelli mi); oturumdaki
-  /// kümenin üstüne uygulanır.
-  final Map<String, bool> _blockOverrides = <String, bool>{};
+  /// Bu ekranda yapılan engel değişiklikleri; oturumdaki kümenin üstüne
+  /// uygulanır.
+  final BlockOverrides _blocks = BlockOverrides();
 
   /// Oturum ViewModel'i (uygulama boyunca yaşar); bu ViewModel kapandıktan
   /// sonra gelen "Geri al" için saklanır.
@@ -70,7 +70,7 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
     ref.listen(sessionViewModelProvider, (previous, session) {
       if (previous?.blockedUserIds == session.blockedUserIds) return;
       state = state.copyWith(
-        blockedUserIds: _effectiveBlocks(session.blockedUserIds),
+        blockedUserIds: _blocks.applyTo(session.blockedUserIds),
       );
     });
     _session = ref.read(sessionViewModelProvider.notifier);
@@ -186,10 +186,10 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
   @override
   void onBlockChanged(String userId, {required bool isBlocked}) {
     if (!ref.mounted) return;
-    _blockOverrides[userId] = isBlocked;
+    _blocks.mark(userId, isBlocked: isBlocked);
     final name = state.nameOfUser(userId);
     state = state.copyWith(
-      blockedUserIds: _effectiveBlocks(
+      blockedUserIds: _blocks.applyTo(
         ref.read(sessionViewModelProvider).blockedUserIds,
       ),
       pendingUndo: isBlocked && name != null
@@ -207,7 +207,7 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
   @override
   void onBlockSaved(String userId, {required bool isBlocked}) {
     _session.setBlocked(userId, isBlocked: isBlocked);
-    _blockOverrides.remove(userId);
+    _blocks.settle(userId);
   }
 
   /// SHT-10'da doğrulanan kullanıcı şikayetini yazar
@@ -229,15 +229,6 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
     );
     if (wantsBlock && ref.mounted) await block(userId);
   }
-
-  /// Oturumdaki [session] kümesine bu ekrandaki değişiklikler uygulanmış
-  /// engel kümesi.
-  Set<String> _effectiveBlocks(Set<String> session) => {
-    for (final userId in session)
-      if (_blockOverrides[userId] ?? true) userId,
-    for (final MapEntry(:key, :value) in _blockOverrides.entries)
-      if (value) key,
-  };
 
   /// İçeriği baştan okur ve ilk yüklemeyi / yenilemeyi bitirir.
   Future<void> _load() async {

@@ -42,7 +42,7 @@ void main() {
         'T-13 → DLG-01; T-14 → DLG-03, DLG-04, DLG-05, DLG-06 (DLG-25 üç '
         'eylemlidir: katalogda değil, `UnsavedChangesDialog`); T-16 → '
         'DLG-07, DLG-08, DLG-09, DLG-12 (DLG-32 özel gövdelidir: '
-        '`ExternalLinkDialog`); T-18 → DLG-13', () {
+        '`ExternalLinkDialog`); T-18 → DLG-13; T-20 → DLG-10, DLG-11', () {
       expect(DialogCatalog.ids.toSet(), {
         DialogId.dlg01,
         DialogId.dlg03,
@@ -52,6 +52,8 @@ void main() {
         DialogId.dlg07,
         DialogId.dlg08,
         DialogId.dlg09,
+        DialogId.dlg10,
+        DialogId.dlg11,
         DialogId.dlg12,
         DialogId.dlg13,
         DialogId.dlg26,

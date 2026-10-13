@@ -110,8 +110,9 @@ class UserMenuSheet extends ConsumerWidget {
     bool canDeleteComment = false,
   }) => [
     UserMenuAction.viewProfile,
-    // TODO(T-20): yorum satırlarını SHT-09 açar ve yürütür (W-21) — "Yorumu
-    // sil" → DLG-11, "Yorumu şikayet et" → SHT-10 (`ReportTargetType.comment`).
+    // Yorum satırlarını FED-02 / SHT-09 açar ve yürütür
+    // (`PostDetailViewModel.openCommentMenu`): "Yorumu sil" → DLG-11, "Yorumu
+    // şikayet et" → SHT-10 (`ReportTargetType.comment`).
     if (hasComment && canDeleteComment) UserMenuAction.removeComment,
     if (hasComment) UserMenuAction.reportComment,
     if (!isSelf) ...[

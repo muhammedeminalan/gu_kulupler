@@ -8,7 +8,9 @@ typedef GuActionSurfaceBuilder =
     Widget Function(BuildContext context, bool pressed);
 
 /// Eylem bileşenlerinin (`GuButton`, `GuIconButton`, `GuFab`, `GuChip`)
-/// ortak etkileşim kabuğu — paket içi yardımcı, barrel'da dışa aktarılmaz.
+/// ortak etkileşim kabuğu. Barrel'dan dışa aktarılır: `lib/product/widget`
+/// altındaki özel düğmeler de (ör. `PostCard` beğen / kaydet) aynı kabuğu
+/// kullanır.
 ///
 /// Prototipte hepsi `<button>`'dur (`ui.js:13`, `:18`, `:54`; `.fab`
 /// `screens-admin.js:34`); ortak davranış tek yerde toplanır (D-16):

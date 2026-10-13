@@ -35,6 +35,42 @@ final class BlockUndo extends Equatable {
   List<Object?> get props => [userId, name, unblocked];
 }
 
+/// Bir ekranda yapılan, oturuma henüz yansımamış engel değişiklikleri
+/// (kimlik → engelli mi). Engellenenler oturumdan gelir
+/// (`SessionState.blockedUserIds`); ekran iyimser değişikliği burada tutar ve
+/// listesini [applyTo] ile süzer (CLB-06, FED-01, FED-02).
+///
+/// ```dart
+/// void onBlockChanged(String userId, {required bool isBlocked}) {
+///   _blocks.mark(userId, isBlocked: isBlocked);
+///   state = state.copyWith(blockedUserIds: _blocks.applyTo(sessionBlocks));
+/// }
+///
+/// void onBlockSaved(String userId, {required bool isBlocked}) {
+///   session.setBlocked(userId, isBlocked: isBlocked);
+///   _blocks.settle(userId);
+/// }
+/// ```
+final class BlockOverrides {
+  final Map<String, bool> _changes = <String, bool>{};
+
+  /// [userId] bu ekranda engellendi / engeli kaldırıldı (iyimser).
+  void mark(String userId, {required bool isBlocked}) =>
+      _changes[userId] = isBlocked;
+
+  /// [userId] değişikliği oturuma işlendi: yerel kayıt artık gerekmez.
+  void settle(String userId) => _changes.remove(userId);
+
+  /// Oturumdaki [session] kümesine bu ekrandaki değişiklikler uygulanmış
+  /// engel kümesi.
+  Set<String> applyTo(Set<String> session) => {
+    for (final userId in session)
+      if (_changes[userId] ?? true) userId,
+    for (final MapEntry(:key, :value) in _changes.entries)
+      if (value) key,
+  };
+}
+
 /// Kullanıcı engelleme akışının ortak çekirdeği — SHT-27 "Engelle" /
 /// "Engeli kaldır" satırı olan her ViewModel (CLB-06 `ClubMembersViewModel`,
 /// CLB-07 `UserProfileViewModel`; ileride SHT-09, SET-02, ADM-05) aynı

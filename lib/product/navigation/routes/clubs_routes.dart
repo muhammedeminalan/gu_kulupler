@@ -21,6 +21,7 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
         TypedGoRoute<ClubAppliedRoute>(path: ClubAppliedRoute.segment),
         TypedGoRoute<ClubApplicationRoute>(path: ClubApplicationRoute.segment),
         TypedGoRoute<ClubMembersRoute>(path: ClubMembersRoute.segment),
+        TypedGoRoute<PostDetailRoute>(path: PostDetailRoute.segment),
       ],
     ),
   ],
@@ -82,9 +83,18 @@ final class ClubDetailRoute extends GoRouteData
   final ClubDetailTab? tab;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      ClubDetailView(clubId: clubId, tab: tab);
+  Widget build(BuildContext context, GoRouterState state) => ClubDetailView(
+    clubId: clubId,
+    tab: tab,
+    commentsSheetBuilder: commentsSheetBuilder,
+  );
 }
+
+/// Akıştaki gönderi kartının yorum düğmesi için SHT-09 gövdesi: sayfa
+/// `features/feed`'dedir, akış (FED-01, `features/clubs`) onu içe aktaramaz —
+/// rota (kompozisyon kökü) iki feature'ı burada bağlar.
+Widget commentsSheetBuilder(String clubId, String postId) =>
+    CommentsSheet(clubId: clubId, postId: postId);
 
 /// CLB-04 İsteğin iletildi — `/clubs/:clubId/applied`. CLB-03'ün alt
 /// rotasıdır (guard `A`); başvuru gönderilince `go` ile açılır, geri kulübe
@@ -142,6 +152,29 @@ final class ClubMembersRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ClubMembersView(clubId: clubId);
+}
+
+/// FED-02 Gönderi — `/clubs/:clubId/posts/:postId`. CLB-03'ün alt rotasıdır
+/// (guard `üye`: kulübün içini görmeyen kulüp sayfasına yönlenir —
+/// `RouteAccessTable`). Akıştaki gönderi kartı, SHT-09 "Tümünü gör" ve duyuru
+/// bildirimi `go` ile açar, geri kulübe döner.
+final class PostDetailRoute extends GoRouteData
+    with $PostDetailRoute, PlatformPageMixin {
+  /// [clubId] kulübünün [postId] gönderisi.
+  const PostDetailRoute({required this.clubId, required this.postId});
+
+  /// `/clubs/:clubId` altındaki yol parçası.
+  static const String segment = 'posts/:postId';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Gönderi kimliği (yol parametresi).
+  final String postId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      PostDetailView(clubId: clubId, postId: postId);
 }
 
 /// CLB-07 Profil — `/clubs/user/:userId?clubId=` (guard `A`). `/clubs`'un
