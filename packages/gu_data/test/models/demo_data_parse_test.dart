@@ -449,6 +449,26 @@ void main() {
       );
       expect(contact.email, user['email']);
 
+      // Başvuru notu yalnızca contact alt belgesindedir; üyelik belgesi (üye
+      // listesinin okuduğu belge) not taşımaz (CD-137).
+      const pendingId = 'c06_u_mehmet';
+      expect(
+        MembershipContactModel.fromJson(
+          DemoDataFixture.toFirestoreJson(
+            FirestoreCollections.contactDoc,
+            pendingId,
+          ),
+        ).note,
+        _rawDoc('memberships', pendingId)['note'],
+      );
+      expect(_rawDoc('memberships', pendingId)['note'], isNotEmpty);
+      expect(
+        docs[FirestoreCollections.memberships]!.values.where(
+          (doc) => doc.containsKey('note'),
+        ),
+        isEmpty,
+      );
+
       // rejectNote yalnızca bazı kayıtlarda; eksikse null.
       final removed = MembershipModel.fromJson(
         DemoDataFixture.toFirestoreJson(

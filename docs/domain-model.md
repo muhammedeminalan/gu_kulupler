@@ -66,6 +66,7 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 | `advisor?` | M{`name`,`title`,`userId?`} | Bkz. G-1 |
 | `status` | s | `active` · `suspended` |
 | `suspendReason?` | s | Süper admin zorunlu girer |
+| `lastMembershipRef?` | s | **Ayrılmış alan — istemci yazmaz, değeri `null`** (CD-137 madde 8q). CD-41 bu alana sayacı değiştiren üyeliğin yolunu yazdırıyordu; belge doğrulanmış herkese açık olduğundan yol kimin katıldığını / ayrıldığını üye olmayana sızdırıyordu (§3 `viewInside`). Rules eşlik eden üyeliği oturumdan türetir (`memberships/{clubId}_{uid}`); yönetici aktörlü geçişlerin işaretçisi T-30'da herkese açık olmayan bir belgede tasarlanır (W-64) |
 | + `BaseFields`, `createdBy` | | |
 
 ### 2.4 `memberships/{clubId}_{userId}`
@@ -74,7 +75,6 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 | `clubId` `userId` | s | ID ile tutarlı |
 | `status` | s | `pending · active · rejected · removed · left · cancelled` (§5) |
 | `role` | s | `member · board · president · advisor` (yalnızca `active` iken anlamlı) |
-| `note` | s (≤300) | Başvuru notu |
 | `applicant` | M{`name`,`department?`,`year?`,`avatarSeed`} | **Başvuru anındaki anlık görüntü** (ad/bölüm/sınıf; zaten `users/{uid}` ile aynı gizlilik sınıfında). Anonimleştirmede boşaltılır |
 | `appliedAt` | ts | |
 | `decidedAt?` `decidedBy?` | ts, s | Onay/red/çıkarma anı ve yapan |
@@ -83,7 +83,8 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 | `rejectNote?` | s | |
 | `priorCount` | i | Önceki başvuru sayısı (SHT-19'da gösterilir) |
 | + `BaseFields` | | |
-- **`memberships/{id}/private/contact`** (tek doküman, id `contact`): `email` (s), `emailLower` (s), + `BaseFields`. Başvuru anında **başvuran** yazar (değer = `request.auth.token.email`, Rules doğrular). Okuma: sahibi, kulüp **yöneticisi/danışmanı**, süper admin. **Sıradan üyeler okuyamaz** — üye listesi sorgusu (`memberships` where `clubId`, `status=='active'`) bu yüzden e-posta taşımaz (Firestore'da alan-düzeyi okuma kısıtı olmadığı için ayrı doküman). Yönetici bağlamındaki e-posta (MGT-02, SHT-19, SHT-21, MGT-03) buradan gelir. Anonimleştirmede `email/emailLower=''`.
+- **`memberships/{id}/private/contact`** (tek doküman, id `contact`): `email` (s), `emailLower` (s), `note` (s ≤300 — **başvuru notu**: başvuranın yöneticilere yazdığı serbest metin; `club.requireNote` ise boş olamaz, yoksa `''`; CD-137), + `BaseFields`. Başvuru anında **başvuran** yazar, üyelik belgesiyle aynı batch'te (`email` = `request.auth.token.email`, Rules doğrular). Okuma: sahibi, kulüp **yöneticisi/danışmanı**, süper admin. **Sıradan üyeler okuyamaz** — üye listesi sorgusu (`memberships` where `clubId`, `status=='active'`) bu yüzden e-posta ve başvuru notu taşımaz (Firestore'da alan-düzeyi okuma kısıtı olmadığı için ayrı doküman). Yönetici bağlamındaki e-posta (MGT-02, SHT-19, SHT-21, MGT-03) ve başvuru notu (MGT-02 satırı, SHT-19; başvuranın kendi notu CLB-05) buradan gelir. Anonimleştirmede `email/emailLower/note=''`.
+- **Başvuru notu üyelik belgesinde değildir** (CD-137, W-52b): `memberships.note` onaydan sonra da belgede kalıyor ve kulübün her aktif üyesi okuyabiliyordu → KVKK / gizlilik; e-postada (D-29) uygulanan desenin aynısıyla `private/contact`'a taşındı. Yeniden başvuruda (M3/M4) not aynı batch'te güncellenir; bekleyen başvuruda not düzenleme (CLB-05 → TST-07) yalnızca bu belgeyi günceller (sahibi, üyelik `pending`; T-16).
 - Demo'daki `stale` **saklanmaz**: çakışma, işlem sırasında beklenen durumun (`pending`) değişmiş olmasıdır → DLG-18.
 
 ### 2.5 `posts/{postId}`
@@ -186,8 +187,8 @@ Brief §2.3'ün üretim karşılığı. `none` = doküman yok **veya** `left/can
 
 | Geçiş | Tetikleyici (ekran/aksiyon) | Kim yazar | Sayaç | Bildirim / Günlük | Koşul |
 |---|---|---|---|---|---|
-| `∅/left/cancelled → pending` | Başvur (SHT-05) | başvuran | — | `application_received` → yöneticiler; `activity: application_received` | `club.approvalRequired && applicationsOpen`; `retryAfter` yok ya da geçmiş; `status` yalnızca `pending` yazılabilir; `applicant` snapshot dolu |
-| `∅/left/cancelled → active` (`member`) | Katıl (anında) | katılan | `memberCount +1` | `activity: member_joined` | `!approvalRequired && applicationsOpen && status==active` |
+| `∅/left/cancelled → pending` | Başvur (SHT-05) | başvuran | — | `application_received` → yöneticiler; `activity: application_received` | `club.approvalRequired && applicationsOpen` (`cancelled` için `approvalRequired` aranmaz — onaysız kulüpte de yönetici onayına gider, CD-137 madde 8s); `retryAfter` yok ya da geçmiş; `status` yalnızca `pending` yazılabilir; `applicant` snapshot dolu; başvuru notu (`club.requireNote` ise zorunlu, ≤ 300) aynı batch'te `private/contact.note`'a yazılır — üyelik belgesine değil (CD-137) |
+| `∅/left → active` (`member`) | Katıl (anında) | katılan | `memberCount +1` | `activity: member_joined` | `!approvalRequired && applicationsOpen && status==active`. **`cancelled → active` yoktur** (CD-137 madde 8s): iptal edilen başvuru onaysız kulüpte de yalnızca `pending`'e döner — aksi halde çıkarılan / reddedilen kullanıcı "tekrar başvur → iptal → anında katıl" ile yönetici onayını dolanırdı |
 | `pending → active` | Onayla (MGT-02 ✓) | yönetici | `+1` | `application_approved` → başvuran; `activity` | önceki durum `pending` değilse **DLG-18** |
 | `pending → rejected` | Reddet (SHT-20) | yönetici | — | `application_rejected`; `retryAfter = decidedAt + 7 gün`; `rejectReason/Note` | |
 | `pending → cancelled` | İsteği iptal et (DLG-07) | başvuran | — | TST-40 | |
@@ -201,6 +202,7 @@ Brief §2.3'ün üretim karşılığı. `none` = doküman yok **veya** `left/can
 - `role='advisor'` üyelik **danışman hesabıdır**; `memberCount`'a dahil **edilmez** ve `member` listesinde "Danışman" grubunda görünür. Danışmanlar yönetici sınırı hesabına girmez.
 - **Eşzamanlılık:** her geçiş transaction'da *beklenen önceki durumu* doğrular (optimistic). Beklenmeyen durum = çakışma = DLG-18 + liste yenile.
 - `priorCount` yeniden başvuruda `+1`.
+- **Not düzenleme durum geçişi değildir:** bekleyen başvurunun notu (CLB-05 "Notun" → TST-07) yalnızca `private/contact.note` güncellemesidir — yalnız sahibi, üyelik `pending` iken; üyelik belgesi değişmez (CD-137; yazma yolu T-16'da açılır).
 
 ## 6. Bildirimler
 
@@ -262,7 +264,7 @@ Sunum süreleri `Limits`'te **değildir** (CD-24, CD-58; PLAN §9.8): toast 4 sn
 
 1. **Ön koşul:** kullanıcı herhangi bir kulübün **başkanıysa** ilerleyemez (devret → MGT-03; TST-X10).
 2. Şifre ile **yeniden doğrulama** (`reauthenticate`) + "SİL" yazma (TST-X11, TST-X20 benzeri).
-3. **Tek batch/işlem dizisi (anonimleştirme + soft delete):** `users/{uid}`: `name="Silinmiş kullanıcı"`, `bio=''`, `interests=[]`, `avatarPath=null`, `department/year=null`, `status='deleted'`, soft-delete alanları; `private/account`: `email/emailLower=''`, `fcmTokens=[]`; her üyeliğin `private/contact` dokümanı: `email/emailLower=''`; kullanıcının `active` üyelikleri `left` (+`memberCount −1`, `applicant` snapshot boşaltılır), `pending` → `cancelled`; kendi rsvp'leri `cancelled` (+sayaçlar); `notifications`, `savedPosts`, `blocks` → `isDeleted`. **Gönderi ve yorumlar kalır**, yazar "Silinmiş kullanıcı" görünür.
+3. **Tek batch/işlem dizisi (anonimleştirme + soft delete):** `users/{uid}`: `name="Silinmiş kullanıcı"`, `bio=''`, `interests=[]`, `avatarPath=null`, `department/year=null`, `status='deleted'`, soft-delete alanları; `private/account`: `email/emailLower=''`, `fcmTokens=[]`; her üyeliğin `private/contact` dokümanı: `email/emailLower/note=''` (başvuru notu serbest metindir, kimliği ele verebilir — CD-137); kullanıcının `active` üyelikleri `left` (+`memberCount −1`, `applicant` snapshot boşaltılır), `pending` → `cancelled`; kendi rsvp'leri `cancelled` (+sayaçlar); `notifications`, `savedPosts`, `blocks` → `isDeleted`. **Gönderi ve yorumlar kalır**, yazar "Silinmiş kullanıcı" görünür.
 4. Oturum kapatılır → AUT-01 + TST-22. `status=='deleted'` kullanıcı **hiçbir yazma yapamaz** (Rules `isActiveUser()`), tekrar giriş denerse oturum kapatılır.
 5. **Auth kimliğinin kendisinin kalıcı silinmesi** istemcide yapılmaz (D-10). Q-11 cevabına göre: yok / Functions ile sunucu tarafı. Apple 5.1.1(v) uygulama içi silme başlatma gereksinimi bu akışla karşılanır; **mağaza gönderimi öncesi** kullanıcıyla netleştirilir.
 

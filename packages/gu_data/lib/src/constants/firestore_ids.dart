@@ -55,6 +55,22 @@ abstract final class FirestoreIds {
   static String notification(String type, String refId, String userId) =>
       '$type$_separator$refId$_separator$userId';
 
+  /// `activity/{clubId}_{actorId}_{kind}_{sequence}` — kullanıcının **kendi
+  /// üyelik geçişinin** günlük kaydı (`application_received`,
+  /// `member_joined`, `member_left`). [kind] enum'un JSON değeri, [sequence]
+  /// geçişten **sonraki** üyelik belgesinin `priorCount` değeridir.
+  ///
+  /// Kimlik sabittir ve Security Rules alanlarla karşılaştırır: bir geçişin
+  /// (tür, `priorCount`) çifti tekil olduğundan aynı geçişe ikinci günlük
+  /// aynı kimliğe düşer ve reddedilir (günlük değiştirilemez) — serbest
+  /// kimlikle tek işlemde sınırsız sahte satır yazılamaz (CD-137).
+  static String activity(
+    String clubId,
+    String actorId,
+    String kind,
+    int sequence,
+  ) => '$clubId$_separator$actorId$_separator$kind$_separator$sequence';
+
   /// `posts/{postId}/votes/{uid}` — bir kullanıcı bir oy.
   static String vote(String uid) => uid;
 

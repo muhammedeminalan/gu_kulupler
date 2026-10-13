@@ -1,11 +1,15 @@
 'use strict';
 // Rol × işlem matrisi koşucusu (PLAN §11.6): `expectations/<koleksiyon>.json` → vaka başına bir jest testi.
-// Bir dosya = §11.1'in bir satırı. Vaka: { role, op, variant, expect, ref, query?, group?, docPath?,
-// newDocPath?, without?, patch?, unset? }.
+// Bir dosya = §11.1'in bir satırı. Vaka: { role, op, variant | batch, expect, ref, query?, twin?, group?,
+// docPath?, newDocPath?, without?, patch?, unset?, fixtureOptions? }.
 //   op      get · list · create · update · softDelete · restore · delete
 //   role    contexts.js bağlamı (12 + alt varyantlar; `superadmin`/`otherMgr` takma adları kabul edilir)
 //   variant payloads.js yük adı (create/update); softDelete/restore yükleri sabittir
+//   batch   payloads.js çok belgeli yazım adı (create/update): yazımlar tek WriteBatch olarak gönderilir
+//           (üyelik + contact + sayaç + günlük gibi birlikte geçen işlemler — T-15)
 //   expect  allow | deny
+//   query   list süzgeçleri; dizgi değerlerde `{uid}` / `{club}` / `{otherClub}` doldurulur
+//   twin    false → süzgeçsiz ikiz üretilmez (süzgeçsiz okuması da izinli bağlam: süper admin)
 //   docPath / newDocPath   dosyanın hedef yolunu bu vaka için değiştirir (`{uid}` = bağlamın uid'i)
 //   without / patch / unset   veri kümesini bu vaka için düzenler (fixtures.js `editDocs`): kurulmayacak
 //           belgeler · üzerine yazılacak alanlar · kaldırılacak anahtarlar; yollar `{uid}` taşıyabilir
@@ -30,6 +34,7 @@ const {
   updateDoc,
   where,
 } = require('firebase/firestore');
+const budget = require('./budget');
 const { CLUB, OTHER_CLUB, contextFor, resolveName, uidOf } = require('./contexts');
 const { seedFixture } = require('./fixtures');
 const payloads = require('./payloads');
@@ -126,7 +131,10 @@ function validateCase(file, c, index) {
   resolveName(c.role);
   if (!OPS.includes(c.op)) throw new Error(`${where_}: geçersiz op "${c.op}" (${OPS.join(', ')})`);
   if (!EXPECTS.includes(c.expect)) throw new Error(`${where_}: geçersiz expect "${c.expect}"`);
-  if ((c.op === 'create' || c.op === 'update') && !c.variant) throw new Error(`${where_}: ${c.op} için variant zorunlu`);
+  const isWrite = c.op === 'create' || c.op === 'update';
+  if (isWrite && !c.variant && !c.batch) throw new Error(`${where_}: ${c.op} için variant zorunlu`);
+  if (c.variant && c.batch) throw new Error(`${where_}: variant ve batch birlikte verilemez`);
+  if (c.batch && !isWrite) throw new Error(`${where_}: batch yalnızca create/update ile kullanılır`);
   if (c.without !== undefined && !Array.isArray(c.without)) throw new Error(`${where_}: without dizi olmalı`);
   for (const key of ['patch', 'unset']) {
     if (c[key] !== undefined && !isPlainObject(c[key])) throw new Error(`${where_}: ${key} nesne olmalı`);
@@ -165,11 +173,18 @@ function fillPath(template, ctx) {
   return template.replace(/\{(uid|club|otherClub)\}/g, (_, key) => ctx[key]);
 }
 
-function listQuery(db, exp, c) {
+/** Süzgeç değerindeki yer tutucuları doldurur (dizgi ve dizgi listesi; diğer tipler olduğu gibi). */
+function fillValue(value, ctx) {
+  if (typeof value === 'string') return fillPath(value, ctx);
+  if (Array.isArray(value)) return value.map((item) => fillValue(item, ctx));
+  return value;
+}
+
+function listQuery(db, exp, c, ctx) {
   const source = c.group ? collectionGroup(db, exp.group) : collection(db, exp.listPath);
   const spec = c.query || {};
   const constraints = [
-    ...(spec.where || []).map(([field, op, value]) => where(field, op, value)),
+    ...(spec.where || []).map(([field, op, value]) => where(field, op, fillValue(value, ctx))),
     ...(spec.orderBy || []).map(([field, direction]) => orderBy(field, direction || 'asc')),
   ];
   return constraints.length ? query(source, ...constraints) : source;
@@ -182,10 +197,12 @@ function perform(db, exp, c, ctx) {
     case 'get':
       return getDoc(target);
     case 'list':
-      return getDocs(listQuery(db, exp, c));
+      return getDocs(listQuery(db, exp, c, ctx));
     case 'create':
+      if (c.batch) return budget.buildBatch(db, payloads.batchFor(c.batch, ctx)).commit();
       return setDoc(doc(db, fillPath(c.newDocPath || exp.newDocPath, ctx)), payloads.payloadFor(c.variant, ctx));
     case 'update':
+      if (c.batch) return budget.buildBatch(db, payloads.batchFor(c.batch, ctx)).commit();
       return updateDoc(target, payloads.payloadFor(c.variant, ctx));
     case 'softDelete':
       return updateDoc(target, payloads.softDelete(ctx.uid));
@@ -232,7 +249,7 @@ function expandCases(cases) {
   const out = [];
   for (const c of cases) {
     out.push(c);
-    if (c.op === 'list' && c.query) {
+    if (c.op === 'list' && c.query && c.twin !== false) {
       out.push({ ...c, query: undefined, expect: 'deny', ref: `${c.ref || ''} · süzgeçsiz ikiz (rules-spec §1.7)`.trim() });
     }
   }
@@ -240,10 +257,12 @@ function expandCases(cases) {
 }
 
 function caseTitle(c) {
-  const variant = c.variant ? `(${c.variant})` : c.op === 'list' ? (c.query ? '(süzgeçli)' : '(süzgeçsiz)') : '';
+  const filters = () => (c.query.where || []).map(([field, op, value]) => `${field} ${op} ${JSON.stringify(value)}`).join(', ');
+  const variant = c.variant || c.batch ? `(${c.variant || c.batch})` : c.op === 'list' ? (c.query ? `(${filters()})` : '(süzgeçsiz)') : '';
   const override = c.op === 'create' ? c.newDocPath : c.docPath;
   const target = override ? ` @ ${override}` : '';
-  return `${c.role} · ${c.op}${variant}${target} → ${c.expect}${c.ref ? ` — ${c.ref}` : ''}`;
+  const former = c.fixtureOptions && c.fixtureOptions.formerStatus ? ` [former: ${c.fixtureOptions.formerStatus}]` : '';
+  return `${c.role} · ${c.op}${variant}${target}${former} → ${c.expect}${c.ref ? ` — ${c.ref}` : ''}`;
 }
 
 /** Vakaları jest testlerine çevirir (çağıran `describe` içinde olmalıdır). */

@@ -45,8 +45,10 @@ service cloud.firestore {
     function isManager(c) { return mActive(c) && myM(c).role in ['board','president']; }
     function isPres(c)    { return mActive(c) && myM(c).role == 'president'; }
     function isAdvisor(c) { return mActive(c) && myM(c).role == 'advisor'; }
-    function seesInside(c){ return isSuper() || mActive(c); }                 // gönderi, üye listesi, members-only etkinlik
-    function seesMgmt(c)  { return isSuper() || isManager(c) || isAdvisor(c); } // panel (danışman salt okunur)
+    // Okuma kapıları: ikisi de emailOk() ister (doğrulamasını / alan adını yitiren jeton okuyamaz — CD-137 madde 8r)
+    function seesInside(c){ return emailOk() && (isSuper() || mActive(c)); }  // gönderi, üye listesi, members-only etkinlik; askıdaki üye OKUR
+    // panel (danışman salt okunur): yönetici / danışmanın hesabı AKTİF olmalı — askıdaki yönetici başvuru, contact ve günlüğü okuyamaz
+    function seesMgmt(c)  { return emailOk() && (isSuper() || (activeUser() && (isManager(c) || isAdvisor(c)))); }
 
     // ---- ortak alanlar ----
     function baseCreate() {
@@ -94,27 +96,35 @@ Gösterim: **R** okuma (get/list), **C** create, **U** update, **D** delete (hep
 - **D:** `false`.
 
 ### 3.3 `clubs/{clubId}`
-- **R:** `emailOk()` && (`!resource.data.isDeleted` || `isSuper()`). Askıdaki kulüp okunur (kart "askıda" görünümü / yönetici paneli); listeden ayıklamak arayüzdedir.
+- **R:** `emailOk()` && (`!resource.data.isDeleted` || `isSuper()`). Askıdaki kulüp okunur (kart "askıda" görünümü / yönetici paneli); listeden ayıklamak arayüzdedir. **T-15:** tekil okumada var olmayan kulüp boş döner (`resource == null`; "yok" ile "yetkisiz" ayrışır). Liste sorgusu `isDeleted == false` süzgecini taşır (§6). Kimlik listeli sorgu (`documentId in […]`, `getClubs`) belge belge değerlendirilir: listedeki silinmiş ya da var olmayan **tek** kimlik sorgunun tamamını düşürür (süper admin hariç) → `ClubRepository.getClubs` ret halinde kimlikleri tek tek okur, okunamayanı atlar (CD-137 madde 8k).
 - **C:** yalnızca `isSuper()` (ADM-03). Alan beyaz listesi, `nameLower` = `name.lower()`, `memberCount == 1` ve **aynı batch'te** `memberships/{clubId}_{presidentId}` (role `president`, `active`) ve `presidentId` tutarlı (`getAfter(mPath(clubId, presidentId)).data.role == 'president'`); danışman girildiyse (G-1) ek `advisor` üyeliği (`memberCount`'a dahil değil). Ad benzersizliği: istemci `nameLower` sorgusuyla kontrol eder, Rules **ikinci savunma** olarak `clubs/{nameLower-index}` kullanmaz — benzersizlik ihlali yönetsel risktir (kabul; K-sorusu adayı).
 - **U (yönetim `board|president`):** yalnızca `summary, about, conditions, social, approvalRequired, applicationsOpen, requireNote, palette, pattern, coverSeed, logoPath, coverPath, pinnedPostId`; sınırlar `Limits`. `name, nameLower, categoryId, iconName, founded, status, presidentId` **değişemez** (MGT-09'da kilitli).
 - **U (süper admin):** `status, suspendReason` (zorunlu neden), `name/nameLower/categoryId/iconName/founded`, `presidentId` (+aynı batch üyelik tutarlılığı).
 - **U (devir — başkan):** `presidentId` yalnızca başkanlık devri batch'inde: `getAfter` ile eski başkan `board`, yenisi `president` (domain-model §5).
-- **U (sayaç):** `memberCount` yalnızca üyelik değişimiyle ±1 (§5). Yalnızca `memberCount` + `updatedAt` değişir.
+- **U (sayaç):** `memberCount` yalnızca üyelik değişimiyle ±1 (§5). Yalnızca `memberCount` + `updatedAt` değişir; sonuç ≥ 0. **T-15 aktörü yalnızca üyeliğin sahibidir** (M2 / M3-`active` / M8): eşlik eden belge oturumdan türetilir (`memberships/{clubId}_{uid()}`), kural onun yazım-öncesi / yazım-sonrası durumunu okur: `+1` ⇒ sonra `active`, önce `active` değil; `−1` ⇒ `active → left`. **`lastMembershipRef` yazılmaz** (CD-137 madde 8q; CD-41'in `clubs` satırı kapatıldı): kulüp belgesi doğrulanmış herkese açıktır ve yol, kimin katıldığını / ayrıldığını üye olmayana sızdırıyordu (domain-model §3 `viewInside`, D-29) — alan beyaz listede yoktur, yazan sayaç yükü reddedilir. Yönetici ve süper admin aktörü (M5, M9, M12) T-30 / T-37'de, hesap silme (M14) T-29'da eklenir; aktörün sahibi olmadığı dalda işaretçi herkese açık belgede **durmaz** (karar: W-64).
 - **D:** `false`.
 
 ### 3.4 `memberships/{clubId}_{userId}` ve `/private/contact`
 Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resource.id == resource/clubId_userId`).
 
-- **R:** (a) `resource.data.userId == uid()`; (b) `seesMgmt(resource.data.clubId)`; (c) üye listesi: `resource.data.status=='active' && mActive(resource.data.clubId)` (sorgu `clubId` + `status=='active'` ile). `pending/rejected/removed/left/cancelled` belgeleri (c)'ye girmez. Üyelik belgesi **e-posta taşımaz** (domain-model §2.4).
-- **`/private/contact` R:** sahibi, `seesMgmt(clubId)` (danışman dahil). **C:** başvuran, yalnızca üyelik belgesiyle **aynı batch'te**; `email == request.auth.token.email`. **U:** yalnızca anonimleştirme (`email==''`). **D:** `false`.
+- **R:** (a) `emailOk() && resource.data.userId == uid()`; (b) `seesMgmt(resource.data.clubId)` (doğrulanmış e-posta + aktif hesap — askıdaki yönetici başvuruları okuyamaz, CD-137 madde 8r); (c) üye listesi: `resource.data.status=='active' && seesInside(resource.data.clubId)` (sorgu `clubId` + `status=='active'` ile; askıdaki üye okur). `pending/rejected/removed/left/cancelled` belgeleri (c)'ye girmez. Üyelik belgesi **e-posta ve başvuru notu taşımaz** (domain-model §2.4; D-29, CD-137): ikisi de `/private/contact`'tadır. `note` üyelik belgesinin alanı **değildir** — C ve U beyaz listelerinde yoktur (`keys().hasOnly`); bu anahtarı taşıyan üyelik yazımı reddedilir.
+- **`/private/contact`** — alanlar `email`, `emailLower`, `note` (başvuru notu, CD-137) + `BaseFields`; "sahibi" = üst üyelik belgesinin `userId == uid()` (okumada `get`, yazımda `getAfter`).
+  - **R:** sahibi, `seesMgmt(clubId)` (danışman dahil; doğrulanmış e-posta + **aktif hesap** — askıdaki ya da doğrulanmamış jetonlu yönetici okuyamaz, CD-137 madde 8r), süper admin. Sıradan üye (`mActive`), başka kulübün yöneticisi ve üye olmayanlar **okuyamaz** — başvuru notu onaydan sonra da üye listesine sızmaz.
+  - **C:** başvuran, yalnızca üyelik belgesiyle **aynı batch'te** (M1/M2; üyelik belgesi var ama bu belge yoksa M3/M4 batch'inde de): yazım-sonrası üyelik `userId == uid()`, `status in ['pending','active']`, `updatedAt == request.time`; `email == request.auth.token.email`; `note is string && note.size() <= 300` (`// limit: applicationNoteMax`); alan beyaz listesi `email, emailLower, note` + `BaseFields` (`baseCreate()`).
+  - **U (a) — yeniden başvuru notu (T-15):** sahibi, `activeUser()`; `touches(['note'])` (yalnız `note` + `updatedAt == request.time`; `email`/`emailLower` değişmez); `note.size() <= 300`; yalnızca M3/M4 ile **aynı batch'te**: üyelik önceki `status in ['left','cancelled','rejected','removed']`, yazım-sonrası `status in ['pending','active']`.
+  - **U (b) — not düzenleme (`canEditNote()`, T-16'da açılır; T-15'te kapalı):** sahibi, `activeUser()`; üyelik önce **ve** sonra `pending` (üyelik belgesi yazılmaz); `touches(['note'])`; `note.size() <= 300`. Başka durumda (onaylanmış / reddedilmiş / iptal) not değişmez.
+  - **U (anonimleştirme — M14, T-29):** `email=='' && emailLower=='' && note==''`; sahibi, `getAfter(users/uid).data.status == 'deleted'`.
+  - Yönetici, danışman ve süper admin bu belgeyi **yazamaz** (not başvuranındır). **D:** `false`.
+
+- **T-15 uygulama notları (CD-137 madde 8):** (a) var olmayan **kendi** belgesinin (`…_{uid}`) tekil okuması boş döner — üyelik ve `private/contact` için (başvuru işleminin ilk okuması, `getMembership`, `readContact`); başkasının kimliğinde ret. (b) `applicant` anlık görüntüsü dört alanıyla (`name, department, year, avatarSeed`) `users/{uid}` belgesine eşit olmalı, başka anahtar taşıyamaz. (c) M2 de `private/contact` ister (`getAfter(...).data.email == token.email`; not `''`). (d) Süper admin M1–M4 yazamaz (`RolePolicy.apply` ile aynı). (e) M4 `request.time >= retryAfter` toleranssızdır (alanı yönetici yazar — M6 / M9, T-30; ±5 dk toleransı o yazımın kuralıdır). (f) T-15'te açık dallar: M1–M4, M7, M8; M5, M6, M9–M12 T-30, M13 T-37, M14 T-29 — o güne kadar yönetici, danışman ve süper admin üyelik belgesini yazamaz.
 
 **U/C geçiş tablosu** (hepsi `touches([...])` beyaz listesi ve `updatedAt == request.time` ister; "aynı batch" = `getAfter` doğrulaması):
 
 | # | Geçiş | Aktör (Rules'un doğruladığı) | İzinli alanlar | Ek koşullar | Sayaç / yan yazım |
 |---|---|---|---|---|---|
-| M1 | **create** `pending` (Başvur) | `activeUser()`, `userId==uid()` | tüm başlangıç alanları (`status,role:'member',note,applicant,appliedAt,priorCount:0,…`) | kulüp `status=='active' && applicationsOpen && approvalRequired`; `note.size()<=300 && (!requireNote\|\|note.size()>0)`; `applicant.name==me().name` | `private/contact` (aynı batch); `activity`(isteğe bağlı: yazan başvuran, `kind='application_received'`) |
+| M1 | **create** `pending` (Başvur) | `activeUser()`, `userId==uid()` | tüm başlangıç alanları (`status,role:'member',applicant,appliedAt,priorCount:0,…`; **`note` yok** — CD-137) | kulüp `status=='active' && applicationsOpen && approvalRequired`; `!requireNote \|\| getAfter(private/contact).data.note.size()>0`; `applicant.name==me().name` | `private/contact` (aynı batch: `email, emailLower, note`; `note.size()<=300` o belgenin C dalında); `activity`(isteğe bağlı: yazan başvuran, `kind='application_received'`) |
 | M2 | **create** `active` (anında katıl) | aynı | + `role:'member'`, `decidedAt` yok | kulüp `active && applicationsOpen && !approvalRequired` | `memberCount +1` (`counterDelta`) + `activity member_joined` |
-| M3 | `left/cancelled → pending\|active` (yeniden) | belge sahibi | `status,note,applicant,appliedAt,priorCount(+1),retryAfter:null,rejectReason:null,rejectNote:null,decidedAt:null,decidedBy:null,role:'member'` | pending→M1 koşulları; active→M2 koşulları | aktifse `+1` |
+| M3 | `left → pending\|active`; `cancelled → pending` (yeniden) | belge sahibi | `status,applicant,appliedAt,priorCount(+1),retryAfter:null,rejectReason:null,rejectNote:null,decidedAt:null,decidedBy:null,role:'member'` | pending→M1 koşulları + `getAfter(private/contact).data.updatedAt == request.time` (not aynı batch'te yeniden yazılır; eski notla `requireNote` karşılanmaz); active→M2 koşulları, **yalnızca `left`'ten**. `cancelled` her kulüpte (onaysız dahil) yalnızca `pending`'e gider: iptal edilen başvuru M4'ten gelmiş olabilir, `cancelled → active` yönetici onayını M4 → M7 → M3 zinciriyle dolanırdı (CD-137 madde 8s) | aktifse `+1`; `private/contact.note` (contact U(a); belge yoksa C) |
 | M4 | `rejected/removed → pending` (tekrar başvur) | belge sahibi | M3 ile aynı | `resource.data.retryAfter == null \|\| request.time >= resource.data.retryAfter` | — |
 | M5 | `pending → active` (Onayla) | `isManager(clubId)` (karar veren ≠ başvuran) | `status,role:'member',decidedAt,decidedBy` | `resource.status=='pending'`; `decidedBy==uid()` | `memberCount +1` + bildirim + `activity` |
 | M6 | `pending → rejected` (Reddet) | `isManager` | `status,decidedAt,decidedBy,retryAfter,rejectReason,rejectNote` | `retryAfter == request.time + duration.value(7,'d')`; `rejectReason in [quota,criteria,missing,other]`; `rejectNote.size()<=200` | — |
@@ -128,6 +138,7 @@ Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resour
 | M14 | Hesap silme (SET-03) | belge sahibi | `status` (`active→left`, `pending→cancelled`), `applicant` boşaltma | kullanıcı `status` aynı işlemde `deleted`'a gidiyor | `memberCount −1` |
 
 - **Aynı kulüpte tek başkan:** `isPres` yalnızca devirle değişir (M11). `clubs.presidentId` ile üyelik tutarlılığı `getAfter` ile doğrulanır.
+- **Not düzenleme bir üyelik geçişi değildir (CD-137):** bekleyen başvurunun notu (CLB-05 → TST-07) `private/contact` U(b) ile güncellenir; M7 yalnızca `status` yazar ve üyelik belgesinde `note` dalı **yoktur** (yazma yolu T-16'da açılır).
 - **Çakışma (DLG-18):** M5–M7, M9, M12'de `resource.data.status` beklenen değerde değilse kural **reddeder**; istemci `permission-denied` yerine işlem içi okuma yaparak önce DLG-18'i gösterir (transaction'da beklenen durum doğrulanır).
 - **D:** `false`.
 
@@ -175,17 +186,19 @@ Belge ID'si `clubId + '_' + userId` ile **birebir** eşleşmeli (`request.resour
 - **D:** `false`.
 
 ### 3.10 `reports/{reporterId}_{targetType}_{targetId}`
-- **C:** `activeUser()`, `reporterId==uid()`, belge ID biçimi, `reason` ∈ 5, `note<=300`, `status=='open'`, `action==null`; hedef için kendi kendini şikayet yok (`targetType=='user'` ise `targetId != uid()`).
-- **R:** sahibi (kendi şikayeti) ve `isSuper()`. **U:** `isSuper()` — `status:'resolved', action, resolvedAt, resolvedBy` (grup çözümü aynı batch). **D:** `false`.
+- **C:** `activeUser()`, `reporterId==uid()`, belge ID biçimi (`reporterId_targetType_targetId`), `reason` ∈ 6 ve `targetType` ∈ 5 (CD-33), `note<=300`, `status=='open'`, `action` / `resolvedAt` / `resolvedBy` yok ya da `null` (W-51); hedef için kendi kendini şikayet yok (`targetType=='user'` ise `targetId != uid()`). `targetClubId`: `user` ⇒ yok / `null`; `club` ⇒ `== targetId`; `post` / `comment` / `event` ⇒ hedef belgenin `clubId` alanı. **Hedef var olmalıdır** (CD-137 madde 8u; +1 erişim): `user` ⇒ `exists(users/targetId)`, `club` ⇒ `exists(clubs/targetId)`, `post|comment|event` ⇒ `get(<koleksiyon>/targetId).data.clubId == targetClubId` — olmayan hedefe ya da başka kulübe atfedilmiş şikayet reddedilir (ADM-04 sahte şikayetle doldurulamaz).
+- **R:** sahibi (kendi şikayeti; `activeUser()`) ve `isSuper()`. Var olmayan kendi şikayetinin (`{uid}_…`) tekil okuması boş döner (`hasReported → false`). **U:** `isSuper()` — `status:'resolved', action, resolvedAt, resolvedBy` (grup çözümü aynı batch; T-37'de açılır). Sahibi güncelleyemez: aynı hedefe ikinci `set` update sayılır ve reddedilir (`ReportRepository.report` → `alreadyExists`). **D:** `false`.
 
 ### 3.11 `activity/{id}`
 - **R:** `seesMgmt(resource.data.clubId)`. **C:** işlemi yapan kullanıcı (`actorId==uid()`) ve `kind` ile yetki uyumu (örn. `member_removed` ⇒ `isManager`/`isSuper`; `member_joined` ⇒ kendisi) — **ve aynı batch'te** ilgili asıl yazım bulunmalı (`getAfter` ile üyelik/etkinlik/gönderi değişimi). **U/D:** `false` (değiştirilemez günlük).
+- **T-15'te açılan türler** (yalnızca kendi üyelik geçişi; alanlar `clubId, actorId, kind, refs, createdAt == request.time`; `refs.userId == uid()`, diğer `refs.*` yok / `null`): `application_received` ⇒ kendi üyeliği yazım-sonrası `pending`, önce `pending` değil (M1 / M3 / M4); `member_joined` ⇒ sonra `active`, önce değil (M2 / M3); `member_left` ⇒ `active → left` (M8). Yönetici / süper admin türleri T-30 / T-37'de eklenir. **Kimlik sabittir** (CD-137 madde 8t): `activityId == clubId + '_' + uid() + '_' + kind + '_' + string(getAfter(üyelik).data.get('priorCount', 0))` (`FirestoreIds.activity`). Bir geçişin (tür, `priorCount`) çifti tekildir; aynı geçişe ikinci günlük aynı kimliğe düşer, update sayılır ve reddedilir — serbest kimlikle tek batch'e yüzlerce sahte satır yazılamaz. **R** `seesMgmt` üzerinden doğrulanmış e-posta + aktif hesap ister (madde 8r).
 
 ### 3.12 `settings/{uid}`
 - **R/C/U:** `uid == request.auth.uid` && `emailOk()`; alan beyaz listesi; `quietFrom/quietTo` `HH:mm` regex; `reminderTime in [1h,1d]`. **D:** `false`.
 
 ### 3.13 `blocks/{blockerId}_{blockedId}`
 - **R/C/U:** `blockerId == uid()`; kendini engelleme yok (`blockedId != uid()`); engel kaldırma = `isSoftDelete`; yeniden engelleme/Geri al = `isRestore`. **D:** `false`.
+- **T-15:** R `emailOk()` + engelleyen (kaldırılmış kayıt dahil; engellenen ve süper admin okuyamaz); var olmayan kendi kaydının (`{uid}_…`) tekil okuması boş döner (`block()` önce okur). C / U `activeUser()` ister (askıdaki hesap yazamaz); C alanları `blockerId, blockedId` + `BaseFields`, belge ID biçimi `blockerId_blockedId`.
 
 ### 3.14 `savedPosts/{userId}_{postId}`
 - **R/C/U:** `userId == uid()`; **C** için `seesInside(clubId)`; kaldır = `isSoftDelete`, kaydet/Geri al = `isRestore`. **D:** `false`.
@@ -229,7 +242,7 @@ Mod C'de bir işlem çok alıcıya yazar (duyuru → tüm üyeler). Erişim ça�
 | CLB-06 üye listesi | `memberships` | `clubId==X`, `status=='active'` | `appliedAt`; sayfa 20 |
 | MGT-02 başvurular | `memberships` | `clubId==X`, `status=='pending'` | `appliedAt` ↓ |
 | MGT-03 üye yönetimi | `memberships` | `clubId==X`, `status=='active'` (+ rol süzgeci istemci) | — |
-| Başvuran e-postası | `memberships/{id}/private/contact` get | — | tek tek (SHT-19) |
+| Başvuran e-postası + başvuru notu | `memberships/{id}/private/contact` get | — | tek tek (SHT-19; MGT-02 satır ön izlemesi sayfa başına ≤ 20 get; CLB-05 başvuranın kendi notu) — CD-137 |
 | FED-01 gönderi akışı | `posts` | `clubId==X`, `isDeleted==false`, `isHidden==false` | `createdAt` ↓, 20 + imleç |
 | MGT-08 içerik yönetimi | `posts` | `clubId==X`, `isDeleted==false` | `createdAt` ↓ |
 | FED-02 yorumlar | `comments` | `postId==P`, `clubId==X`, `isDeleted==false`, `isHidden==false` | `createdAt` ↑ canlı |

@@ -160,7 +160,8 @@ abstract final class FirestoreFields {
   /// Danışman nesnesi (`ClubAdvisorModel`, K-A).
   static const String advisor = 'advisor';
 
-  /// `memberCount` ±1 batch'inde yazılan üyelik belgesi yolu (CD-41).
+  /// Ayrılmış alan: istemci yazmaz (CD-137 — üyelik yolu herkese açık kulüp
+  /// belgesinde durmaz; CD-41'in bu alanı T-15'te kapatıldı).
   static const String lastMembershipRef = 'lastMembershipRef';
 
   /// `social` alt alanı: Instagram kullanıcı adı.
@@ -186,7 +187,8 @@ abstract final class FirestoreFields {
   /// Kulüp rolü (`ClubRole`): `memberships` ve `refs` nesneleri.
   static const String role = 'role';
 
-  /// Serbest not: `memberships` (başvuru notu), `reports` (şikayet notu).
+  /// Serbest not: `memberships/{id}/private/contact` (başvuru notu, CD-137),
+  /// `reports` (şikayet notu).
   static const String note = 'note';
 
   /// Başvuru anındaki başvuran görüntüsü (`MembershipApplicantModel`).

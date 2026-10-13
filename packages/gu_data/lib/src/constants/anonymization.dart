@@ -50,11 +50,14 @@ abstract final class Anonymization {
     FirestoreFields.fcmTokens: <Object?>[],
   };
 
-  /// `memberships/{id}/private/contact` anonimleştirme yükü: `email` ve
-  /// `emailLower` → `''` (Rules: yalnızca `email == ''` güncellemesi izinli).
+  /// `memberships/{id}/private/contact` anonimleştirme yükü: `email`,
+  /// `emailLower` ve başvuru notu `note` → `''` (Rules: yalnızca
+  /// `email == ''` güncellemesi izinli). Not, başvuranın serbest metnidir ve
+  /// kimliği ele verebilir; bu yüzden e-postayla birlikte boşaltılır (CD-137).
   static Map<String, Object?> contactPayload() => {
     FirestoreFields.email: '',
     FirestoreFields.emailLower: '',
+    FirestoreFields.note: '',
   };
 
   /// `memberships/{id}` belgesindeki başvuran anlık görüntüsünün

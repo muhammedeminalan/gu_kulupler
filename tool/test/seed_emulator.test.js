@@ -135,6 +135,12 @@ test('seed · §9.12 kuralları: kullanıcı, kulüp, üyelik', () => {
   assert.deepEqual(membership.applicant, { name: raw.users.u_p_c01.name, department: raw.users.u_p_c01.department, year: raw.users.u_p_c01.year, avatarSeed: 'u_p_c01' });
   assert.equal(membership.rejectNote, null);
   assert.equal(docs.contact.c01_u_p_c01.email, raw.users.u_p_c01.email);
+  // Başvuru notu yalnızca `private/contact`'ta durur; üyelik belgesi (üye listesi) not taşımaz (CD-137).
+  assert.equal(raw.memberships.c06_u_mehmet.note, 'Gitar çalıyorum, jam seanslarına katılmak istiyorum.');
+  assert.equal(docs.contact.c06_u_mehmet.note, raw.memberships.c06_u_mehmet.note);
+  assert.equal(docs.contact.c01_u_p_c01.note, '');
+  assert.ok(Object.values(docs.memberships).every((m) => !('note' in m)));
+  assert.equal(Object.values(docs.contact).filter((c) => c.note !== '').length, 25);
 });
 
 test('seed · §9.12 kuralları: gönderi, oy, etkinlik, şikayet, sayaç, zaman', () => {

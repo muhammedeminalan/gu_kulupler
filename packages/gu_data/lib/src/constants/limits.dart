@@ -134,8 +134,8 @@ abstract final class Limits {
 
   // ── Üyelik ───────────────────────────────────────────────────────────
 
-  /// Başvuru notu en çok uzunluğu (`memberships.note`); Rules
-  /// `// limit: applicationNoteMax`.
+  /// Başvuru notu en çok uzunluğu (`memberships/{id}/private/contact.note`,
+  /// CD-137); Rules `// limit: applicationNoteMax`.
   static const int applicationNoteMax = 300;
 
   /// Ret notu en çok uzunluğu (`memberships.rejectNote`); Rules

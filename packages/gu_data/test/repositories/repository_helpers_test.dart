@@ -296,4 +296,44 @@ void main() {
       expect(RepositoryHelpers.whereInMax, 30);
     });
   });
+
+  group('T-15 · RepositoryHelpers · sayfa çevirisi', () {
+    test('parsePage: sırayı ve imleci korur; bozuk belge parse hatası, okuma '
+        'hatası aynen taşınır', () async {
+      final docs = [
+        await docOf('p01', {'text': 'bir'}),
+        await docOf('p02', {'text': 'iki'}),
+      ];
+      final cursor = PageCursor(docs.last.snapshot);
+
+      final page = RepositoryHelpers.parsePage(
+        FirebaseSuccess(PageResult(items: docs, next: cursor)),
+        textOf,
+      );
+      final broken = RepositoryHelpers.parsePage(
+        FirebaseSuccess(
+          PageResult(
+            items: [
+              ...docs,
+              await docOf('p03', {'text': 3}),
+            ],
+          ),
+        ),
+        textOf,
+      );
+      final failed = RepositoryHelpers.parsePage(
+        const FirebaseFailure<PageResult<FirestoreDoc>, FirestoreError>(
+          FirestoreError.unavailable,
+          message: 'ham',
+        ),
+        textOf,
+      );
+
+      expect(page.dataOrNull!.items, ['bir', 'iki']);
+      expect(page.dataOrNull!.next, same(cursor));
+      expect(broken.errorOrNull, FirestoreError.parse);
+      expect(failed.errorOrNull, FirestoreError.unavailable);
+      expect((failed as FirebaseFailure).message, 'ham');
+    });
+  });
 }

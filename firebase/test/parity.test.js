@@ -103,9 +103,11 @@ describe('parite (d) · SoftDelete / BaseFieldsPayload ↔ helpers/payloads.js',
   });
 
   test('sayaç yükü sayaç alanı + last*Ref + updatedAt yazar; bilinmeyen varyant hatadır', () => {
-    const bump = payloads.counterBump('memberCount', 1, 'lastMembershipRef', 'memberships/c01_u_member');
-    expect(Object.keys(bump).sort()).toEqual(['lastMembershipRef', 'memberCount', 'updatedAt']);
-    expect(bump.lastMembershipRef).toBe('memberships/c01_u_member');
+    const bump = payloads.counterBump('commentCount', 1, 'lastCommentRef', 'comments/cm01');
+    expect(Object.keys(bump).sort()).toEqual(['commentCount', 'lastCommentRef', 'updatedAt']);
+    expect(bump.lastCommentRef).toBe('comments/cm01');
+    // `clubs.memberCount` işaretçi taşımaz (CD-137 madde 8q): üyeliğin yolu herkese açık belgeye yazılmaz.
+    expect(Object.keys(payloads.memberCountBump(1)).sort()).toEqual(['memberCount', 'updatedAt']);
     expect(() => payloads.payloadFor('yok', {})).toThrow(/bilinmeyen yük varyantı/);
     expect(() => payloads.registerVariant('genericCreate', () => ({}))).toThrow(/zaten kayıtlı/);
   });
@@ -255,6 +257,52 @@ describe('parite (g) · StaticTables / enum değerleri ↔ Rules değer listeler
     const allowed = rulesList('d.reminderTime in ');
     expect(allowed).toEqual(['1h', '1d']);
     for (const value of allowed) expect(values).toContain(value);
+  });
+});
+
+describe('parite (g) · enum değerleri ↔ Rules değer listeleri (T-15)', () => {
+  const ENUMS = path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', 'models', 'enums');
+  /** Dart enum'unun tel değerleri (ilk argüman): `ad('değer')` ya da `ad('değer', …)` satırları. */
+  const enumValues = (file) => [...fs.readFileSync(path.join(ENUMS, file), 'utf8').matchAll(/^\s+\w+\('([^']+)'[,)]/gm)].map((m) => m[1]);
+  const quoted = (source) => [...source.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  /** Rules'ta `anchor` ifadesinden sonraki ilk `[ … ]` listesinin dizgi elemanları. */
+  const listAfter = (anchor) => {
+    const at = firestoreRules.indexOf(anchor);
+    if (at < 0) throw new Error(`firestore.rules: "${anchor}" bulunamadı`);
+    const open = firestoreRules.indexOf('[', at);
+    return quoted(firestoreRules.slice(open, firestoreRules.indexOf(']', open)));
+  };
+  /** `<alan> == '…'`, `<alan> != '…'` ve `<alan> in [ … ]` karşılaştırmalarındaki tüm literal'ler. */
+  const literalsOf = (field) => {
+    const single = [...firestoreRules.matchAll(new RegExp(`\\b${field}\\s*[!=]=\\s*'([^']*)'`, 'g'))].map((m) => m[1]);
+    const lists = [...firestoreRules.matchAll(new RegExp(`\\b${field}\\s+in\\s+\\[([^\\]]*)\\]`, 'g'))].flatMap((m) => quoted(m[1]));
+    return [...new Set([...single, ...lists])];
+  };
+
+  test('reports.reason değer listesi = ReportReason (6) ve reports.targetType = ReportTargetType (5) — CD-33', () => {
+    expect(listAfter('// ReportReason (6')).toEqual(enumValues('report_reason.dart'));
+    expect(listAfter('// ReportTargetType (5')).toEqual(enumValues('report_target_type.dart'));
+  });
+
+  test('Rules\'taki her `status` / `role` / `kind` literal\'i bir Dart enum değeridir (yazım hatası = sessiz ret)', () => {
+    // MembershipStatus ve ClubRole tel değerleri `constants/role_codes.dart` sabitlerinden gelir.
+    const roleCodes = fs.readFileSync(path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', 'constants', 'role_codes.dart'), 'utf8');
+    const codesOf = (className) => {
+      const body = roleCodes.slice(roleCodes.indexOf(`abstract final class ${className} {`));
+      return [...body.slice(0, body.indexOf('\n}')).matchAll(/static const String \w+ = '([^']+)';/g)].map((m) => m[1]);
+    };
+    const membershipStatuses = codesOf('MembershipStatusCodes');
+    const clubRoles = codesOf('RoleCodes').filter((value) => value !== 'superadmin');
+    expect(membershipStatuses.sort()).toEqual(['active', 'cancelled', 'left', 'pending', 'rejected', 'removed']);
+    expect(clubRoles.sort()).toEqual(['advisor', 'board', 'member', 'president']);
+
+    const statuses = [...membershipStatuses, ...['club_status.dart', 'user_status.dart', 'report_status.dart'].flatMap(enumValues)];
+    const used = { status: literalsOf('status'), role: literalsOf('role'), kind: literalsOf('kind') };
+    expect(used.status).toEqual(expect.arrayContaining([...membershipStatuses, 'open']));
+    for (const value of used.status) expect([value, statuses.includes(value)]).toEqual([value, true]);
+    expect(used.role.sort()).toEqual(clubRoles);
+    expect(used.kind.sort()).toEqual(['application_received', 'member_joined', 'member_left']);
+    for (const value of used.kind) expect([value, enumValues('activity_kind.dart').includes(value)]).toEqual([value, true]);
   });
 });
 

@@ -95,6 +95,8 @@ void main() {
     await contact.set({
       FirestoreFields.email: 'Ayse.Yilmaz@ogr.gumushane.edu.tr',
       FirestoreFields.emailLower: 'ayse.yilmaz@ogr.gumushane.edu.tr',
+      // Başvuru notu serbest metindir: adı içerebilir (CD-137).
+      FirestoreFields.note: 'Merhaba, ben Ayşe Yılmaz; katılmak istiyorum.',
       ...BaseFieldsPayload.create(),
     });
   });
@@ -275,12 +277,13 @@ void main() {
   });
 
   group('T-08 · Anonymization.contactPayload · belgeye yazım', () {
-    test('e-posta alanları boşaltılır', () async {
+    test('e-posta alanları ve başvuru notu boşaltılır', () async {
       await contact.update(Anonymization.contactPayload());
 
       final data = await read(contact);
       expect(data['email'], '');
       expect(data['emailLower'], '');
+      expect(data['note'], '');
     });
 
     test('yalnızca yükteki alanlar değişir', () async {
@@ -291,6 +294,7 @@ void main() {
       expect(_changedKeys(before, await read(contact)), {
         'email',
         'emailLower',
+        'note',
       });
     });
   });

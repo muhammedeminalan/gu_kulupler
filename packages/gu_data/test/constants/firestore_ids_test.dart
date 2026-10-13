@@ -133,6 +133,19 @@ void main() {
     });
 
     test('report = reporterId_targetType_targetId', () {
+      // Kullanıcının kendi üyelik geçişinin günlüğü: kimlik sabittir ve
+      // geçişten sonraki `priorCount`'u taşır (CD-137) — aynı geçişe ikinci
+      // kayıt aynı kimliğe düşer; yeniden başvuru yeni kimlik alır.
+      expect(
+        FirestoreIds.activity('c01', 'u_ayse', 'application_received', 0),
+        'c01_u_ayse_application_received_0',
+      );
+      expect(
+        FirestoreIds.activity('c01', 'u_ayse', 'application_received', 1),
+        isNot(
+          FirestoreIds.activity('c01', 'u_ayse', 'application_received', 0),
+        ),
+      );
       expect(FirestoreIds.report('u051', 'post', 'p17'), 'u051_post_p17');
       expect(FirestoreIds.report('u_ayse', 'user', 'u042'), 'u_ayse_user_u042');
     });
@@ -332,6 +345,7 @@ void main() {
 
       expect(mentioned, {
         'membership',
+        'activity',
         'vote',
         'rsvp',
         'notification',
@@ -381,7 +395,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 16 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 17 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -401,6 +415,7 @@ void main() {
         'report',
         'announcementCounter',
         'notification',
+        'activity',
         'vote',
         'clubCoverSeed',
         'eventCoverSeed',

@@ -31,7 +31,6 @@ final MembershipModel _full = MembershipModel(
   userId: 'u_ayse',
   status: MembershipStatus.rejected,
   role: ClubRole.board,
-  note: 'Katılmak istiyorum',
   applicant: _applicant,
   appliedAt: _appliedAt,
   decidedAt: _decidedAt,
@@ -87,6 +86,22 @@ void main() {
       expect(_full.createdBy, isNull);
     });
 
+    test('başvuru notu üyelik belgesinde taşınmaz (CD-137): toJson yazmaz, '
+        'eski biçimli belgedeki anahtar yok sayılır', () {
+      final legacy = MembershipModel.fromJson(const {
+        ..._minimalJson,
+        'note': 'Eski şemadaki not',
+      }, id: 'c01_u_ayse');
+
+      expect(table.jsonKeys, isNot(contains('note')));
+      expect(_full.toJson().containsKey('note'), isFalse);
+      expect(legacy.toJson().containsKey('note'), isFalse);
+      expect(
+        legacy,
+        MembershipModel.fromJson(_minimalJson, id: 'c01_u_ayse'),
+      );
+    });
+
     test('applicant Map olarak yazılır', () {
       expect(_full.toJson()['applicant'], {
         'name': 'Ayşe Demir',
@@ -119,7 +134,6 @@ void main() {
           'id': built.id,
           'status': model.status,
           'role': model.role,
-          'note': model.note,
           'appliedAt': model.appliedAt,
           'decidedAt': model.decidedAt,
           'decidedBy': model.decidedBy,
@@ -209,12 +223,6 @@ void main() {
           copy: _full.copyWith(role: ClubRole.president),
           read: (m) => m.role,
           expected: ClubRole.president,
-        ),
-        (
-          field: 'note',
-          copy: _full.copyWith(note: 'Yeni not'),
-          read: (m) => m.note,
-          expected: 'Yeni not',
         ),
         (
           field: 'applicant',

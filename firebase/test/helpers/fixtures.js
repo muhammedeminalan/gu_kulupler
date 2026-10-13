@@ -54,6 +54,15 @@ function emailDoc(email) {
   return base({ email, emailLower: email.toLowerCase() });
 }
 
+/**
+ * `memberships/{id}/private/contact`: başvuranın e-postası + başvuru notu. Not üyelik belgesinde
+ * DEĞİLDİR (CD-137): üyelik belgesini kulübün her aktif üyesi okur, bu belgeyi yalnızca sahibi ve
+ * kulüp yönetimi.
+ */
+function contactDoc(email, note = '') {
+  return { ...emailDoc(email), note };
+}
+
 /** `users/{uid}/private/account`: askı gerekçesi burada tutulur (CD-133), `users` belgesinde değil. */
 function accountDoc(email, user) {
   return {
@@ -88,7 +97,6 @@ function membershipDoc(uid, membership) {
     userId: uid,
     status: membership.status,
     role: membership.role,
-    note: '',
     applicant: { name: `Test ${uid}`, department: 'd01', year: '1', avatarSeed: uid },
     appliedAt: fromNow(-30 * DAY_MS),
     decidedAt: decided ? fromNow(-29 * DAY_MS) : null,
@@ -173,7 +181,7 @@ function identityDocs({ formerStatus }) {
       const membership = name === 'former' ? { ...def.membership, status: formerStatus } : def.membership;
       const id = `${membership.clubId}_${def.uid}`;
       docs[`memberships/${id}`] = membershipDoc(def.uid, membership);
-      docs[`memberships/${id}/private/contact`] = emailDoc(def.token.email);
+      docs[`memberships/${id}/private/contact`] = contactDoc(def.token.email);
     }
   }
   return docs;
@@ -275,6 +283,8 @@ function baseDocs(options = {}) {
     createdAt: serverTimestamp(),
   };
   docs['blocks/u_member_u_student'] = base({ blockerId: 'u_member', blockedId: 'u_student' });
+  // Askıdaki kullanıcının askıdan ÖNCE koyduğu engel (okur; kaldıramaz / geri alamaz — §11.1 satır 15).
+  docs['blocks/u_susp_u_student'] = base({ blockerId: 'u_susp', blockedId: 'u_student' });
   docs['savedPosts/u_member_p01'] = base({
     userId: 'u_member',
     postId: 'p01',

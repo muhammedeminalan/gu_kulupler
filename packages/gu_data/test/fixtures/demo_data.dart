@@ -359,7 +359,6 @@ final class _Converter {
           'userId': membership['userId'],
           'status': membership['status'],
           'role': membership['role'],
-          'note': membership['note'],
           'applicant': {
             'name': user['name'],
             'department': user['department'],
@@ -378,12 +377,14 @@ final class _Converter {
       }(),
   };
 
+  /// Başvuru notu üyelik belgesine değil buraya yazılır: üyelik belgesini
+  /// kulübün her aktif üyesi okuyabilir (CD-137).
   Map<String, Map<String, Object?>> _contacts() => {
     for (final MapEntry(key: id, :value) in memberships.entries)
       id: _emailDoc(
         _map(users[_map(value)['userId']]),
         _time(_map(value), 'appliedAt'),
-      ),
+      )..addAll({'note': _map(value)['note']}),
   };
 
   // ── posts · votes · comments ─────────────────────────────────────────

@@ -6,19 +6,22 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'membership_contact_model.g.dart';
 
-/// Başvuranın iletişim bilgisi — `memberships/{id}/private/contact` alt
-/// belgesi (PLAN §9.6.5, domain-model §2.4; D-29).
+/// Başvuranın iletişim bilgisi ve başvuru notu —
+/// `memberships/{id}/private/contact` alt belgesi (PLAN §9.6.5, domain-model
+/// §2.4; D-29, CD-137).
 ///
-/// E-posta yalnızca burada tutulur: sahibi, kulüp yöneticisi / danışmanı ve
-/// süper admin okur; sıradan üyeler okuyamaz. Belge kimliği sabittir
-/// (`FirestoreCollections.contactDoc`), bu yüzden modelde `id` alanı yoktur.
-/// Hesap silinince iki alan da boş dizgi olur (`Anonymization.contactPayload`).
+/// E-posta ve başvuru notu yalnızca burada tutulur: sahibi, kulüp yöneticisi /
+/// danışmanı ve süper admin okur; sıradan üyeler okuyamaz. Belge kimliği
+/// sabittir (`FirestoreCollections.contactDoc`), bu yüzden modelde `id` alanı
+/// yoktur. Hesap silinince üç alan da boş dizgi olur
+/// (`Anonymization.contactPayload`).
 @JsonSerializable()
 final class MembershipContactModel extends Equatable with BaseFields {
   /// İletişim kaydı oluşturur.
   const MembershipContactModel({
     required this.email,
     required this.emailLower,
+    this.note = '',
     this.createdAt,
     this.updatedAt,
     this.isDeleted = false,
@@ -37,6 +40,14 @@ final class MembershipContactModel extends Equatable with BaseFields {
   /// [email]'in küçük harfli kopyası (arama).
   @JsonKey(name: FirestoreFields.emailLower)
   final String emailLower;
+
+  /// Başvuru notu — başvuranın kulüp yöneticilerine yazdığı serbest metin
+  /// (≤ `Limits.applicationNoteMax`; kulüp `requireNote` ise boş olamaz).
+  ///
+  /// Üyelik belgesinde değil burada durur (CD-137): onaydan sonra da yalnızca
+  /// sahibi ve kulüp yönetimi görür. Not yazılmamış başvuruda boş dizgidir.
+  @JsonKey(name: FirestoreFields.note)
+  final String note;
 
   @override
   @JsonKey(name: FirestoreFields.createdAt)
@@ -72,6 +83,7 @@ final class MembershipContactModel extends Equatable with BaseFields {
   MembershipContactModel copyWith({
     String? email,
     String? emailLower,
+    String? note,
     DateTime? createdAt,
     bool clearCreatedAt = false,
     DateTime? updatedAt,
@@ -84,6 +96,7 @@ final class MembershipContactModel extends Equatable with BaseFields {
   }) => MembershipContactModel(
     email: email ?? this.email,
     emailLower: emailLower ?? this.emailLower,
+    note: note ?? this.note,
     createdAt: clearCreatedAt ? null : (createdAt ?? this.createdAt),
     updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
     isDeleted: isDeleted ?? this.isDeleted,
@@ -95,6 +108,7 @@ final class MembershipContactModel extends Equatable with BaseFields {
   List<Object?> get props => [
     email,
     emailLower,
+    note,
     createdAt,
     updatedAt,
     isDeleted,

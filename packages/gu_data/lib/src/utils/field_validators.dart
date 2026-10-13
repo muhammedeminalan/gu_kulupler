@@ -217,8 +217,9 @@ abstract final class FieldValidators {
 
   // ── memberships ──────────────────────────────────────────────────────
 
-  /// `memberships.note` (≤ `Limits.applicationNoteMax`); kulüp not istiyorsa
-  /// ([requireNote]) boş olamaz.
+  /// Başvuru notu — `memberships/{id}/private/contact.note`
+  /// (≤ `Limits.applicationNoteMax`); kulüp not istiyorsa ([requireNote]) boş
+  /// olamaz.
   static FieldError? applicationNote(
     String value, {
     required bool requireNote,

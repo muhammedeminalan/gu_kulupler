@@ -8,6 +8,9 @@ rules_version = '2';
 // firebase/test/rules/delete_denied.test.js karşılaştırır); bloklar sahibi task'ta açılır (blok
 // başlıklarındaki T-xx). O güne kadar hiçbir istemci o bloğun belgelerini okuyamaz ve yazamaz.
 // Açılan bloklar: T-12 → users (sahibi C/U), users/private/account (sahibi C/U), settings.
+// T-15 → clubs (okuma + `memberCount` sayaç dalı), memberships (okuma + başvuran geçişleri M1–M4, M7, M8),
+// memberships/private/contact (okuma + başvuranın C / yeniden başvuru notu), reports (C + okuma),
+// blocks, activity (okuma + başvuranın / üyenin kendi geçiş günlüğü).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -47,10 +50,14 @@ service cloud.firestore {
     function isManager(c) { return mActive(c) && myM(c).role in ['board', 'president']; }
     function isPres(c) { return mActive(c) && myM(c).role == 'president'; }
     function isAdvisor(c) { return mActive(c) && myM(c).role == 'advisor'; }
-    // gönderi, üye listesi, members-only etkinlik
-    function seesInside(c) { return isSuper() || mActive(c); }
-    // yönetim paneli (danışman salt okunur)
-    function seesMgmt(c) { return isSuper() || isManager(c) || isAdvisor(c); }
+    // Okuma kapıları — ikisi de doğrulanmış, izinli alan adlı e-posta ister (PLAN §11.1 `unver` sütunu):
+    // üyelik belgesi `active` kalsa da doğrulamasını / alan adını yitiren jeton içeriği okuyamaz.
+    // gönderi, üye listesi, members-only etkinlik. Askıdaki üye OKUR (üyeliği `active` kaldıysa — §11.1 satır 6).
+    function seesInside(c) { return emailOk() && (isSuper() || mActive(c)); }
+    // yönetim paneli (danışman salt okunur): başvurular, `private/contact`, günlük. Yönetici / danışmanın
+    // hesabı AKTİF olmalıdır: askıya alınan yönetici (Mod C'de Auth hesabı açık kalır) geçerli jetonuyla
+    // başvuranların e-postasını, notunu ve günlüğü okuyamaz (§11.1 satır 4, 5, 13 `susp`; CD-137 madde 8r).
+    function seesMgmt(c) { return emailOk() && (isSuper() || (activeUser() && (isManager(c) || isAdvisor(c)))); }
 
     // ---- ortak alanlar (BaseFieldsPayload / SoftDelete ile aynı anahtarlar) ----
     function baseCreate() {
@@ -76,6 +83,17 @@ service cloud.firestore {
     }
     // delta doğrulama (±1) — `getAfter` aynı batch içindeki yazımı görür
     function counterDelta(path, field, d) { return getAfter(path).data[field] == get(path).data[field] + d; }
+
+    // ---- sayaç–belge eşliği (PLAN §11.2b, CD-41) ----
+    // İş belgesi dalı `counterDelta` ile sayacın, sayaç dalı iş belgesinin AYNI batch'te doğru geçişi yaptığını
+    // görür. İş belgesinin yolu, aktör belgenin sahibiyken oturumdan TÜRETİLİR (`mPath(clubId, uid())`):
+    // herkese açık sayaç belgesine yazılmaz (CD-137 madde 8q — `clubs.lastMembershipRef` kimin katıldığını /
+    // ayrıldığını üye olmayana sızdırıyordu). Aktörün sahibi olmadığı dallar (yönetici — T-30; yorum /
+    // katılım sayaçları — T-19 / T-22) iş belgesini bir işaretçiden okur; işaretçi yardımcıları (`refAfter` …)
+    // ve işaretçinin duracağı belge o task'ta eklenir (herkese açık belgede kullanıcı kimliği taşıyan yol
+    // DURMAZ). `exists` / `get` yazım-öncesi durumu verir (M2'de üyelik henüz yoktur).
+    function clubPath(c) { return /databases/$(database)/documents/clubs/$(c); }
+    function delta(field) { return request.resource.data[field] - resource.data[field]; }
 
     // ── Koleksiyonlar (PLAN §11.1 — 18 satır) ───────────────────────────────────────────────────
 
@@ -235,23 +253,268 @@ service cloud.firestore {
       }
     }
 
-    // 3 · clubs/{clubId} — T-15 (yönetim T-30, süper admin T-37)
+    // 3 · clubs/{clubId} — T-15 (okuma + sayaç dalı) · T-30 (yönetim, devir) · T-37 (süper admin) · rules-spec §3.3
+    // Okuma yolları: ClubRepository.fetchActiveClubs (L: `isDeleted == false`) · getClub (G) · getClubs
+    // (L: `documentId in […]` + `isDeleted == false`) · üyelik işlemlerinin kulüp okuması (G).
+    // Yazma yolu (T-15): yalnızca sayaç dalı — MembershipRepository.joinInstant (+1) / leave (−1).
+    // Kapalı kalan dallar: C (süper admin, ADM-03 — T-37) · U yönetim alanları ve `presidentId` devri (T-30) ·
+    // U süper admin `status` / `suspendReason` / ad alanları (T-37) · sayaç dalının yönetici ve süper admin
+    // aktörü (M5 / M9 / M12 — T-30; M9 süper — T-37) ve hesap silme (M14 — T-29).
     match /clubs/{clubId} {
-      allow read: if false;
-      allow create, update: if false;
+      // U (sayaç dalı, PLAN §11.2b) — yalnızca `memberCount` ±1 (+ `updatedAt`).
+      // T-15 aktörü yalnızca üyeliğin sahibidir: eşlik eden belge oturumun BU kulüpteki üyeliğidir
+      // (`memberships/{clubId}_{uid}`); geçiş o belgenin yazım-öncesi ve yazım-sonrası durumundan doğrulanır
+      // (tek başına sayaç yazan batch reddedilir): +1 = katılım (M2 / M3 `active`), −1 = ayrılma (M8).
+      // Kulüp belgesi doğrulanmış herkese açıktır: üyeliğin yolu (`lastMembershipRef`) bu belgeye YAZILMAZ —
+      // beyaz listede yoktur (CD-137 madde 8q). Yönetici / süper admin aktörü T-30 / T-37'de eklenir.
+      // 1 erişim yolu: üyelik belgesi (getAfter + get / exists).
+      function canBumpMemberCount() {
+        let ref = mPath(clubId, uid());
+        let m = getAfter(ref).data;
+        let d = delta('memberCount');
+        return touches(['memberCount'])
+            && d in [-1, 1]
+            && request.resource.data.memberCount >= 0
+            && m.clubId == clubId && m.userId == uid()
+            && ((d == 1 && m.status == 'active' && (!exists(ref) || get(ref).data.status != 'active'))
+                || (d == -1 && m.status == 'left' && get(ref).data.status == 'active'));
+      }
+
+      // R — doğrulanmış her kullanıcı; silinmiş kulübü yalnızca süper admin okur. Askıdaki kulüp okunur
+      // (kart "askıda" görünümü; listeden ayıklamak arayüzdedir — rules-spec §9.5). Liste sorgusu
+      // `isDeleted == false` süzgecini taşımak zorundadır (rules-spec §6). Olmayan kulübün tekil okuması
+      // boş döner (`resource == null`): "yok" ile "yetkisiz" ayrışır. Kimlik listeli sorgu
+      // (`documentId in […]` — getClubs) belge belge değerlendirilir: listedeki silinmiş ya da olmayan TEK
+      // kimlik sorgunun tamamını düşürür (süper admin hariç; listede `resource == null` okunamaz).
+      allow get: if emailOk() && (resource == null || resource.data.isDeleted == false || isSuper());
+      allow list: if emailOk() && (resource.data.isDeleted == false || isSuper());
+      allow create: if false;
+      allow update: if canBumpMemberCount();
       allow delete: if false;
     }
 
     // 4 · memberships/{clubId}_{userId} — T-15 (M1–M4, M7, M8) · T-30 (M5–M12) · T-37 (M13) · T-29 (M14)
+    // rules-spec §3.4 · durum makinesi domain-model §5 · PLAN §11.2.
+    // Yazma yolları (T-15, hepsi belgenin sahibi): MembershipRepository.apply (M1 C / M3–M4 U) ·
+    // joinInstant (M2 C / M3 U) · cancelApplication (M7) · leave (M8).
+    // Kapalı kalan dallar: M5 onay · M6 red (`retryAfter` = +7 gün, ±5 dk) · M9 çıkarma · M10 rol ·
+    // M11 devir · M12 geri al (T-30) · M13 danışman (T-37) · M14 hesap silme (T-29). Yönetici, danışman ve
+    // süper admin bu belgeyi T-30 / T-37'ye kadar YAZAMAZ.
+    // Belge e-posta ve başvuru notu TAŞIMAZ (D-29, CD-137): `note` hiçbir beyaz listede yoktur.
+    // Dal sırası: her dal önce ucuz ayırıcıya (önceki / sonraki `status`) bakar, erişim çağrıları sonra
+    // gelir — eşleşmeyen dallar kısa devre olur (istek başına 1000 ifade sınırı; T-30 dalları da böyle eklenir).
     match /memberships/{membershipId} {
-      allow read: if false;
-      allow create, update: if false;
+      function contactPath() {
+        return /databases/$(database)/documents/memberships/$(membershipId)/private/contact;
+      }
+
+      // Belge kimliği oturumun uid'iyle mi bitiyor (`…_<uid>`)? Yalnızca OLMAYAN belgenin tekil
+      // okumasında kullanılır (var olan belgede sahiplik `userId` alanından okunur).
+      function ownMembershipId() {
+        let suffix = '_' + uid();
+        return membershipId.size() > suffix.size()
+            && membershipId[membershipId.size() - suffix.size():membershipId.size()] == suffix;
+      }
+
+      // R (rules-spec §3.4): (a) sahibi · (b) kulüp yönetimi, danışman, süper admin · (c) üye listesi:
+      // kulübün aktif üyesi yalnızca `active` belgeleri okur (`pending` / `rejected` / `removed` / `left` /
+      // `cancelled` belgeleri (c)'ye girmez).
+      // (b) ve (c) de `emailOk()` ister; (b) ayrıca aktif hesap (`seesMgmt`): askıdaki yönetici başvuruları
+      // listeleyemez. Askıdaki sıradan üye üye listesini okur (`seesInside`), kendi belgesini de ((a)).
+      function canReadMembership() {
+        return (emailOk() && resource.data.userId == uid())
+            || seesMgmt(resource.data.clubId)
+            || (resource.data.status == 'active' && seesInside(resource.data.clubId));
+      }
+
+      // Karar alanları boş mu (anahtar yok ya da açık null — W-51)?
+      function decisionCleared(d) {
+        return d.get('decidedAt', null) == null && d.get('decidedBy', null) == null
+            && d.get('retryAfter', null) == null && d.get('rejectReason', null) == null
+            && d.get('rejectNote', null) == null;
+      }
+
+      // `applicant` = başvuranın `users/{uid}` belgesinden anlık görüntüsü (ad, bölüm, sınıf, avatar tohumu).
+      // Belgeyi kulübün her aktif üyesi okur: dört alan kullanıcı belgesiyle birebir olmalıdır (biçimi
+      // users kuralları sabitler); başka anahtar (e-posta, not) taşıyamaz.
+      function applicantOk(a) {
+        let u = me();
+        return a is map && a.keys().hasOnly(['name', 'department', 'year', 'avatarSeed'])
+            && a.name == u.name && a.avatarSeed == u.avatarSeed
+            && a.get('department', null) == u.get('department', null)
+            && a.get('year', null) == u.get('year', null);
+      }
+
+      // Başvuru / katılım kabul eden kulüp: silinmemiş, askıda değil, başvurular açık.
+      function clubOpen(club) {
+        return club.isDeleted == false && club.status == 'active' && club.applicationsOpen == true;
+      }
+
+      // `requireNote` kulübünde not, aynı batch'te yazılan `private/contact.note`'tan okunur (CD-137).
+      function noteGiven(club, contact) { return club.requireNote == false || contact.note.size() > 0; }
+
+      // C ortak biçimi (M1 / M2): yeni belge, sahibi oturumdur, kimlik `clubId_userId` ile birebirdir.
+      // Süper admin başvuramaz / katılamaz (domain-model §3 `apply`: yalnızca öğrenci; RolePolicy ile aynı).
+      function isNewOwnMembership() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['clubId', 'userId', 'status', 'role', 'applicant', 'appliedAt', 'decidedAt',
+                                 'decidedBy', 'retryAfter', 'rejectReason', 'rejectNote', 'priorCount',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && !isSuper()
+            && d.userId == uid()
+            && d.clubId is string
+            && membershipId == d.clubId + '_' + d.userId
+            && d.role == 'member' && d.priorCount == 0 && d.appliedAt == request.time
+            && decisionCleared(d) && applicantOk(d.applicant);
+      }
+
+      // M1 — create `pending` (Başvur). `private/contact` aynı batch'te oluşur (e-posta token'dan).
+      // 3 erişim yolu: users/{uid} · clubs/{c} · private/contact (getAfter).
+      function canApply() {
+        let d = request.resource.data;
+        let club = get(clubPath(d.clubId)).data;
+        let contact = getAfter(contactPath()).data;
+        return d.status == 'pending' && activeUser() && isNewOwnMembership()
+            && clubOpen(club) && club.approvalRequired == true
+            && contact.email == request.auth.token.email
+            && noteGiven(club, contact);
+      }
+
+      // M2 — create `active` (anında katıl): onaysız kulüp + `memberCount +1` aynı batch'te.
+      function canJoinInstant() {
+        let d = request.resource.data;
+        let club = get(clubPath(d.clubId)).data;
+        return d.status == 'active' && activeUser() && isNewOwnMembership()
+            && clubOpen(club) && club.approvalRequired == false
+            && getAfter(contactPath()).data.email == request.auth.token.email
+            && counterDelta(clubPath(d.clubId), 'memberCount', 1);
+      }
+
+      // U ortak biçimi (M3 / M4 — yeniden başvuru / katılım): karar alanları temizlenir, `priorCount +1`,
+      // anlık görüntü yenilenir, rol `member`'a döner. `clubId`, `userId`, `createdAt`, `isDeleted*`
+      // beyaz listede yoktur → değişemez. `private/contact` aynı batch'te yeniden yazılır
+      // (`updatedAt == request.time`): eski başvurunun notu yeni başvuruya taşınmaz (CD-137).
+      function isReapply() {
+        let d = request.resource.data;
+        return resource.data.userId == uid() && !isSuper() && activeUser()
+            && touches(['status', 'role', 'applicant', 'appliedAt', 'priorCount', 'retryAfter', 'rejectReason',
+                        'rejectNote', 'decidedAt', 'decidedBy'])
+            && d.role == 'member' && d.appliedAt == request.time
+            && d.priorCount == resource.data.get('priorCount', 0) + 1
+            && decisionCleared(d) && applicantOk(d.applicant)
+            && getAfter(contactPath()).data.updatedAt == request.time;
+      }
+
+      // M3 — `left` → `pending` (onaylı kulüp, M1 koşulları) | `active` (onaysız kulüp, M2 koşulları +
+      // `memberCount +1`); `cancelled` → yalnızca `pending`, HER kulüpte. İptal edilen başvuru M4'ten gelmiş
+      // olabilir (çıkarılan / reddedilen → `pending` → M7 `cancelled`): `cancelled → active` açık olsaydı
+      // yönetici onayı "başvur → iptal → anında katıl" zinciriyle dolanılırdı (CD-137 madde 8s). Onaysız
+      // kulüpte iptal edilmiş başvurunun sahibi yeniden başvurur ve yönetici onayını bekler.
+      function canReapplyFromInactive() {
+        let d = request.resource.data;
+        let was = resource.data.status;
+        let club = get(clubPath(resource.data.clubId)).data;
+        return was in ['left', 'cancelled'] && isReapply() && clubOpen(club)
+            && ((d.status == 'pending' && (club.approvalRequired == true || was == 'cancelled')
+                 && noteGiven(club, getAfter(contactPath()).data))
+                || (d.status == 'active' && was == 'left' && club.approvalRequired == false
+                    && counterDelta(clubPath(resource.data.clubId), 'memberCount', 1)));
+      }
+
+      // M4 — `rejected` / `removed` → yalnızca `pending` (onaysız kulüpte de: reddedilen / çıkarılan kullanıcı
+      // yöneticinin onayına döner), bekleme süresi dolduktan sonra. `retryAfter`'ı yönetici yazar (M6 / M9,
+      // T-30: sunucu zamanı + 7 gün); burada sunucu saatiyle karşılaştırılır. Alan yoksa (W-51) bekleme yoktur.
+      function canReapplyAfterCooldown() {
+        let club = get(clubPath(resource.data.clubId)).data;
+        return resource.data.status in ['rejected', 'removed'] && isReapply()
+            && request.resource.data.status == 'pending'
+            && (resource.data.get('retryAfter', null) == null || request.time >= resource.data.retryAfter)
+            && clubOpen(club) && noteGiven(club, getAfter(contactPath()).data);
+      }
+
+      // M7 — `pending` → `cancelled` (İsteği iptal): yalnızca `status`. Not düzenleme bu belgede değildir
+      // (`private/contact` U(b), T-16).
+      function canCancelApplication() {
+        return resource.data.status == 'pending' && request.resource.data.status == 'cancelled'
+            && resource.data.userId == uid() && activeUser()
+            && touches(['status']);
+      }
+
+      // M8 — `active` → `left` (Ayrıl): yalnızca `status` + `memberCount −1` aynı batch'te. Başkan (önce
+      // devir, M11) ve danışman (`memberCount` dışı; yalnızca M13) ayrılamaz.
+      function canLeave() {
+        return resource.data.status == 'active' && request.resource.data.status == 'left'
+            && resource.data.userId == uid() && resource.data.role in ['member', 'board']
+            && activeUser()
+            && touches(['status'])
+            && counterDelta(clubPath(resource.data.clubId), 'memberCount', -1);
+      }
+
+      // Olmayan kendi belgesinin tekil okuması boş döner (getMembership → null; başvuru işleminin ilk
+      // okuması): `resource == null` yalnızca `…_<uid>` kimliğinde izinlidir (başkasının üyeliği var mı
+      // sorusu yanıtlanmaz).
+      allow get: if (resource == null && emailOk() && ownMembershipId()) || canReadMembership();
+      // Sorgu sözleşmesi (rules-spec §6): `userId == uid` · `clubId` + `status == 'active'` (üye) ·
+      // `clubId` (yönetim). Süzgeçsiz sorgu yalnızca süper admine açıktır.
+      allow list: if canReadMembership();
+      allow create: if canApply() || canJoinInstant();
+      allow update: if canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave();
       allow delete: if false;
 
-      // 5 · memberships/{id}/private/contact — T-15
+      // 5 · memberships/{id}/private/contact — T-15 (not düzenleme T-16, anonimleştirme T-29) · rules-spec §3.4
+      // Alanlar: `email`, `emailLower`, `note` (başvuru notu — CD-137) + BaseFields. "Sahibi" = üst üyelik
+      // belgesinin `userId`'si. Yazma yolları (T-15): apply / joinInstant — M1 / M2'de C, M3 / M4'te U(a)
+      // (belge yoksa C). Yönetici, danışman ve süper admin YAZAMAZ.
+      // Kapalı kalan dallar: U(b) not düzenleme `canEditNote()` (üyelik önce ve sonra `pending` — T-16) ·
+      // anonimleştirme (T-29) · collectionGroup('private') (T-37).
       match /private/{docId} {
-        allow read: if false;
-        allow create, update: if false;
+        function membershipPath() { return /databases/$(database)/documents/memberships/$(membershipId); }
+
+        // R — sahibi, kulüp yönetimi / danışmanı (`seesMgmt`: doğrulanmış e-posta + AKTİF hesap) ve süper
+        // admin. Sıradan aktif üye, başka kulübün yöneticisi, askıdaki yönetici ve üye olmayanlar OKUYAMAZ:
+        // e-posta ve başvuru notu üye listesine sızmaz.
+        // Üst belge de bu belge de yokken sahibinin (`…_<uid>`) okuması boş döner (başvuru işlemi).
+        function canReadContact() {
+          return docId == 'contact'
+              && ((emailOk() && (exists(membershipPath())
+                                 ? get(membershipPath()).data.userId == uid()
+                                 : (resource == null && ownMembershipId())))
+                  || (exists(membershipPath()) && seesMgmt(get(membershipPath()).data.clubId)));
+        }
+
+        // C — yalnızca üyelik yazımıyla AYNI batch'te (yazım-sonrası üyelik: sahibi, `pending` | `active`,
+        // `updatedAt == request.time`); e-posta token'daki adrestir. 1 erişim yolu: üyelik (getAfter).
+        function canCreateContact() {
+          let d = request.resource.data;
+          let m = getAfter(membershipPath()).data;
+          return emailOk() && docId == 'contact'
+              && d.keys().hasOnly(['email', 'emailLower', 'note',
+                                   'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+              && baseCreate()
+              && d.email == request.auth.token.email
+              && d.emailLower == request.auth.token.email.lower()
+              && d.note is string && d.note.size() <= 300   // limit: applicationNoteMax
+              && m.userId == uid() && m.status in ['pending', 'active'] && m.updatedAt == request.time;
+        }
+
+        // U(a) — yeniden başvuru notu: yalnızca `note` (+ `updatedAt`), M3 / M4 ile AYNI batch'te (üyelik
+        // önce `left` / `cancelled` / `rejected` / `removed`, sonra `pending` | `active`). `email` /
+        // `emailLower` değişmez. 2 erişim yolu: users/{uid} · üyelik (get + getAfter).
+        function canRewriteNote() {
+          return activeUser() && docId == 'contact'
+              && get(membershipPath()).data.userId == uid()
+              && get(membershipPath()).data.status in ['left', 'cancelled', 'rejected', 'removed']
+              && getAfter(membershipPath()).data.status in ['pending', 'active']
+              && touches(['note'])
+              && request.resource.data.note is string
+              && request.resource.data.note.size() <= 300;   // limit: applicationNoteMax
+        }
+
+        allow get: if canReadContact();
+        allow list: if false;
+        allow create: if canCreateContact();
+        allow update: if canRewriteNote();
         allow delete: if false;
       }
     }
@@ -298,17 +561,106 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37)
+    // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37) · rules-spec §3.10
+    // Yazma yolu: ReportRepository.report (C; 2 erişim yolu: users/{uid} · hedef belge). Okuma: hasReported
+    // (G, sahibi) · ADM-04 (L, süper admin).
+    // Kapalı kalan dal: U süper admin `status: 'resolved'`, `action`, `resolvedAt`, `resolvedBy` (T-37).
+    // Sahibi şikayetini güncelleyemez: aynı hedefe ikinci `set` update sayılır ve reddedilir.
     match /reports/{reportId} {
-      allow read: if false;
-      allow create, update: if false;
+      function ownReportId() {
+        let prefix = uid() + '_';
+        return reportId.size() > prefix.size() && reportId[0:prefix.size()] == prefix;
+      }
+
+      // Hedef belge VAR olmalı ve `targetClubId` (ADM-04 bağlamı, CD-33) hedefin gerçek kulübü olmalıdır:
+      // kullanıcı hedefinde yok; kulüp hedefinde hedefin kendisi; gönderi / yorum / etkinlik hedefinde hedef
+      // belgenin `clubId` alanı. Aksi halde aktif bir hesap olmayan hedeflere, dilediği kulübe atfedilmiş
+      // sınırsız (ve istemciden silinemeyen) açık şikayet yazabilir (CD-137 madde 8u). 1 erişim yolu: hedef.
+      function contentClub(coll, id) { return get(/databases/$(database)/documents/$(coll)/$(id)).data.clubId; }
+      function targetOk(d) {
+        return (d.targetType == 'user' && d.get('targetClubId', null) == null && exists(userPath(d.targetId)))
+            || (d.targetType == 'club' && d.targetClubId == d.targetId && exists(clubPath(d.targetId)))
+            || (d.targetType == 'post' && d.targetClubId is string && contentClub('posts', d.targetId) == d.targetClubId)
+            || (d.targetType == 'comment' && d.targetClubId is string && contentClub('comments', d.targetId) == d.targetClubId)
+            || (d.targetType == 'event' && d.targetClubId is string && contentClub('events', d.targetId) == d.targetClubId);
+      }
+
+      function canCreateReport() {
+        let d = request.resource.data;
+        return activeUser()
+            && d.keys().hasOnly(['targetType', 'targetId', 'targetClubId', 'reporterId', 'reason', 'note',
+                                 'status', 'action', 'resolvedAt', 'resolvedBy',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.reporterId == uid()
+            // ReportTargetType (5 — CD-33)
+            && d.targetType in ['post', 'comment', 'user', 'club', 'event']
+            && d.targetId is string && d.targetId.size() > 0
+            && reportId == d.reporterId + '_' + d.targetType + '_' + d.targetId
+            // kendi kendini şikayet yok
+            && (d.targetType != 'user' || d.targetId != uid())
+            && targetOk(d)
+            // ReportReason (6 — CD-33)
+            && d.reason in ['spam', 'harassment', 'inappropriate', 'misinformation', 'offtopic', 'other']
+            && d.note is string && d.note.size() <= 300   // limit: reportNoteMax
+            && d.status == 'open'
+            && d.get('action', null) == null && d.get('resolvedAt', null) == null
+            && d.get('resolvedBy', null) == null;
+      }
+
+      // R — sahibi (aktif kullanıcı; askıdaki / silinmiş hesap okuyamaz) ve süper admin. Olmayan kendi
+      // şikayetinin tekil okuması boş döner (hasReported → false).
+      allow get: if isSuper() || (activeUser() && ((resource == null && ownReportId()) || resource.data.reporterId == uid()));
+      allow list: if isSuper() || (activeUser() && resource.data.reporterId == uid());
+      allow create: if canCreateReport();
+      allow update: if false;
       allow delete: if false;
     }
 
-    // 13 · activity/{activityId} — T-15 (yönetici türleri T-30)
+    // 13 · activity/{activityId} — T-15 (yönetici türleri T-30) · rules-spec §3.11
+    // Değiştirilemez günlük: BaseFields YOK (yalnızca `createdAt`), update ve delete herkese kapalı.
+    // Yazma yolu: ActivityRepository.addToBatch — asıl yazımla AYNI batch'te (apply / joinInstant / leave).
+    // Kapalı kalan türler: `application_approved`, `application_rejected`, `member_removed`, `role_changed`,
+    // `event_published`, `event_cancelled`, `post_created`, `announcement`, `poll`, `settings_changed`
+    // (yazan yönetici / süper admin — T-30, T-37).
     match /activity/{activityId} {
-      allow read: if false;
-      allow create, update: if false;
+      // `refs` (ActivityRefsModel): üyelik türlerinde yalnızca `userId` (= oturum); diğerleri yok / null.
+      function ownRefs(r) {
+        return r is map && r.keys().hasOnly(['userId', 'eventId', 'postId', 'role'])
+            && r.userId == uid()
+            && r.get('eventId', null) == null && r.get('postId', null) == null && r.get('role', null) == null;
+      }
+
+      // C (T-15) — oturumun KENDİ üyelik geçişinin günlüğü; geçiş aynı batch'teki üyelik yazımından
+      // doğrulanır (yazım-öncesi ≠ yazım-sonrası durum): `application_received` ⇒ → `pending` (M1 / M3 / M4) ·
+      // `member_joined` ⇒ → `active` (M2 / M3) · `member_left` ⇒ `active` → `left` (M8).
+      // Belge kimliği SABİTTİR (FirestoreIds.activity): `{clubId}_{uid}_{kind}_{priorCount}` — `priorCount`
+      // yazım-sonrası üyelikten okunur. Bir geçişin (tür, priorCount) çifti tekildir (her yeniden başvuru /
+      // katılım sayacı bir artırır): aynı geçişe ikinci günlük aynı kimliğe düşer, update sayılır ve
+      // reddedilir. Serbest kimlikle tek batch'e yüzlerce sahte satır yazılabiliyordu (CD-137 madde 8t).
+      // 1 erişim yolu: memberships/{clubId}_{uid} (getAfter + exists / get).
+      function canLogOwnMembership() {
+        let d = request.resource.data;
+        let ref = mPath(d.clubId, uid());
+        let after = getAfter(ref).data;
+        let now = after.status;
+        let was = exists(ref) ? get(ref).data.status : 'none';
+        return d.keys().hasOnly(['clubId', 'actorId', 'kind', 'refs', 'createdAt'])
+            && d.createdAt == request.time
+            && d.actorId == uid()
+            && d.clubId is string && d.kind is string
+            && activityId == d.clubId + '_' + uid() + '_' + d.kind + '_' + string(after.get('priorCount', 0))
+            && ownRefs(d.refs)
+            && ((d.kind == 'application_received' && now == 'pending' && was != 'pending')
+                || (d.kind == 'member_joined' && now == 'active' && was != 'active')
+                || (d.kind == 'member_left' && now == 'left' && was == 'active'));
+      }
+
+      // R — kulüp yönetimi, danışman (ikisi de aktif hesap) ve süper admin; doğrulanmış e-posta şarttır
+      // (`seesMgmt`). Sorgu `clubId` süzgecini taşır (rules-spec §6 MGT-10).
+      allow read: if seesMgmt(resource.data.clubId);
+      allow create: if canLogOwnMembership();
+      allow update: if false;
       allow delete: if false;
     }
 
@@ -358,10 +710,41 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 15 · blocks/{blockerId}_{blockedId} — T-15
+    // 15 · blocks/{blockerId}_{blockedId} — T-15 · rules-spec §3.13
+    // Yazma yolları: BlockRepository.block (C; belge varsa restore) · softDeleteBlock (engeli kaldır) ·
+    // restoreBlock (yeniden engelle / Geri al). Engellenen kullanıcı belgeyi okuyamaz (engellendiğini
+    // öğrenemez); süper admin dahil başkası okuyamaz, yazamaz.
     match /blocks/{blockId} {
-      allow read: if false;
-      allow create, update: if false;
+      function ownBlockId() {
+        let prefix = uid() + '_';
+        return blockId.size() > prefix.size() && blockId[0:prefix.size()] == prefix;
+      }
+
+      function canCreateBlock() {
+        let d = request.resource.data;
+        return activeUser()
+            && d.keys().hasOnly(['blockerId', 'blockedId',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.blockerId == uid()
+            && d.blockedId is string && d.blockedId.size() > 0
+            // kendini engelleme yok
+            && d.blockedId != uid()
+            && blockId == d.blockerId + '_' + d.blockedId;
+      }
+
+      // U — yalnızca soft delete (engeli kaldır) ve restore (yeniden engelle); `blockerId` / `blockedId`
+      // değişemez. Askıdaki / silinmiş hesap yazamaz (PLAN §11.1 satır 15 susp/del).
+      function canToggleBlock() {
+        return activeUser() && resource.data.blockerId == uid() && (isSoftDelete([]) || isRestore([]));
+      }
+
+      // R — yalnızca engelleyen (silinmiş = kaldırılmış engel dahil: `block()` yeniden engellerken okur).
+      // Olmayan kendi belgesinin tekil okuması boş döner. Sorgu `blockerId == uid` süzgecini taşır.
+      allow get: if emailOk() && ((resource == null && ownBlockId()) || resource.data.blockerId == uid());
+      allow list: if emailOk() && resource.data.blockerId == uid();
+      allow create: if canCreateBlock();
+      allow update: if canToggleBlock();
       allow delete: if false;
     }
 

@@ -1,6 +1,7 @@
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/page_result.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
 import 'package:gu_data/src/utils/field_validators.dart';
 
@@ -15,8 +16,8 @@ import 'package:gu_data/src/utils/field_validators.dart';
 /// - **Alan doğrulama:** `FieldValidators` sonuçları tek başarısızlığa
 ///   çevrilir ([rejectInvalidFields]).
 /// - **Modele çeviri:** `fromJson` hatası [FirestoreError.parse] olur
-///   ([parse], [parseOrNull], [parseAll]); "silinmiş tekil belge = yok" kuralı
-///   da buradadır (PLAN §10.3).
+///   ([parse], [parseOrNull], [parseAll], [parsePage]); "silinmiş tekil belge
+///   = yok" kuralı da buradadır (PLAN §10.3).
 abstract final class RepositoryHelpers {
   /// Firestore `whereIn` / `arrayContainsAny` süzgecinin kabul ettiği en çok
   /// değer sayısı (platform sınırı; iş kuralı değildir).
@@ -145,6 +146,29 @@ abstract final class RepositoryHelpers {
           }
         }
         return FirebaseSuccess(items);
+    }
+  }
+
+  /// Sayfalı okuma sonucunu modellere çevirir; imleç (`PageResult.next`)
+  /// aynen taşınır. Tek bir belge bile ayrıştırılamazsa tüm sonuç
+  /// [FirestoreError.parse] olur ([parseAll] ile aynı kural).
+  static FirestoreResult<PageResult<T>> parsePage<T>(
+    FirestoreResult<PageResult<FirestoreDoc>> result,
+    T Function(FirestoreDoc doc) fromDoc,
+  ) {
+    switch (result) {
+      case FirebaseFailure(:final error, :final message, :final detail):
+        return FirebaseFailure(error, message: message, detail: detail);
+      case FirebaseSuccess(data: final page):
+        return switch (parseAll(FirebaseSuccess(page.items), fromDoc)) {
+          FirebaseSuccess(data: final items) => FirebaseSuccess(
+            PageResult(items: items, next: page.next),
+          ),
+          FirebaseFailure(:final error, :final message) => FirebaseFailure(
+            error,
+            message: message,
+          ),
+        };
     }
   }
 

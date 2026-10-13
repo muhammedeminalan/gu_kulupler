@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T09:50:07.285Z",
+  "updated": "2026-10-13T14:31:38.937Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-15",
   "statusValues": [
     "pending",
     "planning",
@@ -281,8 +281,8 @@
       "notes": ""
     },
     "T-15": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-13T12:42:25.976Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -952,7 +952,10 @@
         "T-12",
         "T-15"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-15",
+      "closedAt": "2026-10-13T13:54:17.609Z",
+      "closeNote": "(a) T-12: suspendReason users/{uid}/private/account'a taşındı (CD-133). (b) T-15: başvuru notu memberships/{id}/private/contact'a taşındı (CD-137); Rules üyelik belgesinde note anahtarını reddeder, sözleşme testi kanıtlar"
     },
     {
       "id": "W-53",
@@ -1049,6 +1052,34 @@
       "text": "GEÇİCİ gmail.com izinli alan adı (kullanıcı talebi 2026-10-13, test): EmailDomainPolicy.temporaryTestDomains boşaltılır, firestore.rules + storage.rules regex'inden gmail çıkarılır, kurallar gerçek projeye yeniden yüklenir (kullanıcı onayıyla)",
       "resolveIn": [
         "T-45"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-62",
+      "declaredIn": "T-15",
+      "text": "W-NB-01 (CD-36): DI'da NotificationDispatcher = NoopNotificationDispatcher (lib/core/di/project_dependency.dart) → T-25'te ClientFanOutDispatcher bağlanır; o güne kadar üyelik geçişleri bildirim üretmez (apply → notifyApplicationReceived no-op)",
+      "resolveIn": [
+        "T-25"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-63",
+      "declaredIn": "T-15",
+      "text": "application_received alıcı çözümü (T-15 Rules sözleşmesi): başvuran (pending / üye olmayan) MembershipRepository.listManagers sorgusunu OKUYAMAZ (rules-spec §3.4 R(c) yalnızca aktif üyeye açık) → ClientFanOutDispatcher.notifyApplicationReceived alıcıları başvuranın istemcisinde çözemez. T-25 planında karar: alıcı = clubs.presidentId (kulüp belgesi herkese açık) + yönetim kurulu için Rules'ta dar bir okuma dalı / clubs.managerIds alanı / bildirimi yöneticinin MGT-02 açılışında üretme. Rules §3.9 testi 'başvuran application_received yazar' vakası bu kararla yazılır",
+      "resolveIn": [
+        "T-25"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-64",
+      "declaredIn": "T-15",
+      "text": "Sayaç işaretçisi herkese açık belgede durmaz (T-15 güvenlik incelemesi, CD-137 madde 8q): clubs.lastMembershipRef T-15'te kapatıldı (kural üyelik yolunu oturumdan türetir; alan beyaz listede yok, repository yazmaz). T-30 yönetici / süper admin aktörlü sayaç dalları (M5, M9, M12, başkan atama) hedef üyeliği gösteren işaretçiyi kulüp belgesine YAZAMAZ — plan kararı: seesMgmt'e açık yan belge (ör. clubs/{id}/private/counter, aynı batch, updatedAt == request.time) ya da eşdeğeri; PLAN §10.4 approve/undoDecision/undoRemoval/remove/createClub/assignPresident satırları ve §11.2b/§11.3 buna göre güncellenir; karar verilince ClubModel.lastMembershipRef + FirestoreFields sabiti + seed alanı kaldırılır. T-22 events.lastRsvpRef aynı sızıntıyı herkese açık etkinlikte üretir (kimin katıldığı / vazgeçtiği): kendi rsvp'sinde yol oturumdan türetilir, yönetici dalı (attended, terfi) için aynı yan belge kararı. T-29 M14 aktörü sahibidir (türetme yeter). Yönetici günlük türlerinin (T-30) kimliği de sabitlenir (FirestoreIds.activity kalıbı — madde 8t)",
+      "resolveIn": [
+        "T-22",
+        "T-30"
       ],
       "status": "open"
     }

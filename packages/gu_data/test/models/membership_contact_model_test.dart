@@ -16,6 +16,7 @@ final DateTime _otherTime = DateTime.utc(2027, 1, 2, 3, 4, 5, 6);
 final MembershipContactModel _full = MembershipContactModel(
   email: 'Ayse.Demir@ogr.gumushane.edu.tr',
   emailLower: 'ayse.demir@ogr.gumushane.edu.tr',
+  note: 'Robotik takımında görev almak istiyorum.',
   createdAt: _createdAt,
   updatedAt: _updatedAt,
   isDeleted: true,
@@ -57,6 +58,7 @@ void main() {
         const MembershipContactModel(email: 'a@b.co', emailLower: 'a@b.co'),
       );
       table.expectDefaults({
+        'note': model.note,
         'createdAt': model.createdAt,
         'updatedAt': model.updatedAt,
         'isDeleted': model.isDeleted,
@@ -65,11 +67,13 @@ void main() {
       });
     });
 
-    test('anonimleştirme yükü modele ayrışır', () {
-      expect(
-        MembershipContactModel.fromJson(Anonymization.contactPayload()),
-        const MembershipContactModel(email: '', emailLower: ''),
-      );
+    test('anonimleştirme yükü modele ayrışır: e-posta ve not boşalır', () {
+      final wiped = MembershipContactModel.fromJson({
+        ..._full.toJson(),
+        ...Anonymization.contactPayload(),
+      });
+
+      expect(wiped, _full.copyWith(email: '', emailLower: '', note: ''));
     });
 
     test('copyWith her alanı değiştirir; her alan eşitliğe girer', () {
@@ -86,6 +90,12 @@ void main() {
           copy: _full.copyWith(emailLower: 'x@gumushane.edu.tr'),
           read: (m) => m.emailLower,
           expected: 'x@gumushane.edu.tr',
+        ),
+        (
+          field: 'note',
+          copy: _full.copyWith(note: 'Yeni not'),
+          read: (m) => m.note,
+          expected: 'Yeni not',
         ),
         (
           field: 'createdAt',

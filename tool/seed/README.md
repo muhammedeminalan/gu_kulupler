@@ -14,7 +14,7 @@
 | `notifications`(40) `reports`(8) `activity`(222) `dailyAnnouncementCount` | bildirim, şikayet, faaliyet, günlük duyuru sayacı | |
 
 ## Kurallar (tohumlayıcıyı yazan task: T-10, genişleme: T-45)
-1. **Prototip biçimi ≠ Firestore modeli.** Tohumlayıcı (`tool/seed/seed_emulator.js`) bu JSON'u `docs/domain-model.md` şemasına **dönüştürür**: düz koleksiyonlar, soft delete alanları (`deletedAt/deletedBy/...`), sayaçlar (`memberCount` vb. üyelik belgelerinden tutarlı hesaplanır), iletişim bilgisi `memberships/{id}/private/contact` alt belgesine, `createdAt/updatedAt` sunucu biçimi.
+1. **Prototip biçimi ≠ Firestore modeli.** Tohumlayıcı (`tool/seed/seed_emulator.js`) bu JSON'u `docs/domain-model.md` şemasına **dönüştürür**: düz koleksiyonlar, soft delete alanları (`deletedAt/deletedBy/...`), sayaçlar (`memberCount` vb. üyelik belgelerinden tutarlı hesaplanır), iletişim bilgisi ve başvuru notu (CD-137) `memberships/{id}/private/contact` alt belgesine, `createdAt/updatedAt` sunucu biçimi.
 2. **Yalnızca emülatör:** `FIRESTORE_EMULATOR_HOST` ve `FIREBASE_AUTH_EMULATOR_HOST` tanımlı değilse betik **durur**; adresler yerel (`127.0.0.1` / `localhost`) olmalı ve proje kimliği `demo-` ile başlamalıdır. Gerçek proje kimliği görürse hata verir (çıkış 2, hiçbir şey yazılmaz).
 3. Auth kullanıcıları emülatörde sabit, yalnızca-yerel bir parolayla oluşturulur: `demo-data.json#meta.demoPassword` (tek kaynak; betikte ayrı parola sabiti yoktur; sır değildir, gerçek hesaplara bağlı değildir). UI'da "demo hesap" bölümü **uygulanmaz** (K-02).
 4. Veri değişirse bu dosya `design/` gibi salt okunur sayılır; yeni senaryo için ayrı dosya ekle (`tool/seed/*.json`). (Tek istisna: T-10'da eklenen `meta.demoPassword` alanı; `PACK_MANIFEST.json` özeti aynı commit'te güncellendi.)

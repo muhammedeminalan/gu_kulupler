@@ -165,6 +165,7 @@ final Map<String, Map<String, Object?>> _fullJson = {
   'MembershipContactModel': MembershipContactModel(
     email: 'ayse.demir@ogr.gumushane.edu.tr',
     emailLower: 'ayse.demir@ogr.gumushane.edu.tr',
+    note: 'Not',
     createdAt: _at,
     updatedAt: _at,
     isDeleted: true,
@@ -176,7 +177,6 @@ final Map<String, Map<String, Object?>> _fullJson = {
     userId: 'u_ayse',
     applicant: _applicant,
     status: MembershipStatus.rejected,
-    note: 'Not',
     appliedAt: _at,
     decidedAt: _at,
     decidedBy: 'u_p_c01',

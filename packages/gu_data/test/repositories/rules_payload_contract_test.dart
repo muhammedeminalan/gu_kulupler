@@ -16,6 +16,14 @@
 // yamasız `updateAvatar`). Dosya adı sabit saat + sabit rastgele baytlarla
 // üretilir.
 //
+// T-15: `t15.scenarios` — `FirebaseMembershipRepository` (M1–M4, M7, M8),
+// `FirebaseReportRepository` ve `FirebaseBlockRepository`. Her senaryo kendi
+// ön koşul belgeleriyle (`seed`) koşar; yakalanan **okumalar** (transaction
+// içi dahil) ve yazımlar sözleşmeyle birebir olmalıdır: jest tarafı aynı
+// okuma + yazımları emülatörde tek transaction olarak gönderir. Sayaç deltası
+// `{"@increment": n}`, günlük belgesinin üretilen kimliği `@autoId` olarak
+// yazılır.
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:typed_data';
@@ -25,6 +33,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
 import '../fakes/fake_app_clock.dart';
+import '../fakes/fake_notification_dispatcher.dart';
 import '../fakes/recording_storage_service.dart';
 import '../helpers/repo_sources.dart';
 
@@ -33,66 +42,142 @@ const String _contractPath = 'firebase/test/contracts/repository_payloads.json';
 /// Sözleşme dosyasındaki sunucu zamanı nöbetçisi.
 const String _serverTimestamp = '@serverTimestamp';
 
+/// Sözleşmedeki sayaç deltası anahtarı (`{"@increment": n}`).
+const String _increment = '@increment';
+
+/// Sözleşmede üretilen belge kimliğinin (`FirestoreService.newId`) yeri.
+const String _autoId = '@autoId';
+
+/// Ön koşul belgelerindeki göreli zaman nöbetçisinin öneki (`@daysAgo:N`).
+const String _daysAgo = '@daysAgo:';
+
+/// Repository'nin sayaçlara yazabildiği deltalar (CD-41: yalnızca ±1).
+const List<int> _counterDeltas = [1, -1];
+
 /// SDK'ya giden tek yazım.
 typedef _Write = ({String op, String path, Object? data});
 
-/// Yazımları [log]'a kaydeden veritabanı; okumalar [docs] içindeki belgeyi,
-/// yoksa "belge yok" döner.
+/// Yazımları [log]'a, okumaları [reads]'e kaydeden veritabanı; okumalar
+/// [docs] içindeki belgeyi, yoksa "belge yok" döner.
 final class _RecordingFirestore implements FirebaseFirestore {
   final List<_Write> log = [];
+
+  /// Okunan belge yolları (transaction içi ve dışı), sırayla.
+  final List<String> reads = [];
 
   /// Okumaların göreceği belgeler: yol → alanlar.
   final Map<String, Json> docs = {};
 
+  /// `runTransaction` çağrı sayısı.
+  int transactions = 0;
+
   @override
   CollectionReference<Json> collection(String collectionPath) =>
-      _RecordingCollection(collectionPath, log, docs);
+      _RecordingCollection(collectionPath, this);
 
   @override
   WriteBatch batch() => _RecordingBatch(log);
+
+  @override
+  Future<T> runTransaction<T>(
+    TransactionHandler<T> transactionHandler, {
+    Duration timeout = const Duration(seconds: 30),
+    int maxAttempts = 5,
+  }) async {
+    transactions++;
+    final transaction = _RecordingTransaction(this);
+    final result = await transactionHandler(transaction);
+    // Gövde hata vermeden bittiyse yazımlar tek seferde işlenir.
+    log.addAll(transaction.pending);
+    return result;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _RecordingCollection implements CollectionReference<Json> {
-  _RecordingCollection(this.path, this._log, this._docs);
+  _RecordingCollection(this.path, this._db);
 
   @override
   final String path;
-  final List<_Write> _log;
-  final Map<String, Json> _docs;
+  final _RecordingFirestore _db;
 
+  /// Kimlik verilmezse (`FirestoreService.newId`) sabit [_autoId] üretilir.
   @override
   DocumentReference<Json> doc([String? path]) =>
-      _RecordingReference('${this.path}/${path!}', _log, _docs);
+      _RecordingReference('${this.path}/${path ?? _autoId}', _db);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _RecordingReference implements DocumentReference<Json> {
-  _RecordingReference(this.path, this._log, this._docs);
+  _RecordingReference(this.path, this._db);
 
   @override
   final String path;
-  final List<_Write> _log;
-  final Map<String, Json> _docs;
+  final _RecordingFirestore _db;
 
   @override
   String get id => path.split('/').last;
 
   @override
-  Future<DocumentSnapshot<Json>> get([GetOptions? options]) async =>
-      _StoredSnapshot(this, _docs[path]);
+  Future<DocumentSnapshot<Json>> get([GetOptions? options]) async {
+    _db.reads.add(path);
+    return _StoredSnapshot(this, _db.docs[path]);
+  }
 
   @override
   Future<void> set(Json data, [SetOptions? options]) async =>
-      _log.add((op: 'set', path: path, data: data));
+      _db.log.add((op: 'set', path: path, data: data));
 
   @override
   Future<void> update(Map<Object, Object?> data) async =>
-      _log.add((op: 'update', path: path, data: data));
+      _db.log.add((op: 'update', path: path, data: data));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Okumaları veritabanının [_RecordingFirestore.reads] günlüğüne yazan,
+/// yazımları [pending]'de biriktiren transaction.
+final class _RecordingTransaction implements Transaction {
+  _RecordingTransaction(this._db);
+
+  final _RecordingFirestore _db;
+
+  /// Kuyruğa giren yazımlar, sırayla.
+  final List<_Write> pending = [];
+
+  @override
+  Future<DocumentSnapshot<T>> get<T extends Object?>(
+    DocumentReference<T> documentReference,
+  ) async {
+    final path = documentReference.path;
+    _db.reads.add(path);
+    return _StoredSnapshot(_RecordingReference(path, _db), _db.docs[path])
+        as DocumentSnapshot<T>;
+  }
+
+  @override
+  Transaction set<T>(
+    DocumentReference<T> documentReference,
+    T data, [
+    SetOptions? options,
+  ]) {
+    pending.add((op: 'set', path: documentReference.path, data: data));
+    return this;
+  }
+
+  @override
+  Transaction update(
+    DocumentReference<Object?> documentReference,
+    Map<Object, Object?> data,
+  ) {
+    pending.add((op: 'update', path: documentReference.path, data: data));
+    return this;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -142,17 +227,24 @@ final class _RecordingBatch implements WriteBatch {
 }
 
 /// Ham yükü sözleşme dosyasının biçimine çevirir: sunucu zamanı nöbetçisi
-/// [_serverTimestamp] olur; başka her `FieldValue` hatadır (sözleşmede yok).
+/// [_serverTimestamp], sayaç deltası `{"@increment": n}` olur; başka her
+/// `FieldValue` hatadır (sözleşmede yok).
 Object? _normalize(Object? value) => switch (value) {
   final FieldValue field when field == FieldValue.serverTimestamp() =>
     _serverTimestamp,
-  FieldValue() => throw StateError('beklenmeyen FieldValue: $value'),
+  final FieldValue field => {_increment: _deltaOf(field)},
   final Map<Object?, Object?> map => {
     for (final entry in map.entries) entry.key: _normalize(entry.value),
   },
   final List<Object?> list => [for (final item in list) _normalize(item)],
   _ => value,
 };
+
+/// [field] nöbetçisinin sayaç deltası; ±1 değilse hata (CD-41).
+int _deltaOf(FieldValue field) => _counterDeltas.firstWhere(
+  (delta) => field == FieldValue.increment(delta),
+  orElse: () => throw StateError('beklenmeyen FieldValue: $field'),
+);
 
 List<Object?> _normalized(List<_Write> writes) => [
   for (final write in writes)
@@ -176,6 +268,38 @@ void _seedCompleteProfile(_RecordingFirestore db, String uid) {
     interests: ['i01', 'i05'],
     profileComplete: true,
   ).toJson();
+}
+
+/// T-15 senaryolarının "şimdi"si (`@daysAgo:N` bu ana göre çözülür).
+final DateTime _scenarioNow = DateTime.utc(2026, 10, 13, 9);
+
+/// Ön koşul belgesindeki nöbetçileri SDK değerine çevirir: sunucu zamanı →
+/// [_scenarioNow], `@daysAgo:N` → N gün öncesi (negatif = sonrası).
+Object? _seedValue(Object? value) => switch (value) {
+  _serverTimestamp => Timestamp.fromDate(_scenarioNow),
+  final String text when text.startsWith(_daysAgo) => Timestamp.fromDate(
+    _scenarioNow.subtract(
+      Duration(days: int.parse(text.substring(_daysAgo.length))),
+    ),
+  ),
+  final Map<Object?, Object?> map => <String, Object?>{
+    for (final entry in map.entries)
+      entry.key! as String: _seedValue(entry.value),
+  },
+  final List<Object?> list => [for (final item in list) _seedValue(item)],
+  _ => value,
+};
+
+/// `{"$fixture": ad, …}` girdisini `fixtures[ad]` + üzerine yazılan alanlar
+/// olarak açar ve nöbetçilerini çözer.
+Json _seedDoc(Map<String, Object?> fixtures, Object? entry) {
+  final fields = {...entry! as Map<String, Object?>};
+  final fixture = fields.remove(r'$fixture') as String?;
+  return _seedValue({
+        if (fixture != null) ...fixtures[fixture]! as Map<String, Object?>,
+        ...fields,
+      })!
+      as Json;
 }
 
 void main() {
@@ -366,6 +490,167 @@ void main() {
         final written = (db.log.single.data! as Map)['avatarPath']! as String;
         expect(storage.uploads.single.path, written, reason: call);
         expect(StoragePaths.isUserAvatar(written, uid), isTrue, reason: call);
+      }
+    });
+  });
+
+  group('T-15 · Rules yük sözleşmesi (kulüp / üyelik / şikayet / engel)', () {
+    final t15 = contract['t15']! as Map<String, Object?>;
+    final fixtures = t15['fixtures']! as Map<String, Object?>;
+    final scenarios = (t15['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    // Başvuran profili sözleşmedeki kullanıcı belgesinden gelir: Rules
+    // `applicant` anlık görüntüsünü bu belgeyle karşılaştırır.
+    final student = UserModel.fromJson(
+      _seedDoc(fixtures, const {r'$fixture': 'user'}),
+      id: uid,
+    );
+    const application = 'Kulübe katılmak istiyorum.';
+    const reapplication = 'Yeniden başvuruyorum.';
+    const blocked = 'u_member';
+    const ReportTarget post = (
+      type: ReportTargetType.post,
+      id: 'p01',
+      clubId: 'c01',
+    );
+
+    late MembershipRepository memberships;
+    late ReportRepository reports;
+    late BlockRepository blocks;
+
+    Future<FirestoreResult<MembershipModel>> apply(String note) =>
+        memberships.apply(
+          clubId: clubId,
+          applicant: student,
+          email: email,
+          note: note,
+        );
+    Future<FirestoreResult<MembershipModel>> join() => memberships.joinInstant(
+      clubId: clubId,
+      applicant: student,
+      email: email,
+    );
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function()>{
+          'MembershipRepository.apply · M1 notlu (requireNote kulübü)': () =>
+              apply(application),
+          'MembershipRepository.apply · M1 notsuz': () => apply(''),
+          'MembershipRepository.joinInstant · M2': join,
+          'MembershipRepository.apply · M3 yeniden başvuru '
+              '(cancelled → pending)': () =>
+              apply(reapplication),
+          'MembershipRepository.joinInstant · M3 yeniden katılım '
+                  '(left → active)':
+              join,
+          'MembershipRepository.apply · M4 '
+              '(rejected, bekleme süresi doldu → pending)': () =>
+              apply(reapplication),
+          'MembershipRepository.apply · M3 iletişim belgesi yok': () =>
+              apply(reapplication),
+          'MembershipRepository.cancelApplication · M7': () =>
+              memberships.cancelApplication(clubId: clubId, userId: uid),
+          'MembershipRepository.leave · M8': () =>
+              memberships.leave(clubId: clubId, userId: uid),
+          'MembershipRepository.readContact · üyelik yok': () =>
+              memberships.readContact(clubId, uid),
+          'ReportRepository.report · gönderi': () => reports.report(
+            reporterId: uid,
+            target: post,
+            reason: ReportReason.spam,
+          ),
+          'ReportRepository.report · kullanıcı': () => reports.report(
+            reporterId: uid,
+            target: (type: ReportTargetType.user, id: blocked, clubId: null),
+            reason: ReportReason.harassment,
+            note: 'Rahatsız edici mesajlar.',
+          ),
+          'ReportRepository.hasReported · şikayet yok': () =>
+              reports.hasReported(reporterId: uid, target: post),
+          'BlockRepository.block · yeni engel': () =>
+              blocks.block(blockerId: uid, blockedId: blocked),
+          'BlockRepository.softDeleteBlock': () =>
+              blocks.softDeleteBlock(blockerId: uid, blockedId: blocked),
+          'BlockRepository.block · kaldırılmış engeli geri yükler': () =>
+              blocks.block(blockerId: uid, blockedId: blocked),
+          'BlockRepository.restoreBlock': () =>
+              blocks.restoreBlock(blockerId: uid, blockedId: blocked),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      memberships = FirebaseMembershipRepository(
+        service,
+        FirebaseActivityRepository(service),
+        FakeNotificationDispatcher(),
+        FakeAppClock(_scenarioNow),
+      );
+      reports = FirebaseReportRepository(service);
+      blocks = FirebaseBlockRepository(service);
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t15['autoId'], _autoId);
+      expect(t15['increment'], _increment);
+      expect(student.profileComplete, isTrue);
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okumalar ve yazımlar sözleşmeyle birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+
+        final result = await calls[call]!();
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(_normalized(db.log), scenario['writes']);
+        // Çok belgeli geçişler tek transaction'dır (üyelik + sayaç + günlük).
+        expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+      });
+    }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına ve ön koşul '
+        'belgelerine dokunur', () {
+      for (final scenario in scenarios) {
+        final writes = scenario['writes']! as List<Object?>;
+        final denied = (scenario['denied'] as List<Object?>? ?? const [])
+            .cast<Map<String, Object?>>();
+        for (final variant in denied) {
+          final indexes = [
+            ...(variant['without'] as List<Object?>? ?? const []).cast<int>(),
+            ...(variant['patch'] as Map<String, Object?>? ?? const {}).keys.map(
+              int.parse,
+            ),
+          ];
+          final reason = '${scenario['call']} · ${variant['name']}';
+          expect(
+            indexes,
+            everyElement(lessThan(writes.length)),
+            reason: reason,
+          );
+          expect(
+            variant.keys.toSet().difference({
+              'name',
+              'without',
+              'patch',
+              'seed',
+              'role',
+            }),
+            isEmpty,
+            reason: reason,
+          );
+          expect(variant.length, greaterThan(1), reason: reason);
+        }
       }
     });
   });

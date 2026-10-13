@@ -18,7 +18,9 @@ import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 /// **Bilerek olmayan getter'lar** (PLAN §6.1): Firestore, Storage, Remote
 /// Config ve çökme raporlama servisleri. Storage yüklemesi repository
 /// metodudur; Remote Config yalnızca `AppGateViewModel` kurucusuna verilir;
-/// çökme raporlama yalnızca `lib/core/error/` içindedir.
+/// çökme raporlama yalnızca `lib/core/error/` içindedir. Bildirim dağıtıcısı
+/// (`NotificationDispatcher`) repository'lerin kurucusuna verilir; ViewModel
+/// onu çağırmaz.
 mixin ProjectDependencyMixin {
   /// Kimlik doğrulama servisi (ham). Kimlik işlemleri [authRepository]
   /// üzerinden yapılır; servis yalnızca oturum kimliğini okumak içindir.
@@ -34,6 +36,22 @@ mixin ProjectDependencyMixin {
 
   /// Bildirim ayarları (T-12).
   SettingsRepository get settingsRepository => GetIt.I<SettingsRepository>();
+
+  /// Kulüp okuma yüzeyi: liste, tekil ve toplu okuma (T-15).
+  ClubRepository get clubRepository => GetIt.I<ClubRepository>();
+
+  /// Üyelik ve başvurular: başvur, katıl, iptal, ayrıl, listeler (T-15).
+  MembershipRepository get membershipRepository =>
+      GetIt.I<MembershipRepository>();
+
+  /// Şikayet oluşturma ve "zaten bildirildi" denetimi (T-15).
+  ReportRepository get reportRepository => GetIt.I<ReportRepository>();
+
+  /// Engellenen kullanıcılar (T-15).
+  BlockRepository get blockRepository => GetIt.I<BlockRepository>();
+
+  /// Kulüp günlüğü (MGT-10; T-15).
+  ActivityRepository get activityRepository => GetIt.I<ActivityRepository>();
 
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
