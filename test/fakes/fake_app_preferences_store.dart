@@ -121,6 +121,26 @@ final class FakeAppPreferencesStore extends FakeBase
     terms.take(Limits.recentSearchesMax).toList(),
   );
 
+  @override
+  String? composeDraft(String clubId) =>
+      switch (values[AppPreferenceKeys.composeDraft(clubId)]) {
+        final String json => json,
+        _ => null,
+      };
+
+  /// Gerçek depo gibi: `null` taslağı kaldırır (anahtar silinir).
+  @override
+  Future<bool> setComposeDraft(String clubId, String? json) async {
+    record('setComposeDraft', [clubId, json]);
+    final key = AppPreferenceKeys.composeDraft(clubId);
+    if (json == null) {
+      values.remove(key);
+    } else {
+      values[key] = json;
+    }
+    return takeFailure() == null;
+  }
+
   /// Gerçek depo gibi: bellekteki değer her durumda güncellenir; bekleyen
   /// hata yalnızca dönüş değerini `false` yapar.
   Future<bool> _write(

@@ -91,4 +91,11 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   @override
   Future<bool> setRecentSearches(List<String> terms) =>
       inner.setRecentSearches(terms);
+
+  @override
+  String? composeDraft(String clubId) => inner.composeDraft(clubId);
+
+  @override
+  Future<bool> setComposeDraft(String clubId, String? json) =>
+      inner.setComposeDraft(clubId, json);
 }

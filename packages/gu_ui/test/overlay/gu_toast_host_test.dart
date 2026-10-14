@@ -1,5 +1,7 @@
 // T-07 · GuToastHost + GuToastController (widget-catalog #42b; css:288–289,
 // 416; shell.js:17–19; core.js:565–570; CD-24, CD-29).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -343,6 +345,166 @@ void main() {
       expect(second.isVisible, isFalse);
       await tester.pump();
       expect(find.byType(GuToast), findsNothing);
+    });
+  });
+
+  group('T-21 · GuToastBottomObstacle', () {
+    const barKey = ValueKey<String>('bar');
+
+    Widget page({required double? barHeight}) => Scaffold(
+      body: _child,
+      bottomNavigationBar: barHeight == null
+          ? null
+          : GuToastBottomObstacle(
+              child: SizedBox(key: barKey, height: barHeight),
+            ),
+    );
+
+    Future<Rect> shownToast(WidgetTester tester) async {
+      await _settleIn(tester);
+      return tester.getRect(find.byType(GuToast));
+    }
+
+    testWidgets('T-21 · GuToastBottomObstacle · toast bildirilen alt çubuğun '
+        '12 üstünde durur; çubuk büyüyünce yükselir, kalkınca varsayılan '
+        'konuma döner', (tester) async {
+      final controller = GuToastController();
+      addTearDown(controller.dispose);
+      late StateSetter setState;
+      double? barHeight = 64;
+      await tester.pumpApp(
+        GuToastHost(
+          controller: controller,
+          child: StatefulBuilder(
+            builder: (context, set) {
+              setState = set;
+              return page(barHeight: barHeight);
+            },
+          ),
+        ),
+      );
+      controller.show(_entry('Yorum gönderildi.', persistent: true));
+      var toast = await shownToast(tester);
+      final bar = tester.getRect(find.byKey(barKey));
+      expect(bar.bottom, 844);
+      expect(toast.bottom, bar.top - GuSizes.toastBottomExtra);
+      expect(toast.overlaps(bar), isFalse);
+
+      // Çubuk büyür (çok satırlı alan): toast görünürken de yükselir.
+      setState(() => barHeight = 120);
+      await tester.pump();
+      await tester.pump();
+      toast = tester.getRect(find.byType(GuToast));
+      expect(toast.bottom, 844 - 120 - GuSizes.toastBottomExtra);
+
+      // Çubuk kalkar: varsayılan konum.
+      setState(() => barHeight = null);
+      await tester.pump();
+      await tester.pump();
+      toast = tester.getRect(find.byType(GuToast));
+      expect(toast.bottom, 844 - GuSizes.toastBottomExtra);
+    });
+
+    testWidgets('T-21 · GuToastBottomObstacle · sekme çubuğu boşluğu ve '
+        'klavyeyle en büyüğü geçerlidir', (tester) async {
+      final controller = GuToastController();
+      addTearDown(controller.dispose);
+      // Çubuk (40) sekme çubuğu boşluğundan kısa: boşluk geçerli.
+      await tester.pumpApp(
+        GuToastHost(
+          controller: controller,
+          bottomInset: GuSizes.bottomNavHeight,
+          child: page(barHeight: 40),
+        ),
+      );
+      controller.show(_entry('Kısa çubuk', persistent: true));
+      var toast = await shownToast(tester);
+      expect(
+        toast.bottom,
+        844 - GuSizes.bottomNavHeight - GuSizes.toastBottomExtra,
+      );
+
+      // Klavye (300) çubuktan (64) yüksek: klavyenin üstü.
+      await tester.pumpApp(
+        GuToastHost(controller: controller, child: page(barHeight: 64)),
+        keyboardInset: 300,
+      );
+      controller.show(_entry('Klavye', persistent: true));
+      toast = await shownToast(tester);
+      expect(toast.bottom, 844 - 300 - GuSizes.toastBottomExtra);
+    });
+
+    testWidgets('T-21 · GuToastBottomObstacle · altta kalan sayfanın çubuğu '
+        'toastı itmez; sayfa yeniden en üste gelince iter', (tester) async {
+      final controller = GuToastController();
+      addTearDown(controller.dispose);
+      final navigatorKey = GlobalKey<NavigatorState>();
+      await tester.pumpApp(
+        GuToastHost(
+          controller: controller,
+          child: Navigator(
+            key: navigatorKey,
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => page(barHeight: 64),
+            ),
+          ),
+        ),
+      );
+      unawaited(
+        navigatorKey.currentState!.push(
+          MaterialPageRoute<void>(builder: (_) => page(barHeight: null)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      controller.show(_entry('Üst sayfa', persistent: true));
+      var toast = await shownToast(tester);
+      expect(toast.bottom, 844 - GuSizes.toastBottomExtra);
+
+      navigatorKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      toast = tester.getRect(find.byType(GuToast));
+      expect(toast.bottom, 844 - 64 - GuSizes.toastBottomExtra);
+    });
+
+    testWidgets('T-21 · GuToastBottomObstacle · sahnede olmayan dalın '
+        '(TickerMode kapalı — etkin olmayan sekme) çubuğu toastı itmez', (
+      tester,
+    ) async {
+      final controller = GuToastController();
+      addTearDown(controller.dispose);
+      late StateSetter setState;
+      var onstage = false;
+      await tester.pumpApp(
+        GuToastHost(
+          controller: controller,
+          child: StatefulBuilder(
+            builder: (context, set) {
+              setState = set;
+              return TickerMode(
+                enabled: onstage,
+                child: page(barHeight: 64),
+              );
+            },
+          ),
+        ),
+      );
+      controller.show(_entry('Başka sekme', persistent: true));
+      var toast = await shownToast(tester);
+      expect(toast.bottom, 844 - GuSizes.toastBottomExtra);
+
+      setState(() => onstage = true);
+      await tester.pump();
+      await tester.pump();
+      toast = tester.getRect(find.byType(GuToast));
+      expect(toast.bottom, 844 - 64 - GuSizes.toastBottomExtra);
+    });
+
+    testWidgets('T-21 · GuToastBottomObstacle · host yokken etkisizdir', (
+      tester,
+    ) async {
+      await tester.pumpApp(page(barHeight: 64));
+      expect(find.byKey(barKey), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

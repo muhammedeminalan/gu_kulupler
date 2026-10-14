@@ -9,6 +9,7 @@
 // kalıbından önce eşleşir).
 // T-20 · FED-02 `/clubs/:clubId/posts/:postId` (guard `üye`); SHT-09 gövdesi
 // kulüp sayfasına rotadan verilir (`commentsSheetBuilder`).
+// T-21 · FED-03 `/clubs/:clubId/compose?edit=` (guard `M`).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -19,6 +20,7 @@ import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_members_view.dart';
 import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
+import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -62,6 +64,41 @@ ClubDetailView _detail(WidgetTester tester) =>
     tester.widget<ClubDetailView>(find.byType(ClubDetailView));
 
 void main() {
+  group('T-21 · gönderi oluşturma rotası (FED-03)', () {
+    testWidgets('/clubs/:clubId/compose?edit= → ComposeView(clubId, '
+        'editPostId); yönetici olmayan kulüp sayfasına yönlenir; geri '
+        'kulübe döner', (tester) async {
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeManager('c01'),
+        location: '/clubs/c01/compose?edit=p01',
+      );
+      ComposeView compose() =>
+          tester.widget<ComposeView>(find.byType(ComposeView));
+      expect(app.location, '/clubs/c01/compose?edit=p01');
+      expect(compose().clubId, 'c01');
+      expect(compose().editPostId, 'p01');
+      expect(find.byType(GuBottomNav), findsNothing);
+      expect(app.stackDepth(GuTab.clubs), 3);
+
+      const ComposeRoute(
+        clubId: 'c01',
+      ).go(tester.element(find.byType(ComposeView)));
+      await tester.pumpAndSettle();
+      expect(app.location, '/clubs/c01/compose');
+      expect(compose().editPostId, isNull);
+
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01');
+      expect(find.byType(ComposeView), findsNothing);
+
+      // Başka kulübün yöneticisi: yazma ekranı açılmaz.
+      await app.go('/clubs/c03/compose');
+      expect(app.location, '/clubs/c03');
+      expect(find.byType(ComposeView), findsNothing);
+    });
+  });
+
   group('T-20 · gönderi detayı rotası (FED-02)', () {
     testWidgets('/clubs/:clubId/posts/:postId → PostDetailView(clubId, '
         'postId); üye olmayan kulüp sayfasına yönlenir; geri kulübe '

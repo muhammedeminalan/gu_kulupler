@@ -147,6 +147,10 @@ Future<GoRouter> _pumpRoute(
                 postId: state.pathParameters['postId']!,
               ),
             ),
+            GoRoute(
+              path: 'compose',
+              builder: (_, state) => _Stub(state.uri.toString()),
+            ),
           ],
         ),
       ],
@@ -479,6 +483,19 @@ void main() {
       expect(_location(router), _clubPath);
     });
 
+    testWidgets('"…" → SHT-08 "Düzenle" → FED-03 düzenleme kipi '
+        '(`ComposeRoute(edit:)`)', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        session: postSession(role: ClubRole.board),
+      );
+      _feedback().nextSheetResult = PostMenuAction.edit;
+      await _tapKey(tester, _menu);
+      await tester.pumpAndSettle();
+      expect(_feedback().sheets, [SheetId.sht08]);
+      expect(_location(router), '$_clubPath/compose?edit=$kPostId');
+    });
+
     testWidgets('yorum yaz: metin girilince "Gönder" açılır; gönder → TST-12, '
         'alan boşalır, yeni satır listenin sonunda', (tester) async {
       await _pumpRoute(tester);
@@ -560,6 +577,79 @@ void main() {
       _posts().put(kPost.copyWith(isHidden: true));
       await tester.pumpAndSettle();
       expect(_location(router), '/not-found');
+    });
+  });
+
+  group('FED-02 · Gönderi · toast konumu', () {
+    testWidgets('toast yorum çubuğunun üstünde durur: çubukla ve "Gönder" '
+        'düğmesiyle kesişmez — klavye kapalı ve açık', (tester) async {
+      for (final keyboard in [0.0, 300.0]) {
+        final controller = GuToastController();
+        addTearDown(controller.dispose);
+        await tester.pumpApp(
+          GuToastHost(
+            controller: controller,
+            child: const PostDetailView(clubId: kPostClubId, postId: kPostId),
+          ),
+          keyboardInset: keyboard,
+          overrides: _overrides(),
+        );
+        await tester.pump();
+        controller.show(
+          GuToastEntry(
+            kind: GuToastKind.success,
+            text: 'Yorum gönderildi.',
+            closeSemanticLabel: tester.l10n.a11yClose,
+            persistent: true,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(GuMotion.slow);
+
+        final toast = tester.getRect(find.byType(GuToast));
+        final bar = tester.getRect(find.byType(GuStickyCta));
+        final send = tester.getRect(find.byKey(_send));
+        expect(toast.overlaps(bar), isFalse, reason: 'klavye $keyboard');
+        expect(toast.overlaps(send), isFalse, reason: 'klavye $keyboard');
+        expect(
+          toast.bottom,
+          bar.top - GuSizes.toastBottomExtra,
+          reason: 'klavye $keyboard',
+        );
+        // Çubuk klavyenin üstündedir; toast da.
+        expect(send.bottom, lessThanOrEqualTo(844 - keyboard));
+      }
+    });
+
+    testWidgets('danışman: toast salt okunur bandın üstünde durur', (
+      tester,
+    ) async {
+      final controller = GuToastController();
+      addTearDown(controller.dispose);
+      final session = postSession(role: ClubRole.advisor);
+      await tester.pumpApp(
+        GuToastHost(
+          controller: controller,
+          child: const PostDetailView(clubId: kPostClubId, postId: kPostId),
+        ),
+        overrides: _overrides(session: session),
+      );
+      await tester.pump();
+      controller.show(
+        GuToastEntry(
+          kind: GuToastKind.info,
+          text: 'Salt okunur.',
+          closeSemanticLabel: tester.l10n.a11yClose,
+          persistent: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(GuMotion.slow);
+
+      final toast = tester.getRect(find.byType(GuToast));
+      final banner = tester.getRect(find.byType(GuBanner));
+      expect(toast.overlaps(banner), isFalse);
+      expect(toast.bottom, lessThanOrEqualTo(banner.top));
     });
   });
 

@@ -1587,6 +1587,21 @@
   "@composeImages": {
     "description": "Key compose.images"
   },
+  "composeImagesCount": "{label} ({count}/{max})",
+  "@composeImagesCount": {
+    "description": "Key compose.imagesCount",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
   "composeLimitReached": "Bugünkü duyuru hakkın doldu.",
   "@composeLimitReached": {
     "description": "Key compose.limitReached"

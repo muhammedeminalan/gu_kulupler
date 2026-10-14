@@ -11,7 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Okuyucular eşzamanlıdır; [load] tamamlanmadan varsayılanları döndürür.
 /// - Yazıcılar **hiçbir zaman fırlatmaz**: kalıcılık hatası `false` döner
 ///   (çağıran günlüğe yazar; kullanıcıya gösterilmez).
-/// - Yazı taslakları (T-21) kendi task'ında eklenir.
+/// - Yazı taslakları (FED-03) kulüp başına tek kayıttır ([composeDraft] —
+///   CD-45).
 abstract interface class AppPreferencesStore {
   /// Değerler diskten okundu mu?
   bool get isLoaded;
@@ -65,6 +66,15 @@ abstract interface class AppPreferencesStore {
   /// Son aramaları [terms] ile değiştirir (en yeni önde); fazlası
   /// `Limits.recentSearchesMax`'te kesilir. Boş liste geçmişi temizler.
   Future<bool> setRecentSearches(List<String> terms);
+
+  /// [clubId] kulübü için saklanan yazı taslağı (FED-03; CD-45): çağıranın
+  /// yazdığı JSON metni, taslak yoksa `null`. Kulüp başına **tek** taslak
+  /// tutulur; içeriği bu depo yorumlamaz.
+  String? composeDraft(String clubId);
+
+  /// [clubId] kulübünün yazı taslağını [json] ile değiştirir; `null` taslağı
+  /// kaldırır (yayın ya da "Kaydetmeden çık" sonrası).
+  Future<bool> setComposeDraft(String clubId, String? json);
 }
 
 /// `shared_preferences` anahtarları — tek liste (PLAN §4.4, §12.2).
@@ -90,6 +100,10 @@ abstract final class AppPreferenceKeys {
 
   /// Son aramalar (CLB-02): metin listesi, en yeni önde.
   static const String recentSearches = 'pref.recentSearches';
+
+  /// [clubId] kulübünün yazı taslağı (FED-03): JSON metni —
+  /// `compose_draft_<clubId>` (CD-45).
+  static String composeDraft(String clubId) => 'compose_draft_$clubId';
 }
 
 /// [AppPreferencesStore] uygulaması: `shared_preferences`.
@@ -112,6 +126,11 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   bool _notificationPermissionAsked = false;
   bool _photoAccessExplained = false;
   List<String> _recentSearches = const <String>[];
+
+  /// Bu oturumda yazılan / kaldırılan taslaklar (kulüp → JSON; `null` =
+  /// kaldırıldı). Diskteki değerin önüne geçer: yazım başarısız olsa da
+  /// oturum boyunca geçerlidir.
+  final Map<String, String?> _composeDrafts = <String, String?>{};
 
   @override
   bool get isLoaded => _prefs != null;
@@ -227,6 +246,24 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
     final capped = _recentSearches = _capped(terms);
     return _write(
       (prefs) => prefs.setStringList(AppPreferenceKeys.recentSearches, capped),
+    );
+  }
+
+  @override
+  String? composeDraft(String clubId) {
+    if (_composeDrafts.containsKey(clubId)) return _composeDrafts[clubId];
+    final prefs = _prefs;
+    return prefs == null
+        ? null
+        : _string(prefs, AppPreferenceKeys.composeDraft(clubId));
+  }
+
+  @override
+  Future<bool> setComposeDraft(String clubId, String? json) {
+    _composeDrafts[clubId] = json;
+    final key = AppPreferenceKeys.composeDraft(clubId);
+    return _write(
+      (prefs) => json == null ? prefs.remove(key) : prefs.setString(key, json),
     );
   }
 

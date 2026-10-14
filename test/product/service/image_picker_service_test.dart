@@ -25,6 +25,18 @@ final Uint8List _heic = _bytes(const [
   0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63, //
 ]);
 
+/// Geçerli başlıklı JPEG: SOI · APP0 (JFIF) · DQT · çerçeve başlığı
+/// ([sof] işaretçisi, [width] × [height]) · dolgu.
+Uint8List _jpegOf(int width, int height, {int sof = 0xC0}) =>
+    Uint8List.fromList([
+      0xFF, 0xD8, //
+      0xFF, 0xE0, 0x00, 0x10, ...List.filled(14, 0), //
+      0xFF, 0xDB, 0x00, 0x05, 0, 0, 0, //
+      0xFF, sof, 0x00, 0x11, 0x08, //
+      height >> 8, height & 0xFF, width >> 8, width & 0xFF, //
+      ...List.filled(10, 0),
+    ]);
+
 /// `readAsBytes` hata veren dosya.
 final class _UnreadableFile extends XFile {
   _UnreadableFile() : super('yok.jpg');
@@ -268,6 +280,70 @@ void main() {
         expect(compressed, isEmpty);
       },
     );
+  });
+
+  group('T-21 · DeviceImagePickerService · piksel boyutu', () {
+    test('yeniden kodlanmış JPEG başlığındaki boyut görsele yazılır', () async {
+      final result = await service(
+        picked: _png,
+        compress: (_) async => _jpegOf(1600, 1200),
+      ).pick(MediaSource.gallery);
+
+      final image = result.imageOrNull!;
+      expect((image.width, image.height), (1600, 1200));
+      expect(image.contentType, 'image/jpeg');
+    });
+
+    test('başlığı okunamayan JPEG 0 × 0 bildirir (seçim reddedilmez: avatar '
+        'boyut kullanmaz)', () async {
+      final result = await service(picked: _png).pick(MediaSource.gallery);
+
+      final image = result.imageOrNull!;
+      expect((image.width, image.height), (0, 0));
+    });
+
+    test('jpegSizeOf: temel ve aşamalı çerçeve başlığı; dolgu baytı '
+        'atlanır', () {
+      expect(DeviceImagePickerService.jpegSizeOf(_jpegOf(1200, 900)), (
+        width: 1200,
+        height: 900,
+      ));
+      expect(
+        DeviceImagePickerService.jpegSizeOf(_jpegOf(640, 960, sof: 0xC2)),
+        (width: 640, height: 960),
+      );
+      final padded = Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xFF, //
+        ..._jpegOf(320, 240).skip(2),
+      ]);
+      expect(DeviceImagePickerService.jpegSizeOf(padded), (
+        width: 320,
+        height: 240,
+      ));
+    });
+
+    test('jpegSizeOf: JPEG değil, başlık yok, kesik dosya, sıfır boyut ve '
+        'çerçeve olmayan işaretçi → null', () {
+      final full = _jpegOf(1200, 900);
+      for (final bytes in [
+        _png,
+        _jpeg,
+        Uint8List(0),
+        Uint8List.fromList(const [0xFF, 0xD8, 0xFF]),
+        // Çerçeve başlığının ortasında kesilmiş.
+        Uint8List.sublistView(full, 0, full.length - 13),
+        _jpegOf(0, 900),
+        _jpegOf(1200, 0),
+        // DHT (0xC4) çerçeve başlığı değildir.
+        _jpegOf(1200, 900, sof: 0xC4),
+        // Tarama verisi çerçeve başlığından önce başlıyor.
+        Uint8List.fromList(const [0xFF, 0xD8, 0xFF, 0xDA, 0x00, 0x02, 0, 0]),
+        // Geçersiz bölüt uzunluğu.
+        Uint8List.fromList(const [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x01, 0, 0]),
+      ]) {
+        expect(DeviceImagePickerService.jpegSizeOf(bytes), isNull);
+      }
+    });
   });
 
   group('T-14 · DeviceImagePickerService · contentTypeOf', () {

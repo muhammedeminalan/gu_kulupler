@@ -2,8 +2,8 @@ part of 'shell_route.dart';
 
 // T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
-// profilini kurar; kalan alt rotalar PLAN §13.3.2 tablosundaki task'larda
-// eklenir.
+// profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı kurar; kalan alt
+// rotalar PLAN §13.3.2 tablosundaki task'larda eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
 // T-18) `:clubId` kalıbından **önce** yazılır (go_router ilk eşleşeni alır).
@@ -22,6 +22,7 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
         TypedGoRoute<ClubApplicationRoute>(path: ClubApplicationRoute.segment),
         TypedGoRoute<ClubMembersRoute>(path: ClubMembersRoute.segment),
         TypedGoRoute<PostDetailRoute>(path: PostDetailRoute.segment),
+        TypedGoRoute<ComposeRoute>(path: ComposeRoute.segment),
       ],
     ),
   ],
@@ -175,6 +176,32 @@ final class PostDetailRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       PostDetailView(clubId: clubId, postId: postId);
+}
+
+/// FED-03 Yeni gönderi — `/clubs/:clubId/compose?edit=`. CLB-03'ün alt
+/// rotasıdır (guard `M`: yalnızca yönetim kurulu / başkan; danışman yönetim
+/// paneline, diğerleri kulüp sayfasına yönlenir — `RouteAccessTable`).
+/// CLB-03 / FED-01 "yazı oluştur" ve SHT-08 "Düzenle" (`edit`) `go` ile açar,
+/// geri kulübe döner.
+final class ComposeRoute extends GoRouteData
+    with $ComposeRoute, PlatformPageMixin {
+  /// [clubId] kulübünde yeni gönderi; [edit] verilirse o gönderinin
+  /// düzenlemesi.
+  const ComposeRoute({required this.clubId, this.edit});
+
+  /// `/clubs/:clubId` altındaki yol parçası.
+  static const String segment = 'compose';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Düzenlenen gönderinin kimliği (sorgu parametresi `?edit=`); yeni
+  /// gönderide `null`.
+  final String? edit;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ComposeView(clubId: clubId, editPostId: edit);
 }
 
 /// CLB-07 Profil — `/clubs/user/:userId?clubId=` (guard `A`). `/clubs`'un

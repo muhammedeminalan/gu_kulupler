@@ -93,6 +93,8 @@ void main() {
       final image = PickedImage(
         bytes: Uint8List(8),
         contentType: 'image/jpeg',
+        width: 1,
+        height: 1,
       );
       final fake = FakeImagePickerService()..nextPick = image;
 

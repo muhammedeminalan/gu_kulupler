@@ -3224,6 +3224,7 @@ Arayüz dosyası T-15'te açılır; sonraki task'lar **metot ekler** (önceki im
 | Metot | İmza | İşlem | Sayaç | Yan yazım | Soft delete | Rules / sorgu |
 |---|---|---|---|---|---|---|
 | `newPostId` | `String newPostId()` | `FirestoreService.newId('posts')` — görsel yüklemeden **önce** (CD-39); her görsel `StoragePaths.postImage(postId, file)` yoluna `customMetadata: {clubId}` ile yüklenir (storage.rules `isManagerOf(metadata.clubId)`) | — | — | — | — |
+| `uploadImages` | `Future<MediaUpdateResult<List<PostImageModel>>> uploadImages(String postId, List<PostImageUpload> images, {required String clubId, required String uploaderId, void Function(int index, PostImageModel image)? onUploaded})` | **T-21.** Firestore yazımı yok (K-18: önce görseller, sonra `create` / `update`). Ön denetim (dosya gönderilmeden, tüm liste): geçersiz kimlik, `images.length > Limits.postImagesMax` ya da boyut < 1 → `MediaDocumentError(invalidArgument)`; izinsiz tür / boş / ≥ `Limits.imageMaxBytes` → `MediaUploadError(invalidType / noFile / sizeLimit)`. Sonra sırayla `StorageService.upload(StoragePaths.postImage(postId, StoragePaths.newFileName(clock, random, ext)), customMetadata: {clubId, uploaderId})` (CD-39, CD-143 madde 8: `uploaderId` = oturumdaki uid — Rules karşılaştırır; `random` kurucudan — kompozisyon kökü `Random.secure()`); her başarılı yüklemede `onUploaded(index, PostImageModel(path, w, h))`. İlk hatada durur → `MediaUploadError`; yüklenenler yerinde kalır (D-10), çağıran yeniden denemede yalnızca kalanları gönderir. Girdi `PostImageUpload(bytes, contentType, width, height)` — yeniden kodlanmış bayt (CD-135). Döner: girdi sırasıyla `List<PostImageModel>`; boş liste → boş başarı | — | — | silme / üzerine yazma yok (D-10) | storage.rules `posts/{postId}/{file}` create: `imageOk()` + `postId` deseni + `metadata.uploaderId == uid` + `isManagerOf(metadata.clubId)` + `accountActive()` (§11.5) |
 | `create` | `Future<FirestoreResult<PostModel>> create(PostDraft draft, {required String authorId, required String clubId, required String postId})` | **B**: `posts/{postId}` set (`likes:[], likeCount:0, commentCount:0, lastCommentRef: null, pinned:false, isHidden:false, pushSent: draft.pushSent && type==announcement`) + activity; `pushSent==true` ise `announcementCounters/{clubId}_{dayKey}` (`AnnouncementCounterRepository.addToBatch`, `lastPostRef: 'posts/{postId}'`) | `count +1` (duyuru+push) | A:`post_created \| announcement \| poll`; N:`announcement` → kulüp üyeleri (yazar + danışman hariç) **fan-out, batch sonrası** | — | §3.5 C (`images.size() <= 4 && images[i].path.matches('posts/' + postId + '/.*')`, CD-39), §3.16, §3.11 |
 | `update` | `Future<FirestoreResult<void>> update(String postId, PostEditPatch patch, {required String authorId})` | 1 update `text, title, images, editedAt: serverTimestamp`; anket seçenekleri **değişmez** | — | — | — | §3.5 U(yazar) |
 | `softDeletePost` | `Future<FirestoreResult<void>> softDeletePost(String postId, {required String actorId, required String clubId})` | **B**: `softDelete(posts/{id})`; `clubs.pinnedPostId == postId` ise aynı batch `clubs.pinnedPostId: null` + `posts.pinned:false` | — | — | `isSoftDelete` (yazar/yönetici/süper) | §3.5 U, §3.3 U(`pinnedPostId`) |
@@ -3691,15 +3692,18 @@ service firebase.storage {
     function accountActive() {                                     // T-14 güvenlik: askıdaki / silinmiş / belgesiz hesap yükleyemez (1 get)
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
-    function membershipPath(clubId) {
-      return /databases/(default)/documents/memberships/$(clubId + '_' + request.auth.uid);
+    function clubMetadataOnly() {                                  // T-21 (uygulandı): yalnızca clubId + uploaderId (+ indirme jetonu)
+      return request.resource.metadata.keys().hasOnly(['clubId', 'uploaderId', 'firebaseStorageDownloadTokens'])
+          && request.resource.metadata.uploaderId == request.auth.uid
+          && request.resource.metadata.clubId is string
+          && request.resource.metadata.clubId.matches('[A-Za-z0-9_-]+');
     }
-    function isManagerOf(clubId) {                                 // 2 çağrı: exists + get
-      let m = firestore.get(membershipPath(clubId)).data;
-      return firestore.exists(membershipPath(clubId))
+    function isManagerOf(clubId) {                                 // T-21 (uygulandı): 1 belge (tek get; belge yoksa hata = ret)
+      let m = firestore.get(/databases/(default)/documents/memberships/$(clubId + '_' + request.auth.uid)).data;
+      return m.userId == request.auth.uid && m.clubId == clubId
           && m.status == 'active' && m.role in ['board', 'president'];
     }
-    function eventClubId(eventId) {                                // CD-47: etkinlik belgesi yüklemeden önce vardır (createDraft)
+    function eventClubId(eventId) {                                // TASLAK (T-22; 2 belge sınırına göre yeniden kurulur — W-73). CD-47: etkinlik belgesi yüklemeden önce vardır (createDraft)
       return firestore.get(/databases/(default)/documents/events/$(eventId)).data.clubId;
     }
 
@@ -3720,11 +3724,12 @@ service firebase.storage {
       allow create: if signedInVerified() && isNewFile() && imageOk() && isManagerOf(eventClubId(eventId));
       allow update, delete: if false;
     }
-    match /posts/{postId}/{file} {
-      allow read: if signedInVerified();
-      allow create: if signedInVerified() && isNewFile() && imageOk()
-          && request.resource.metadata.clubId is string
-          && isManagerOf(request.resource.metadata.clubId);               // CD-39
+    match /posts/{postId}/{file} {                                 // T-21'de UYGULANAN kural (CD-39, CD-143)
+      allow get: if signedInVerified();                            // tek dosya; üyelik aranmaz
+      allow list: if false;
+      allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
+          && postId.matches('[A-Za-z0-9_-]+') && clubMetadataOnly()       // metadata: clubId + uploaderId (== uid)
+          && isManagerOf(request.resource.metadata.clubId) && accountActive();   // 2 Firestore belgesi = sınır
       allow update, delete: if false;
     }
     match /support/{ticketNo}/{file} {
@@ -3745,8 +3750,8 @@ service firebase.storage {
 | `delete` / `update` | her yolda `false` (D-10, HD22); değiştirme = yeni dosya + Firestore alanı (`avatarPath`, `logoPath`, `coverPath`, `images[].path`, `attachmentPaths[]`) |
 | Üzerine yazma (T-14 bulgusu) | Storage'da `create` dosya **içeriği** yazımının tamamını kapsar: var olan yola yeniden yükleme de `create`tir; `update` yalnızca üst veri güncellemesidir. `update: false` üzerine yazmayı **engellemez** (emülatörde doğrulandı) → açılan her `create` kuralı `isNewFile()` (`resource == null`) taşır; `storage.test.js` yapı testi bunu açılan her yol için zorunlu kılar. Rules test düzeneği Storage'ı `testEnv.clearStorage()` (yalnızca kök dosyaları siler) yerine emülatörün `/internal/reset` ucuyla boşaltır (`test/setup/env.js`) |
 | `users/` (T-14) | okuma `get` (tek dosya; `list` kapalı — eski avatar dosyaları silinmediği için klasör listesi sahibinin değiştirdiği fotoğrafları açardı; uygulama yalnızca `users.avatarPath` yolunu okur); yükleme: sahibi + doğrulanmış + `isNewFile()` + `imageOk()` (jpeg/png/webp — `image/svg+xml`, `image/gif` yok) + `fileNameOk(file)` (`StoragePaths.fileNamePattern`, uzantı ↔ içerik türü; parite `parity.test.js`). `noCustomMetadata()` + **`accountActive()`** (`firestore.get(users/{uid}).data.status == 'active'`, kuralın son koşulu — öncekiler tutmazsa okunmaz): askıdaki ve silinmiş hesap ile profil belgesi olmayan oturum **yükleyemez** (Mod C'de askı yalnızca `users.status`'tur, Auth hesabı açık kalır; okuma olmadan askıdaki kullanıcı klasörüne dosya yığabilirdi). `profileComplete` aranmaz: AUT-05 sırası `createProfile` → tamamlama yaması → yükleme (CD-135 madde 1), belge yüklemeden önce vardır. Askıdaki hesabın **okuması** açık kalır. Storage'da adet / toplam boyut kotası yoktur (rules-spec §9.8) |
-| Firestore çapraz okuma | **gerekli**: `clubs/`, `events/` ve `posts/` yollarında yönetici rolü yalnızca `memberships/{clubId}_{uid}` belgesinden bilinir (Q-09: claim yok). Maliyet: `isManagerOf` = **2 çağrı** (`firestore.exists` + tek `firestore.get`, `let` ile); `events/` yolunda + 1 (`eventClubId`) = 3; `users/` yolunda **1** (`accountActive`, T-14 güvenlik incelemesi); `support/` yolu T-28'de aynı `accountActive()` denetimini alır (askıdaki hesap ek yükleyemez). Üretimde çapraz servis kuralı için Firebase Rules hizmet hesabına Firestore okuma izni verilir (ilk `storage.rules` deploy'unda CLI/konsol sorar — T-46 konsol listesi) |
-| `posts/{postId}` yazar kontrolü | **Karar (CD-39):** gönderi belgesi yükleme anında henüz yoktur (K-18 akışı: önce görseller yüklenir, sonra `posts/{postId}` yazılır; `postId` `PostRepository.newPostId()` ile önceden üretilir) → `firestore.get(posts/{postId})` kullanılamaz. İstemci yüklemeye `customMetadata: {clubId}` ekler, Storage kuralı `isManagerOf(metadata.clubId)` ile yöneticiyi doğrular; Firestore `posts` create kuralı `images.size() <= 4 && images[i].path.matches('posts/' + postId + '/.*')` (i = 0..3) ile yolun gönderiye ait olduğunu doğrular (§11.1 satır 6). `posts/{clubId}/{postId}/{file}` biçimi kullanılmaz |
+| Firestore çapraz okuma | **gerekli**: `clubs/`, `events/` ve `posts/` yollarında yönetici rolü yalnızca `memberships/{clubId}_{uid}` belgesinden bilinir (Q-09: claim yok). Maliyet (T-21'de uygulanan): `isManagerOf` = **1 belge** (tek `firestore.get(memberships/{clubId}_{uid})`, `let` ile; `exists` yok — belge yoksa ifade hata verir = ret) + `accountActive` **1 belge** → `posts/` yolunda toplam **2**; `users/` yolunda **1** (`accountActive`, T-14 güvenlik incelemesi); ~~`events/` yolunda + 1 (`eventClubId`) = 3~~ (geçersiz — aşağıdaki sınır); `support/` yolu T-28'de aynı `accountActive()` denetimini alır (askıdaki hesap ek yükleyemez). Üretimde çapraz servis kuralı için Firebase Rules hizmet hesabına Firestore okuma izni verilir (ilk `storage.rules` deploy'unda CLI/konsol sorar — T-46 konsol listesi). **Sınır (T-21, CD-143):** tek kural değerlendirmesi en çok **2 Firestore belgesi** okuyabilir (emülatör uygulamaz; rules-spec §7): `posts/` üyelik + hesap okur, kulübün askı durumu Storage'da okunmaz; `events/` için yukarıdaki "= 3" taslağı geçersizdir — T-22 kuralı 2 belgeyle kurar (W-73) |
+| `posts/{postId}` yazar kontrolü | **Karar (CD-39):** gönderi belgesi yükleme anında henüz yoktur (K-18 akışı: önce görseller yüklenir, sonra `posts/{postId}` yazılır; `postId` `PostRepository.newPostId()` ile önceden üretilir) → `firestore.get(posts/{postId})` kullanılamaz. İstemci yüklemeye `customMetadata: {clubId, uploaderId}` ekler, Storage kuralı `isManagerOf(metadata.clubId)` ile yöneticiyi doğrular ve `metadata.uploaderId == request.auth.uid` ister (T-21 güvenlik incelemesi: nesne yükleyeni kendiliğinden kaydetmez; klasör adı `postId` da belge kimliği desenindedir); Firestore `posts` create kuralı `images.size() <= 4 && images[i].path.matches('posts/' + postId + '/.*')` (i = 0..3) ile yolun **desenini** doğrular (§11.1 satır 6) — dosyanın varlığını, yükleyenini ve `metadata.clubId` değerini denetlemez: başka kulübün yöneticisi kendi kulübü adına bu klasöre dosya yükleyebilir ama gönderiye iliştiremez (`images` alanını yalnızca yazar yazar); sonuç yetim dosyadır (rules-spec §7, §9.11). `posts/{clubId}/{postId}/{file}` biçimi kullanılmaz |
 | `events/{eventId}` yönetici kontrolü | **Karar (CD-47):** MGT-05 akışında kapak yüklenmeden önce `EventRepository.createDraft` çalıştığı için etkinlik belgesi vardır; kural `eventClubId(eventId)` ile kulübü okur ve `isManagerOf` uygular (metadata'ya güvenilmez — başka kulübün yöneticisi `c01` etkinliğinin yoluna yükleyemez). Firestore `events` U kuralı `coverPath.matches('events/' + eventId + '/.*')` ile alanı yola bağlar |
 | `support/` okuma | yalnızca süper admin (rules-spec §7); yükleyen kendi ekini yerel baytlardan gösterir |
 | Emülatör | `firebase.json` `storage.rules` yolu + `emulators.storage.port 9199`; çapraz servis kuralı (`firestore.get`/`firestore.exists`) emülatörde desteklenir (firebase-tools ≥ 11.x; yerel 14.5.1 ✓) |

@@ -9,10 +9,17 @@
 // geçersiz kimlik, ayrıştırma ve hata eşlemesi (PLAN §10.4, §10.6;
 // rules-spec §3.5, §3.16, §4, §6; D-10, Q-10, W-51; docs/plans/T-19.md §6).
 //
+// T-21 · uploadImages: gönderi görselleri `posts/{postId}/{yeni ad}` yoluna
+// `customMetadata.clubId` + `.uploaderId` ile sırayla yüklenir (CD-39); ön denetim tüm liste
+// için dosya gönderilmeden; kısmi hatada yüklenenler kalır (D-10), kalanlar
+// gönderilmez; Firestore'a yazılmaz (K-18).
+//
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); transaction yazım kümesi
 // kayıt tutan servis çiftiyle (`test/fakes/recording_firestore_service.dart`),
 // Rules'ın gün denetimi `test/fakes/rules_day_firestore.dart` ile, hata
 // yolları el yazımı SDK çiftleriyle (`test/fakes/sdk_firestore_stubs.dart`).
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +27,7 @@ import 'package:gu_data/gu_data.dart';
 
 import '../fakes/fake_app_clock.dart';
 import '../fakes/recording_firestore_service.dart';
+import '../fakes/recording_storage_service.dart';
 import '../fakes/rules_day_firestore.dart';
 import '../fakes/sdk_firestore_stubs.dart';
 import '../helpers/plan_repository_table.dart';
@@ -165,9 +173,11 @@ void main() {
   PostRepository repositoryOn(FirestoreService firestore) =>
       FirebasePostRepository(
         firestore,
+        RecordingStorageService(),
         FirebaseActivityRepository(firestore),
         FirebaseAnnouncementCounterRepository(firestore, clock),
         clock,
+        SequenceRandom(const [0]),
       );
 
   /// Her çağrısı [code] hatasıyla biten veritabanına bağlı repository.
@@ -298,6 +308,8 @@ void main() {
 
       expect(plan.map((row) => row.member), [
         'newPostId',
+        // T-21 · görsel yükleme (CD-39).
+        'uploadImages',
         'create',
         'update',
         'softDeletePost',
@@ -335,6 +347,315 @@ void main() {
 
       expect(RepositoryHelpers.isValidId(first), isTrue);
       expect(first, isNot(second));
+    });
+  });
+
+  group('T-21 · uploadImages · gönderi görselleri (CD-39)', () {
+    late RecordingStorageService storage;
+    late PostRepository uploader;
+
+    /// Sırayla artan baytlar: her dosya adı (8 bayt) farklıdır.
+    final sequence = List<int>.generate(64, (i) => i);
+    const first = 'posts/p01/20261013T090000Z_0001020304050607.jpg';
+    const second = 'posts/p01/20261013T090000Z_08090a0b0c0d0e0f.png';
+    const third = 'posts/p01/20261013T090000Z_1011121314151617.webp';
+
+    PostImageUpload image({
+      String contentType = 'image/jpeg',
+      int length = 3,
+      int width = 1200,
+      int height = 900,
+    }) => PostImageUpload(
+      bytes: Uint8List(length),
+      contentType: contentType,
+      width: width,
+      height: height,
+    );
+
+    setUp(() {
+      storage = RecordingStorageService();
+      uploader = FirebasePostRepository(
+        service,
+        storage,
+        FirebaseActivityRepository(service),
+        FirebaseAnnouncementCounterRepository(service, clock),
+        clock,
+        SequenceRandom(sequence),
+      );
+    });
+
+    test('her görsel posts/{postId}/{yeni ad} yoluna, türünün uzantısıyla ve '
+        'yalnızca clubId + uploaderId üst verisiyle, girdi sırasıyla '
+        'yüklenir', () async {
+      final images = [
+        image(),
+        image(contentType: 'image/png', width: 800, height: 800),
+        image(contentType: 'image/webp', width: 640, height: 960),
+      ];
+      final reported = <(int, PostImageModel)>[];
+
+      final result = await uploader.uploadImages(
+        _postId,
+        images,
+        clubId: _clubId,
+        uploaderId: _author,
+        onUploaded: (index, image) => reported.add((index, image)),
+      );
+
+      const models = [
+        PostImageModel(path: first, w: 1200, h: 900),
+        PostImageModel(path: second, w: 800, h: 800),
+        PostImageModel(path: third, w: 640, h: 960),
+      ];
+      expect(result.dataOrNull, models);
+      expect(reported, [(0, models[0]), (1, models[1]), (2, models[2])]);
+      expect(storage.uploads.map((upload) => upload.path), [
+        first,
+        second,
+        third,
+      ]);
+      for (final (index, upload) in storage.uploads.indexed) {
+        expect(StoragePaths.isPostImage(upload.path, _postId), isTrue);
+        expect(upload.bytes, same(images[index].bytes));
+        expect(upload.contentType, images[index].contentType);
+        // Rules: `uploaderId == request.auth.uid` — yükleyen izlenebilir.
+        expect(upload.customMetadata, {
+          'clubId': _clubId,
+          'uploaderId': _author,
+        });
+      }
+      // K-18: yükleme Firestore'a hiçbir şey yazmaz.
+      expect(service.outsideWrites, 0);
+      expect(service.transactions, 0);
+      expect(await ids('posts'), isEmpty);
+    });
+
+    test(
+      'yüklenen modeller yayın yükünde aynen kabul edilir (create)',
+      () async {
+        final uploaded = (await uploader.uploadImages(
+          _postId,
+          [
+            image(),
+          ],
+          clubId: _clubId,
+          uploaderId: _author,
+        )).dataOrNull!;
+
+        final created = await uploader.create(
+          PostDraft(type: PostType.post, text: _text, images: uploaded),
+          authorId: _author,
+          clubId: _clubId,
+          postId: _postId,
+        );
+
+        expect(created.dataOrNull!.images, uploaded);
+        expect((await read(_postPath))!['images'], [
+          {'path': first, 'w': 1200, 'h': 900},
+        ]);
+      },
+    );
+
+    test('boş liste hiçbir şey yüklemeden başarıdır; en çok 4 görsel yüklenir; '
+        '5. görsel hiçbir dosya gönderilmeden reddedilir', () async {
+      final none = await uploader.uploadImages(
+        _postId,
+        [],
+        clubId: _clubId,
+        uploaderId: _author,
+      );
+      final four = await uploader.uploadImages(
+        _postId,
+        [
+          for (var i = 0; i < Limits.postImagesMax; i++) image(),
+        ],
+        clubId: _clubId,
+        uploaderId: _author,
+      );
+      final sent = storage.uploads.length;
+      final five = await uploader.uploadImages(
+        _postId,
+        [
+          for (var i = 0; i <= Limits.postImagesMax; i++) image(),
+        ],
+        clubId: _clubId,
+        uploaderId: _author,
+      );
+
+      expect(none.dataOrNull, isEmpty);
+      expect(four.dataOrNull, hasLength(Limits.postImagesMax));
+      expect(
+        {for (final upload in storage.uploads) upload.path},
+        hasLength(Limits.postImagesMax),
+      );
+      expect(
+        five.errorOrNull,
+        const MediaDocumentError(FirestoreError.invalidArgument),
+      );
+      expect(storage.uploads, hasLength(sent));
+    });
+
+    test(
+      'geçersiz kimlik ya da boyut bilgisi → belge hatası (invalidArgument), '
+      'dosya gönderilmez',
+      () async {
+        final results = [
+          for (final id in _invalidIds) ...[
+            await uploader.uploadImages(
+              id,
+              [image()],
+              clubId: _clubId,
+              uploaderId: _author,
+            ),
+            await uploader.uploadImages(
+              _postId,
+              [image()],
+              clubId: id,
+              uploaderId: _author,
+            ),
+            await uploader.uploadImages(
+              _postId,
+              [image()],
+              clubId: _clubId,
+              uploaderId: id,
+            ),
+          ],
+          await uploader.uploadImages(
+            _postId,
+            [
+              image(),
+              image(width: 0),
+            ],
+            clubId: _clubId,
+            uploaderId: _author,
+          ),
+          await uploader.uploadImages(
+            _postId,
+            [
+              image(height: -1),
+            ],
+            clubId: _clubId,
+            uploaderId: _author,
+          ),
+        ];
+
+        for (final result in results) {
+          expect(
+            result.errorOrNull,
+            const MediaDocumentError(FirestoreError.invalidArgument),
+          );
+        }
+        expect(storage.uploads, isEmpty);
+      },
+    );
+
+    test('izinsiz tür, boş ve sınırdaki / üstündeki görsel → yükleme hatası; '
+        'listedeki geçerli görseller de gönderilmez', () async {
+      Future<MediaUpdateError?> upload(PostImageUpload bad) async =>
+          (await uploader.uploadImages(
+            _postId,
+            [
+              image(),
+              bad,
+            ],
+            clubId: _clubId,
+            uploaderId: _author,
+          )).errorOrNull;
+
+      expect(
+        await upload(image(contentType: 'image/gif')),
+        const MediaUploadError(StorageError.invalidType),
+      );
+      expect(
+        await upload(image(contentType: 'image/svg+xml')),
+        const MediaUploadError(StorageError.invalidType),
+      );
+      expect(
+        await upload(image(length: 0)),
+        const MediaUploadError(StorageError.noFile),
+      );
+      expect(
+        await upload(image(length: Limits.imageMaxBytes)),
+        const MediaUploadError(StorageError.sizeLimit),
+      );
+      expect(
+        await upload(image(length: Limits.imageMaxBytes + 1)),
+        const MediaUploadError(StorageError.sizeLimit),
+      );
+      expect(storage.uploads, isEmpty);
+
+      final under = await uploader.uploadImages(
+        _postId,
+        [
+          image(length: Limits.imageMaxBytes - 1),
+        ],
+        clubId: _clubId,
+        uploaderId: _author,
+      );
+      expect(under.isSuccess, isTrue);
+    });
+
+    test('yükleme hatası (ağ, zaman aşımı, Rules reddi) aynen döner; kalanlar '
+        'gönderilmez, yüklenenler bildirilmiş kalır', () async {
+      for (final error in [
+        StorageError.retryLimitExceeded,
+        StorageError.timeout,
+        StorageError.unauthorized,
+      ]) {
+        storage.uploads.clear();
+        final reported = <int>[];
+
+        final result = await uploader.uploadImages(
+          _postId,
+          [image(), image(), image()],
+          clubId: _clubId,
+          uploaderId: _author,
+          // İkinci yükleme başarısız olur.
+          onUploaded: (index, _) {
+            reported.add(index);
+            storage.nextError = error;
+          },
+        );
+
+        expect(result.errorOrNull, MediaUploadError(error));
+        expect(reported, [0]);
+        expect(storage.uploads, hasLength(2));
+        storage.nextError = null;
+      }
+    });
+
+    test('yeniden deneme yalnızca kalanları yeni adla gönderir (üzerine yazma '
+        'yok)', () async {
+      final kept = <PostImageModel>[];
+      storage.nextError = null;
+      final failed = await uploader.uploadImages(
+        _postId,
+        [image(), image()],
+        clubId: _clubId,
+        uploaderId: _author,
+        onUploaded: (_, image) {
+          kept.add(image);
+          storage.nextError = StorageError.retryLimitExceeded;
+        },
+      );
+      storage.nextError = null;
+
+      final retried = await uploader.uploadImages(
+        _postId,
+        [
+          image(),
+        ],
+        clubId: _clubId,
+        uploaderId: _author,
+      );
+
+      expect(failed.isSuccess, isFalse);
+      expect(kept, hasLength(1));
+      final paths = [for (final upload in storage.uploads) upload.path];
+      expect(paths, hasLength(3));
+      expect(paths.toSet(), hasLength(3));
+      expect(retried.dataOrNull!.single.path, paths.last);
+      expect(retried.dataOrNull!.single.path, isNot(kept.single.path));
     });
   });
 

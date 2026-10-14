@@ -22,7 +22,25 @@
 //   bilinemez — üretimde kural böyle döner; ekran bunu `notFound` ile
 //   birlikte "içerik yok" sayar); silinmiş gönderi `getPost`, `pin`, `unpin`,
 //   `softDeletePost` için `notFound`'dur;
-// - ikinci oy `alreadyExists` (oy değiştirilemez).
+// - ikinci oy `alreadyExists` (oy değiştirilemez);
+// - görsel yükleme (`uploadImages`, T-21) gerçek sırayı izler: ön denetim
+//   (kimlik / adet / boyut → `MediaDocumentError(invalidArgument)`; tür /
+//   boş / sınır → `MediaUploadError`) → sırayla "yükleme" ([imageUploads],
+//   `onUploaded`). `failNext(StorageError.x)` [failUploadAt] sırasındaki
+//   görselde yüklemeyi keser (öncekiler yüklenmiş kalır — kısmi hata);
+//   `failNext(FirestoreError.x)` hiçbir şey yüklemeden
+//   `MediaDocumentError(x)` döner.
+//
+//   posts
+//     ..failUploadAt = 1
+//     ..failNext(StorageError.unauthorized);
+//   final result = await posts.uploadImages(
+//     'p1',
+//     images,
+//     clubId: 'c01',
+//     uploaderId: 'u1',
+//   );
+//   expect(posts.imageUploads, hasLength(1));
 // Çağıranın rolü (yönetici, üye, süper admin) burada bilinmez: yetki reddini
 // test `failNext(FirestoreError.permissionDenied)` ile kurar.
 import 'dart:async';
@@ -35,6 +53,17 @@ import 'fake_pager.dart';
 
 /// `watchPost` akışının tek olayı.
 typedef FakePostEvent = FirestoreResult<PostModel?>;
+
+/// `uploadImages` ile "yüklenen" tek görsel: hedef gönderi, üst verideki
+/// kulüp ve yükleyen (`customMetadata.clubId` / `.uploaderId`), gönderilen
+/// girdi ve dönen model.
+typedef FakeImageUpload = ({
+  String postId,
+  String clubId,
+  String uploaderId,
+  PostImageUpload upload,
+  PostImageModel image,
+});
 
 final class FakePostRepository extends FakeBase implements PostRepository {
   /// "Şu an" [_clock] saatidir (zaman alanları, anket bitişi). Bildirimli
@@ -64,6 +93,15 @@ final class FakePostRepository extends FakeBase implements PostRepository {
 
   /// [newPostId] sıradaki kimliği buradan alır; boşsa `p_fake_N` üretir.
   final List<String> newPostIdQueue = <String>[];
+
+  /// [uploadImages] ile yüklenen görseller, yükleme sırasıyla (kısmi hatada
+  /// kesilen çağrının yüklenenleri dahil).
+  final List<FakeImageUpload> imageUploads = <FakeImageUpload>[];
+
+  /// Bekleyen yükleme hatasının (`failNext(StorageError)`) düşeceği görselin
+  /// çağrı içindeki sırası; öncekiler yüklenir. Liste daha kısaysa son
+  /// görselde düşer. Varsayılan `0` (ilk görsel).
+  int failUploadAt = 0;
 
   /// Açık `watchPost` dinleyicisi sayısı.
   int activeListeners = 0;
@@ -112,6 +150,76 @@ final class FakePostRepository extends FakeBase implements PostRepository {
     return newPostIdQueue.isEmpty
         ? 'p_fake_${++_generated}'
         : newPostIdQueue.removeAt(0);
+  }
+
+  @override
+  Future<MediaUpdateResult<List<PostImageModel>>> uploadImages(
+    String postId,
+    List<PostImageUpload> images, {
+    required String clubId,
+    required String uploaderId,
+    void Function(int index, PostImageModel image)? onUploaded,
+  }) async {
+    record('uploadImages', [postId, images, clubId, uploaderId]);
+    final injected = takeFailure();
+    // Ön denetim: hiçbir dosya "gönderilmeden", tüm liste için.
+    if (!RepositoryHelpers.isValidId(postId) ||
+        !RepositoryHelpers.isValidId(clubId) ||
+        !RepositoryHelpers.isValidId(uploaderId) ||
+        FieldValidators.postImageCount(images.length) != null ||
+        images.any((image) => image.width < 1 || image.height < 1)) {
+      return _documentFailure(FirestoreError.invalidArgument);
+    }
+    for (final image in images) {
+      if (!StoragePaths.extensionByContentType.containsKey(
+        image.contentType,
+      )) {
+        return _uploadFailure(StorageError.invalidType);
+      }
+      if (image.bytes.isEmpty) return _uploadFailure(StorageError.noFile);
+      if (image.bytes.length >= Limits.imageMaxBytes) {
+        return _uploadFailure(StorageError.sizeLimit);
+      }
+    }
+    if (injected is FirestoreError) return _documentFailure(injected);
+    if (injected != null && images.isEmpty) {
+      return _uploadFailure(
+        injected is StorageError ? injected : StorageError.unknown,
+      );
+    }
+    final failAt = failUploadAt.clamp(
+      0,
+      images.isEmpty ? 0 : images.length - 1,
+    );
+    final uploaded = <PostImageModel>[];
+    for (final (index, upload) in images.indexed) {
+      if (injected != null && index == failAt) {
+        // Öncekiler yüklenmiş kalır (D-10); kalanlar gönderilmez.
+        return _uploadFailure(
+          injected is StorageError ? injected : StorageError.unknown,
+        );
+      }
+      final image = PostImageModel(
+        path: StoragePaths.postImage(
+          postId,
+          _nextImageFileName(
+            StoragePaths.extensionByContentType[upload.contentType]!,
+          ),
+        ),
+        w: upload.width,
+        h: upload.height,
+      );
+      imageUploads.add((
+        postId: postId,
+        clubId: clubId,
+        uploaderId: uploaderId,
+        upload: upload,
+        image: image,
+      ));
+      uploaded.add(image);
+      onUploaded?.call(index, image);
+    }
+    return FirebaseSuccess(uploaded);
   }
 
   @override
@@ -560,6 +668,23 @@ final class FakePostRepository extends FakeBase implements PostRepository {
     }
     return right.compareTo(left);
   }
+
+  /// `StoragePaths.newFileName` şemasında, her çağrıda farklı dosya adı
+  /// (sabit damga + artan sayaç).
+  String _nextImageFileName(String extension) {
+    final serial = (++_imageSerial).toRadixString(16).padLeft(16, '0');
+    return '20261014T090000Z_$serial.$extension';
+  }
+
+  int _imageSerial = 0;
+
+  static MediaUpdateResult<List<PostImageModel>> _uploadFailure(
+    StorageError error,
+  ) => FirebaseFailure(MediaUploadError(error));
+
+  static MediaUpdateResult<List<PostImageModel>> _documentFailure(
+    FirestoreError error,
+  ) => FirebaseFailure(MediaDocumentError(error));
 
   static FirestoreResult<T> _denied<T>() =>
       const FirebaseFailure(FirestoreError.permissionDenied);

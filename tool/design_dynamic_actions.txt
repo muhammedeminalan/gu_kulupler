@@ -44,3 +44,18 @@ FED-01.retry    # lib/features/clubs/view/widget/club_feed_tab.dart — yalnızc
 FED-02.image.*  # design/prototype/app/cards.js:93 — görsel hücresi (`ImageGrid`) yalnızca görselli gönderide (`post.images.length`); yakalama görselsiz duyuru (p01)
 FED-02.vote.*   # design/prototype/app/cards.js:87 — anket seçeneği (`PollBlock`) yalnızca anket gönderisinde (`post.poll`); yakalama duyuru (p01)
 FED-02.retry    # lib/features/feed/view/post_detail_view.dart — yalnızca gönderi ya da yorumlar okunamadığında (`isError` / `isCommentsError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+FED-03.back            # design/prototype/app/screens-clubs.js:186 — yalnızca yönetici / süper admin olmayan kullanıcıya çizilen "yetkin yok" görünümünün geri düğmesi; yakalama yönetici (u_burak → c03)
+FED-03.retry           # lib/features/feed/view/compose_view.dart — yalnızca düzenleme kipinde gönderi okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+FED-03.scrim           # design/prototype/app/ui.js:191 — "⋮" menüsünün (`PopMenu id="FED-03"`) scrim'i; yalnızca menü açıkken
+FED-03.saveDraft       # design/prototype/app/screens-clubs.js:198 — "⋮" menüsündeki "Taslak kaydet"; yalnızca menü açıkken (yeni gönderide)
+FED-03.preview         # design/prototype/app/screens-clubs.js:198,200 — "⋮" menüsündeki "Önizle" / "Düzenlemeye dön" ve önizleme bandının eylemi; yalnızca menü açıkken ya da önizleme kipinde (`f.preview`)
+FED-03.clear           # design/prototype/app/screens-clubs.js:198 — "⋮" menüsündeki "Temizle"; yalnızca menü açıkken
+FED-03.switchClub      # design/prototype/app/screens-clubs.js:202 — kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managedClubs(u).length > 1`); yakalama tek kulüp yöneten u_burak
+FED-03.title           # design/prototype/app/screens-clubs.js:203 — duyuru başlığı alanı yalnızca "Duyuru" türünde (`f.type === 'announcement'`); yakalama "Gönderi" türü
+FED-03.pushToggle      # design/prototype/app/screens-clubs.js:207 — "Üyelere bildirim gönder" anahtarı yalnızca "Duyuru" türünde; yakalama "Gönderi" türü
+FED-03.removeImage.*   # design/prototype/app/screens-clubs.js:205 — küçük önizlemedeki "Kaldır" yalnızca görsel eklendikten sonra (`f.images.length`), görsel başına bir anahtar; yakalama görselsiz form
+FED-03.option.*        # design/prototype/app/screens-clubs.js:211 — anket seçeneği alanı yalnızca "Anket" türünde (`f.type === 'poll'`), seçenek başına bir anahtar; yakalama "Gönderi" türü
+FED-03.removeOption.*  # design/prototype/app/screens-clubs.js:211 — seçenek satırındaki "Kaldır" yalnızca "Anket" türünde ve ikiden çok seçenek varken (`f.options.length > 2`); yakalama "Gönderi" türü
+FED-03.addOption       # design/prototype/app/screens-clubs.js:211 — "Seçenek ekle" yalnızca "Anket" türünde ve dörtten az seçenek varken; yakalama "Gönderi" türü
+FED-03.duration.*      # design/prototype/app/screens-clubs.js:212 — süre dilimi (1 / 3 / 7 gün) yalnızca "Anket" türünde; yakalama "Gönderi" türü
+FED-03.showAfterVote   # design/prototype/app/screens-clubs.js:213 — "Sonuçlar oy verince görünsün" anahtarı yalnızca "Anket" türünde; yakalama "Gönderi" türü

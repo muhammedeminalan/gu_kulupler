@@ -8,6 +8,8 @@ import 'package:gu_kulupler/features/clubs/provider/club_feed_view_model.dart';
 import 'package:gu_kulupler/features/clubs/view/mixin/club_feed_tab_mixin.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/feed_compose_entry.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
+import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/widget/post/image_grid.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -31,6 +33,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   kalır, yazan eylemler TST-24 verir.
 /// * Danışman akışı okur; beğeni, oy ve yönetim eylemleri TST-26 verir.
 /// * Engellenen kullanıcıların gönderileri çizilmez.
+/// * Gönderi görselleri `postImageResolverProvider` ile Storage'dan çözülür;
+///   adres gelene (ya da alınamazsa) dek hücre yer tutucu desendir (K-18).
 ///
 /// Davranış `ClubFeedTabMixin`'dedir.
 ///
@@ -79,7 +83,12 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
     FeedFilter.images => GuKey.action('FED-01.filter.images'),
   };
 
-  Widget _card(ClubFeedState state, PostModel post, String? uid) {
+  Widget _card(
+    ClubFeedState state,
+    PostModel post,
+    String? uid,
+    PostImageResolver imageOf,
+  ) {
     final author = state.users[post.authorId];
     return PostCard(
       key: ValueKey<String>(post.id),
@@ -112,6 +121,7 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
       onSave: () => save(post),
       onVote: (optionId) => vote(post, optionId),
       onImage: (index) => openImage(post, index),
+      imageOf: imageOf,
     );
   }
 
@@ -133,6 +143,9 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
       ),
     );
     final posts = state.visible;
+    // Gönderi görselleri Storage'dan çözülür; adres gelene dek yer tutucu
+    // (K-18).
+    final imageOf = ref.watch(postImageResolverProvider);
     final status = GuListStatus.resolve(
       isError: state.isError,
       // Süzgece uyan gönderi yok ama okunmamış sayfa var: sıradaki sayfalar
@@ -200,7 +213,8 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: GuSpacing.s12,
                     children: [
-                      for (final post in posts) _card(state, post, uid),
+                      for (final post in posts)
+                        _card(state, post, uid, imageOf),
                     ],
                   ),
                 ),

@@ -30,15 +30,20 @@ import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 ///   gider (`go`). FED-02'den geri dönülünce ve SHT-09 kapanınca o gönderi
 ///   yeniden okunur (beğeni, kayıt, yorum sayacı; kaldırıldıysa akıştan
 ///   çıkar).
-/// * Hedefi henüz yazılmamış girişler (FED-03 yazı oluşturma / düzenleme)
-///   anahtarlarıyla yerindedir; T-21'de bağlanır (bağlama borçları W-24,
-///   W-25).
+/// * "Kulübüne bir şey yaz…" / "İlk gönderini yaz" ve SHT-08 "Düzenle"
+///   FED-03'ü açar (`ComposeRoute`, `go`; düzenlemede `edit`). FED-03'ten
+///   geri dönülünce akış iskelet göstermeden yeniden okunur (yeni gönderi
+///   başa gelir); düzenlemeden dönüşte o gönderi yeniden okunur.
 mixin ClubFeedTabMixin on ConsumerState<ClubFeedTab> {
   ScrollPosition? _position;
   ProviderSubscription<ClubFeedState>? _stateSubscription;
 
-  /// FED-02'si açılan gönderi: sayfa geri gelince yeniden okunur.
+  /// FED-02'si ya da FED-03 düzenlemesi açılan gönderi: sayfa geri gelince
+  /// yeniden okunur.
   String? _openedPostId;
+
+  /// FED-03 (yeni gönderi) açıldı: sayfa geri gelince akış yenilenir.
+  bool _composeOpened = false;
   bool _wasCurrent = true;
 
   /// Sekmenin ViewModel'i.
@@ -80,14 +85,24 @@ mixin ClubFeedTabMixin on ConsumerState<ClubFeedTab> {
       _position?.removeListener(_loadMoreIfNearEnd);
       _position = position?..addListener(_loadMoreIfNearEnd);
     }
-    // Gönderi detayından (FED-02) geri dönüldü: orada yapılan beğeni, kayıt,
-    // yorum ya da kaldırma akıştaki karta yansısın diye gönderi yeniden
-    // okunur.
+    // Gönderi detayından (FED-02) ya da düzenlemeden (FED-03) geri dönüldü:
+    // orada yapılan beğeni, kayıt, yorum, düzenleme ya da kaldırma akıştaki
+    // karta yansısın diye gönderi yeniden okunur. Yeni gönderi ekranından
+    // dönüşte akışın tamamı yenilenir (yayınlanan gönderi başa gelir).
     final isCurrent = ModalRoute.isCurrentOf(context) ?? true;
-    final opened = _openedPostId;
-    if (isCurrent && !_wasCurrent && opened != null) {
+    if (isCurrent && !_wasCurrent) {
+      final opened = _openedPostId;
       _openedPostId = null;
-      unawaited(viewModel.reloadPost(opened));
+      if (_composeOpened) {
+        _composeOpened = false;
+        // Yenileme durumu hemen değiştirir; yapım sırasında değil, kare
+        // bitince başlatılır.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(viewModel.refresh());
+        });
+      } else if (opened != null) {
+        unawaited(viewModel.reloadPost(opened));
+      }
     }
     _wasCurrent = isCurrent;
   }
@@ -108,7 +123,9 @@ mixin ClubFeedTabMixin on ConsumerState<ClubFeedTab> {
   /// "Kulübüne bir şey yaz…" / "İlk gönderini yaz" (`FED-01.compose`) →
   /// FED-03.
   void compose() {
-    // TODO(T-21): `ComposeRoute(clubId: widget.clubId)` (FED-03; W-24).
+    if (!mounted) return;
+    _composeOpened = true;
+    ComposeRoute(clubId: widget.clubId).go(context);
   }
 
   /// Gönderi gövdesi (`FED-01.post.<postId>`) → FED-02.
@@ -138,9 +155,9 @@ mixin ClubFeedTabMixin on ConsumerState<ClubFeedTab> {
     if (!mounted) return;
     switch (outcome) {
       case PostMenuOutcome.edit:
-        // TODO(T-21): `ComposeRoute(clubId: post.clubId, edit: post.id)`
-        // (FED-03 düzenleme kipi; W-25).
-        break;
+        // FED-03 düzenleme kipi; geri dönülünce gönderi yeniden okunur.
+        _openedPostId = post.id;
+        ComposeRoute(clubId: post.clubId, edit: post.id).go(context);
       case PostMenuOutcome.none:
       case PostMenuOutcome.removed:
         // Kaldırılan gönderi akıştan çıkar; sayfa yerinde kalır.
