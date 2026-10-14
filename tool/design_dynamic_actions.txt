@@ -121,3 +121,11 @@ MGT-10.retry           # lib/features/management/view/activity_log_view.dart —
 MGT-01.switchClub      # design/prototype/app/screens-manage.js:9 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
 MGT-01.share           # design/prototype/app/screens-manage.js:22 — "Henüz üyen yok" kartının Paylaş düğmesi yalnızca sıradan üyesi olmayan kulüpte ve danışman değilken (`!members.length && !readOnly`); yakalama 231 üyeli c03
 MGT-01.retry           # lib/features/management/view/manage_view.dart — yalnızca panel okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-02.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-02.retry           # lib/features/management/view/manage_applications_view.dart — yalnızca başvurular okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-02.toggleOpen      # design/prototype/app/screens-manage.js:50 — "Başvurular kapalı" bandının anahtarı yalnızca başvuruya kapalı kulüpte (`!club.applicationsOpen`); yakalama başvuruya açık c03
+MGT-02.cancelSelect    # design/prototype/app/screens-manage.js:50 — seçim çubuğunun kapat düğmesi yalnızca çoklu seçim kipinde (`selecting`, uzun basış); yakalama olağan kip
+MGT-02.selectAll       # design/prototype/app/screens-manage.js:50 — seçim çubuğunun "Hepsini seç" düğmesi yalnızca çoklu seçim kipinde; yakalama olağan kip
+MGT-02.bulkApprove     # design/prototype/app/screens-manage.js:50 — seçim çubuğunun toplu onay düğmesi (→ DLG-17) yalnızca çoklu seçim kipinde; yakalama olağan kip
+MGT-02.bulkReject      # design/prototype/app/screens-manage.js:50 — seçim çubuğunun toplu ret düğmesi (→ DLG-17) yalnızca çoklu seçim kipinde; yakalama olağan kip
+MGT-02.select.*        # design/prototype/app/cards.js:173 — `ApplicationRow` onay kutusu (başvuran başına) yalnızca çoklu seçim kipinde; yakalama olağan kip

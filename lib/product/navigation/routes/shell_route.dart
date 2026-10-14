@@ -17,6 +17,7 @@ import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/management/view/activity_log_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_applications_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notification_prefs_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notifications_view.dart';
@@ -31,6 +32,7 @@ import 'package:gu_kulupler/features/settings/view/delete_account_view.dart';
 import 'package:gu_kulupler/features/settings/view/settings_view.dart';
 import 'package:gu_kulupler/features/settings/view/support_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/applications_tab.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/navigation/gu_page_transitions.dart';
 import 'package:gu_kulupler/product/navigation/my_clubs_tab.dart';
@@ -40,6 +42,8 @@ import 'package:gu_kulupler/product/navigation/route_guards.dart';
 import 'package:gu_kulupler/product/navigation/routes/route_placeholder_view.dart';
 import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
 
+export 'package:gu_kulupler/product/navigation/applications_tab.dart'
+    show ApplicationsTab;
 export 'package:gu_kulupler/product/navigation/club_detail_tab.dart'
     show ClubDetailTab;
 export 'package:gu_kulupler/product/navigation/my_clubs_tab.dart'

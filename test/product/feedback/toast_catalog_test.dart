@@ -252,6 +252,7 @@ void main() {
         ToastParams(date: 'a'),
         ToastParams(n: 2),
         ToastParams(count: 2),
+        ToastParams(applicants: 2),
         ToastParams(unblocked: true),
         ToastParams(saved: true),
         ToastParams(off: true),
