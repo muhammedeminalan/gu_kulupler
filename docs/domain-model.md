@@ -239,8 +239,8 @@ Tür → alıcı → ayar anahtarı (prototipte `TYPE_SETTING`) → tetikleyici.
 
 ## 8. Etkinlik katılım kuralları
 
-- **Katıl** (SHT-12 onayı): kontenjan yok ya da `goingCount < capacity` → `going` (+`goingCount`); aksi halde `waitlist` (+`waitlistCount`, `waitlistAt`). Aynı transaction'da event + rsvp. `registrationOpen=false` ise TST-X2 ("kayıtlar kapalı"). Bitmiş etkinlikte TST-X6. `members` görünürlüklü etkinliğe yalnızca aktif üye katılır.
-- **Vazgeç** (DLG-14): `going→cancelled` (`goingCount −1`) / `waitlist→cancelled` (`waitlistCount −1`). Mod F: tetikleyici en eski bekleyeni `going` yapar ve `waitlist_promoted` yollar. Mod C: yalnızca yönetici elle terfi (MGT-06 "Kayıtlıya al"; kontenjan yoksa TST-X14).
+- **Katıl** (SHT-12 onayı): kontenjan yok ya da (`goingCount < capacity` **ve** bekleme listesi boş) → `going` (+`goingCount`); aksi halde `waitlist` (+`waitlistCount`, `waitlistAt`) — boşalan yer önce bekleyenindir, sıra atlanamaz (CD-144 (10)). Aynı transaction'da event + rsvp. `registrationOpen=false` ise TST-X2 ("kayıtlar kapalı"). Bitmiş etkinlikte TST-X6. `members` görünürlüklü etkinliğe yalnızca aktif üye katılır.
+- **Vazgeç** (DLG-14): etkinlik bitmeden (`endsAt > now`; CD-144 (10)) `going→cancelled` (`goingCount −1`) / `waitlist→cancelled` (`waitlistCount −1`). Mod F: tetikleyici en eski bekleyeni `going` yapar ve `waitlist_promoted` yollar. Mod C: yalnızca yönetici elle terfi (MGT-06 "Kayıtlıya al"; kontenjan yoksa TST-X14).
 - **Bekleme sırası** ("{n}. sıra"): aynı etkinliğin `waitlist` rsvp'leri `waitlistAt`'e göre sıralanır; kullanıcının sırası = ondan önceki sayısı + 1.
 - **Hatırlatıcı** (SHT-13): `reminder ∈ {none,1h,1d}`; katılmadan ayarlanamaz (TST-X7). `autoReminder` etkinlik düzeyinde ek hatırlatmadır.
 - **Bilet** (EVT-03): `going/attended` durumunda gösterilir; QR içeriği `gu:ticket:v1:{eventId}:{ticketCode}`. Durum rozeti: **Geçerli** (`going`) · **Okutuldu** (`attended`, `scannedAt`) · **İptal** (rsvp `cancelled` veya etkinlik `cancelled`). Canlı akış: yönetici okutunca bilet ekranı anında "Okutuldu" olur.

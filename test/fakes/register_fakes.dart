@@ -28,6 +28,7 @@ import 'fake_club_repository.dart';
 import 'fake_comment_repository.dart';
 import 'fake_connectivity_service.dart';
 import 'fake_crash_service.dart';
+import 'fake_event_repository.dart';
 import 'fake_feedback_service.dart';
 import 'fake_firestore_service.dart';
 import 'fake_image_picker_service.dart';
@@ -37,6 +38,7 @@ import 'fake_permission_service.dart';
 import 'fake_post_repository.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_report_repository.dart';
+import 'fake_rsvp_repository.dart';
 import 'fake_saved_post_repository.dart';
 import 'fake_settings_repository.dart';
 import 'fake_share_service.dart';
@@ -58,6 +60,8 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// bildirimli duyuruda kayıtlı `FakeAnnouncementCounterRepository` sayacını
 /// artırır; `FakeCommentRepository` ve `FakeSavedPostRepository` gönderiyi
 /// (varlık, `commentCount`) kayıtlı `FakePostRepository`'den okur / işler.
+/// T-22: `FakeRsvpRepository` etkinliği ve sayaçlarını kayıtlı
+/// `FakeEventRepository`'den okur / işler (kontenjan kararı, ±1).
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
@@ -65,6 +69,7 @@ void registerDefaultFakes() {
   final clubs = FakeClubRepository();
   final counters = FakeAnnouncementCounterRepository(clock);
   final posts = FakePostRepository(clock, counters: counters);
+  final events = FakeEventRepository(clock);
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
@@ -103,6 +108,11 @@ void registerDefaultFakes() {
       FakeSavedPostRepository(clock, posts: posts),
     )
     ..registerSingleton<AnnouncementCounterRepository>(counters)
+    // T-22 · etkinlik ve katılım
+    ..registerSingleton<EventRepository>(events)
+    ..registerSingleton<RsvpRepository>(
+      FakeRsvpRepository(clock, events: events),
+    )
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
     // T-16 · sistem paylaşım sayfası

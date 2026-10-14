@@ -242,6 +242,29 @@ test('seed · validate tutarsız veriyi yakalar (betik yazmadan durur)', () => {
   ]) {
     assert.match(contentProblems, expected);
   }
+
+  // T-22 · etkinlik / katılım değişmezleri (Security Rules'un `events` / `rsvps` biçimi)
+  const events = structuredClone(atToday.docs);
+  events.events.e09.goingCount = 65;
+  events.events.e09.capacity = 64;
+  events.rsvps.e08_u_mehmet.waitlistAt = null;
+  events.rsvps.e01_u_mehmet.clubId = 'c02';
+  events.rsvps[Object.keys(events.rsvps).find((id) => events.rsvps[id].status === 'attended')].scannedBy = null;
+  events.events.e22.coverSeed = 'event-e01';
+  const eventProblems = validate(events, { announcementDailyLimit: 2 }).join('\n');
+  for (const expected of [
+    /events\/e09: goingCount 65 > capacity 64/,
+    /rsvps\/e08_u_mehmet: bekleyen kaydın waitlistAt'i yok/,
+    /rsvps\/e01_u_mehmet: kimlik ya da clubId tutarsız/,
+    /rsvps\/[^:]+: yoklama alanları durumla tutarsız/,
+    /events\/e22: coverSeed event-e22 değil/,
+  ]) {
+    assert.match(eventProblems, expected);
+  }
+  // Prototipte anı olmayan bekleyen kayıt oluşturulduğu anda girmiş sayılır; diğerleri kendi anını taşır.
+  assert.equal(atToday.docs.rsvps.e08_u_mehmet.waitlistAt.getTime(), atToday.docs.rsvps.e08_u_mehmet.createdAt.getTime());
+  assert.ok(Object.values(atToday.docs.rsvps).every((r) => (r.status === 'waitlist') === (r.waitlistAt !== null)));
+  assert.ok(Object.values(atToday.docs.events).every((e) => !('lastRsvpRef' in e)));
   assert.deepEqual(staticTablesDiff({ ...raw, places: raw.places.slice(1) }, fs.readFileSync(path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart'), 'utf8')), ['places: StaticTables (10) ≠ demo-data.json (9)']);
 });
 

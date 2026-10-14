@@ -536,6 +536,187 @@ function savedCreate({ club, uid, postId = 'p01' }, extra) {
 /** `save` — silinmiş kayıt: restore + `savedAt` yenilenir. */
 const savedResave = () => ({ ...restore(), savedAt: serverTimestamp() });
 
+// ── T-22 · etkinlik, katılım, yoklama, terfi ──────────────────────────────────────────────────
+// Yazma yolları docs/plans/T-22.md §6.2 – §6.5 tablolarındaki içeriktir (EventRepository / RsvpRepository;
+// yoklama ve terfi yüklerini T-30 `AttendanceRepository` yazar — kuralları T-22'de açılır).
+
+/** Seed biçimi: null olabilen etkinlik alanları açık `null` (W-51). */
+const EVENT_NULLS = Object.freeze({ placeId: null, placeText: null, capacity: null, cancelReason: null, coverPath: null, publishedAt: null });
+/** Seed biçimi: null olabilen katılım alanları açık `null` (W-51). */
+const RSVP_NULLS = Object.freeze({ waitlistAt: null, scannedAt: null, scannedBy: null });
+
+/** Geçerli bir etkinlik kapağı yolu: `events/{eventId}/<StoragePaths.newFileName>` (CD-47). */
+function eventCoverPath(eventId, index = 0) {
+  return `events/${requireId(eventId, 'eventId')}/20261008T20150${index}Z_3f9a1c2b7d4e5f60.jpg`;
+}
+
+/**
+ * `EventRepository.create` → `events/{eventId}` (istemci biçimi: null alanların anahtarı yok — W-51;
+ * kontenjan anahtarı yok = sınırsız). `publishedAt` yalnızca `published` iken yazılır; `coverPath`,
+ * `cancelReason` ve `lastRsvpRef` HİÇ yazılmaz (W-64).
+ */
+function eventCreate({ club, uid, eventId = 'e_new', status = 'draft', startsInMs = 3 * DAY_MS }, extra) {
+  const data = {
+    clubId: club,
+    title: 'Yeni etkinlik',
+    desc: 'Etkinlik açıklaması.',
+    type: 'sosyal',
+    startsAt: Timestamp.fromMillis(Date.now() + startsInMs),
+    endsAt: Timestamp.fromMillis(Date.now() + startsInMs + 2 * HOUR_MS),
+    placeId: 'pl02',
+    visibility: 'public',
+    status,
+    coverSeed: `event-${requireId(eventId, 'eventId')}`,
+    coverPalette: 'slate',
+    coverPattern: 'dots',
+    registrationOpen: true,
+    autoReminder: true,
+    goingCount: 0,
+    waitlistCount: 0,
+    attendedCount: 0,
+    ...baseCreate({ createdBy: uid }),
+  };
+  if (status === 'published') data.publishedAt = serverTimestamp();
+  return { ...data, ...extra };
+}
+
+/** Günlük belgesi yolu — Dart `FirestoreIds.eventActivity`: `{clubId}_{actorId}_{kind}_{eventId}`. */
+const eventActivityPath = (club, uid, kind, eventId) => `activity/${club}_${uid}_${kind}_${eventId}`;
+
+/** Etkinlik yayını / iptalinin günlüğü: `refs` yalnızca `eventId`. */
+function eventActivity(club, uid, kind, eventId, extra) {
+  return { clubId: club, actorId: uid, kind, refs: { eventId }, createdAt: serverTimestamp(), ...extra };
+}
+
+/** `EventRepository.create` — etkinlik; `published` ise + günlük `event_published`. */
+function createEventWrites({ club, uid, eventId = 'e_new', status = 'draft' }) {
+  const writes = { event: set(`events/${eventId}`, eventCreate({ club, uid, eventId, status })) };
+  if (status === 'published') {
+    writes.activity = set(eventActivityPath(club, uid, 'event_published', eventId), eventActivity(club, uid, 'event_published', eventId));
+  }
+  return writes;
+}
+
+/** `EventRepository.update` — içerik yaması: verilen alanlar + `updatedAt`. */
+function eventEdit(extra) {
+  return { title: 'Güncel başlık', desc: 'Güncel açıklama.', ...baseUpdate(), ...extra };
+}
+
+/** `EventRepository.publish` — `status` + `publishedAt` (+ ilk yayında günlük). */
+const eventPublish = (extra) => ({ status: 'published', publishedAt: serverTimestamp(), ...baseUpdate(), ...extra });
+function publishEventWrites({ club, uid, eventId = 'e_draft', first = true }) {
+  const writes = { event: update(`events/${eventId}`, eventPublish()) };
+  if (first) writes.activity = set(eventActivityPath(club, uid, 'event_published', eventId), eventActivity(club, uid, 'event_published', eventId));
+  return writes;
+}
+
+/** `EventRepository.unpublish` — yalnızca `status` (`publishedAt` korunur). */
+const eventUnpublish = (extra) => ({ status: 'draft', ...baseUpdate(), ...extra });
+
+/** İptal nedeni örneği (DLG-23). */
+const CANCEL_REASON = 'Salon tadilata alındı.';
+
+/** `EventRepository.cancel` — `status` + `cancelReason` + günlük `event_cancelled`. */
+const eventCancel = (reason = CANCEL_REASON, extra) => ({ status: 'cancelled', cancelReason: reason, ...baseUpdate(), ...extra });
+function cancelEventWrites({ club, uid, eventId = 'e_public', reason = CANCEL_REASON }) {
+  return {
+    event: update(`events/${eventId}`, eventCancel(reason)),
+    activity: set(eventActivityPath(club, uid, 'event_cancelled', eventId), eventActivity(club, uid, 'event_cancelled', eventId)),
+  };
+}
+
+/** Katılım kaydı yolu — Dart `FirestoreIds.rsvp`: `{eventId}_{userId}`. */
+const rsvpPath = (eventId, uid) => `rsvps/${requireId(eventId, 'eventId')}_${requireId(uid, 'uid')}`;
+
+/** Yeni katılımın bilet kodu (`FirestoreIds.ticketCodePattern`). */
+const TICKET_CODE = 'GU-WXYZ-6789';
+
+/**
+ * `RsvpRepository.join` → yeni `rsvps/{eventId}_{uid}` (istemci biçimi: `scannedAt` / `scannedBy` anahtarı
+ * yok; `waitlistAt` yalnızca `waitlist` iken).
+ */
+function rsvpCreate({ club, uid, eventId = 'e_public', status = 'going', reminder = '1h' }, extra) {
+  const data = { eventId, clubId: club, userId: uid, status, reminder, ticketCode: TICKET_CODE, ...baseCreate() };
+  if (status === 'waitlist') data.waitlistAt = serverTimestamp();
+  return { ...data, ...extra };
+}
+
+/**
+ * `events` sayaç yazımı: yalnızca oynayan sayaç(lar) `increment` + `updatedAt`. İşaretçi YAZILMAZ (W-64).
+ * @param {{going?: number, waitlist?: number, attended?: number}} deltas sıfır olan sayaç yüke girmez
+ */
+function eventCountersBump({ going = 0, waitlist = 0, attended = 0 }, extra) {
+  const data = {};
+  if (going !== 0) data.goingCount = increment(going);
+  if (waitlist !== 0) data.waitlistCount = increment(waitlist);
+  if (attended !== 0) data.attendedCount = increment(attended);
+  return { ...data, ...baseUpdate(), ...extra };
+}
+
+/** Katılım durumunun oynattığı sayaç: `going` → kayıtlı, `waitlist` → bekleyen. */
+const joinDeltas = (status, step) => (status === 'waitlist' ? { waitlist: step } : { going: step });
+
+/** `RsvpRepository.join` (yeni kayıt) — kayıt + `goingCount` ya da `waitlistCount` +1. */
+function rsvpJoinWrites({ club, uid, eventId = 'e_public', status = 'going', reminder = '1h' }) {
+  return {
+    rsvp: set(rsvpPath(eventId, uid), rsvpCreate({ club, uid, eventId, status, reminder })),
+    event: update(`events/${eventId}`, eventCountersBump(joinDeltas(status, 1))),
+  };
+}
+
+/** `RsvpRepository.join` (vazgeçilmiş kayıt) — `status`, `reminder`, `waitlistAt` + sayaç +1; bilet kodu aynı. */
+function rsvpRejoinWrites({ uid, eventId = 'e_public', status = 'going', reminder = '1d' }) {
+  return {
+    rsvp: update(rsvpPath(eventId, uid), {
+      status,
+      reminder,
+      waitlistAt: status === 'waitlist' ? serverTimestamp() : null,
+      ...baseUpdate(),
+    }),
+    event: update(`events/${eventId}`, eventCountersBump(joinDeltas(status, 1))),
+  };
+}
+
+/** `RsvpRepository.cancel` — yalnızca `status` + önceki durumun sayacı −1. */
+function rsvpCancelWrites({ uid, eventId = 'e_public', from = 'going' }) {
+  return {
+    rsvp: update(rsvpPath(eventId, uid), { status: 'cancelled', ...baseUpdate() }),
+    event: update(`events/${eventId}`, eventCountersBump(joinDeltas(from, -1))),
+  };
+}
+
+/** `RsvpRepository.setReminder` — yalnızca `reminder` + `updatedAt`. */
+const rsvpReminder = (reminder = '15m', extra) => ({ reminder, ...baseUpdate(), ...extra });
+
+/** Yönetici sayaç işaretçisinin yan belgesi (W-64): `events/{eventId}/private/counter`. */
+const eventCounterPath = (eventId) => `events/${requireId(eventId, 'eventId')}/private/counter`;
+const eventCounterData = (club, eventId, userId, extra) => ({ clubId: club, lastRsvpRef: rsvpPath(eventId, userId), updatedAt: serverTimestamp(), ...extra });
+
+/**
+ * `AttendanceRepository.markAttended` / `scanTicket` (T-30) — yoklama: `going → attended` (`attended: true`)
+ * ya da geri alma `attended → going`; `attendedCount ±1` + yan belge.
+ * @param {{club: string, uid: string, eventId?: string, userId?: string, attended?: boolean}} o `uid` = yönetici
+ */
+function attendWrites({ club, uid, eventId = 'e_live', userId = 'u_member', attended = true }) {
+  const rsvp = attended
+    ? { status: 'attended', scannedAt: serverTimestamp(), scannedBy: uid, ...baseUpdate() }
+    : { status: 'going', scannedAt: null, scannedBy: null, ...baseUpdate() };
+  return {
+    rsvp: update(rsvpPath(eventId, userId), rsvp),
+    event: update(`events/${eventId}`, eventCountersBump({ attended: attended ? 1 : -1 })),
+    counter: set(eventCounterPath(eventId), eventCounterData(club, eventId, userId)),
+  };
+}
+
+/** `AttendanceRepository.promote` (T-30) — terfi: `waitlist → going`; tek yazımda `(+1, −1, 0)` + yan belge. */
+function promoteWrites({ club, eventId = 'e_live', userId = 'u_student' }) {
+  return {
+    rsvp: update(rsvpPath(eventId, userId), { status: 'going', ...baseUpdate() }),
+    event: update(`events/${eventId}`, eventCountersBump({ going: 1, waitlist: -1 })),
+    counter: set(eventCounterPath(eventId), eventCounterData(club, eventId, userId)),
+  };
+}
+
 /**
  * `expectations/*.json` vakalarındaki `variant` adları → yük üreticisi `(ctx) => data`.
  * `ctx` = { role, uid, club, otherClub }. Koleksiyon task'ları kendi varyantlarını aşağıya ekler
@@ -619,6 +800,26 @@ const variants = new Map([
   // T-19 · savedPosts
   ['savedCreate', (ctx) => savedCreate({ club: ctx.club, uid: ctx.uid })],
   ['savedResave', () => savedResave()],
+  // T-22 · activity (eşlik eden etkinlik geçişi OLMADAN: ret)
+  ['activityEventPublished', (ctx) => eventActivity(ctx.club, ctx.uid, 'event_published', 'e_public')],
+  ['activityEventCancelled', (ctx) => eventActivity(ctx.club, ctx.uid, 'event_cancelled', 'e_public')],
+  // T-22 · events (tek yazımlı yollar; çok yazımlılar aşağıda `batches`)
+  ['eventDraftCreate', (ctx) => eventCreate({ club: ctx.club, uid: ctx.uid })],
+  ['eventDraftCreateSeedNulls', (ctx) => eventCreate({ club: ctx.club, uid: ctx.uid }, EVENT_NULLS)],
+  ['eventEdit', () => eventEdit()],
+  ['eventRegistrationClose', () => ({ registrationOpen: false, ...baseUpdate() })],
+  ['eventPublish', () => eventPublish()],
+  ['eventUnpublish', () => eventUnpublish()],
+  ['eventCancel', () => eventCancel()],
+  ['eventGoingAlone', () => eventCountersBump({ going: 1 })],
+  ['eventAttendedAlone', () => eventCountersBump({ attended: 1 })],
+  // T-22 · events/private/counter (eşlik eden yönetici sayaç bileşimi OLMADAN: ret)
+  ['eventCounterAlone', (ctx) => eventCounterData(ctx.club, 'e_live', 'u_member')],
+  // T-22 · rsvps
+  ['rsvpJoinAlone', (ctx) => rsvpCreate({ club: ctx.club, uid: ctx.uid })],
+  ['rsvpCancelAlone', () => ({ status: 'cancelled', ...baseUpdate() })],
+  ['rsvpReminder', () => rsvpReminder()],
+  ['rsvpAttendAlone', (ctx) => ({ status: 'attended', scannedAt: serverTimestamp(), scannedBy: ctx.uid, ...baseUpdate() })],
 ]);
 
 /**
@@ -643,6 +844,17 @@ const batches = new Map([
   ['commentAddBatch', (ctx) => addCommentWrites({ club: ctx.club, uid: ctx.uid })],
   ['commentRemoveBatch', (ctx) => removeCommentWrites({ uid: ctx.uid })],
   ['commentRestoreBatch', () => restoreCommentWrites({})],
+  // T-22
+  ['eventPublishedCreateBatch', (ctx) => createEventWrites({ club: ctx.club, uid: ctx.uid, status: 'published' })],
+  ['eventPublishBatch', (ctx) => publishEventWrites({ club: ctx.club, uid: ctx.uid })],
+  ['eventCancelBatch', (ctx) => cancelEventWrites({ club: ctx.club, uid: ctx.uid })],
+  ['rsvpJoinBatch', (ctx) => rsvpJoinWrites({ club: ctx.club, uid: ctx.uid })],
+  ['rsvpJoinMembersBatch', (ctx) => rsvpJoinWrites({ club: ctx.club, uid: ctx.uid, eventId: 'e_members' })],
+  ['rsvpCancelBatch', (ctx) => rsvpCancelWrites({ uid: ctx.uid })],
+  ['rsvpRejoinBatch', (ctx) => rsvpRejoinWrites({ uid: ctx.uid })],
+  ['attendBatch', (ctx) => attendWrites({ club: ctx.club, uid: ctx.uid })],
+  ['unattendBatch', (ctx) => attendWrites({ club: ctx.club, uid: ctx.uid, userId: 'u_board', attended: false })],
+  ['promoteBatch', (ctx) => promoteWrites({ club: ctx.club })],
 ]);
 
 /** Batch varyantının yazım listesini üretir; bilinmeyen ad hatadır. */
@@ -735,6 +947,33 @@ module.exports = {
   restoreCommentWrites,
   savedCreate,
   savedResave,
+  HOUR_MS,
+  EVENT_NULLS,
+  RSVP_NULLS,
+  CANCEL_REASON,
+  TICKET_CODE,
+  eventCoverPath,
+  eventCreate,
+  eventActivity,
+  eventActivityPath,
+  createEventWrites,
+  eventEdit,
+  eventPublish,
+  publishEventWrites,
+  eventUnpublish,
+  eventCancel,
+  cancelEventWrites,
+  rsvpPath,
+  rsvpCreate,
+  eventCountersBump,
+  rsvpJoinWrites,
+  rsvpRejoinWrites,
+  rsvpCancelWrites,
+  rsvpReminder,
+  eventCounterPath,
+  eventCounterData,
+  attendWrites,
+  promoteWrites,
   registerVariant,
   payloadFor,
   batchFor,

@@ -13,6 +13,8 @@ rules_version = '2';
 // blocks, activity (okuma + başvuranın / üyenin kendi geçiş günlüğü).
 // T-19 → posts, posts/votes, comments, savedPosts, announcementCounters; clubs `pinnedPostId` dalı;
 // activity gönderi yayını türleri (`post_created`, `announcement`, `poll`).
+// T-22 → events (+ yan belge events/{id}/private/counter — W-64), rsvps; activity etkinlik türleri
+// (`event_published`, `event_cancelled`).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -94,6 +96,8 @@ service cloud.firestore {
     // katılım sayaçları — T-19 / T-22) iş belgesini bir işaretçiden okur; işaretçi yardımcıları (`refAfter` …)
     // ve işaretçinin duracağı belge o task'ta eklenir (herkese açık belgede kullanıcı kimliği taşıyan yol
     // DURMAZ). `exists` / `get` yazım-öncesi durumu verir (M2'de üyelik henüz yoktur).
+    // T-22: etkinlik sayaçlarında kendi katılımının yolu oturumdan türetilir; yönetici dallarının (yoklama,
+    // terfi) işaretçisi `events/{eventId}/private/counter` yan belgesindedir (yalnızca `seesMgmt` okur).
     function clubPath(c) { return /databases/$(database)/documents/clubs/$(c); }
     function delta(field) { return request.resource.data[field] - resource.data[field]; }
 
@@ -128,6 +132,32 @@ service cloud.firestore {
     function istanbulDay() {
       let t = istanbulNow();
       return string(t.year()) + '-' + pad2(t.month()) + '-' + pad2(t.day());
+    }
+    // Yayın / katılım kabul eden kulüp: silinmemiş ve askıda değil (gönderi yayını ve düzenlemesi — T-19;
+    // etkinlik yazımları ve katılım — T-22). 1 erişim yolu: kulüp.
+    function clubLive(c) {
+      let club = get(clubPath(c)).data;
+      return club.isDeleted == false && club.status == 'active';
+    }
+
+    // ---- etkinlik ve katılım (T-22) ----
+    function eventPath(e) { return /databases/$(database)/documents/events/$(e); }
+    function rsvpDoc(id) { return /databases/$(database)/documents/rsvps/$(id); }
+    // Katılım kaydının kimliği FirestoreIds.rsvp kalıbıdır (`{eventId}_{userId}`). Birleşim tek başına
+    // belirsizdir (`a_b` + `c` = `a` + `b_c`): bu yolu okuyan her kural belgenin `eventId` / `userId`
+    // alanlarını da karşılaştırır (T-21 dersi).
+    function rsvpPath(e, u) { return rsvpDoc(e + '_' + u); }
+    // Yönetici sayaç işaretçisinin yan belgesi (W-64): yalnızca `seesMgmt` okur.
+    function eventCounterPath(e) { return /databases/$(database)/documents/events/$(e)/private/counter; }
+    // Etkinliğin üç sayacı İŞLEMİN TAMAMINDA tam bu kadar oynar (`get` = işlem öncesi, `getAfter` = sonrası):
+    // katılım kuralı sayaçsız, çift sayaçlı ya da ters yönlü işlemi değerlendirme sırasından bağımsız
+    // reddeder (CD-141 madde 11 dersi). 1 erişim yolu: etkinlik.
+    function eventCountersMoved(e, going, waitlist, attended) {
+      let was = get(eventPath(e)).data;
+      let now = getAfter(eventPath(e)).data;
+      return now.goingCount == was.goingCount + going
+          && now.waitlistCount == was.waitlistCount + waitlist
+          && now.attendedCount == was.attendedCount + attended;
     }
 
     // ── Koleksiyonlar (PLAN §11.1 — 18 satır) ───────────────────────────────────────────────────
@@ -691,12 +721,6 @@ service cloud.firestore {
         return after.get('lastPostRef', null) == 'posts/' + postId
             && after.count == (exists(ref) ? get(ref).data.count : 0) + 1;
       }
-      // Yayın kabul eden kulüp: silinmemiş ve askıda değil.
-      function clubLive(c) {
-        let club = get(clubPath(c)).data;
-        return club.isDeleted == false && club.status == 'active';
-      }
-
       // C — yalnızca kulüp yönetimi (yönetim kurulu / başkan), kendi adına. Sayaçlar sıfır, moderasyon ve
       // düzenleme alanları boş başlar. Günlük (activity) bu belgeyi ister; bu belge günlüğü istemez.
       function canCreatePost() {
@@ -938,17 +962,434 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 9 · events/{eventId} — T-22 (yönetici geçişleri T-30)
+    // 9 · events/{eventId} — T-22 (bildirim dağıtımı ve yoklama / terfi YAZAN repository T-30)
+    // rules-spec §3.7 · sözleşme docs/plans/T-22.md §6.
+    // Yazma yolları: EventRepository.create / createDraft / duplicate (C; yayında + günlük) · update /
+    // setRegistrationOpen / uploadCover (U içerik dalı) · publish · unpublish · cancel (U durum dalları) ·
+    // softDeleteEvent / restoreEvent (yalnızca taslak) · RsvpRepository.join / cancel (U sayaç dalı: kendi) ·
+    // AttendanceRepository.scanTicket / markAttended / promote (U sayaç dalı: yönetici — T-30 yazar).
+    // Durum makinesi: draft → published (başlangıç gelecekte) · published → draft (yalnızca kayıtlı yokken, K-F) ·
+    // published → cancelled (+ neden) · cancelled terminal. "Geçmiş" durum değildir.
+    // Null olabilen alanlar (W-51): `placeId`, `placeText`, `capacity`, `cancelReason`, `coverPath`, `publishedAt`.
+    // `lastRsvpRef` bu belgenin alanı DEĞİLDİR (W-64): belge doğrulanmış herkese açıktır, katılım kaydının
+    // yolu (`rsvps/{eventId}_{userId}`) kimin katıldığını / vazgeçtiğini sızdırırdı — hiçbir beyaz listede yoktur.
+    // Dal sırası: her dal önce ucuz ayırıcıya (beyaz liste, önceki / sonraki durum) bakar; erişim çağrıları sonra.
     match /events/{eventId} {
-      allow read: if false;
-      allow create, update: if false;
+      // R — herkese açık (`public`) yayınlanmış / iptal edilmiş etkinliği doğrulanmış her kullanıcı okur
+      // (askıdaki hesap dahil); `members` etkinliğini kulübün içini gören (`seesInside`); taslağı ve silinmiş
+      // taslağı yalnızca kulüp yönetimi, danışman (`seesMgmt`: aktif hesap) ve süper admin. Liste sorgusu
+      // çağıranın görebildiği kümeyi KENDİSİ sınırlar (rules-spec §6 EVT-01 / MGT-04; Rules süzgeç değildir).
+      // Olmayan etkinliğin tekil okuması reddedilir (kulübü bilinemez); süper admine boş döner. Askıdaki
+      // kulübün etkinliği burada süzülmez (rules-spec §9.5). Herkese açık okumada erişim çağrısı yoktur.
+      function canReadEvent() {
+        let d = resource.data;
+        return emailOk()
+            && ((d.isDeleted == false && d.status in ['published', 'cancelled'] && d.visibility == 'public')
+                || isSuper()
+                || (d.isDeleted == false && d.status in ['published', 'cancelled'] && seesInside(d.clubId))
+                || seesMgmt(d.clubId));
+      }
+
+      // Sonuç belgenin içerik alanları (create: yeni belge · update: birleşmiş belge). Belge doğrulanmış
+      // herkese açıktır: tip hatası başkalarının listesini bozmasın diye her alanın tipi burada sabitlenir
+      // (EventModel.fromJson `checked: true`). Sınırlar FieldValidators.eventTitle / eventDesc / placeId /
+      // placeText / capacity / eventEnd ile aynıdır.
+      function eventContentOk(d) {
+        return d.title is string && d.title.trim().size() > 0 && d.title.size() <= 80   // limit: eventTitleMax
+            && d.desc is string && d.desc.size() <= 1000   // limit: eventDescMax
+            // EventType (5)
+            && d.type in ['egitim', 'sosyal', 'gezi', 'yarisma', 'konferans']
+            && d.startsAt is timestamp && d.endsAt is timestamp && d.endsAt > d.startsAt
+            // StaticTables.placeIds (pl01–pl10) biçimi
+            && (d.get('placeId', null) == null || (d.placeId is string && d.placeId.matches('pl[0-9][0-9]')))
+            && (d.get('placeText', null) == null || (d.placeText is string && d.placeText.size() <= 120))   // limit: placeTextMax
+            // kontenjan: yok / null = sınırsız
+            && (d.get('capacity', null) == null || (d.capacity is int && d.capacity >= 1))
+            // EventVisibility (2)
+            && d.visibility in ['public', 'members']
+            // ClubPalette (3)
+            && d.coverPalette in ['red', 'slate', 'bordeaux']
+            // ClubPattern (4)
+            && d.coverPattern in ['dots', 'lines', 'mountain', 'waves']
+            && d.registrationOpen is bool && d.autoReminder is bool
+            // StoragePaths.isEventCover: yalnızca BU etkinliğin klasörü + StoragePaths.fileNamePattern (CD-47;
+            // parity.test.js karşılaştırır). Klasör ↔ kulüp bağı buradadır: Storage kuralı etkinlik belgesini
+            // okumaz (W-73), yolu yalnızca etkinliğin kulübünün yöneticisi iliştirebilir.
+            && (d.get('coverPath', null) == null
+                || (d.coverPath is string
+                    && d.coverPath.matches('events/' + eventId + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)')));
+      }
+
+      // Var olan etkinliği yazabilen: kulübün ETKİN yöneticisi (yönetim kurulu / başkan), hesabı aktif, kulüp
+      // silinmemiş ve askıda değil. Danışman ve süper admin etkinlik YAZAMAZ.
+      // 3 erişim yolu: users/{uid} · üyelik · kulüp.
+      function managesEvent() {
+        return activeUser() && isManager(resource.data.clubId) && clubLive(resource.data.clubId);
+      }
+
+      // C — yalnızca kulüp yönetimi, kendi adına; `draft` ya da doğrudan `published` (başlangıç gelecekte,
+      // `publishedAt` sunucu zamanı). Sayaçlar sıfır; özel kapak (`coverPath`) ve iptal nedeni boş başlar
+      // (kapak, etkinlik oluştuktan sonra yüklenir — CD-47). Kimlik kapak yolu desenine ve katılım kimliğine
+      // gömülür: düzenli ifade karakteri taşıyamaz. Günlük (activity) bu belgeyi ister; bu belge günlüğü istemez.
+      function canCreateEvent() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['clubId', 'createdBy', 'title', 'desc', 'type', 'startsAt', 'endsAt', 'placeId',
+                                 'placeText', 'capacity', 'visibility', 'status', 'cancelReason', 'coverSeed',
+                                 'coverPalette', 'coverPattern', 'coverPath', 'registrationOpen', 'autoReminder',
+                                 'goingCount', 'waitlistCount', 'attendedCount', 'publishedAt',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && eventId.matches('[A-Za-z0-9_-]+')
+            && d.createdBy == uid()
+            && d.clubId is string
+            && eventContentOk(d)
+            && d.get('coverPath', null) == null && d.get('cancelReason', null) == null
+            // FirestoreIds.eventCoverSeed
+            && d.coverSeed == 'event-' + eventId
+            && d.goingCount == 0 && d.waitlistCount == 0 && d.attendedCount == 0
+            && ((d.status == 'draft' && d.get('publishedAt', null) == null)
+                || (d.status == 'published' && d.publishedAt == request.time && d.startsAt > request.time))
+            && activeUser() && isManager(d.clubId) && clubLive(d.clubId);
+      }
+
+      // U (içerik dalı) — update / setRegistrationOpen / uploadCover. `status`, `cancelReason`, `publishedAt`,
+      // sayaçlar, `clubId`, `createdBy`, `coverSeed`, `createdAt` beyaz listede yoktur → değişemez (durum
+      // geçişi içerik düzenlemesiyle aynı yazımda yapılamaz). İptal edilmiş ve silinmiş etkinlik düzenlenemez.
+      // Kontenjan kayıtlı sayısının altına inemez. Yayındaki etkinliğin zamanı (`startsAt` / `endsAt`) yalnızca
+      // etkinlik BAŞLAMADAN ve yeni başlangıç gelecekteyken değişir (domain-model §2.7 "yayında başlangıç
+      // gelecekte"; CD-144 (10)): bitmiş etkinliğin bitişi ileri alınıp katılım / yoklama penceresi (K-G) yeniden
+      // açılamaz, yayın koşulu başlangıç geçmişe çekilerek atlatılamaz. Taslakta serbest (yayın denetler).
+      function canEditEvent() {
+        let d = request.resource.data;
+        return touches(['title', 'desc', 'type', 'startsAt', 'endsAt', 'placeId', 'placeText', 'capacity',
+                        'visibility', 'registrationOpen', 'autoReminder', 'coverPalette', 'coverPattern',
+                        'coverPath'])
+            && resource.data.isDeleted == false
+            && resource.data.status in ['draft', 'published']
+            && eventContentOk(d)
+            && (d.get('capacity', null) == null || d.capacity >= resource.data.goingCount)
+            && (resource.data.status == 'draft'
+                || !d.diff(resource.data).affectedKeys().hasAny(['startsAt', 'endsAt'])
+                || (resource.data.startsAt > request.time && d.startsAt > request.time))
+            && managesEvent();
+      }
+
+      // U (yayın) — `draft → published`: yalnızca `status` + `publishedAt` (sunucu zamanı); başlangıç gelecekte.
+      function canPublishEvent() {
+        let d = request.resource.data;
+        return resource.data.status == 'draft' && d.status == 'published'
+            && resource.data.isDeleted == false
+            && touches(['status', 'publishedAt'])
+            && d.publishedAt == request.time
+            && resource.data.startsAt > request.time
+            && managesEvent();
+      }
+
+      // U (yayından çek, TST-X19) — `published → draft`: yalnızca `status`; `publishedAt` korunur. Kayıtlı varken
+      // reddedilir (K-F: `goingCount == 0`); bekleme listesindeki kayıtlar yerinde kalır.
+      function canUnpublishEvent() {
+        return resource.data.status == 'published' && request.resource.data.status == 'draft'
+            && resource.data.isDeleted == false
+            && touches(['status'])
+            && resource.data.goingCount == 0
+            && managesEvent();
+      }
+
+      // U (iptal, DLG-23) — `published → cancelled`: yalnızca `status` + `cancelReason` (kırpılmış hali dolu).
+      // İptal geri dönmez (`cancelled` hiçbir dalın önceki durumu değildir); katılım kayıtları ve sayaçlar değişmez.
+      function canCancelEvent() {
+        let d = request.resource.data;
+        return resource.data.status == 'published' && d.status == 'cancelled'
+            && resource.data.isDeleted == false
+            && touches(['status', 'cancelReason'])
+            && d.cancelReason is string && d.cancelReason.trim().size() > 0
+            && d.cancelReason.size() <= 300   // limit: adminReasonMax
+            && managesEvent();
+      }
+
+      // U (soft delete / restore) — yalnızca TASLAK (DLG-31; yayındaki etkinlik iptal edilir). Geri almayı
+      // yalnızca silen yönetici (hâlâ yöneticiyken) yapar (TST-45). Süper admin etkinlik silemez.
+      function canRemoveEvent() {
+        return isSoftDelete([]) && resource.data.status == 'draft' && managesEvent();
+      }
+      function canRestoreEvent() {
+        return isRestore([]) && resource.data.status == 'draft'
+            && resource.data.get('deletedBy', null) == uid() && managesEvent();
+      }
+
+      // ── U (sayaç dalı, PLAN §11.2b; sözleşme §6.4) ──────────────────────────────────────────
+      // Yalnızca `goingCount` / `waitlistCount` / `attendedCount` (+ `updatedAt`), katılım kaydıyla AYNI işlemde.
+      // İki yönlü bağ: bu dal eşlik eden kaydın işlemin tamamında (`exists` / `get` → `getAfter`) doğru geçişi
+      // yaptığını, kayıt kuralı da (`eventCountersMoved`) sayaçların işlemin tamamında TAM bu kadar oynadığını
+      // görür — sayaçsız kayıt, kayıtsız sayaç, ±1 dışı delta ve tek artışla iki kayıt reddedilir.
+      // Aktör burada ayrıca yetkilendirilmez (kendi dalı): geçişi yapan yazımı kayıt kuralı yetkilendirir
+      // (vazgeçmede `activeUser` / `clubLive` aranmaz — askıdaki hesap ve askıdaki kulübün katılımcısı vazgeçebilir).
+      function countersSane() {
+        let d = request.resource.data;
+        return d.goingCount >= 0 && d.waitlistCount >= 0 && d.attendedCount >= 0
+            && d.attendedCount <= d.goingCount;
+      }
+      // KONTENJAN: kayıtlı sayısı arttığında yazım-sonrası değer kontenjanı aşamaz. Anahtarsız / null
+      // kontenjan sınırsızdır (W-51: istemci null alanı hiç yazmaz).
+      function capacityHolds() {
+        return resource.data.get('capacity', null) == null
+            || request.resource.data.goingCount <= resource.data.capacity;
+      }
+      // Kendi katılımında `going`: yer var VE bekleme listesi boş (CD-144 (10) — boşalan yer önce bekleyenindir;
+      // Mod C'de yönetici terfi eder). Bekleyen vazgeçip yeniden katılarak, yeni gelen de sırayı atlayarak
+      // kayıtlı olamaz. Sınırsız etkinlikte bekleme listesi yoktur.
+      function ownGoingAllowed() {
+        return resource.data.get('capacity', null) == null
+            || (capacityHolds() && resource.data.waitlistCount == 0);
+      }
+      // Bekleme listesine yalnızca kontenjanlı etkinlikte, kontenjan DOLUYKEN ya da önde bekleyen varken girilir
+      // (`EventModel.joinsWaitlist` ile aynı; işlem etkinliği okur, çakışmada yeniden koşar).
+      function joinsWaitlist() {
+        return resource.data.get('capacity', null) != null
+            && (resource.data.goingCount >= resource.data.capacity || resource.data.waitlistCount > 0);
+      }
+
+      // Kendi dalı — eşlik eden kayıt oturumun BU etkinlikteki kaydıdır; yolu oturumdan türetilir
+      // (`rsvps/{eventId}_{uid}`), herkese açık bu belgeye YAZILMAZ (W-64). Okunan kaydın `eventId` / `userId`
+      // alanları da karşılaştırılır (kimlik birleşimi belirsizliği).
+      //   (+1, 0, 0) yok | cancelled → going      (0, +1, 0) yok | cancelled → waitlist
+      //   (−1, 0, 0) going → cancelled            (0, −1, 0) waitlist → cancelled
+      // 1 erişim yolu: katılım kaydı (getAfter + exists / get).
+      function canBumpOwnRsvpCounters() {
+        let going = delta('goingCount');
+        let waitlist = delta('waitlistCount');
+        let ref = rsvpPath(eventId, uid());
+        let r = getAfter(ref).data;
+        let was = exists(ref) ? get(ref).data.status : 'none';
+        return touches(['goingCount', 'waitlistCount', 'attendedCount'])
+            && delta('attendedCount') == 0
+            && countersSane()
+            && r.eventId == eventId && r.userId == uid()
+            && ((going == 1 && waitlist == 0 && r.status == 'going' && was in ['none', 'cancelled'] && ownGoingAllowed())
+                || (going == 0 && waitlist == 1 && r.status == 'waitlist' && was in ['none', 'cancelled'] && joinsWaitlist())
+                || (going == -1 && waitlist == 0 && r.status == 'cancelled' && was == 'going')
+                || (going == 0 && waitlist == -1 && r.status == 'cancelled' && was == 'waitlist'));
+      }
+
+      // Yönetici dalı (yoklama ve terfi; yazan repository T-30) — aktör kaydın sahibi değildir; eşlik eden
+      // kaydı, AYNI işlemde yazılan yan belgenin işaretçisi gösterir (`events/{eventId}/private/counter`,
+      // `updatedAt == request.time`). İşaretçideki kayıt BU etkinliğindir ve yolu kendi alanlarından yeniden
+      // kurulur (`rsvps/{eventId}_{userId}`): başka etkinliğin ya da kimlik kaydırılmış bir kayıt gösterilemez.
+      //   (0, 0, +1) going → attended     (0, 0, −1) attended → going     (+1, −1, 0) waitlist → going (terfi)
+      // Yoklama `goingCount`'u değiştirmez (kayıtlı = going ∪ attended — CD-130). Etkinliğin durumu ve yoklama
+      // penceresi kayıt kuralındadır. 4 erişim yolu: yan belge · katılım kaydı · users/{uid} · üyelik.
+      function canBumpManagedRsvpCounters() {
+        let going = delta('goingCount');
+        let waitlist = delta('waitlistCount');
+        let attended = delta('attendedCount');
+        let side = getAfter(eventCounterPath(eventId)).data;
+        let pointer = side.lastRsvpRef;
+        let ref = rsvpDoc(pointer.split('/')[1]);
+        let r = getAfter(ref).data;
+        let was = get(ref).data.status;
+        return touches(['goingCount', 'waitlistCount', 'attendedCount'])
+            && countersSane()
+            && side.updatedAt == request.time && side.clubId == resource.data.clubId
+            && pointer is string && pointer.matches('rsvps/[^/]+')
+            && r.eventId == eventId && pointer == 'rsvps/' + eventId + '_' + r.userId
+            && ((going == 0 && waitlist == 0 && attended == 1 && was == 'going' && r.status == 'attended')
+                || (going == 0 && waitlist == 0 && attended == -1 && was == 'attended' && r.status == 'going')
+                || (going == 1 && waitlist == -1 && attended == 0 && was == 'waitlist' && r.status == 'going'
+                    && capacityHolds()))
+            && activeUser() && isManager(resource.data.clubId);
+      }
+
+      allow read: if canReadEvent();
+      allow create: if canCreateEvent();
+      allow update: if canBumpOwnRsvpCounters() || canBumpManagedRsvpCounters() || canEditEvent()
+                    || canPublishEvent() || canUnpublishEvent() || canCancelEvent()
+                    || canRemoveEvent() || canRestoreEvent();
       allow delete: if false;
+
+      // 9b · events/{eventId}/private/counter — T-22 (yazan repository T-30) · sözleşme §6.5 (W-64)
+      // Yönetici sayaç dallarının (yoklama, terfi) işaretçisi: alanlar `clubId`, `lastRsvpRef`
+      // (`rsvps/{eventId}_{userId}`), `updatedAt` (BaseFields yok). Etkinlik belgesi doğrulanmış herkese
+      // açıktır, bu belge yalnızca kulüp yönetimine / danışmana / süper admine (`seesMgmt`) — onlar katılımcı
+      // listesini zaten görür. Belge TEK BAŞINA yazılamaz: yalnızca etkinliğin yönetici sayaç bileşimiyle aynı
+      // işlemde (etkinliğin sayaç dalı da bu belgenin o işlemde yazıldığını ve gösterdiği kaydın doğru geçişi
+      // yaptığını görür). Koleksiyon grubu okuması kapalıdır (aşağıda).
+      match /private/{docId} {
+        // Etkinliğin sayaçları İŞLEMİN TAMAMINDA bir yönetici bileşimi kadar oynadı mı?
+        function managedMove(was, now) {
+          let going = now.goingCount - was.goingCount;
+          let waitlist = now.waitlistCount - was.waitlistCount;
+          let attended = now.attendedCount - was.attendedCount;
+          return (going == 0 && waitlist == 0 && attended in [-1, 1])
+              || (going == 1 && waitlist == -1 && attended == 0);
+        }
+        // 3 erişim yolu: etkinlik (get + getAfter) · users/{uid} · üyelik.
+        function canPointCounter() {
+          let d = request.resource.data;
+          let e = get(eventPath(eventId)).data;
+          return docId == 'counter'
+              && d.keys().hasOnly(['clubId', 'lastRsvpRef', 'updatedAt'])
+              && d.updatedAt == request.time
+              && d.clubId == e.clubId
+              && d.lastRsvpRef is string && d.lastRsvpRef.matches('rsvps/[^/]+')
+              && managedMove(e, getAfter(eventPath(eventId)).data)
+              && activeUser() && isManager(e.clubId);
+        }
+
+        allow get: if docId == 'counter' && seesMgmt(resource.data.clubId);
+        allow list: if false;
+        allow create: if canPointCounter();
+        allow update: if canPointCounter();
+        allow delete: if false;
+      }
     }
 
-    // 10 · rsvps/{eventId}_{userId} — T-22 (yoklama T-30)
+    // 10 · rsvps/{eventId}_{userId} — T-22 (yoklama / terfi YAZAN repository T-30) · rules-spec §3.8 ·
+    // sözleşme docs/plans/T-22.md §6.3.
+    // Yazma yolları: RsvpRepository.join (C; vazgeçilmiş kayıt varsa U yeniden katılım) · cancel · setReminder ·
+    // AttendanceRepository.scanTicket / markAttended (U yoklama) · promote (U terfi) — durum değiştiren her
+    // yazım `events` sayaçlarıyla AYNI işlemdedir.
+    // Belge silinmez ve soft delete edilmez: vazgeçme bir durum geçişidir (`cancelled`); `isDeleted` hiçbir
+    // update beyaz listesinde yoktur. `eventId`, `clubId`, `userId`, `ticketCode`, `createdAt` da öyle —
+    // bilet kodu yalnızca ilk katılımda yazılır ve yalnızca bu belgede durur (sahibi + `seesMgmt` okur).
+    // Null olabilen alanlar (W-51): `waitlistAt`, `scannedAt`, `scannedBy`.
     match /rsvps/{rsvpId} {
-      allow read: if false;
-      allow create, update: if false;
+      // Belge kimliği oturumun uid'iyle mi bitiyor (`…_<uid>`)? Yalnızca OLMAYAN belgenin tekil okumasında
+      // kullanılır (var olan belgede sahiplik `userId` alanından okunur).
+      function ownRsvpId() {
+        let suffix = '_' + uid();
+        return rsvpId.size() > suffix.size()
+            && rsvpId[rsvpId.size() - suffix.size():rsvpId.size()] == suffix;
+      }
+
+      // R — sahibi (askıdaki hesap dahil), kulüp yönetimi / danışman (aktif hesap) ve süper admin. Sıradan üye
+      // ve başka kulübün yöneticisi katılımcıları ve bilet kodlarını OKUYAMAZ.
+      function canReadRsvp() {
+        return (emailOk() && resource.data.userId == uid()) || seesMgmt(resource.data.clubId);
+      }
+
+      // ReminderOption (4 — CD-34; `settings.reminderTime` yalnızca 1h / 1d kalır)
+      function reminderOk(r) { return r in ['none', '15m', '1h', '1d']; }
+      // FirestoreIds.ticketCodePattern (32'lik alfabe: I, O, 0, 1 yok)
+      function ticketOk(c) { return c is string && c.matches('GU-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}'); }
+
+      // Katılım kabul eden etkinlik (`e` = işlem ÖNCESİ belge): silinmemiş, yayında, kayıt açık, bitmemiş
+      // (sunucu saati), kaydın kulübüyle aynı kulübün; `members` görünürlükte yalnızca yazma yetkili üye
+      // (danışman ve süper admin `isMember` değildir); kulüp silinmemiş ve askıda değil.
+      // En çok 2 erişim yolu: üyelik (yalnızca `members`) · kulüp.
+      function joinable(e, club) {
+        return e.isDeleted == false && e.status == 'published' && e.registrationOpen == true
+            && e.endsAt > request.time
+            && e.clubId == club
+            && (e.visibility == 'public' || isMember(e.clubId))
+            && clubLive(e.clubId);
+      }
+      // Katılımın sonucu: `going` (bekleme anı boş, kayıtlı +1) ya da `waitlist` (bekleme anı sunucu zamanı,
+      // bekleyen +1). Hangisinin geçerli olduğunu (kontenjan) etkinliğin sayaç dalı belirler.
+      function joinedNow(d, event) {
+        return (d.status == 'going' && d.get('waitlistAt', null) == null && eventCountersMoved(event, 1, 0, 0))
+            || (d.status == 'waitlist' && d.waitlistAt == request.time && eventCountersMoved(event, 0, 1, 0));
+      }
+
+      // C (Katıl) — aktif kullanıcı, kendi adına; kimlik `eventId_userId` ile birebirdir ve alanlar eşleşir.
+      // Yoklama alanları boş başlar. En çok 4 erişim yolu: etkinlik (get + getAfter) · users/{uid} · üyelik · kulüp.
+      function canJoin() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['eventId', 'clubId', 'userId', 'status', 'reminder', 'ticketCode',
+                                 'waitlistAt', 'scannedAt', 'scannedBy',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.userId == uid()
+            && d.eventId is string && d.clubId is string
+            && rsvpId == d.eventId + '_' + d.userId
+            && reminderOk(d.reminder) && ticketOk(d.ticketCode)
+            && d.get('scannedAt', null) == null && d.get('scannedBy', null) == null
+            && joinedNow(d, d.eventId)
+            && activeUser() && joinable(get(eventPath(d.eventId)).data, d.clubId);
+      }
+
+      // U (yeniden katıl) — `cancelled → going | waitlist`: yalnızca `status`, `reminder`, `waitlistAt`;
+      // `ticketCode` ve `createdAt` AYNI kalır. Katılım koşulları ilk katılımla aynıdır.
+      function canRejoin() {
+        let d = request.resource.data;
+        return resource.data.status == 'cancelled' && d.status in ['going', 'waitlist']
+            && resource.data.userId == uid()
+            && touches(['status', 'reminder', 'waitlistAt'])
+            && reminderOk(d.reminder)
+            && joinedNow(d, resource.data.eventId)
+            && activeUser() && joinable(get(eventPath(resource.data.eventId)).data, resource.data.clubId);
+      }
+
+      // U (vazgeç, DLG-14) — `going | waitlist → cancelled`: yalnızca `status`; ilgili sayaç −1. `activeUser`
+      // İSTENMEZ (askıdaki / hesabını silen kullanıcı vazgeçebilir — T-29); etkinliğin durumu ve kulübün askısı
+      // aranmaz. Etkinlik BİTMEDEN (`endsAt > request.time`; EVT-02 / EVT-03 "Vazgeç" de yalnızca o zaman görünür):
+      // bitmiş etkinlikte "Gelmedin" kaydı iptale çevrilip `goingCount` düşürülerek yoklama oranı şişirilemez
+      // (CD-144 (10)). Yoklaması alınmış kayıttan (`attended`) vazgeçilemez. Boşalan yere kimse otomatik alınmaz.
+      // 1 erişim yolu: etkinlik (get + getAfter).
+      function canCancelRsvp() {
+        let was = resource.data.status;
+        return request.resource.data.status == 'cancelled' && was in ['going', 'waitlist']
+            && emailOk() && resource.data.userId == uid()
+            && touches(['status'])
+            && get(eventPath(resource.data.eventId)).data.endsAt > request.time
+            && ((was == 'going' && eventCountersMoved(resource.data.eventId, -1, 0, 0))
+                || (was == 'waitlist' && eventCountersMoved(resource.data.eventId, 0, -1, 0)));
+      }
+
+      // U (hatırlatma, SHT-13) — yalnızca `reminder`, kayıt `going` / `waitlist` iken. Sayaç oynamaz.
+      function canSetReminder() {
+        return resource.data.userId == uid() && resource.data.status in ['going', 'waitlist']
+            && touches(['reminder'])
+            && reminderOk(request.resource.data.reminder)
+            && activeUser();
+      }
+
+      // Yönetici geçişlerinin ortak koşulu: yan belge AYNI işlemde yazılır ve BU kaydı gösterir (tek işaretçi →
+      // tek sayaç oynamasıyla iki kayıt yazılamaz); aktör etkinliğin kulübünün etkin yöneticisidir (danışman ve
+      // süper admin değil). 3 erişim yolu: yan belge · users/{uid} · üyelik.
+      function managedHere(e) {
+        let side = getAfter(eventCounterPath(resource.data.eventId)).data;
+        return e.clubId == resource.data.clubId && e.isDeleted == false && e.status == 'published'
+            && side.updatedAt == request.time && side.lastRsvpRef == 'rsvps/' + rsvpId
+            && activeUser() && isManager(e.clubId);
+      }
+
+      // U (yoklama, MGT-06 / MGT-07) — `going → attended` (`scannedAt` sunucu zamanı, `scannedBy` oturum) ve geri
+      // alma `attended → going` (ikisi boşalır); `attendedCount ±1`. Yalnızca yoklama penceresinde (K-G):
+      // başlangıçtan 2 sa önce … bitişten 6 sa sonra, iki uç dahil (EventModel.attendanceWindow ile aynı).
+      function canMarkAttendance() {
+        let d = request.resource.data;
+        let was = resource.data.status;
+        let e = get(eventPath(resource.data.eventId)).data;
+        return ((was == 'going' && d.status == 'attended' && d.scannedAt == request.time && d.scannedBy == uid()
+                 && eventCountersMoved(resource.data.eventId, 0, 0, 1))
+                || (was == 'attended' && d.status == 'going' && d.get('scannedAt', null) == null
+                    && d.get('scannedBy', null) == null && eventCountersMoved(resource.data.eventId, 0, 0, -1)))
+            && touches(['status', 'scannedAt', 'scannedBy'])
+            && request.time >= e.startsAt - duration.value(2, 'h')   // limit: attendanceWindowBefore
+            && request.time <= e.endsAt + duration.value(6, 'h')   // limit: attendanceWindowAfter
+            && managedHere(e);
+      }
+
+      // U (terfi, MGT-06 "Kayıtlıya al") — `waitlist → going`: yalnızca `status`; etkinlik TEK yazımda
+      // `goingCount +1` ve `waitlistCount −1` (kontenjan etkinliğin sayaç dalında). Mod C'de terfi yalnızca
+      // yönetici elledir: bekleyen kendini terfi ettiremez (sahibine `waitlist → going` dalı yoktur).
+      function canPromote() {
+        let e = get(eventPath(resource.data.eventId)).data;
+        return resource.data.status == 'waitlist' && request.resource.data.status == 'going'
+            && touches(['status'])
+            && e.endsAt > request.time
+            && eventCountersMoved(resource.data.eventId, 1, -1, 0)
+            && managedHere(e);
+      }
+
+      // Olmayan kendi kaydının tekil okuması boş döner (getMine → null; katılım işleminin ilk okuması):
+      // `resource == null` yalnızca `…_<uid>` kimliğinde izinlidir (başkasının katılıp katılmadığı yoklanamaz).
+      allow get: if (resource == null && emailOk() && ownRsvpId()) || canReadRsvp();
+      // Sorgu sözleşmesi (rules-spec §6): `userId == uid` (EVT-04 / PRF-03) · `eventId` + `clubId` (MGT-06,
+      // bilet kodu araması, bekleme sırası — yalnızca `seesMgmt`). Süzgeçsiz sorgu yalnızca süper admine açıktır.
+      allow list: if canReadRsvp();
+      allow create: if canJoin();
+      allow update: if canSetReminder() || canCancelRsvp() || canRejoin() || canMarkAttendance() || canPromote();
       allow delete: if false;
     }
 
@@ -1015,12 +1456,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 13 · activity/{activityId} — T-15 · T-19 (gönderi yayını) · yönetici türleri T-30 · rules-spec §3.11
+    // 13 · activity/{activityId} — T-15 · T-19 (gönderi yayını) · T-22 (etkinlik yayını / iptali) ·
+    // yönetici türleri T-30 · rules-spec §3.11
     // Değiştirilemez günlük: BaseFields YOK (yalnızca `createdAt`), update ve delete herkese kapalı.
     // Yazma yolu: ActivityRepository.addToBatch — asıl yazımla AYNI batch'te (apply / joinInstant / leave;
-    // T-19: PostRepository.create).
+    // T-19: PostRepository.create; T-22: EventRepository.create / publish / cancel).
     // Kapalı kalan türler: `application_approved`, `application_rejected`, `member_removed`, `role_changed`,
-    // `event_published`, `event_cancelled`, `settings_changed` (yazan yönetici / süper admin — T-30, T-37).
+    // `settings_changed` (yazan yönetici / süper admin — T-30, T-37).
     match /activity/{activityId} {
       // `refs` (ActivityRefsModel): üyelik türlerinde yalnızca `userId` (= oturum); diğerleri yok / null.
       function ownRefs(r) {
@@ -1085,10 +1527,44 @@ service cloud.firestore {
                 || (d.kind == 'poll' && p.type == 'poll'));
       }
 
+      // `refs`: etkinlik türlerinde yalnızca `eventId`; diğerleri yok / null.
+      function eventRefs(r) {
+        return r is map && r.keys().hasOnly(['userId', 'eventId', 'postId', 'role'])
+            && r.eventId is string
+            && r.get('userId', null) == null && r.get('postId', null) == null && r.get('role', null) == null;
+      }
+
+      // C (T-22) — oturumun AYNI işlemde yaptığı etkinlik geçişinin günlüğü. Geçişi (yönetici, aktif hesap,
+      // askıda olmayan kulüp) etkinlik kuralı yetkilendirir; burada yazım-sonrası etkinliğin bu kulübün olduğu
+      // ve geçişin BU işlemde yapıldığı görülür:
+      //   `event_published` ⇒ sonra `published` ve `publishedAt == request.time` (yayın bu işlemde), önce belge
+      //     yok ya da `publishedAt` boş — yalnızca İLK yayın günlüğe düşer (yayından çekilip yeniden yayınlanan
+      //     etkinlik ikinci kayıt üretmez);
+      //   `event_cancelled` ⇒ önce `published`, sonra `cancelled`.
+      // Belge kimliği SABİTTİR (FirestoreIds.eventActivity): `{clubId}_{uid}_{kind}_{eventId}` — serbest kimlik,
+      // ikinci kayıt ve sonradan yeniden yazım reddedilir (CD-137 madde 8t).
+      // 1 erişim yolu: etkinlik (getAfter + exists / get).
+      function canLogOwnEvent() {
+        let d = request.resource.data;
+        let ref = eventPath(d.refs.eventId);
+        let e = getAfter(ref).data;
+        return d.kind in ['event_published', 'event_cancelled']
+            && d.keys().hasOnly(['clubId', 'actorId', 'kind', 'refs', 'createdAt'])
+            && d.createdAt == request.time
+            && d.actorId == uid()
+            && d.clubId is string
+            && eventRefs(d.refs)
+            && activityId == d.clubId + '_' + uid() + '_' + d.kind + '_' + d.refs.eventId
+            && e.clubId == d.clubId
+            && ((d.kind == 'event_published' && e.status == 'published' && e.publishedAt == request.time
+                 && (!exists(ref) || get(ref).data.get('publishedAt', null) == null))
+                || (d.kind == 'event_cancelled' && e.status == 'cancelled' && get(ref).data.status == 'published'));
+      }
+
       // R — kulüp yönetimi, danışman (ikisi de aktif hesap) ve süper admin; doğrulanmış e-posta şarttır
       // (`seesMgmt`). Sorgu `clubId` süzgecini taşır (rules-spec §6 MGT-10).
       allow read: if seesMgmt(resource.data.clubId);
-      allow create: if canLogOwnMembership() || canLogOwnPost();
+      allow create: if canLogOwnMembership() || canLogOwnPost() || canLogOwnEvent();
       allow update: if false;
       allow delete: if false;
     }
@@ -1286,7 +1762,8 @@ service cloud.firestore {
 
     // ── Koleksiyon grupları ─────────────────────────────────────────────────────────────────────
 
-    // collectionGroup('private') — ADM-05 e-posta araması, yalnızca süper admin (T-37).
+    // collectionGroup('private') — ADM-05 e-posta araması, yalnızca süper admin (T-37). Bu ad altında üç belge
+    // türü durur (`users/…/private/account`, `memberships/…/private/contact`, `events/…/private/counter`).
     match /{path=**}/private/{docId} {
       allow read: if false;
     }

@@ -596,6 +596,84 @@ void main() {
     });
   });
 
+  group('T-22 · ProjectDependency · etkinlik ve katılım kayıtları', () {
+    test('iki repository gerçek uygulamalarıyla kaydedilir; mixin '
+        'getter’ları aynı örnekleri döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(GetIt.I<EventRepository>(), isA<FirebaseEventRepository>());
+      expect(GetIt.I<RsvpRepository>(), isA<FirebaseRsvpRepository>());
+
+      final consumer = _Consumer();
+      expect(consumer.eventRepository, same(GetIt.I<EventRepository>()));
+      expect(consumer.rsvpRepository, same(GetIt.I<RsvpRepository>()));
+    });
+
+    test('yayın kayıtlı FirestoreService üzerinde etkinlik + günlüğü birlikte '
+        'yazar; katılım etkinliğin sayacını aynı işlemde artırır, vazgeçme '
+        'azaltır; bilet kodu kriptografik üreticinin desenindedir', () async {
+      final now = DateTime.utc(2026, 10, 13, 9);
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(appClock: FakeAppClock(now)),
+      );
+      final consumer = _Consumer();
+
+      final created = await consumer.eventRepository.create(
+        EventDraft(
+          title: 'Flutter atölyesi',
+          type: EventType.training,
+          startsAt: now.add(const Duration(days: 3)),
+          endsAt: now.add(const Duration(days: 3, hours: 2)),
+          capacity: 1,
+          coverPalette: ClubPalette.red,
+          coverPattern: ClubPattern.dots,
+        ),
+        clubId: 'c01',
+        createdBy: 'u_president',
+        status: EventStatus.published,
+      );
+      final eventId = created.dataOrNull!.id;
+      final first = await consumer.rsvpRepository.join(
+        eventId: eventId,
+        clubId: 'c01',
+        userId: 'u_ayse',
+        reminder: ReminderOption.oneHour,
+      );
+      final second = await consumer.rsvpRepository.join(
+        eventId: eventId,
+        clubId: 'c01',
+        userId: 'u_can',
+        reminder: ReminderOption.none,
+      );
+
+      expect(first.dataOrNull?.status, RsvpStatus.going);
+      expect(
+        first.dataOrNull?.ticketCode,
+        matches(FirestoreIds.ticketCodePattern),
+      );
+      expect(second.dataOrNull?.status, RsvpStatus.waitlist);
+      var event = (await consumer.eventRepository.getEvent(eventId)).dataOrNull;
+      expect((event?.goingCount, event?.waitlistCount), (1, 1));
+
+      await consumer.rsvpRepository.cancel(eventId: eventId, userId: 'u_ayse');
+      event = (await consumer.eventRepository.getEvent(eventId)).dataOrNull;
+      // Mod C: boşalan yere kimse otomatik alınmaz.
+      expect((event?.goingCount, event?.waitlistCount), (0, 1));
+      final log = await consumer.activityRepository.listActivity(
+        'c01',
+        const PageRequest(),
+      );
+      expect(log.dataOrNull?.items.single.kind, ActivityKind.eventPublished);
+    });
+  });
+
   group('T-11 · ProjectDependency · emülatör ortamı (W-53)', () {
     test('emülatörde Remote Config ve çökme servisi yereldir: Firebase '
         "SDK'sına dokunulmaz", () async {

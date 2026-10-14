@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T00:14:14.322Z",
+  "updated": "2026-10-14T05:08:02.302Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -351,11 +351,13 @@
       "notes": ""
     },
     "T-22": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T03:22:02.072Z",
+      "finishedAt": "2026-10-14T05:08:02.302Z",
+      "commits": [
+        "36a254c"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-23": {
@@ -1229,7 +1231,10 @@
       "resolveIn": [
         "T-22"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-22",
+      "closedAt": "2026-10-14T04:40:15.353Z",
+      "closeNote": "T-22: storage.rules events/ = posts/ kalıbı (clubMetadataOnly + uploaderId, isManagerOf(metadata.clubId) + accountActive = 2 Firestore okuması; etkinlik belgesi okunmaz), klasör ↔ kulüp bağı Firestore coverPath kuralında; storage.test.js CROSS_SERVICE events/ = 2; uçtan uca repository_payloads t22 EventRepository.uploadCover (CD-144)"
     },
     {
       "id": "W-74",
@@ -1247,6 +1252,70 @@
       "text": "posts/ Storage kuralı gerçek sunucuda denenmedi (emülatör göstermez: customMetadata clubId + uploaderId ile sunucunun doldurduğu contentDisposition / indirme jetonu anahtarı; 2 belgelik çapraz servis sınırı; Android'de size > 0): kurallar canlıya yüklendikten HEMEN sonra Android ve iOS'ta birer gönderi görseli yüklenir; unauthorized gelirse T-21 yeniden açılır. Aynı denemede düşük bellekli Android'de büyük pikselli (ör. 8000×8000) PNG'li gönderiyle BoundedImage sınırı doğrulanır (hücre yer tutucuda kalmalı, uygulama düşmemeli)",
       "resolveIn": [
         "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-76",
+      "declaredIn": "T-22",
+      "text": "EVT-02 bekleme sırası: RsvpRepository.waitlistPosition katılımcıya kapalıdır (permissionDenied — rsvp listesi açılırsa bilet kodu + kimlik sızar; T-22 sözleşmesi §6.10(6)) ve join dönüşü sıra taşımaz. Katılımcının sırası katılımdan hemen sonra okunan events.waitlistCount'tur; sonradan KESİN sıra Mod C'de gösterilemez → EVT-02 'n. sıra' metni katılım anındaki değerle sınırlanır ya da tasarım sapması olarak kullanıcıya sorulur (CD-144)",
+      "resolveIn": [
+        "T-23"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-77",
+      "declaredIn": "T-22",
+      "text": "Yönetici sayaç dalları (yoklama going↔attended, terfi waitlist→going) Rules + testleri T-22'de açık; AttendanceRepository (scanTicket / markAttended / promote) yan belgeyi events/{eventId}/private/counter {clubId, lastRsvpRef: 'rsvps/{E}_{userId}', updatedAt: serverTimestamp} etkinliğin sayaç yazımı ve rsvp geçişiyle AYNI işlemde yazar. Aynı commit'te: FirestoreFields.lastRsvpRef (T-22'de kaldırıldı) + FirestoreCollections.counterDoc + PLAN §9.6 yan belge tablosu + firebase/test/rules/delete_denied.test.js 'counter' literali sabite bağlanır; repository_payloads t30 senaryoları (CD-144)",
+      "resolveIn": [
+        "T-30"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-78",
+      "declaredIn": "T-22",
+      "text": "Gerçek sunucuda doğrula (emülatör göstermez): (a) events/ kapak yüklemesi — posts/ ile aynı koşullar (W-75: customMetadata clubId + uploaderId, sunucunun doldurduğu contentDisposition / indirme jetonu, 2 belgelik çapraz servis sınırı); (b) kontenjan yarışı — emülatörde aynı anda okuyan iki katılımdan kaybedenin commit'i çakışma yerine permission-denied alır (SDK yeniden denemez); FirebaseRsvpRepository.join Rules reddinde işlemi bir kez daha koşar. Canlıda kapasite 1 etkinliğe iki cihazdan aynı anda katılınır: biri going, diğeri waitlist olmalı (hata toast'ı değil) (CD-144)",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-79",
+      "declaredIn": "T-22",
+      "text": "Yoklama — kopyalanmış bilet kodu (T-22 güvenlik incelemesi, CD-144 (10)): bilet kodunu istemci üretir, Rules yalnızca deseni denetler (tekillik kurulamaz). RsvpRepository.findByTicket limit 2 okur; aynı kodu taşıyan iki kayıtta failedPrecondition döner (gerçek sahibin okutması kopyalayana çevrilmez). AttendanceRepository.scanTicket bunu ScanOutcome.invalid (SHT-24 Geçersiz) sayar, yoklama MGT-06'dan elle alınır; test eklenir. Kalıcı çözüm D-30 değişikliği ister (kullanıcıya sorulur): QR v2 gu:ticket:v2:{eventId}:{userId}:{code} → rsvps/{eventId}_{userId} tekil get + kod karşılaştırma",
+      "resolveIn": [
+        "T-30"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-80",
+      "declaredIn": "T-22",
+      "text": "Hesap silme — rsvp iptali (T-22 güvenlik incelemesi, CD-144 (10)): Rules canCancelRsvp etkinlik bittikten sonra (endsAt <= request.time) vazgeçmeyi reddeder ('Gelmedin' kaydı iptale çevrilip yoklama oranı şişirilemez). AccountDeletionRepository yalnızca bitmemiş etkinliklerin going / waitlist kayıtlarını cancelled yapar (+ sayaç −1, aynı batch); geçmiş kayıtlar olduğu gibi kalır (iptal edilirse batch permission-denied ile düşer). rules/account_deletion.test.js bunu kapsar",
+      "resolveIn": [
+        "T-29"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-81",
+      "declaredIn": "T-22",
+      "text": "Katılım UI (T-22 güvenlik incelemesi, CD-144 (10)): (a) EVT-02 'Bekleme listesine katıl' kararı EventModel.joinsWaitlist ile verilir (isFull değil): kontenjanlı etkinlikte önde bekleyen varken yer boş olsa da yeni katılım waitlist'e düşer (Rules ownGoingAllowed / joinsWaitlist); (b) vazgeçme (DLG-14; EVT-02 / EVT-03 / EVT-04 'Vazgeç') yalnızca endsAt > şimdi iken gösterilir — sonrasında RsvpRepository.cancel ruleViolation(eventEnded) döner (TST-X6)",
+      "resolveIn": [
+        "T-23",
+        "T-24"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-82",
+      "declaredIn": "T-22",
+      "text": "Etkinlik düzenleme formu (T-22 güvenlik incelemesi, CD-144 (10); domain-model §2.7): yayındaki etkinlik başladıysa başlangıç / bitiş alanları kilitli (EventRepository.update ruleViolation(eventEnded) döner; Rules canEditEvent), başlamamışsa yeni başlangıç gelecekte olmalı; taslakta serbest. Değeri aynı kalan zaman alanı değişiklik sayılmaz (form tüm alanları gönderebilir)",
+      "resolveIn": [
+        "T-34"
       ],
       "status": "open"
     }

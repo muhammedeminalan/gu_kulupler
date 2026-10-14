@@ -90,6 +90,22 @@ abstract final class FirestoreIds {
     String postId,
   ) => '$clubId$_separator$actorId$_separator$kind$_separator$postId';
 
+  /// `activity/{clubId}_{actorId}_{kind}_{eventId}` — etkinlik yayınının ya
+  /// da iptalinin günlük kaydı (`event_published`, `event_cancelled`). [kind]
+  /// enum'un JSON değeridir.
+  ///
+  /// Kimlik sabittir ve Security Rules alanlarla karşılaştırır: aynı
+  /// yöneticinin aynı etkinlik için aynı türde ikinci kaydı aynı kimliğe
+  /// düşer ve reddedilir (günlük değiştirilemez — CD-137). Bu yüzden yayın
+  /// günlüğü yalnızca etkinliğin **ilk** yayınında yazılır (yayından çekilip
+  /// yeniden yayınlanan etkinlik ikinci kayıt üretmez); iptal geri alınamaz.
+  static String eventActivity(
+    String clubId,
+    String actorId,
+    String kind,
+    String eventId,
+  ) => '$clubId$_separator$actorId$_separator$kind$_separator$eventId';
+
   // ── Sayaç işaretçileri (CD-41) ───────────────────────────────────────
 
   /// `posts.lastCommentRef` değeri: `comments/{commentId}` — `commentCount`

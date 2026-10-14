@@ -1,7 +1,8 @@
 'use strict';
 // T-10 — varsayılan ret (rules-spec §1.1): Rules iskeletinde her koleksiyon × her bağlam için
 // get / list / create / update reddedilir. Koleksiyon listesi `expectations/*.json` dosyalarından
-// (PLAN §11.1'in 18 satırı) gelir ve `firestore.rules` `match` bloklarıyla karşılaştırılır.
+// (PLAN §11.1'in 18 satırı + T-22'nin yan belgesi `events/{id}/private/counter` = 19 yol) gelir ve
+// `firestore.rules` `match` bloklarıyla karşılaştırılır.
 // Bir koleksiyon sahibi task'ta açıldığında o satır buradan düşer (aşağıdaki OPENED listesi) ve
 // kendi `rules/<koleksiyon>.test.js` matrisine taşınır; kalanlar kapalı kalmaya devam eder.
 const fs = require('node:fs');
@@ -29,11 +30,13 @@ const budget = require('../helpers/budget');
  * `rules/<koleksiyon>.test.js` dosyasındadır. T-12: `users`, `users/private`, `settings`.
  * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
  * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
+ * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`.
  */
 const OPENED = [
   'users', 'users/private', 'settings',
   'clubs', 'memberships', 'memberships/private', 'reports', 'blocks', 'activity',
   'posts', 'posts/votes', 'comments', 'savedPosts', 'announcementCounters',
+  'events', 'events/private', 'rsvps',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -49,8 +52,8 @@ const groupMatches = matches.filter((m) => m.recursive && m.names.length > 0);
 const seedTarget = (exp) => seedDocs({ [exp.docPath]: targetDoc() });
 
 describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
-  test('18 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1)', () => {
-    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
+  test('19 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22)', () => {
+    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 19 }, (_, i) => i + 1));
     expect(expectations.map((e) => e.match).sort()).toEqual(collectionMatches.map((m) => m.pattern).sort());
   });
 
@@ -97,12 +100,12 @@ describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e)
 );
 
 describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vakası süzgeçsiz ikiziyle koşar', () => {
-  // Henüz kapalı bir koleksiyon (T-22): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
-  const posts = loadExpectations('events.json');
+  // Henüz kapalı bir koleksiyon (T-25): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
+  const posts = loadExpectations('notifications.json');
   const filtered = { where: [['isDeleted', '==', false]], orderBy: [['createdAt', 'desc']] };
   runCases(
     posts,
-    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'EVT-01' })),
+    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'NTF-01' })),
     { seed: seedTarget },
   );
 
@@ -139,19 +142,20 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: etkinlik, katılım,
-  // kendi bildirimi. Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap /
-  // ayar belgesi T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy, kayıt ve duyuru sayacı T-19'da açıldı.)
-  test.each(ALL_CONTEXTS)('%s · herkese açık etkinlik, katılım ve bildirim → deny', async (role) => {
+  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: bildirim ve destek talebi.
+  // Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap / ayar belgesi
+  // T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy, kayıt ve duyuru sayacı T-19'da; etkinlik ve
+  // katılım T-22'de açıldı.)
+  test.each(ALL_CONTEXTS)('%s · bildirim ve destek talebi → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    for (const p of ['events/e_public', 'rsvps/e_public_u_member', 'notifications/n01']) await assertFails(getDoc(doc(db, p)));
+    for (const p of ['notifications/n01', 'supportTickets/t01']) await assertFails(getDoc(doc(db, p)));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 
-  test('temel veri kümesi 18 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
+  test('temel veri kümesi 19 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
     const docs = baseDocs();
     for (const exp of expectations) expect(Object.keys(docs)).toContain(exp.docPath);
     await seedBase();

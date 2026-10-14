@@ -5,15 +5,16 @@ rules_version = '2';
 //
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
-// ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi; `eventClubId` T-22'de.
-// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21).
+// ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi (events/ de onu kullanır — yeni yardımcı yok).
+// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21) · events/ (T-22).
 //
 // ÇAPRAZ SERVİS SINIRI (T-21): tek kural değerlendirmesinde EN ÇOK 2 Firestore belgesine erişilebilir
 // (Firebase belgesi: "No more than two Firestore documents may be accessed in a single Rules
 // evaluation"). Emülatör bu sınırı UYGULAMAZ — üçüncü belgeyi okuyan kural testte yeşil kalır, üretimde
 // her yüklemeyi reddeder. Bu yüzden her `create` kuralı en çok iki FARKLI belge okur (yapı testi:
-// storage.test.js "en çok 2 Firestore belgesi"). T-22 (`events/`: etkinlik + üyelik + hesap = 3) bu
-// sınıra göre tasarlanmalıdır.
+// storage.test.js "en çok 2 Firestore belgesi"). T-22 `events/` yolu bu sınıra göre kuruldu (W-73):
+// PLAN §11.5 taslağındaki etkinlik belgesi okuması (`eventClubId` — üçüncü belge) YOKTUR; kulüp
+// `metadata.clubId`'den gelir, klasör ↔ kulüp bağı Firestore `events.coverPath` kuralındadır.
 //
 // Her açılan `create` kuralının taşıdığı kalıp (CD-135 madde 6 ve 8; storage.test.js yapı testleri):
 //   kimlik (`signedInVerified()` + yol sahibi/rolü) && `isNewFile()` && `imageOk()` && dosya adı deseni
@@ -97,7 +98,7 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
-    // Yükleme yalnızca iki özel üst veri taşır (CD-39, CD-143): `clubId` — yükleyenin hangi kulüp adına
+    // posts/ ve events/ yüklemesi yalnızca iki özel üst veri taşır (CD-39, CD-143): `clubId` — yükleyenin hangi kulüp adına
     // yüklediği — ve `uploaderId` — yükleyenin kendi kimliği.
     //  - `clubId` belge yoluna gömülür (`memberships/{clubId}_{uid}`): kimlik karakter kümesi dışındaki
     //    değer (boş, `/`, `.` …) başka bir belgeyi gösteremesin diye reddedilir (Firestore `posts`
@@ -159,10 +160,31 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    // events/{eventId}/{file} — etkinlik kapağı · T-22 (CD-47)
+    // events/{eventId}/{file} — etkinlik kapağı · T-22 (CD-47; posts/ ile AYNI kalıp — W-73)
+    //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`). Yol yalnızca etkinlik belgesinde
+    //    (`events.coverPath`) durur; herkese açık etkinliğin kapağı da herkese açıktır. `members`
+    //    etkinliğinin / taslağın kapağında üyelik ARANMAZ (dosya başına bir Firestore okuması olurdu;
+    //    dosya adı tahmin edilemez — 64 bit rastgele — ve klasör listelenemez). Liste kapalıdır:
+    //    değiştirilen kapak silinmez (D-10).
+    //  - Yükleme: yalnızca `metadata.clubId` kulübünün etkin yöneticisi (yönetim kurulu / başkan), yeni
+    //    adla (`isNewFile()`), hesabı etkinken; üst veride kendi kimliğiyle (`uploaderId`). Klasör adı
+    //    (`{eventId}`) belge kimliği karakter kümesindedir (Firestore `events` create kuralıyla aynı desen).
+    //    Danışman, üye, süper admin ve başka kulübün yöneticisi (c01 adına) yükleyemez.
+    //  - Etkinlik belgesi OKUNMAZ (üçüncü Firestore belgesi olurdu — yukarıdaki 2 belge sınırı). Bu
+    //    yüzden başka kulübün yöneticisi KENDİ kulübü adına yabancı bir etkinlik klasörüne dosya
+    //    yükleyebilir (storage.test.js "başkasının etkinlik klasörü"), ama İLİŞTİREMEZ: `events.coverPath`
+    //    alanını yalnızca etkinliğin kulübünün yöneticisi yazar ve Firestore kuralı yolu
+    //    `events/{eventId}/` + dosya adı desenine bağlar. Sonuç yetki yükseltme değil, yetim dosyadır;
+    //    yükleyeni `metadata.uploaderId` gösterir (posts/ ile aynı kabul — rules-spec §9.11g).
+    //  - Kulübün durumu da okunmaz: askıdaki / silinmiş kulübün yöneticisi dosyayı yükler, `coverPath`
+    //    yazımı Firestore `clubLive`'da düşer (yetim dosya; fren = hesabın askıya alınması).
+    //  - Çapraz servis: 2 belge (üyelik + hesap) = sınırın tamamı.
     match /events/{eventId}/{file} {
-      allow read: if false;
-      allow create: if false;
+      allow get: if signedInVerified();
+      allow list: if false;
+      allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
+          && eventId.matches('[A-Za-z0-9_-]+') && clubMetadataOnly()
+          && isManagerOf(request.resource.metadata.clubId) && accountActive();
       allow update, delete: if false;
     }
 

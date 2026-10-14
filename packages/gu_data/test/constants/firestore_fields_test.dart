@@ -108,7 +108,6 @@ const Map<String, String> _actual = {
   'goingCount': FirestoreFields.goingCount,
   'waitlistCount': FirestoreFields.waitlistCount,
   'attendedCount': FirestoreFields.attendedCount,
-  'lastRsvpRef': FirestoreFields.lastRsvpRef,
   'publishedAt': FirestoreFields.publishedAt,
   'eventId': FirestoreFields.eventId,
   'reminder': FirestoreFields.reminder,
@@ -183,7 +182,7 @@ const Map<String, String> _actual = {
 /// tekil ad sayısı. PLAN §4.2, §9.1, §9.5 ve §9.11 aynı sayıyı beyan eder
 /// (v1'deki 145 sayım hatasıydı — CD-129); beyan tablodan türeyen sayıyla
 /// karşılaştırılır.
-const int _tableDerivedCount = 144;
+const int _tableDerivedCount = 143;
 
 /// §9.6 alt bölüm sayısı (18 koleksiyon / alt belge tablosu).
 const int _tableCount = 18;
@@ -214,10 +213,13 @@ const List<String> _embeddedModels = [
 ];
 
 /// CD-41 sayaç–belge referans alanları.
+///
+/// `events.lastRsvpRef` T-22'de kaldırıldı (W-64: herkese açık etkinlik
+/// belgesi kimin katıldığını sızdırırdı); yönetici sayaç işaretçisinin yan
+/// belgesi (`events/{eventId}/private/counter`) ve alan sabiti T-30'dadır.
 const List<String> _counterRefFields = [
   'lastMembershipRef',
   'lastCommentRef',
-  'lastRsvpRef',
   'lastPostRef',
 ];
 
@@ -482,7 +484,7 @@ void main() {
     });
 
     test('tablo başına alan sayısı (belge ID ve BaseFields satırları hariç): '
-        'toplam 163, tekil 125', () {
+        'toplam 162, tekil 124', () {
       final perSection = <String, int>{};
       for (final field in schema.fields) {
         perSection.update(field.section, (n) => n + 1, ifAbsent: () => 1);
@@ -498,7 +500,8 @@ void main() {
         '9.6.6': 17,
         '9.6.7': 2,
         '9.6.8': 7,
-        '9.6.9': 24,
+        // `lastRsvpRef` kaldırıldı (W-64, T-22).
+        '9.6.9': 23,
         '9.6.10': 9,
         '9.6.11': 4,
         '9.6.12': 10,
@@ -509,8 +512,8 @@ void main() {
         '9.6.17': 6,
         '9.6.18': 5,
       });
-      expect(schema.fields, hasLength(163));
-      expect({for (final f in schema.fields) f.json}, hasLength(125));
+      expect(schema.fields, hasLength(162));
+      expect({for (final f in schema.fields) f.json}, hasLength(124));
     });
   });
 
@@ -718,8 +721,8 @@ void main() {
   });
 
   group('T-08 · FirestoreFields · adlar ve değerler', () {
-    test('toplam 166 sabit: 144 anahtar + 22 yol', () {
-      expect(_actual, hasLength(166));
+    test('toplam 165 sabit: 143 anahtar + 22 yol', () {
+      expect(_actual, hasLength(165));
       expect(_flat.length + _dotted.length, _actual.length);
     });
 

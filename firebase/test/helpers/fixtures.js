@@ -138,7 +138,11 @@ function clubDoc(clubId, presidentId, memberCount) {
   });
 }
 
-function eventDoc(visibility, status, goingCount) {
+/**
+ * Etkinlik belgesi (seed biçimi: null olabilen alanlar açık `null` — W-51; istemci biçimi vakaları
+ * `unset` ile kurulur). `lastRsvpRef` alanı YOKTUR (W-64: işaretçi yan belgededir).
+ */
+function eventDoc(visibility, status, goingCount, extra) {
   return base({
     clubId: CLUB,
     createdBy: 'u_board',
@@ -162,8 +166,24 @@ function eventDoc(visibility, status, goingCount) {
     goingCount,
     waitlistCount: 0,
     attendedCount: 0,
-    lastRsvpRef: null,
     publishedAt: status === 'draft' ? null : serverTimestamp(),
+    ...extra,
+  });
+}
+
+/** Katılım kaydı (seed biçimi: `waitlistAt` / `scannedAt` / `scannedBy` açık `null`). */
+function rsvpDoc(eventId, userId, status, extra) {
+  return base({
+    eventId,
+    clubId: CLUB,
+    userId,
+    status,
+    reminder: '1h',
+    ticketCode: 'GU-ABCD-2345',
+    waitlistAt: null,
+    scannedAt: null,
+    scannedBy: null,
+    ...extra,
   });
 }
 
@@ -197,8 +217,9 @@ function memberCount(docs, clubId) {
 
 /**
  * Temel veri kümesi: bağlamların kullanıcı/üyelik belgeleri, iki kulüp (`c01`, `c02`), iki gönderi
- * (`p01` anketli, seed biçimi + oy + yorum; `p02` düz, istemci biçimi + yorum), üç etkinlik (public, members, draft), bir katılım, bildirim, şikayet,
- * faaliyet, engel, kayıt, destek talebi ve duyuru sayacı. Koleksiyon task'ları genişletir.
+ * (`p01` anketli, seed biçimi + oy + yorum; `p02` düz, istemci biçimi + yorum), dört etkinlik (public,
+ * members, draft, süren) + katılım kayıtları + yönetici sayaç işaretçisi, bildirim, şikayet, faaliyet, engel,
+ * kayıt, destek talebi ve duyuru sayacı. Koleksiyon task'ları genişletir.
  * @param {{formerStatus?: string}} [options] `former` bağlamının üyelik durumu (varsayılan `left`)
  * @returns {Record<string, object>} belge yolu → veri
  */
@@ -270,20 +291,34 @@ function baseDocs(options = {}) {
     isHidden: false,
   });
 
-  docs['events/e_public'] = eventDoc('public', 'published', 1);
+  // Etkinlikler (T-22): `e_public` herkese açık (2 kayıtlı: üye + askıdaki üye), `e_members` üyelere özel
+  // (kayıtsız), `e_draft` taslak, `e_live` ŞU AN süren etkinlik (yoklama penceresi açık; kontenjan 3,
+  // 2 kayıtlı — biri yoklaması alınmış —, 1 bekleyen: yer varken bekleyen = terfi vakası).
+  docs['events/e_public'] = eventDoc('public', 'published', 2);
   docs['events/e_members'] = eventDoc('members', 'published', 0);
   docs['events/e_draft'] = eventDoc('public', 'draft', 0);
-  docs['rsvps/e_public_u_member'] = base({
-    eventId: 'e_public',
-    clubId: CLUB,
-    userId: 'u_member',
-    status: 'going',
-    reminder: '1h',
-    ticketCode: 'GU-ABCD-2345',
-    waitlistAt: null,
-    scannedAt: null,
-    scannedBy: null,
+  docs['events/e_live'] = eventDoc('public', 'published', 2, {
+    startsAt: fromNow(-HOUR_MS),
+    endsAt: fromNow(HOUR_MS),
+    capacity: 3,
+    waitlistCount: 1,
+    attendedCount: 1,
   });
+  docs['rsvps/e_public_u_member'] = rsvpDoc('e_public', 'u_member', 'going');
+  // Askıdaki kullanıcının askıdan ÖNCE yaptığı katılım (okur ve vazgeçebilir; hatırlatma / yeniden katılım yok).
+  docs['rsvps/e_public_u_susp'] = rsvpDoc('e_public', 'u_susp', 'going', { ticketCode: 'GU-SUSP-2345' });
+  docs['rsvps/e_live_u_member'] = rsvpDoc('e_live', 'u_member', 'going', { ticketCode: 'GU-LVME-2345' });
+  docs['rsvps/e_live_u_board'] = rsvpDoc('e_live', 'u_board', 'attended', {
+    ticketCode: 'GU-LVBR-2345',
+    scannedAt: serverTimestamp(),
+    scannedBy: 'u_president',
+  });
+  docs['rsvps/e_live_u_student'] = rsvpDoc('e_live', 'u_student', 'waitlist', {
+    ticketCode: 'GU-LVST-2345',
+    waitlistAt: fromNow(-2 * HOUR_MS),
+  });
+  // Yönetici sayaç işaretçisinin yan belgesi (W-64): son yoklama `e_live`'da `u_board` kaydınaydı.
+  docs['events/e_live/private/counter'] = { clubId: CLUB, lastRsvpRef: 'rsvps/e_live_u_board', updatedAt: serverTimestamp() };
 
   docs['notifications/n01'] = base({ userId: 'u_member', type: 'system', refs: { textKey: 'welcome' }, read: false });
   docs['reports/u_member_post_p01'] = base({
@@ -414,7 +449,12 @@ async function readDoc(path) {
 module.exports = {
   CLUB,
   OTHER_CLUB,
+  HOUR_MS,
+  DAY_MS,
   FIXTURES,
+  fromNow,
+  eventDoc,
+  rsvpDoc,
   baseDocs,
   targetDoc,
   buildFixture,

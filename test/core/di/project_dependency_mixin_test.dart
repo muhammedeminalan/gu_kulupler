@@ -69,6 +69,9 @@ void main() {
         consumer.announcementCounterRepository,
         same(GetIt.I<AnnouncementCounterRepository>()),
       );
+      // T-22 · etkinlik ve katılım
+      expect(consumer.eventRepository, same(GetIt.I<EventRepository>()));
+      expect(consumer.rsvpRepository, same(GetIt.I<RsvpRepository>()));
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

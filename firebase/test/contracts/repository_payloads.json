@@ -2994,5 +2994,1777 @@
         "writes": []
       }
     ]
+  },
+  "t22": {
+    "_doc": "T-22 — etkinlik / katılım repository'lerinin GERÇEK okuma + yazımları (FirebaseEventRepository, FirebaseRsvpRepository; docs/plans/T-22.md §6). Biçim `t19` ile aynıdır; farklar: (1) `upload` — kapak yüklemesinin Storage yolu, içerik türü ve `customMetadata`'sı (jest tarafı dosyayı senaryonun bağlamıyla yükler, sonra Firestore yazımını gönderir); (2) etkinlik zamanları yazımda `@daysAhead:N` (senaryo saatinden tam gün; jest: istemci saatinden), ön koşulda `@daysAgo:N` (negatif = gelecekte); (3) yeni etkinliğin kimliği `@autoId` (yol, coverSeed ve günlük kimliği aynı değeri alır); (4) bilet kodu sıralı FakeTicketCodeGenerator'ın ilk kodudur (GU-AAAA-AAAB). Etkinlik belgesine katılım kaydının yolu (`lastRsvpRef`) hiçbir yazımda yoktur (W-64).",
+    "autoId": "@autoId",
+    "increment": "@increment",
+    "daysAhead": "@daysAhead:",
+    "actors": {
+      "student": "u_student",
+      "member": "u_member",
+      "board": "u_board",
+      "president": "u_president",
+      "advisor": "u_advisor",
+      "super": "u_super",
+      "otherManager": "u_mgr2",
+      "susp": "u_susp"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "event": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:-3",
+        "endsAt": "@daysAgo:-4",
+        "placeId": "pl01",
+        "placeText": null,
+        "capacity": null,
+        "visibility": "public",
+        "status": "published",
+        "cancelReason": null,
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "coverPath": null,
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 0,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": "@daysAgo:1",
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "draft": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:-3",
+        "endsAt": "@daysAgo:-4",
+        "placeId": "pl01",
+        "placeText": null,
+        "capacity": null,
+        "visibility": "public",
+        "status": "draft",
+        "cancelReason": null,
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "coverPath": null,
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 0,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": null,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "clientEvent": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:-3",
+        "endsAt": "@daysAgo:-4",
+        "placeId": "pl01",
+        "visibility": "public",
+        "status": "published",
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 0,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": "@daysAgo:1",
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "rsvp": {
+        "eventId": "e01",
+        "clubId": "c01",
+        "userId": "u_student",
+        "status": "going",
+        "reminder": "1h",
+        "ticketCode": "GU-AAAA-AAAB",
+        "waitlistAt": null,
+        "scannedAt": null,
+        "scannedBy": null,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "EventRepository.createDraft",
+        "role": "board",
+        "note": "tek batch, tek yazım: taslak (sayaçlar 0, coverSeed = event-{id}); null alanların (placeText, cancelReason, coverPath, publishedAt) anahtarı yazılmaz (W-51), lastRsvpRef hiç yoktur (W-64)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "events/@autoId",
+            "data": {
+              "clubId": "c01",
+              "createdBy": "u_board",
+              "title": "Flutter atölyesi",
+              "desc": "Mobil uygulama geliştirmeye giriş.",
+              "type": "egitim",
+              "startsAt": "@daysAhead:7",
+              "endsAt": "@daysAhead:8",
+              "placeId": "pl01",
+              "capacity": 30,
+              "visibility": "public",
+              "status": "draft",
+              "coverSeed": "event-@autoId",
+              "coverPalette": "red",
+              "coverPattern": "dots",
+              "registrationOpen": true,
+              "autoReminder": true,
+              "goingCount": 0,
+              "waitlistCount": 0,
+              "attendedCount": 0,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "events/@autoId": {
+            "status": "draft",
+            "goingCount": 0,
+            "waitlistCount": 0,
+            "attendedCount": 0,
+            "coverSeed": "event-@autoId"
+          }
+        },
+        "denied": [
+          {
+            "name": "üye etkinlik oluşturamaz (yönetim değil)",
+            "role": "member",
+            "patch": {
+              "0": {
+                "createdBy": "u_member"
+              }
+            }
+          },
+          {
+            "name": "danışman etkinlik oluşturamaz (salt okunur)",
+            "role": "advisor",
+            "patch": {
+              "0": {
+                "createdBy": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "patch": {
+              "0": {
+                "createdBy": "u_mgr2"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "sayaç işaretçisi taşıyan belge (lastRsvpRef — W-64)",
+            "patch": {
+              "0": {
+                "lastRsvpRef": null
+              }
+            }
+          },
+          {
+            "name": "sayaç sıfırdan başlamıyor",
+            "patch": {
+              "0": {
+                "goingCount": 1
+              }
+            }
+          },
+          {
+            "name": "kapak yolu oluşturmada yazılamaz (CD-47)",
+            "patch": {
+              "0": {
+                "coverPath": "events/@autoId/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+              }
+            }
+          },
+          {
+            "name": "kapak tohumu kimlikten türemiyor",
+            "patch": {
+              "0": {
+                "coverSeed": "event-e01"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.create · doğrudan yayın (üyelere özel, kontenjansız)",
+        "role": "president",
+        "note": "tek batch: yayındaki etkinlik (publishedAt sunucu zamanı; kontenjan / mekân kimliği anahtarsız — W-51) + günlük event_published (sabit kimlik)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "events/@autoId",
+            "data": {
+              "clubId": "c01",
+              "createdBy": "u_president",
+              "title": "Kulüp içi toplantı",
+              "desc": "",
+              "type": "sosyal",
+              "startsAt": "@daysAhead:5",
+              "endsAt": "@daysAhead:6",
+              "placeText": "Kulüp odası",
+              "visibility": "members",
+              "status": "published",
+              "coverSeed": "event-@autoId",
+              "coverPalette": "slate",
+              "coverPattern": "lines",
+              "registrationOpen": true,
+              "autoReminder": true,
+              "goingCount": 0,
+              "waitlistCount": 0,
+              "attendedCount": 0,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null,
+              "publishedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_event_published_@autoId",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "event_published",
+              "refs": {
+                "eventId": "@autoId"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/@autoId": {
+            "status": "published",
+            "visibility": "members"
+          }
+        },
+        "denied": [
+          {
+            "name": "başlangıç geçmişte",
+            "patch": {
+              "0": {
+                "startsAt": "@daysAhead:-1"
+              }
+            }
+          },
+          {
+            "name": "yayın anı sunucu zamanı değil",
+            "patch": {
+              "0": {
+                "publishedAt": "@daysAhead:-1"
+              }
+            }
+          },
+          {
+            "name": "günlük başka etkinliği gösterir",
+            "patch": {
+              "1": {
+                "refs": {
+                  "eventId": "e01"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.update · içerik (kontenjan, mekân, tarih)",
+        "role": "board",
+        "note": "Tx: etkinlik okunur → tek update; boşaltılan placeText açık null yazılır; kontenjan kayıtlı sayısından (1) küçük değil",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "placeId": null,
+            "placeText": "Kütüphane önü",
+            "capacity": 30,
+            "goingCount": 1
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "title": "Flutter atölyesi (2. oturum)",
+              "startsAt": "@daysAhead:5",
+              "endsAt": "@daysAhead:6",
+              "placeId": "pl02",
+              "placeText": null,
+              "capacity": 2,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "title": "Flutter atölyesi (2. oturum)",
+            "capacity": 2,
+            "placeId": "pl02",
+            "placeText": null,
+            "goingCount": 1
+          }
+        },
+        "denied": [
+          {
+            "name": "kontenjan kayıtlı sayısının altında (2 < 3)",
+            "seed": {
+              "events/e01": {
+                "goingCount": 3
+              }
+            }
+          },
+          {
+            "name": "iptal edilmiş etkinlik düzenlenemez",
+            "seed": {
+              "events/e01": {
+                "status": "cancelled",
+                "cancelReason": "Salon tadilatta."
+              }
+            }
+          },
+          {
+            "name": "durum geçişi içerikle aynı yazımda",
+            "patch": {
+              "0": {
+                "status": "draft"
+              }
+            }
+          },
+          {
+            "name": "sayaç içerikle aynı yazımda",
+            "patch": {
+              "0": {
+                "goingCount": 0
+              }
+            }
+          },
+          {
+            "name": "kapak yolu başka etkinliğin klasöründe (CD-47)",
+            "patch": {
+              "0": {
+                "coverPath": "events/e02/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+              }
+            }
+          },
+          {
+            "name": "danışman düzenleyemez",
+            "role": "advisor"
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager"
+          },
+          {
+            "name": "başlamış yayındaki etkinliğin zamanı değişemez (yoklama penceresi yeniden açılamaz — CD-144)",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:2",
+                "endsAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "yayındaki etkinliğin başlangıcı geçmişe çekilemez (CD-144)",
+            "patch": {
+              "0": {
+                "startsAt": "@daysAhead:-1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.publish · ilk yayın",
+        "role": "board",
+        "note": "Tx: taslak okunur → status + publishedAt (sunucu zamanı) + günlük event_published (önceki publishedAt boş)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "draft"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "status": "published",
+              "publishedAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_event_published_e01",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "event_published",
+              "refs": {
+                "eventId": "e01"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "status": "published"
+          },
+          "activity/c01_u_board_event_published_e01": {
+            "kind": "event_published"
+          }
+        },
+        "denied": [
+          {
+            "name": "başlangıç geçmişte",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:2",
+                "endsAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "silinmiş taslak",
+            "seed": {
+              "events/e01": {
+                "isDeleted": true,
+                "deletedAt": "@daysAgo:1",
+                "deletedBy": "u_board"
+              }
+            }
+          },
+          {
+            "name": "ikinci yayın günlüğü (yayından çekilmiş: publishedAt dolu)",
+            "seed": {
+              "events/e01": {
+                "publishedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "üye yayınlayamaz",
+            "role": "member",
+            "without": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.publish · yayından çekilmiş taslağı yeniden yayınla",
+        "role": "board",
+        "note": "Tx: yalnızca etkinlik güncellenir — publishedAt doluydu, günlük ikinci kez yazılmaz (sabit kimlik)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "draft",
+            "publishedAt": "@daysAgo:1"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "status": "published",
+              "publishedAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "status": "published"
+          }
+        }
+      },
+      {
+        "call": "EventRepository.unpublish · bekleme listesi varken",
+        "role": "board",
+        "note": "Tx: published → draft yalnızca goingCount == 0 iken (K-F); bekleme listesi engel değil, publishedAt korunur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 1,
+            "waitlistCount": 1
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "status": "draft",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "status": "draft",
+            "waitlistCount": 1
+          }
+        },
+        "denied": [
+          {
+            "name": "kayıtlı var (K-F: goingCount 1)",
+            "seed": {
+              "events/e01": {
+                "goingCount": 1
+              }
+            }
+          },
+          {
+            "name": "iptal edilmiş etkinlik taslağa çekilemez",
+            "seed": {
+              "events/e01": {
+                "status": "cancelled",
+                "cancelReason": "Salon tadilatta."
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.cancel",
+        "role": "president",
+        "note": "Tx: published → cancelled + kırpılmış neden + günlük event_cancelled; katılım kayıtları ve sayaçlar değişmez",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 30,
+            "goingCount": 2
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "status": "cancelled",
+              "cancelReason": "Salon tadilatta.",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_event_cancelled_e01",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "event_cancelled",
+              "refs": {
+                "eventId": "e01"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "status": "cancelled",
+            "cancelReason": "Salon tadilatta.",
+            "goingCount": 2
+          }
+        },
+        "denied": [
+          {
+            "name": "neden boş",
+            "patch": {
+              "0": {
+                "cancelReason": "   "
+              }
+            }
+          },
+          {
+            "name": "taslak iptal edilemez",
+            "seed": {
+              "events/e01": {
+                "status": "draft",
+                "publishedAt": null
+              }
+            }
+          },
+          {
+            "name": "sayaçlar iptalle sıfırlanamaz",
+            "patch": {
+              "0": {
+                "goingCount": 0
+              }
+            }
+          },
+          {
+            "name": "danışman iptal edemez",
+            "role": "advisor"
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.duplicate",
+        "role": "board",
+        "note": "kaynak tekil okunur, kopya tek batch: taslak, tarih +7 gün, başlık + ek; özel kapak (coverPath) ve sayaçlar kopyalanmaz",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 30,
+            "goingCount": 12,
+            "coverPath": "events/e01/20261008T201501Z_3f9a1c2b7d4e5f60.jpg"
+          }
+        },
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "events/@autoId",
+            "data": {
+              "clubId": "c01",
+              "createdBy": "u_board",
+              "title": "Sözleşme etkinliği (kopya)",
+              "desc": "Sözleşme testi etkinliği.",
+              "type": "egitim",
+              "startsAt": "@daysAhead:10",
+              "endsAt": "@daysAhead:11",
+              "placeId": "pl01",
+              "capacity": 30,
+              "visibility": "public",
+              "status": "draft",
+              "coverSeed": "event-@autoId",
+              "coverPalette": "red",
+              "coverPattern": "dots",
+              "registrationOpen": true,
+              "autoReminder": true,
+              "goingCount": 0,
+              "waitlistCount": 0,
+              "attendedCount": 0,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "events/@autoId": {
+            "status": "draft",
+            "title": "Sözleşme etkinliği (kopya)",
+            "goingCount": 0,
+            "capacity": 30
+          }
+        },
+        "denied": [
+          {
+            "name": "kopya kaynağın kapak yolunu taşıyamaz (CD-47)",
+            "patch": {
+              "0": {
+                "coverPath": "events/e01/20261008T201501Z_3f9a1c2b7d4e5f60.jpg"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.setRegistrationOpen · kaydı kapat",
+        "role": "board",
+        "note": "kör tek yazım (içerik dalı): registrationOpen + updatedAt",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "registrationOpen": false,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "registrationOpen": false
+          }
+        },
+        "denied": [
+          {
+            "name": "iptal edilmiş etkinlik",
+            "seed": {
+              "events/e01": {
+                "status": "cancelled",
+                "cancelReason": "Salon tadilatta."
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "üye kaydı kapatamaz",
+            "role": "member"
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.softDeleteEvent",
+        "role": "board",
+        "note": "Tx: yalnızca taslak — soft delete alanları (D-10)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "draft"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "isDeleted": true,
+            "deletedBy": "u_board"
+          }
+        },
+        "denied": [
+          {
+            "name": "yayındaki etkinlik silinemez (iptal edilir)",
+            "seed": {
+              "events/e01": {
+                "status": "published",
+                "publishedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "süper admin etkinlik silemez",
+            "role": "super",
+            "patch": {
+              "0": {
+                "deletedBy": "u_super"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.restoreEvent",
+        "role": "board",
+        "note": "kör tek yazım: yalnızca silme alanları; yalnızca silen yönetici (TST-45)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "draft",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:1",
+            "deletedBy": "u_board"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "isDeleted": false,
+            "deletedBy": null
+          }
+        },
+        "denied": [
+          {
+            "name": "silen yönetici değil (başkan)",
+            "role": "president"
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.uploadCover",
+        "role": "board",
+        "note": "Storage (customMetadata {clubId, uploaderId}; etkinlik belgesi okunmaz — W-73) → kör coverPath yazımı (içerik dalı, yol deseni CD-47)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "reads": [],
+        "upload": {
+          "path": "events/e01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+          "contentType": "image/jpeg",
+          "customMetadata": {
+            "clubId": "c01",
+            "uploaderId": "u_board"
+          }
+        },
+        "writes": [
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "coverPath": "events/e01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "coverPath": "events/e01/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+          }
+        },
+        "denied": [
+          {
+            "name": "başka etkinliğin klasörü (CD-47)",
+            "patch": {
+              "0": {
+                "coverPath": "events/e02/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi iliştiremez",
+            "role": "otherManager"
+          }
+        ]
+      },
+      {
+        "call": "EventRepository.getEvent · taslak (danışman)",
+        "role": "advisor",
+        "note": "tekil okuma: taslağı kulübün danışmanı okur (seesMgmt)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "draft"
+          }
+        },
+        "reads": [
+          "events/e01"
+        ],
+        "writes": []
+      },
+      {
+        "call": "EventRepository.getEvent · herkese açık (üye olmayan)",
+        "role": "student",
+        "note": "tekil okuma: herkese açık yayındaki etkinliği doğrulanmış her kullanıcı okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "reads": [
+          "events/e01"
+        ],
+        "writes": []
+      },
+      {
+        "call": "RsvpRepository.join · yeni kayıt (going)",
+        "role": "student",
+        "note": "Tx: etkinlik + kendi kaydı okunur (olmayan kendi kaydı boş döner) → rsvp create (bilet kodu, waitlistAt yok) + goingCount +1; etkinliğe kayıt yolu yazılmaz (W-64)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "eventId": "e01",
+              "clubId": "c01",
+              "userId": "u_student",
+              "status": "going",
+              "reminder": "1h",
+              "ticketCode": "GU-AAAA-AAAB",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1,
+            "waitlistCount": 0
+          },
+          "rsvps/e01_u_student": {
+            "status": "going",
+            "ticketCode": "GU-AAAA-AAAB"
+          }
+        },
+        "denied": [
+          {
+            "name": "kontenjan dolu (kontenjan 1, kayıtlı 1) iken going — kontenjan aşımı",
+            "seed": {
+              "events/e01": {
+                "capacity": 1,
+                "goingCount": 1
+              }
+            }
+          },
+          {
+            "name": "önde bekleyen varken going — sıra atlama (CD-144)",
+            "seed": {
+              "events/e01": {
+                "capacity": 5,
+                "goingCount": 1,
+                "waitlistCount": 1
+              }
+            }
+          },
+          {
+            "name": "sayaçsız kayıt",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "kayıtsız sayaç",
+            "without": [
+              0
+            ]
+          },
+          {
+            "name": "sayaç +2",
+            "patch": {
+              "1": {
+                "goingCount": {
+                  "@increment": 2
+                }
+              }
+            }
+          },
+          {
+            "name": "iki sayaç birden",
+            "patch": {
+              "1": {
+                "waitlistCount": {
+                  "@increment": 1
+                }
+              }
+            }
+          },
+          {
+            "name": "başkası adına (kaydın sahibi değil)",
+            "role": "member"
+          },
+          {
+            "name": "taslak etkinlik",
+            "seed": {
+              "events/e01": {
+                "status": "draft",
+                "publishedAt": null
+              }
+            }
+          },
+          {
+            "name": "kayıt kapalı",
+            "seed": {
+              "events/e01": {
+                "registrationOpen": false
+              }
+            }
+          },
+          {
+            "name": "bitmiş etkinlik",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:2",
+                "endsAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "iptal edilmiş etkinlik",
+            "seed": {
+              "events/e01": {
+                "status": "cancelled",
+                "cancelReason": "Salon tadilatta."
+              }
+            }
+          },
+          {
+            "name": "üyelere özel etkinlikte üye olmayan",
+            "seed": {
+              "events/e01": {
+                "visibility": "members"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "bilet kodu deseni dışı",
+            "patch": {
+              "0": {
+                "ticketCode": "GU-0000-IIII"
+              }
+            }
+          },
+          {
+            "name": "yoklama alanıyla katılım",
+            "patch": {
+              "0": {
+                "scannedBy": "u_student"
+              }
+            }
+          },
+          {
+            "name": "kayıt başka kulübün kimliğini taşıyor",
+            "patch": {
+              "0": {
+                "clubId": "c02"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.join · kontenjan dolu → bekleme listesi",
+        "role": "student",
+        "note": "Tx: kontenjan 1, kayıtlı 1 → rsvp waitlist (waitlistAt sunucu zamanı) + waitlistCount +1; goingCount değişmez",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 1,
+            "goingCount": 1
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "eventId": "e01",
+              "clubId": "c01",
+              "userId": "u_student",
+              "status": "waitlist",
+              "reminder": "1h",
+              "ticketCode": "GU-AAAA-AAAB",
+              "isDeleted": false,
+              "waitlistAt": "@serverTimestamp",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "waitlistCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1,
+            "waitlistCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "status": "waitlist"
+          }
+        },
+        "denied": [
+          {
+            "name": "yer varken bekleme listesi",
+            "seed": {
+              "events/e01": {
+                "goingCount": 0
+              }
+            }
+          },
+          {
+            "name": "bekleme anı sunucu zamanı değil",
+            "patch": {
+              "0": {
+                "waitlistAt": "@daysAhead:-1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.join · yeniden katılım (cancelled → going)",
+        "role": "student",
+        "note": "Tx: vazgeçilmiş kayıt aynı belge, aynı bilet koduyla güncellenir (status, reminder, waitlistAt null) + goingCount +1",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp",
+            "status": "cancelled",
+            "reminder": "none"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "going",
+              "reminder": "1h",
+              "waitlistAt": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "status": "going",
+            "reminder": "1h",
+            "ticketCode": "GU-AAAA-AAAB"
+          }
+        },
+        "denied": [
+          {
+            "name": "bilet kodu yeniden katılımda değişmez",
+            "patch": {
+              "0": {
+                "ticketCode": "GU-AAAA-AAAC"
+              }
+            }
+          },
+          {
+            "name": "kontenjan doluyken going",
+            "seed": {
+              "events/e01": {
+                "capacity": 1,
+                "goingCount": 1
+              }
+            }
+          },
+          {
+            "name": "önde bekleyen varken going — vazgeç + yeniden katıl ile kendini terfi (CD-144)",
+            "seed": {
+              "events/e01": {
+                "capacity": 5,
+                "goingCount": 1,
+                "waitlistCount": 1
+              }
+            }
+          },
+          {
+            "name": "yoklaması alınmış kayıt yeniden katılamaz",
+            "seed": {
+              "rsvps/e01_u_student": {
+                "status": "attended",
+                "scannedAt": "@daysAgo:1",
+                "scannedBy": "u_board"
+              },
+              "events/e01": {
+                "goingCount": 1,
+                "attendedCount": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.join · üyelere özel etkinlik (üye)",
+        "role": "member",
+        "note": "Tx: members görünürlüklü etkinliğe kulübün üyesi katılır (isMember)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "visibility": "members"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_member"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "rsvps/e01_u_member",
+            "data": {
+              "eventId": "e01",
+              "clubId": "c01",
+              "userId": "u_member",
+              "status": "going",
+              "reminder": "1h",
+              "ticketCode": "GU-AAAA-AAAB",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1
+          },
+          "rsvps/e01_u_member": {
+            "status": "going",
+            "userId": "u_member"
+          }
+        }
+      },
+      {
+        "call": "RsvpRepository.join · istemcinin oluşturduğu etkinlik (anahtarsız kontenjan — W-51)",
+        "role": "student",
+        "note": "Tx: kontenjan / mekân metni / iptal nedeni / kapak anahtarı olmayan etkinlik (istemci toJson) sınırsızdır: kural data.get('capacity', null) ile okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "clientEvent"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "eventId": "e01",
+              "clubId": "c01",
+              "userId": "u_student",
+              "status": "going",
+              "reminder": "1h",
+              "ticketCode": "GU-AAAA-AAAB",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1
+          }
+        }
+      },
+      {
+        "call": "RsvpRepository.cancel · going",
+        "role": "student",
+        "note": "Tx: kayıt + etkinlik okunur → status cancelled + goingCount −1 (etkinliğin durumu aranmaz, bitmemiş olmalı — CD-144; otomatik terfi yok)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "goingCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "rsvps/e01_u_student",
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 0
+          },
+          "rsvps/e01_u_student": {
+            "status": "cancelled",
+            "ticketCode": "GU-AAAA-AAAB"
+          }
+        },
+        "denied": [
+          {
+            "name": "sayaçsız vazgeçme",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "başkası adına",
+            "role": "member"
+          },
+          {
+            "name": "yoklaması alınmış kayıttan vazgeçilemez",
+            "seed": {
+              "rsvps/e01_u_student": {
+                "status": "attended",
+                "scannedAt": "@daysAgo:1",
+                "scannedBy": "u_board"
+              },
+              "events/e01": {
+                "attendedCount": 1
+              }
+            }
+          },
+          {
+            "name": "bitmiş etkinlikte vazgeçilemez — \"Gelmedin\" kaydı korunur (CD-144)",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:2",
+                "endsAt": "@daysAgo:1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.cancel · waitlist",
+        "role": "student",
+        "note": "Tx: bekleme listesinden vazgeçme → waitlistCount −1; boşalan yere kimse alınmaz",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 1,
+            "goingCount": 1,
+            "waitlistCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp",
+            "status": "waitlist",
+            "waitlistAt": "@daysAgo:1"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "rsvps/e01_u_student",
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "waitlistCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 1,
+            "waitlistCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "yanlış sayaç (kayıtlı −1)",
+            "patch": {
+              "1": {
+                "goingCount": {
+                  "@increment": -1
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.cancel · askıdaki hesap",
+        "role": "susp",
+        "note": "Tx: askıdaki hesap da vazgeçebilir (activeUser istenmez — T-29)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "goingCount": 1
+          },
+          "rsvps/e01_u_susp": {
+            "$fixture": "rsvp",
+            "userId": "u_susp"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "rsvps/e01_u_susp",
+          "events/e01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_susp",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "events/e01": {
+            "goingCount": 0
+          },
+          "rsvps/e01_u_susp": {
+            "status": "cancelled"
+          }
+        }
+      },
+      {
+        "call": "RsvpRepository.setReminder",
+        "role": "student",
+        "note": "Tx: kayıt okunur → yalnızca reminder (4 değer — CD-34)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "goingCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp"
+          }
+        },
+        "tx": true,
+        "reads": [
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "reminder": "1d",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_student": {
+            "reminder": "1d"
+          }
+        },
+        "denied": [
+          {
+            "name": "dört değer dışında",
+            "patch": {
+              "0": {
+                "reminder": "2h"
+              }
+            }
+          },
+          {
+            "name": "vazgeçilmiş kayıt",
+            "seed": {
+              "rsvps/e01_u_student": {
+                "status": "cancelled"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "RsvpRepository.getMine · kayıt yok",
+        "role": "student",
+        "note": "tekil okuma: olmayan kendi kaydı boş döner (kimlik `_<uid>` ile biter)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "reads": [
+          "rsvps/e01_u_student"
+        ],
+        "writes": []
+      }
+    ]
   }
 }

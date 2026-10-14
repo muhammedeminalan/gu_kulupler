@@ -152,7 +152,6 @@ final Map<String, Map<String, Object?>> _fullJson = {
     cancelReason: 'Neden',
     coverSeed: 'event-e01',
     coverPath: 'events/e01/20261008T201501Z_3f9a1c2b7d4e5f60.jpg',
-    lastRsvpRef: 'rsvps/e01_u_ayse',
     publishedAt: _at,
     createdAt: _at,
     updatedAt: _at,
@@ -380,9 +379,9 @@ void main() {
       expect(_fullJson.keys.toList()..sort(), declared);
     });
 
-    test('FirestoreFields: 144 noktasız ad + 22 noktalı yol', () {
+    test('FirestoreFields: 143 noktasız ad + 22 noktalı yol', () {
       expect(_fieldValues.toSet(), hasLength(_fieldValues.length));
-      expect(_plainNames, hasLength(144));
+      expect(_plainNames, hasLength(143));
       expect(_dottedPaths, hasLength(22));
     });
 

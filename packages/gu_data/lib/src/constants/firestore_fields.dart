@@ -339,9 +339,6 @@ abstract final class FirestoreFields {
   /// Yoklaması alınan katılımcı sayacı.
   static const String attendedCount = 'attendedCount';
 
-  /// Etkinlik sayaçlarının ±1 batch'inde yazılan rsvp belgesi yolu (CD-41).
-  static const String lastRsvpRef = 'lastRsvpRef';
-
   /// Yayınlanma anı (sunucu zamanı).
   static const String publishedAt = 'publishedAt';
 
