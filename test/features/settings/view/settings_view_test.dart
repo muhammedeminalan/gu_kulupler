@@ -85,6 +85,7 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
                 stub('blocked'),
                 stub('about'),
                 stub('support'),
+                stub('delete'),
               ],
             ),
           ],
@@ -221,6 +222,8 @@ void main() {
       ('blocked', '/profile/settings/blocked'),
       ('support', '/profile/settings/support'),
       ('about', '/profile/settings/about'),
+      // T-29 · W-33: "Hesabı sil" → SET-03.
+      ('delete', '/profile/settings/delete'),
       ('back', '/profile'),
     ]) {
       testWidgets('$action → $location', (tester) async {
@@ -268,15 +271,6 @@ void main() {
       await tester.tap(find.byKey(_k('logout')));
       await tester.pumpAndSettle();
       expect(auth.callsTo('signOut'), hasLength(1));
-    });
-
-    testWidgets('"Hesabı sil" SET-03 bekler (T-29): gezinme yok', (
-      tester,
-    ) async {
-      final router = await _pumpRoute(tester);
-      await tester.tap(find.byKey(_k('delete')));
-      await tester.pumpAndSettle();
-      expect(_location(router), '/profile/settings');
     });
   });
 

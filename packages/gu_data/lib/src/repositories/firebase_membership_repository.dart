@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gu_data/src/constants/anonymization.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/constants/firestore_ids.dart';
+import 'package:gu_data/src/constants/limits.dart';
 import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/conflict_exception.dart';
@@ -31,8 +33,8 @@ import 'package:gu_data/src/utils/field_validators.dart';
 
 /// [MembershipRepository] uygulaması: `memberships/{clubId}_{userId}`,
 /// `memberships/{id}/private/contact`, `clubs.memberCount` sayacı ve günlük
-/// kaydı (PLAN §10.4; rules-spec §3.4 M1–M4, M7, M8 ve `private/contact`
-/// U(b) not düzenleme).
+/// kaydı (PLAN §10.4; rules-spec §3.4 M1–M4, M7, M8, hesap silme M14 ve
+/// `private/contact` U(b) not düzenleme).
 ///
 /// Her geçiş tek transaction'dır: önce okur (başvuranın kullanıcı belgesi,
 /// kulüp, üyelik, iletişim belgesi), beklenen durumu doğrular, sonra yazar.
@@ -65,6 +67,15 @@ final class FirebaseMembershipRepository implements MembershipRepository {
 
   /// Anında katılımda `private/contact` belgesine yazılan (boş) not.
   static const String _noNote = '';
+
+  /// Hesap silmede (M14) `applicant` alanına yazılan anonim anlık görüntü
+  /// (`Anonymization.applicantPayload`) — model biçiminde. Anlık görüntüsü
+  /// buna eşit olan üyelik anonimleşmiştir (`AccountDeletionRepository`
+  /// planı ve [anonymizeChunk] idempotentliği bununla karşılaştırır).
+  static final MembershipApplicantModel anonymizedApplicant =
+      MembershipApplicantModel.fromJson(
+        Anonymization.applicantPayload()[FirestoreFields.applicant]! as Json,
+      );
 
   /// Yöneticilerin rolleri (`listManagers` süzgeci; Rules `isManager`).
   static const List<ClubRole> _managerRoles = [
@@ -195,6 +206,110 @@ final class FirebaseMembershipRepository implements MembershipRepository {
         FirestoreFields.note: note,
         ...BaseFieldsPayload.update(),
       });
+    });
+  }
+
+  @override
+  Future<FirestoreResult<void>> anonymizeChunk({
+    required String uid,
+    required List<MembershipModel> memberships,
+  }) async {
+    if (RepositoryHelpers.rejectInvalidIds<void>({'uid': uid})
+        case final rejected?) {
+      return rejected;
+    }
+    if (memberships.length > Limits.accountDeletionChunk) {
+      return RepositoryHelpers.invalidArgument(
+        'anonymizeChunk: ${memberships.length} üyelik, sınır '
+        '${Limits.accountDeletionChunk}',
+      );
+    }
+    final clubIds = <String>[];
+    for (final membership in memberships) {
+      if (membership.userId != uid) {
+        return RepositoryHelpers.invalidArgument(
+          'anonymizeChunk: başka kullanıcının üyeliği',
+        );
+      }
+      if (!RepositoryHelpers.isValidId(membership.clubId)) {
+        return RepositoryHelpers.invalidArgument(
+          'geçersiz kimlik: memberships.clubId',
+        );
+      }
+      // Kimlik `clubId_uid`: aynı kulüp iki kez = aynı belge iki kez.
+      if (clubIds.contains(membership.clubId)) {
+        return RepositoryHelpers.invalidArgument(
+          'anonymizeChunk: aynı kulüpten iki üyelik',
+        );
+      }
+      clubIds.add(membership.clubId);
+    }
+    if (clubIds.isEmpty) return const FirebaseSuccess(null);
+
+    // Günlük kaydı (`activity`) ve `users/{uid}` yazılmaz: silinmiş hesabın
+    // Rules'ta açık olan tek yazımları üyelik, iletişim belgesi ve sayaçtır
+    // (sözleşme `docs/plans/T-29.md` §4 g).
+    return _transact((tx) async {
+      // Transaction kuralı: tüm okumalar yazımlardan önce. Durum ve iletişim
+      // belgesinin varlığı işlem içinde okunur: parça yeniden koşarsa güncel
+      // durumu görür (idempotent).
+      final current = <String, MembershipModel>{};
+      final contacts = <String, FirestoreDoc>{};
+      for (final clubId in clubIds) {
+        final membership = _membershipOrNull(
+          await tx.get(_membershipRef(clubId, uid)),
+        );
+        // Belge yok: anonimleştirilecek bir şey yok.
+        if (membership == null) continue;
+        // Bileşik kimlik tek başına kanıt değildir (`a_b` + `c` ile `a` +
+        // `b_c` aynı kimliği üretir): sahiplik alanlardan okunur.
+        if (membership.clubId != clubId || membership.userId != uid) {
+          throw _Halt(
+            FirestoreError.permissionDenied,
+            '${_membershipRef(clubId, uid).path}: başka bir üyeliğin kimliği',
+          );
+        }
+        current[clubId] = membership;
+        final contact = FirestoreDoc.fromSnapshot(
+          await tx.get(_contactRef(clubId, uid)),
+        );
+        if (contact != null) contacts[clubId] = contact;
+      }
+
+      for (final MapEntry(key: clubId, value: membership) in current.entries) {
+        final next = switch (membership.status) {
+          // Etkin başkan `left` olamaz (önce devir — M11; Rules M14):
+          // durum aynı kalır, yalnızca kişisel veri boşalır (W-90).
+          MembershipStatus.active when membership.role == ClubRole.president =>
+            MembershipStatus.active,
+          MembershipStatus.active => MembershipStatus.left,
+          MembershipStatus.pending => MembershipStatus.cancelled,
+          // Geçmiş üyelik: durum aynı kalır, yalnızca anlık görüntü boşalır.
+          final terminal => terminal,
+        };
+        if (next != membership.status ||
+            membership.applicant != anonymizedApplicant) {
+          tx.update(_membershipRef(clubId, uid), {
+            if (next != membership.status) FirestoreFields.status: next.json,
+            ...Anonymization.applicantPayload(),
+            ...BaseFieldsPayload.update(),
+          });
+        }
+        // Danışman `memberCount`'a sayılmaz (M13): ayrılışı sayacı oynatmaz;
+        // başkan ayrılmaz.
+        if (membership.status == MembershipStatus.active &&
+            (membership.role == ClubRole.member ||
+                membership.role == ClubRole.board)) {
+          _bumpMemberCount(tx, _clubRef(clubId), _departed);
+        }
+        final contact = contacts[clubId];
+        if (contact != null && !_isAnonymizedContact(contact.data)) {
+          tx.update(_contactRef(clubId, uid), {
+            ...Anonymization.contactPayload(),
+            ...BaseFieldsPayload.update(),
+          });
+        }
+      }
     });
   }
 
@@ -524,6 +639,13 @@ final class FirebaseMembershipRepository implements MembershipRepository {
         FirebaseFailure(error, message: message, detail: detail),
     };
   }
+
+  /// `private/contact` belgesi zaten anonim mi (`Anonymization.contactPayload`
+  /// alanlarının hepsi belgede aynı değerde)?
+  static bool _isAnonymizedContact(Json contact) =>
+      Anonymization.contactPayload().entries.every(
+        (field) => contact[field.key] == field.value,
+      );
 
   /// [note] [club] kulübünün başvuru notu koşulunu (`requireNote`, üst sınır)
   /// karşılamıyorsa işlemi [FirestoreError.invalidArgument] ile durdurur.

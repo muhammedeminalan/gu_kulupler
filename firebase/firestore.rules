@@ -18,6 +18,9 @@ rules_version = '2';
 // T-25 → notifications (sahibi R / U; tür bazlı C: application_received, announcement, event_new,
 // event_cancelled, waitlist_promoted, event_reminder).
 // T-28 → supportTickets (sahibi C + R; süper admin R + `status` U; kimlik = `ticketNo`).
+// T-29 → hesap silme: users `deleted` dalı + private/account anonimleştirmesi, memberships M14 + contact
+// boşaltma, blocks / savedPosts silinmiş sahibin soft delete dalı; silinmiş hesap settings / account /
+// activity yazamaz (`notDeletedUser`). Erişim bütçesi: budget/account_deletion_result.json (RP06).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -47,6 +50,15 @@ service cloud.firestore {
     function activeUser() {
       return emailOk() && exists(userPath(uid())) && me().status == 'active' && me().profileComplete == true;
     }
+    // Hesap silme (T-29; rules-spec §3.1, sözleşme docs/plans/T-29.md §4 b): `users.status` TEK adımda
+    // `active → deleted` olur (ara durum yok). Silinmiş hesabın sahibine yalnızca temizlik dalları açıktır —
+    // M14 + `private/contact` boşaltma, katılımdan vazgeçme (`canCancelRsvp`, mevcut dal), engel / kayıt /
+    // bildirim soft delete'i; geri kalan her yazımı `activeUser()` ya da `notDeletedUser()` kapatır.
+    // 1 erişim yolu: users/{uid}.
+    function deletedUser() { return emailOk() && get(userPath(uid())).data.status == 'deleted'; }
+    // `activeUser()` istemeyen sahip dalları (askıdaki hesaba açık: settings, private/account) için: hesap
+    // silinmemiş — belge henüz yok (kayıt batch'i) ya da `status != 'deleted'`. 1 erişim yolu: users/{uid}.
+    function notDeletedUser() { return !exists(userPath(uid())) || me().status != 'deleted'; }
 
     // ---- üyelik ----
     function mPath(c, u) { return /databases/$(database)/documents/memberships/$(c + '_' + u); }
@@ -167,8 +179,9 @@ service cloud.firestore {
 
     // 1 · users/{uid} — T-12 (askı T-37, hesap silme T-29) · rules-spec §3.1
     // Yazma yolları: UserRepository.createProfile (C; 1 erişim çağrısı: existsAfter private/account) ·
-    // updateProfile (U, sahibi; erişim çağrısı yok).
-    // Kapalı kalan dallar: süper admin `status: active↔suspended` (T-37), sahibinin `deleted` dalı (T-29).
+    // updateProfile (U, sahibi; erişim çağrısı yok) · AccountDeletionRepository.markDeleted (U, sahibi;
+    // `private/account` anonimleştirmesiyle aynı batch; 1 erişim çağrısı: getAfter private/account).
+    // Kapalı kalan dal: süper admin `status: active↔suspended` (T-37).
     // `suspendReason` bu belgenin alanı DEĞİLDİR (CD-133): hiçbir beyaz listede yoktur.
     match /users/{uid} {
       // sahibi: kendi belgesi + doğrulanmış, izinli alan adlı e-posta. `uid` = yol değişkeni
@@ -240,19 +253,44 @@ service cloud.firestore {
             && (resource.data.profileComplete == false || request.resource.data.profileComplete == true);
       }
 
+      // U (sahibi, hesap silme — T-29, SET-03; domain-model §11 adım 3) — `status: active → deleted` TEK
+      // adımdır ve dönüşü yoktur: `deleted` belgede `status` hiçbir dalın beyaz listesinde değildir (geri
+      // etkinleştirme yok), `isSoftDelete` önceki `isDeleted == false` ister (ikinci kez yazılamaz).
+      // Değerler `Anonymization.userPayload` ile BİREBİR (değiştirilmiş istemci adı / bölümü "sahte"
+      // değerle bırakamaz); `avatarPath` / `department` / `year` null ya da anahtarsız (W-51). Dokunulmayanlar:
+      // `avatarSeed`, `staff`, `profileComplete`, `createdAt` (beyaz listede yok). Askıdaki hesap silinemez
+      // (`status == 'active'`). Aynı batch bağı: `private/account` aynı işlemde boşaltılır (`email == ''`
+      // yalnızca anonimleştirme dalından gelebilir — token e-postası boş olamaz). Başkanlık engeli bu belgede
+      // DEĞİL, M14'tedir (başkan üyeliği `left` yapılamaz — sözleşme §4 c).
+      // 1 erişim yolu: private/account (getAfter).
+      function canMarkDeleted() {
+        let d = request.resource.data;
+        return isOwner()
+            && resource.data.status == 'active'
+            && isSoftDelete(['name', 'nameLower', 'bio', 'interests', 'avatarPath', 'department', 'year', 'status'])
+            && d.status == 'deleted'
+            && d.name == 'Silinmiş kullanıcı' && d.nameLower == 'silinmiş kullanıcı'
+            && d.bio == '' && d.interests == []
+            && d.get('avatarPath', null) == null && d.get('department', null) == null
+            && d.get('year', null) == null
+            && getAfter(/databases/$(database)/documents/users/$(uid)/private/account).data.email == '';
+      }
+
       // R — doğrulanmış her kullanıcı (rules-spec §9.1 kabul edilmiş sınırlama). `isDeleted` süzgeci
       // YOKTUR: anonimleştirilmiş yazar "Silinmiş kullanıcı" olarak okunur (getUser / getUsers);
       // liste ekranları (ADM-05) `isDeleted == false` süzgecini sorguda taşır.
       allow read: if emailOk();
       allow create: if canCreateUser();
-      allow update: if canUpdateOwnProfile();
+      allow update: if canUpdateOwnProfile() || canMarkDeleted();
       allow delete: if false;
 
       // 2 · users/{uid}/private/account — T-12 (süper admin `suspendReason` yazımı T-37) · rules-spec §3.2
       // Yazma yolları: UserRepository.createProfile (C; 1 erişim çağrısı: existsAfter users/{uid}) ·
-      // touchLastLogin (U; erişim çağrısı yok).
+      // touchLastLogin (U; 1 erişim çağrısı: users/{uid} — `notDeletedUser`) ·
+      // AccountDeletionRepository.markDeleted (U anonimleştirme, `users/{uid}` ile aynı batch; 1 erişim
+      // çağrısı: getAfter users/{uid}).
       // `suspendReason` sahibi için SALT OKUNURDUR (CD-133): C'de yok / null, U'da değişemez.
-      // Kapalı kalan dallar: süper admin U (T-37), anonimleştirme (T-29), collectionGroup('private') (T-37).
+      // Kapalı kalan dallar: süper admin U (T-37), collectionGroup('private') (T-37).
       match /private/{docId} {
         // `fcmTokens[i]` = FcmTokenModel {token, platform, updatedAt} (üçü de zorunlu). Belgeyi süper
         // admin de okur (ADM-05): tek bozuk eleman onun okumasını ve e-posta araması sayfasını
@@ -303,20 +341,35 @@ service cloud.firestore {
         }
 
         // U (sahibi) — `suspendReason`, `createdAt`, `isDeleted*` beyaz listede yoktur → değişemez.
-        // Askıdaki kullanıcı da yazabilir (emailOk yeter; PLAN §11.1 satır 2 susp/del).
+        // Askıdaki kullanıcı da yazabilir (emailOk yeter; PLAN §11.1 satır 2 susp). Silinmiş hesap YAZAMAZ
+        // (T-29, D-29): anonimleştirilmiş e-posta token'dan geri yazılamaz, FCM jetonu / giriş zamanı eklenemez.
         function canUpdateOwnAccount() {
           return isOwner() && docId == 'account'
               && touches(['email', 'emailLower', 'fcmTokens', 'lastLoginAt'])
               && accountShape()
               && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastLoginAt'])
-                  || request.resource.data.lastLoginAt == request.time);
+                  || request.resource.data.lastLoginAt == request.time)
+              && notDeletedUser();
+        }
+
+        // U (sahibi, hesap silme — T-29; domain-model §11 adım 3, D-29) — `email` / `emailLower` → `''`,
+        // `fcmTokens` → `[]` (`Anonymization.accountPayload`); `lastLoginAt`, `suspendReason`, `isDeleted*`
+        // değişmez. Yalnızca profil belgesi aynı işlemde (ya da daha önce) `deleted` iken: etkin hesap kendi
+        // e-postasını boşaltıp ADM-05 aramasından kaybolamaz. Auth kimliği ve Auth e-postası kalır (Q-11).
+        // 1 erişim yolu: users/{uid} (getAfter).
+        function canAnonymizeAccount() {
+          let d = request.resource.data;
+          return isOwner() && docId == 'account'
+              && touches(['email', 'emailLower', 'fcmTokens'])
+              && d.email == '' && d.emailLower == '' && d.fcmTokens == []
+              && getAfter(userPath(uid)).data.status == 'deleted';
         }
 
         // R — yalnızca sahibi (kendi e-postası ve askı gerekçesi) ve süper admin (ADM-05).
         allow get: if isOwner() || isSuper();
         allow list: if false;
         allow create: if canCreateAccount();
-        allow update: if canUpdateOwnAccount();
+        allow update: if canUpdateOwnAccount() || canAnonymizeAccount();
         allow delete: if false;
       }
     }
@@ -328,7 +381,7 @@ service cloud.firestore {
     // Yazma yolu (T-19): `pinnedPostId` dalı — PostRepository.pin / unpin / softDeletePost (sabit gönderi).
     // Kapalı kalan dallar: C (süper admin, ADM-03 — T-37) · U yönetim alanları ve `presidentId` devri (T-30) ·
     // U süper admin `status` / `suspendReason` / ad alanları (T-37) · sayaç dalının yönetici ve süper admin
-    // aktörü (M5 / M9 / M12 — T-30; M9 süper — T-37) ve hesap silme (M14 — T-29).
+    // aktörü (M5 / M9 / M12 — T-30; M9 süper — T-37). Hesap silme (M14 — T-29) sahibin −1 dalını kullanır.
     match /clubs/{clubId} {
       // U (sayaç dalı, PLAN §11.2b) — yalnızca `memberCount` ±1 (+ `updatedAt`).
       // T-15 aktörü yalnızca üyeliğin sahibidir: eşlik eden belge oturumun BU kulüpteki üyeliğidir
@@ -336,6 +389,9 @@ service cloud.firestore {
       // (tek başına sayaç yazan batch reddedilir): +1 = katılım (M2 / M3 `active`), −1 = ayrılma (M8).
       // Kulüp belgesi doğrulanmış herkese açıktır: üyeliğin yolu (`lastMembershipRef`) bu belgeye YAZILMAZ —
       // beyaz listede yoktur (CD-137 madde 8q). Yönetici / süper admin aktörü T-30 / T-37'de eklenir.
+      // T-29: −1 = ayrılma (M8) ya da hesap silme (M14) — ikisinde de ayrılan üyelik `member` / `board`
+      // rolündedir; danışman `memberCount` dışıdır, başkan ayrılamaz (önce devir): onların `active → left`
+      // geçişi sayaç düşüremez (geçişin kendisini üyelik kuralı yetkilendirir).
       // 1 erişim yolu: üyelik belgesi (getAfter + get / exists).
       function canBumpMemberCount() {
         let ref = mPath(clubId, uid());
@@ -346,7 +402,8 @@ service cloud.firestore {
             && request.resource.data.memberCount >= 0
             && m.clubId == clubId && m.userId == uid()
             && ((d == 1 && m.status == 'active' && (!exists(ref) || get(ref).data.status != 'active'))
-                || (d == -1 && m.status == 'left' && get(ref).data.status == 'active'));
+                || (d == -1 && m.status == 'left' && get(ref).data.status == 'active'
+                    && get(ref).data.role in ['member', 'board']));
       }
 
       // U (`pinnedPostId` dalı, T-19) — yalnızca `pinnedPostId` (+ `updatedAt`), gönderi yazımıyla AYNI işlemde.
@@ -388,10 +445,10 @@ service cloud.firestore {
     // 4 · memberships/{clubId}_{userId} — T-15 (M1–M4, M7, M8) · T-30 (M5–M12) · T-37 (M13) · T-29 (M14)
     // rules-spec §3.4 · durum makinesi domain-model §5 · PLAN §11.2.
     // Yazma yolları (T-15, hepsi belgenin sahibi): MembershipRepository.apply (M1 C / M3–M4 U) ·
-    // joinInstant (M2 C / M3 U) · cancelApplication (M7) · leave (M8).
+    // joinInstant (M2 C / M3 U) · cancelApplication (M7) · leave (M8) · anonymizeChunk (M14, T-29).
     // Kapalı kalan dallar: M5 onay · M6 red (`retryAfter` = +7 gün, ±5 dk) · M9 çıkarma · M10 rol ·
-    // M11 devir · M12 geri al (T-30) · M13 danışman (T-37) · M14 hesap silme (T-29). Yönetici, danışman ve
-    // süper admin bu belgeyi T-30 / T-37'ye kadar YAZAMAZ.
+    // M11 devir · M12 geri al (T-30) · M13 danışman (T-37). Yönetici, danışman ve süper admin bu belgeyi
+    // T-30 / T-37'ye kadar YAZAMAZ.
     // Belge e-posta ve başvuru notu TAŞIMAZ (D-29, CD-137): `note` hiçbir beyaz listede yoktur.
     // Dal sırası: her dal önce ucuz ayırıcıya (önceki / sonraki `status`) bakar, erişim çağrıları sonra
     // gelir — eşleşmeyen dallar kısa devre olur (istek başına 1000 ifade sınırı; T-30 dalları da böyle eklenir).
@@ -553,6 +610,39 @@ service cloud.firestore {
             && counterDelta(clubPath(resource.data.clubId), 'memberCount', -1);
       }
 
+      // M14 — hesap silme (T-29, SET-03; sözleşme docs/plans/T-29.md §4 a, c, g): sahibi, hesabı ÖNCEDEN
+      // `deleted` (adım 1 — `markDeleted` kesinleşmiştir; silinmiş hesaba açık tek üyelik dalı budur).
+      // `applicant` anlık görüntüsü `Anonymization.applicantPayload` ile BİREBİR değiştirilir (sahte ad /
+      // bölüm bırakılamaz); durum: `active → left` (rol `member` / `board` ⇒ aynı işlemde `memberCount −1`;
+      // danışman sayılmaz ⇒ sayaç yok, kulübün −1 dalı da danışmana kapalıdır) · `pending → cancelled` ·
+      // geçmiş (`left` / `cancelled` / `rejected` / `removed`) üyelikte durum DEĞİŞMEZ, yalnızca anlık görüntü
+      // boşalır (domain-model §11: "her üyeliğin" kişisel verisi). Yeniden koşma (aynı değerler) geçer.
+      // ETKİN BAŞKAN üyeliği `left` YAPILAMAZ (domain-model §11 adım 1 — önce devir, M11; kulüp başkansız
+      // kalmaz). Başkanlık engeli istemcidedir (`precheck`); Rules `markDeleted`'ı başkana kapatamaz (üyelikleri
+      // sorgulayamaz). Değiştirilmiş istemci ya da ön denetim sonrası devir alma yarışında üyelik `active` KALIR,
+      // ama kişisel verisi yine boşalır (güvenlik incelemesi T-29, D-29): durum DEĞİŞMEDEN yalnızca `applicant`
+      // anlık görüntüsü (+ aynı işlemde `private/contact`) anonimleşir, sayaç oynamaz. Kulübün devri T-33 / T-37
+      // borcudur (W-90). Kimlik `clubId_userId` belgenin alanlarından yeniden kurulur (birleşim belirsizliği).
+      // Karar alanları, `role`, `priorCount`, `appliedAt` değişmez. Sayaç dalı (`counterDelta`) en sonda.
+      // Erişim yolları: users/{uid} 1 · kulüp 1 (yalnızca −1) — parça (N üyelik + N contact + ≤ N kulüp):
+      // 1 + 2N tekil yol (budget/account_deletion_result.json).
+      function canAnonymizeMembership() {
+        let was = resource.data.status;
+        let now = request.resource.data.status;
+        let role = resource.data.role;
+        return resource.data.userId == uid()
+            && membershipId == resource.data.clubId + '_' + uid()
+            && touches(['status', 'applicant'])
+            && request.resource.data.applicant == {'name': 'Silinmiş kullanıcı', 'department': null,
+                                                   'year': null, 'avatarSeed': 'deleted'}
+            && deletedUser()
+            && ((was == 'active' && role != 'president' && now == 'left'
+                 && (role == 'advisor' || counterDelta(clubPath(resource.data.clubId), 'memberCount', -1)))
+                || (was == 'active' && role == 'president' && now == 'active')
+                || (was == 'pending' && now == 'cancelled')
+                || (was == now && was in ['left', 'cancelled', 'rejected', 'removed']));   // budget: chunk=5
+      }
+
       // Olmayan kendi belgesinin tekil okuması boş döner (getMembership → null; başvuru işleminin ilk
       // okuması): `resource == null` yalnızca `…_<uid>` kimliğinde izinlidir (başkasının üyeliği var mı
       // sorusu yanıtlanmaz).
@@ -562,15 +652,16 @@ service cloud.firestore {
       // (d), `listManagers`). Süzgeçsiz sorgu yalnızca süper admine açıktır.
       allow list: if canReadMembership();
       allow create: if canApply() || canJoinInstant();
-      allow update: if canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave();
+      allow update: if canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave()
+                    || canAnonymizeMembership();
       allow delete: if false;
 
       // 5 · memberships/{id}/private/contact — T-15 (not düzenleme T-16, anonimleştirme T-29) · rules-spec §3.4
       // Alanlar: `email`, `emailLower`, `note` (başvuru notu — CD-137) + BaseFields. "Sahibi" = üst üyelik
       // belgesinin `userId`'si. Yazma yolları (T-15): apply / joinInstant — M1 / M2'de C, M3 / M4'te U(a)
-      // (belge yoksa C); T-16: updateApplicationNote — U(b) (bekleyen başvurunun notu). Yönetici, danışman
-      // ve süper admin YAZAMAZ.
-      // Kapalı kalan dallar: anonimleştirme (T-29) · collectionGroup('private') (T-37).
+      // (belge yoksa C); T-16: updateApplicationNote — U(b) (bekleyen başvurunun notu); T-29: anonymizeChunk —
+      // U(c) (hesap silme, M14 ile aynı işlem). Yönetici, danışman ve süper admin YAZAMAZ.
+      // Kapalı kalan dal: collectionGroup('private') (T-37).
       match /private/{docId} {
         function membershipPath() { return /databases/$(database)/documents/memberships/$(membershipId); }
 
@@ -631,10 +722,24 @@ service cloud.firestore {
               && noteGiven(get(clubPath(m.clubId)).data, request.resource.data);
         }
 
+        // U(c) — anonimleştirme (T-29, M14; domain-model §11 adım 3): `email`, `emailLower`, `note` → `''`
+        // (`Anonymization.contactPayload`; not serbest metindir, kimliği ele verebilir — CD-137). Sahibi
+        // (yazım-sonrası üyeliğin `userId`'si), hesabı silinmiş. Üyelik durumundan bağımsızdır (geçmiş
+        // üyeliklerin iletişimi de boşalır); yeniden koşma (aynı değerler) geçer. Değer boşaltmaktan başka bir
+        // şey olamaz: silinmiş hesap e-postayı geri yazamaz. 2 erişim yolu: üyelik (getAfter) · users/{uid}.
+        function canAnonymizeContact() {
+          let d = request.resource.data;
+          return docId == 'contact'
+              && touches(['email', 'emailLower', 'note'])
+              && d.email == '' && d.emailLower == '' && d.note == ''
+              && getAfter(membershipPath()).data.userId == uid()
+              && deletedUser();
+        }
+
         allow get: if canReadContact();
         allow list: if false;
         allow create: if canCreateContact();
-        allow update: if canRewriteNote() || canEditNote();
+        allow update: if canRewriteNote() || canEditNote() || canAnonymizeContact();
         allow delete: if false;
       }
     }
@@ -1323,7 +1428,8 @@ service cloud.firestore {
       }
 
       // U (vazgeç, DLG-14) — `going | waitlist → cancelled`: yalnızca `status`; ilgili sayaç −1. `activeUser`
-      // İSTENMEZ (askıdaki / hesabını silen kullanıcı vazgeçebilir — T-29); etkinliğin durumu ve kulübün askısı
+      // İSTENMEZ (askıdaki / hesabını silen kullanıcı vazgeçebilir — T-29: AccountDeletionRepository
+      // .cancelRsvpChunk bu dalı kullanır, `status == 'deleted'` sonrasında); etkinliğin durumu ve kulübün askısı
       // aranmaz. Etkinlik BİTMEDEN (`endsAt > request.time`; EVT-02 / EVT-03 "Vazgeç" de yalnızca o zaman görünür):
       // bitmiş etkinlikte "Gelmedin" kaydı iptale çevrilip `goingCount` düşürülerek yoklama oranı şişirilemez
       // (CD-144 (10)). Yoklaması alınmış kayıttan (`attended`) vazgeçilemez. Boşalan yere kimse otomatik alınmaz.
@@ -1538,14 +1644,17 @@ service cloud.firestore {
             && activeUser();
       }
 
-      // U (sahibi; askıdaki hesap dahil): (1) okundu — yalnızca `read` (+ `updatedAt`), sonuç `true` (zaten
+      // U (sahibi; askıdaki ve silinmiş hesap dahil — T-29 kişisel parçası gelen kutusunu bu dalın (2)'siyle
+      // soft delete eder): (1) okundu — yalnızca `read` (+ `updatedAt`), sonuç `true` (zaten
       // okunmuşa da geçer, okunmamışa dönüş yok; markAllRead parçalı batch); (2) soft delete; (3) geri al —
-      // yalnızca silen (kendisi). Tür, alıcı, `refs` ve `createdAt` hiçbir dalda değişemez.
+      // yalnızca silen (kendisi), hesabı silinmemişse (T-29 güvenlik incelemesi: temizlenen gelen kutusu geri
+      // getirilemez — engel / kayıt restore'u gibi; 1 erişim yolu: users/{uid}). Tür, alıcı, `refs` ve
+      // `createdAt` hiçbir dalda değişemez.
       function canUpdateNotification() {
         return emailOk() && resource.data.userId == uid()
             && ((touches(['read']) && request.resource.data.read == true)
                 || isSoftDelete([])
-                || (isRestore([]) && resource.data.deletedBy == uid()));
+                || (isRestore([]) && resource.data.deletedBy == uid() && notDeletedUser()));
       }
 
       // R — yalnızca sahibi (silinmişler dahil — Geri al); süper admin dahil başkası okuyamaz. Olmayan KENDİ
@@ -1633,11 +1742,13 @@ service cloud.firestore {
       // C (T-15) — oturumun KENDİ üyelik geçişinin günlüğü; geçiş aynı batch'teki üyelik yazımından
       // doğrulanır (yazım-öncesi ≠ yazım-sonrası durum): `application_received` ⇒ → `pending` (M1 / M3 / M4) ·
       // `member_joined` ⇒ → `active` (M2 / M3) · `member_left` ⇒ `active` → `left` (M8).
+      // Silinmiş hesap günlük YAZAMAZ (T-29): M14'ün `active → left` geçişi `member_left` satırı açmaz
+      // (anonimleştirme günlüğe ad / kimlik taşımaz; `notDeletedUser` — users/{uid} üyelik kuralında zaten okunur).
       // Belge kimliği SABİTTİR (FirestoreIds.activity): `{clubId}_{uid}_{kind}_{priorCount}` — `priorCount`
       // yazım-sonrası üyelikten okunur. Bir geçişin (tür, priorCount) çifti tekildir (her yeniden başvuru /
       // katılım sayacı bir artırır): aynı geçişe ikinci günlük aynı kimliğe düşer, update sayılır ve
       // reddedilir. Serbest kimlikle tek batch'e yüzlerce sahte satır yazılabiliyordu (CD-137 madde 8t).
-      // 1 erişim yolu: memberships/{clubId}_{uid} (getAfter + exists / get).
+      // 2 erişim yolu: memberships/{clubId}_{uid} (getAfter + exists / get) · users/{uid} (T-29).
       function canLogOwnMembership() {
         let d = request.resource.data;
         let ref = mPath(d.clubId, uid());
@@ -1652,7 +1763,8 @@ service cloud.firestore {
             && ownRefs(d.refs)
             && ((d.kind == 'application_received' && now == 'pending' && was != 'pending')
                 || (d.kind == 'member_joined' && now == 'active' && was != 'active')
-                || (d.kind == 'member_left' && now == 'left' && was == 'active'));
+                || (d.kind == 'member_left' && now == 'left' && was == 'active'))
+            && notDeletedUser();
       }
 
       // `refs`: gönderi türlerinde yalnızca `postId`; diğerleri yok / null.
@@ -1750,20 +1862,25 @@ service cloud.firestore {
             && d.updatedAt == request.time;
       }
 
+      // C / U — sahibi; askıdaki hesap da yazar (emailOk yeter — PLAN §11.1 satır 14 susp). Silinmiş hesap
+      // YAZAMAZ (T-29): belge hesap silmede olduğu gibi kalır (kişisel veri değil, soft delete alanı yok —
+      // sözleşme §4 e). 1 erişim yolu: users/{uid} (`notDeletedUser`; kayıt batch'inde belge henüz yoktur).
       function canCreateSettings() {
         return isOwner()
             && request.resource.data.keys().hasOnly(['announcements', 'eventReminders', 'newEvents',
                                                      'applicationResults', 'management', 'system',
                                                      'reminderTime', 'quiet', 'quietFrom', 'quietTo',
                                                      'clubs', 'updatedAt'])
-            && settingsShape();
+            && settingsShape()
+            && notDeletedUser();
       }
 
       function canUpdateSettings() {
         return isOwner()
             && touches(['announcements', 'eventReminders', 'newEvents', 'applicationResults',
                         'management', 'system', 'reminderTime', 'quiet', 'quietFrom', 'quietTo', 'clubs'])
-            && settingsShape();
+            && settingsShape()
+            && notDeletedUser();
       }
 
       // R — yalnızca sahibi (süper admin dahil başkası okuyamaz).
@@ -1798,9 +1915,17 @@ service cloud.firestore {
       }
 
       // U — yalnızca soft delete (engeli kaldır) ve restore (yeniden engelle); `blockerId` / `blockedId`
-      // değişemez. Askıdaki / silinmiş hesap yazamaz (PLAN §11.1 satır 15 susp/del).
+      // değişemez. Askıdaki hesap yazamaz (PLAN §11.1 satır 15 susp); silinmiş hesap yalnızca soft delete
+      // eder (T-29, aşağıda).
       function canToggleBlock() {
         return activeUser() && resource.data.blockerId == uid() && (isSoftDelete([]) || isRestore([]));
+      }
+
+      // U (hesap silme, T-29; domain-model §11 adım 3) — silinmiş hesabın sahibi kendi engellerini YALNIZCA
+      // soft delete eder (AccountDeletionRepository.softDeletePersonalChunk); oluşturma ve restore
+      // `activeUser()` olarak kalır. 1 erişim yolu: users/{uid}.
+      function canCleanupAsDeleted() {
+        return resource.data.blockerId == uid() && isSoftDelete([]) && deletedUser();
       }
 
       // R — yalnızca engelleyen (silinmiş = kaldırılmış engel dahil: `block()` yeniden engellerken okur).
@@ -1808,7 +1933,7 @@ service cloud.firestore {
       allow get: if emailOk() && ((resource == null && ownBlockId()) || resource.data.blockerId == uid());
       allow list: if emailOk() && resource.data.blockerId == uid();
       allow create: if canCreateBlock();
-      allow update: if canToggleBlock();
+      allow update: if canToggleBlock() || canCleanupAsDeleted();
       allow delete: if false;
     }
 
@@ -1842,7 +1967,7 @@ service cloud.firestore {
       // U — yalnızca soft delete (kaldır) ve restore (Geri al / yeniden kaydet). `userId`, `postId`,
       // `clubId` değişemez. Yeniden kaydetmede `savedAt` sunucu zamanına yenilenir; Geri al'da dokunulmaz.
       // Üyelik aranmaz: kulüpten ayrılan kullanıcı listesini temizleyebilir (gönderiyi zaten okuyamaz).
-      // Askıdaki / silinmiş hesap yazamaz.
+      // Askıdaki hesap yazamaz; silinmiş hesap yalnızca soft delete eder (T-29, aşağıda).
       function canToggleSaved() {
         let d = request.resource.data;
         return activeUser() && resource.data.userId == uid()
@@ -1850,12 +1975,19 @@ service cloud.firestore {
                 || (isRestore(['savedAt']) && (d.savedAt == resource.data.savedAt || d.savedAt == request.time)));
       }
 
+      // U (hesap silme, T-29; domain-model §11 adım 3) — silinmiş hesabın sahibi kendi kayıtlarını YALNIZCA
+      // soft delete eder (AccountDeletionRepository.softDeletePersonalChunk); kaydetme ve restore
+      // `activeUser()` olarak kalır. 1 erişim yolu: users/{uid}.
+      function canCleanupAsDeleted() {
+        return resource.data.userId == uid() && isSoftDelete([]) && deletedUser();
+      }
+
       // R — yalnızca sahibi (kaldırılmış kayıt dahil: `save()` yeniden kaydederken okur). Olmayan kendi
       // kaydının tekil okuması boş döner (isSaved → false). Sorgu `userId == uid` süzgecini taşır.
       allow get: if emailOk() && ((resource == null && ownSavedId()) || resource.data.userId == uid());
       allow list: if emailOk() && resource.data.userId == uid();
       allow create: if canSavePost();
-      allow update: if canToggleSaved();
+      allow update: if canToggleSaved() || canCleanupAsDeleted();
       allow delete: if false;
     }
 

@@ -92,6 +92,8 @@ const Map<GoRouteData, String> _routes = {
   BlockedUserProfileRoute(userId: _userId): '/profile/settings/blocked/:userId',
   AboutRoute(): '/profile/settings/about',
   SupportRoute(): '/profile/settings/support',
+  // Hesap silme (T-29: SET-03, W-33)
+  DeleteAccountRoute(): '/profile/settings/delete',
 };
 
 /// Parametreli kulüp rotalarının örnek kimliği.
@@ -154,40 +156,45 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 39 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 40 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
-        'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6)', () {
+        'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(39));
+      expect(_routes, hasLength(40));
     });
 
-    test('T-28 · ayarlar rotaları `/profile/settings` altındadır; '
-        'BlockedUserProfileRoute `userId` yol parametresidir; hepsi aktif '
-        'oturum (A) ister', () {
-      const blockedProfile = BlockedUserProfileRoute(userId: _userId);
-      expect(blockedProfile.location, '/profile/settings/blocked/u01');
-      final locations = <String>[
-        const SettingsRoute().location,
-        const SettingsNotificationPrefsRoute().location,
-        const BlockedRoute().location,
-        blockedProfile.location,
-        const AboutRoute().location,
-        const SupportRoute().location,
-      ];
-      expect(locations, [
-        '/profile/settings',
-        '/profile/settings/notifications',
-        '/profile/settings/blocked',
-        '/profile/settings/blocked/u01',
-        '/profile/settings/about',
-        '/profile/settings/support',
-      ]);
-      for (final location in locations) {
-        final match = RouteAccessTable.match(Uri.parse(location));
-        expect(match.access, RouteAccess.active, reason: location);
-        expect(match.clubId, isNull, reason: location);
-      }
-    });
+    test(
+      'T-28 · T-29 · ayarlar rotaları (SET-03 dahil) `/profile/settings` altındadır; '
+      'BlockedUserProfileRoute `userId` yol parametresidir; hepsi aktif '
+      'oturum (A) ister',
+      () {
+        const blockedProfile = BlockedUserProfileRoute(userId: _userId);
+        expect(blockedProfile.location, '/profile/settings/blocked/u01');
+        final locations = <String>[
+          const SettingsRoute().location,
+          const SettingsNotificationPrefsRoute().location,
+          const BlockedRoute().location,
+          blockedProfile.location,
+          const AboutRoute().location,
+          const SupportRoute().location,
+          const DeleteAccountRoute().location,
+        ];
+        expect(locations, [
+          '/profile/settings',
+          '/profile/settings/notifications',
+          '/profile/settings/blocked',
+          '/profile/settings/blocked/u01',
+          '/profile/settings/about',
+          '/profile/settings/support',
+          '/profile/settings/delete',
+        ]);
+        for (final location in locations) {
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.access, RouteAccess.active, reason: location);
+          expect(match.clubId, isNull, reason: location);
+        }
+      },
+    );
 
     test('T-27 · profil rotaları: sabit parçalar; MyClubsRoute `tab` sorgu '
         'parametresidir (ekrandaki sekme sırasıyla `MyClubsTab` adları); '

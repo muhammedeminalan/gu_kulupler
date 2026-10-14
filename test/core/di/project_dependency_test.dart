@@ -721,6 +721,26 @@ void main() {
     });
   });
 
+  group('T-29 · ProjectDependency · hesap silme', () {
+    test('repository gerçek uygulamasıyla kaydedilir; mixin getter’ı aynı '
+        'örneği döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(
+        GetIt.I<AccountDeletionRepository>(),
+        isA<FirebaseAccountDeletionRepository>(),
+      );
+      expect(
+        _Consumer().accountDeletionRepository,
+        same(GetIt.I<AccountDeletionRepository>()),
+      );
+    });
+  });
+
   group('T-22 · ProjectDependency · etkinlik ve katılım kayıtları', () {
     test('iki repository gerçek uygulamalarıyla kaydedilir; mixin '
         'getter’ları aynı örnekleri döndürür', () async {

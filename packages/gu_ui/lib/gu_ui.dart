@@ -32,6 +32,7 @@ export 'src/utils/gu_key.dart';
 export 'src/utils/gu_tap_target.dart';
 export 'src/utils/stable_hash.dart';
 export 'src/utils/text_scale.dart';
+export 'src/widgets/display/gu_bullet_list.dart';
 export 'src/widgets/display/gu_calendar.dart';
 export 'src/widgets/display/gu_card.dart';
 export 'src/widgets/display/gu_countdown.dart';

@@ -235,6 +235,68 @@ final class FakeMembershipRepository extends FakeBase
     return const FirebaseSuccess(null);
   }
 
+  /// M14 (T-29; sözleşme `docs/plans/T-29.md` §4 a): gerçek repository gibi
+  /// parça bütünüyle uygulanır ya da hiç uygulanmaz. Her üyelik için
+  /// `applicant` anonim anlık görüntü olur, `active → left` (üye / yönetimde
+  /// `memberCount −1`, danışmanda sayaç yok; etkin başkan `active` kalır,
+  /// sayaç yok), `pending → cancelled`, geçmiş durumlar aynı kalır; iletişim
+  /// belgesi boşaltılır. Belgesi olmayan üyelik atlanır.
+  @override
+  Future<FirestoreResult<void>> anonymizeChunk({
+    required String uid,
+    required List<MembershipModel> memberships,
+  }) async {
+    record('anonymizeChunk', [uid, memberships.map((m) => m.clubId).toList()]);
+    if (_rejected<void>([uid]) case final failure?) return failure;
+    if (memberships.length > Limits.accountDeletionChunk ||
+        memberships.any((membership) => membership.userId != uid)) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final current = [
+      for (final membership in memberships)
+        ?this.memberships[_key(membership.clubId, uid)],
+    ];
+    // Sayaç belgesi olmayan kulüpte işlem bütünüyle düşer (gerçek
+    // transaction'da `clubs/{id}` güncellemesi `not-found` verir).
+    bool counted(MembershipModel membership) =>
+        membership.status == MembershipStatus.active &&
+        (membership.role == ClubRole.member ||
+            membership.role == ClubRole.board);
+    if (current.any(
+      (membership) =>
+          counted(membership) &&
+          !clubRepository.clubs.containsKey(membership.clubId),
+    )) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    for (final membership in current) {
+      final next = switch (membership.status) {
+        // Etkin başkan `left` olamaz: durum aynı, yalnızca kişisel veri boşalır.
+        MembershipStatus.active when membership.role == ClubRole.president =>
+          MembershipStatus.active,
+        MembershipStatus.active => MembershipStatus.left,
+        MembershipStatus.pending => MembershipStatus.cancelled,
+        final terminal => terminal,
+      };
+      if (counted(membership)) _bumpMemberCount(membership.clubId, -1);
+      _write(
+        membership.copyWith(
+          status: next,
+          applicant: FirebaseMembershipRepository.anonymizedApplicant,
+        ),
+      );
+      if (contacts[membership.id] case final contact?) {
+        contacts[membership.id] = contact.copyWith(
+          email: '',
+          emailLower: '',
+          note: '',
+          updatedAt: _clock.nowUtc(),
+        );
+      }
+    }
+    return const FirebaseSuccess(null);
+  }
+
   @override
   Future<FirestoreResult<PageResult<MembershipModel>>> listActiveMembers(
     String clubId,

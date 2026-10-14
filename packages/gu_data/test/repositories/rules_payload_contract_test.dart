@@ -1631,6 +1631,195 @@ void main() {
       _expectWellFormedVariants(scenarios);
     });
   });
+
+  group('T-29 · Rules yük sözleşmesi (hesap silme dizisi)', () {
+    final t29 = contract['t29']! as Map<String, Object?>;
+    final fixtures = t29['fixtures']! as Map<String, Object?>;
+    final actors = (t29['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t29['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+
+    late FirebaseMembershipRepository memberships;
+    late FirebaseAccountDeletionRepository deletion;
+
+    /// Parçaya verilen kayıt / üyelik: işlem güncel durumu kendisi okur;
+    /// argümandan yalnızca kimlik alanları kullanılır.
+    RsvpModel rsvp(String eventId, String uid) => RsvpModel(
+      eventId: eventId,
+      clubId: clubId,
+      userId: uid,
+      ticketCode: 'GU-AAAA-AAAB',
+    );
+    MembershipModel membership(String club, String uid) => MembershipModel(
+      clubId: club,
+      userId: uid,
+      applicant: const MembershipApplicantModel(name: 'x', avatarSeed: 'x'),
+    );
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı; argüman
+    /// senaryonun `role` bağlamının uid'idir.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'AccountDeletionRepository.markDeleted': (uid) =>
+              deletion.markDeleted(uid),
+          'AccountDeletionRepository.markDeleted · zaten silinmiş (yeniden '
+              'başlatma)': (uid) =>
+              deletion.markDeleted(uid),
+          'AccountDeletionRepository.cancelRsvpChunk · going + waitlist':
+              (uid) => deletion.cancelRsvpChunk(uid, [
+                rsvp('e01', uid),
+                rsvp('e02', uid),
+              ]),
+          'AccountDeletionRepository.cancelRsvpChunk · yeniden başlatma (zaten '
+              'vazgeçilmiş)': (uid) =>
+              deletion.cancelRsvpChunk(uid, [rsvp('e01', uid)]),
+          'MembershipRepository.anonymizeChunk · etkin üye + bekleyen + geçmiş '
+              '(M14)': (uid) => memberships.anonymizeChunk(
+            uid: uid,
+            memberships: [
+              membership('c01', uid),
+              membership('c02', uid),
+              membership('c03', uid),
+            ],
+          ),
+          'MembershipRepository.anonymizeChunk · yeniden başlatma (anonim '
+              'geçmiş üyelik)': (uid) => memberships.anonymizeChunk(
+            uid: uid,
+            memberships: [membership('c03', uid)],
+          ),
+          'MembershipRepository.anonymizeChunk · etkin başkan (durum aynı, '
+              'applicant + contact)': (uid) => memberships.anonymizeChunk(
+            uid: uid,
+            memberships: [membership('c01', uid)],
+          ),
+          'AccountDeletionRepository.cancelUnreadableRsvp · ayrılınan '
+              'kulübün üyelere özel etkinliği': (uid) =>
+              deletion.cancelUnreadableRsvp(uid, rsvp('e01', uid)),
+          'MembershipRepository.anonymizeChunk · danışman (sayaçsız left)':
+              (uid) => memberships.anonymizeChunk(
+                uid: uid,
+                memberships: [membership('c01', uid)],
+              ),
+          'AccountDeletionRepository.softDeletePersonalChunk · bildirim + '
+              'kayıt + engel': (uid) => deletion.softDeletePersonalChunk(uid, [
+            const PersonalDocRef(PersonalDocKind.notification, 'n_del01'),
+            PersonalDocRef(PersonalDocKind.savedPost, '${uid}_p01'),
+            PersonalDocRef(PersonalDocKind.block, '${uid}_u_student'),
+          ]),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      final activity = FirebaseActivityRepository(service);
+      memberships = FirebaseMembershipRepository(
+        service,
+        activity,
+        FakeNotificationDispatcher(),
+        clock,
+      );
+      deletion = FirebaseAccountDeletionRepository(
+        service,
+        memberships,
+        FirebaseRsvpRepository(service, FakeTicketCodeGenerator(), clock),
+        FirebaseEventRepository(
+          service,
+          storage,
+          activity,
+          clock,
+          SequenceRandom(_randomBytes),
+        ),
+        clock,
+      );
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok; dizi senaryolardan oluşur, sayaç nöbetçisi ortak', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t29['increment'], _increment);
+      expect(
+        scenarios.map((scenario) => scenario['role']),
+        everyElement(isIn(actors.keys)),
+      );
+      expect(t29['sequence'], everyElement(isIn(calls.keys)));
+      expect(t29['restartAt'], lessThan((t29['sequence']! as List).length));
+    });
+
+    test('her yazma metodu en az bir senaryoda: AccountDeletionRepository '
+        'parçaları + M14', () {
+      final covered = {
+        for (final scenario in scenarios)
+          if ((scenario['writes']! as List<Object?>).isNotEmpty)
+            (scenario['call']! as String).split(' · ').first,
+      };
+      expect(covered, {
+        'AccountDeletionRepository.markDeleted',
+        'AccountDeletionRepository.cancelRsvpChunk',
+        'AccountDeletionRepository.cancelUnreadableRsvp',
+        'MembershipRepository.anonymizeChunk',
+        'AccountDeletionRepository.softDeletePersonalChunk',
+      });
+    });
+
+    test('parça boyu Limits.accountDeletionChunk içinde; yükler '
+        'Anonymization sabitleriyle aynı', () {
+      final applicant =
+          Anonymization.applicantPayload()[FirestoreFields.applicant];
+      for (final scenario in scenarios) {
+        for (final write in scenario['writes']! as List<Object?>) {
+          final data =
+              (write! as Map<String, Object?>)['data']! as Map<String, Object?>;
+          if (data.containsKey('applicant')) {
+            expect(data['applicant'], applicant);
+          }
+          if ((write as Map<String, Object?>)['path'] case final String path
+              when path.startsWith('users/') && !path.contains('/private/')) {
+            for (final MapEntry(:key, :value) in Anonymization.userPayload(
+              'u_member',
+            ).entries) {
+              if (value is! FieldValue) expect(data[key], value, reason: key);
+            }
+          }
+        }
+      }
+      final cancelled = scenarios.firstWhere(
+        (scenario) => (scenario['call']! as String).startsWith(
+          'AccountDeletionRepository.cancelRsvpChunk · going',
+        ),
+      );
+      expect(
+        (cancelled['writes']! as List).length ~/ 2,
+        lessThanOrEqualTo(Limits.accountDeletionChunk),
+      );
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okumalar ve yazımlar sözleşmeyle birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+        final uid = actors[scenario['role']]!;
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(_normalized(db.log), scenario['writes']);
+        // Birden çok belgeyi okuyup yazan parçalar tek transaction'dır.
+        expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+      });
+    }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
+      _expectWellFormedVariants(scenarios);
+    });
+  });
 }
 
 /// Sabit alıcılı [RecipientResolver] (sözleşme senaryoları): yönetici kümesi

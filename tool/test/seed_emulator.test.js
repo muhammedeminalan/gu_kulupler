@@ -9,8 +9,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { TOOL_DIR } = require('./helpers');
 const {
-  COLLECTIONS, PATH_OF, SUPPORT_TICKET_NO, convert, convertSupport, dayShiftMs, expectedCounts, staticTablesDiff, validate,
-  validateSupport, withExtras,
+  ANONYMIZATION, COLLECTIONS, PATH_OF, SUPPORT_TICKET_NO, convert, convertDeleted, convertSupport, dayShiftMs, expectedCounts,
+  staticTablesDiff, validate, validateDeleted, validateSupport, withExtras,
 } = require('../seed/lib/convert');
 const { GuardError, encodeValue, resolveTarget } = require('../seed/lib/emulator_rest');
 const { placeholderPng } = require('../seed/placeholder_png');
@@ -86,7 +86,9 @@ test('seed · --dry-run ağa çıkmadan sayıları basar; bilinmeyen argüman ku
   assert.match(dry.stdout, /^\s+notifications\s+45$/m);
   // T-28: demo-support.json'daki 5 destek talebi (COLLECTIONS dışında, kendi satırı).
   assert.match(dry.stdout, /^\s+supportTickets\s+5$/m);
-  assert.match(dry.stdout, /^\s+auth\s+226$/m);
+  // T-29: demo-deleted.json'daki silinmiş hesap (6 belge; Auth kimliği kalır — Q-11).
+  assert.match(dry.stdout, /^\s+deleted \(T-29\)\s+6$/m);
+  assert.match(dry.stdout, /^\s+auth\s+227$/m);
   assert.equal(dry.stdout.includes(raw.meta.demoPassword), false, 'parola çıktıya yazılmamalı');
   assert.equal(run(['--sil'], {}).code, 2);
   assert.equal(run(['--now', 'dün'], {}).code, 2);
@@ -351,4 +353,44 @@ test('seed · T-28 destek talepleri: numara = kimlik, durum karışık, kullanı
   broken['GU-I01OAB'] = { ...broken['GU-Q6V4NE'], ticketNo: 'GU-I01OAB' };
   const problems = validateSupport(broken, raw.users);
   assert.equal(problems.length, 4, problems.join('\n'));
+});
+
+test('seed · T-29 silinmiş hesap: alanlar anonim (Dart Anonymization ile aynı), üyelik left + contact boş, eski '
+  + 'gönderi / yorum kalır, Auth kimliği kalır; validate bozuğu yakalar', () => {
+  const extras = JSON.parse(fs.readFileSync(path.join(TOOL_DIR, 'seed', 'demo-deleted.json'), 'utf8'));
+  const deleted = convertDeleted(raw, extras, { now: TODAY });
+  assert.deepEqual(validateDeleted(deleted, raw), []);
+  const docs = Object.fromEntries(deleted.writes);
+  assert.deepEqual(Object.keys(docs), [
+    'users/u_deleted',
+    'users/u_deleted/private/account',
+    'memberships/c01_u_deleted',
+    'memberships/c01_u_deleted/private/contact',
+    'posts/p_del01',
+    'comments/cm_del01',
+  ]);
+  const user = docs['users/u_deleted'];
+  assert.equal(user.name, ANONYMIZATION.deletedUserName);
+  assert.equal(user.status, 'deleted');
+  assert.equal(user.isDeleted, true);
+  assert.equal(user.deletedBy, 'u_deleted');
+  assert.equal(docs['users/u_deleted/private/account'].email, '');
+  assert.equal(docs['memberships/c01_u_deleted'].status, 'left');
+  assert.equal(docs['posts/p_del01'].authorId, 'u_deleted');
+  assert.equal(docs['posts/p_del01'].commentCount, 1);
+  assert.equal(docs['comments/cm_del01'].clubId, 'c01');
+  assert.deepEqual(deleted.authUsers.map((u) => [u.uid, u.email]), [['u_deleted', 'silinen.hesap@ogr.gumushane.edu.tr']]);
+  // Literaller Dart sabitleriyle (ve dolayısıyla Rules'la) aynı.
+  const dartSource = fs.readFileSync(path.join(REPO, 'packages/gu_data/lib/src/constants/anonymization.dart'), 'utf8');
+  assert.match(dartSource, new RegExp(`deletedUserName = '${ANONYMIZATION.deletedUserName}'`));
+  assert.match(dartSource, new RegExp(`_deletedUserNameLower = '${ANONYMIZATION.deletedUserNameLower}'`));
+  assert.match(dartSource, new RegExp(`_deletedAvatarSeed = '${ANONYMIZATION.deletedAvatarSeed}'`));
+
+  const broken = structuredClone(deleted);
+  const at = (docPath) => broken.writes.find(([p]) => p === docPath)[1];
+  at('users/u_deleted').bio = 'Merhaba';
+  at('memberships/c01_u_deleted').status = 'active';
+  at('memberships/c01_u_deleted/private/contact').note = 'not';
+  const problems = validateDeleted(broken, raw);
+  assert.equal(problems.length, 3, problems.join('\n'));
 });

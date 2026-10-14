@@ -1,0 +1,49 @@
+{
+  "chunk": 5,
+  "firstRejected": 10,
+  "maxPassing": 9,
+  "results": [
+    {
+      "n": 3,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 4,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 5,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 6,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 7,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 8,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 9,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 10,
+      "ok": false,
+      "outcome": "evaluation-error"
+    }
+  ],
+  "rule": "chunk = min(5, maxPassing); N ∈ 3–12, ilk retten sonra durur",
+  "type": "membership_active_member"
+}

@@ -25,6 +25,7 @@ import 'package:gu_kulupler/features/profile/view/saved_view.dart';
 import 'package:gu_kulupler/features/search/view/search_view.dart';
 import 'package:gu_kulupler/features/settings/view/about_view.dart';
 import 'package:gu_kulupler/features/settings/view/blocked_users_view.dart';
+import 'package:gu_kulupler/features/settings/view/delete_account_view.dart';
 import 'package:gu_kulupler/features/settings/view/settings_view.dart';
 import 'package:gu_kulupler/features/settings/view/support_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';

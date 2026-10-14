@@ -765,6 +765,170 @@ function validateSupport(tickets, users) {
   return problems;
 }
 
+// ── T-29 · silinmiş (anonimleştirilmiş) hesap (demo-deleted.json) ───────────────────────────────
+
+/**
+ * Hesap silme anonimleştirme literalleri — Dart `Anonymization` (packages/gu_data/lib/src/constants/
+ * anonymization.dart) ve firestore.rules hesap silme dalları ile aynı; öz-test Dart kaynağıyla karşılaştırır.
+ */
+const ANONYMIZATION = Object.freeze({
+  deletedUserName: 'Silinmiş kullanıcı',
+  deletedUserNameLower: 'silinmiş kullanıcı',
+  deletedAvatarSeed: 'deleted',
+});
+
+/**
+ * Demo silinmiş hesaplar → hesap silme dizisinin SONUÇ belgeleri (`[yol, alanlar]` listesi) + Auth
+ * kullanıcıları. Bu belgeler demo-data.json'da yoktur: `COLLECTIONS` (17, Dart DemoDataFixture ile aynı)
+ * dışında, kendi sayım satırıyla yazılır. Auth kimliği ve e-postası kalır (Q-11); Firestore'daki e-posta
+ * boştur (D-29). Zamanlar `meta.today` → `now` tam gün kaydırılır.
+ */
+function convertDeleted(raw, extras, { now }) {
+  const shift = dayShiftMs(new Date(raw.meta.today), now);
+  const at = (iso) => (typeof iso === 'string' ? new Date(new Date(iso).getTime() + shift) : null);
+  const base = (createdAt, updatedAt) => ({ createdAt, updatedAt, isDeleted: false, deletedAt: null, deletedBy: null });
+  const writes = [];
+  const authUsers = [];
+  for (const [uid, user] of Object.entries(extras.users || {})) {
+    const createdAt = at(user.createdAt);
+    const deletedAt = at(user.deletedAt);
+    writes.push([
+      PATH_OF.users(uid),
+      {
+        name: ANONYMIZATION.deletedUserName,
+        nameLower: ANONYMIZATION.deletedUserNameLower,
+        avatarSeed: user.avatarSeed,
+        avatarPath: null,
+        department: null,
+        year: null,
+        interests: [],
+        bio: '',
+        status: 'deleted',
+        staff: false,
+        profileComplete: true,
+        createdAt,
+        updatedAt: deletedAt,
+        isDeleted: true,
+        deletedAt,
+        deletedBy: uid,
+      },
+    ]);
+    writes.push([
+      PATH_OF.account(uid),
+      { email: '', emailLower: '', fcmTokens: [], lastLoginAt: null, suspendReason: null, ...base(createdAt, deletedAt) },
+    ]);
+    for (const [clubId, membership] of Object.entries(user.memberships || {})) {
+      const id = `${clubId}_${uid}`;
+      const appliedAt = at(membership.appliedAt);
+      writes.push([
+        PATH_OF.memberships(id),
+        {
+          clubId,
+          userId: uid,
+          status: 'left',
+          role: membership.role,
+          applicant: { name: ANONYMIZATION.deletedUserName, department: null, year: null, avatarSeed: ANONYMIZATION.deletedAvatarSeed },
+          appliedAt,
+          decidedAt: at(membership.decidedAt),
+          decidedBy: raw.clubs[clubId] ? raw.clubs[clubId].presidentId : null,
+          retryAfter: null,
+          rejectReason: null,
+          rejectNote: null,
+          priorCount: 0,
+          ...base(appliedAt, deletedAt),
+        },
+      ]);
+      writes.push([PATH_OF.contact(id), { email: '', emailLower: '', note: '', ...base(appliedAt, deletedAt) }]);
+    }
+    const comments = Object.entries(user.comments || {});
+    for (const [postId, post] of Object.entries(user.posts || {})) {
+      const createdAt = at(post.createdAt);
+      writes.push([
+        PATH_OF.posts(postId),
+        {
+          clubId: post.clubId,
+          authorId: uid,
+          type: 'post',
+          title: null,
+          text: post.text,
+          images: [],
+          poll: null,
+          pinned: false,
+          pushSent: false,
+          likes: [],
+          likeCount: 0,
+          commentCount: comments.filter(([, c]) => c.postId === postId).length,
+          lastCommentRef: null,
+          isHidden: false,
+          hiddenBy: null,
+          hiddenAt: null,
+          editedAt: null,
+          ...base(createdAt, createdAt),
+        },
+      ]);
+    }
+    for (const [commentId, comment] of comments) {
+      const createdAt = at(comment.createdAt);
+      writes.push([
+        PATH_OF.comments(commentId),
+        {
+          postId: comment.postId,
+          clubId: user.posts[comment.postId].clubId,
+          authorId: uid,
+          text: comment.text,
+          isHidden: false,
+          hiddenBy: null,
+          hiddenAt: null,
+          ...base(createdAt, createdAt),
+        },
+      ]);
+    }
+    authUsers.push({ uid, email: user.email, displayName: null, emailVerified: true, claims: null });
+  }
+  return { writes, authUsers };
+}
+
+/**
+ * Silinmiş hesap belgelerinin tutarlılığı (domain-model §11 alan listesi + Rules hesap silme dalları); sorun
+ * listesi döner, boş = tutarlı. [raw] demo verisidir (kimlik çakışması, kulüp varlığı).
+ */
+function validateDeleted(deleted, raw) {
+  const problems = [];
+  const docs = Object.fromEntries(deleted.writes);
+  for (const [docPath, data] of deleted.writes) {
+    const [collection, id] = docPath.split('/');
+    if (collection === 'users' && docPath.split('/').length === 2) {
+      if (raw.users[id]) problems.push(`${docPath}: demo-data.json'da zaten var`);
+      if (data.name !== ANONYMIZATION.deletedUserName || data.nameLower !== ANONYMIZATION.deletedUserNameLower) {
+        problems.push(`${docPath}: ad anonim değil`);
+      }
+      if (data.status !== 'deleted' || data.isDeleted !== true || data.deletedBy !== id) problems.push(`${docPath}: silinmiş değil`);
+      if (data.bio !== '' || data.interests.length || data.avatarPath !== null || data.department !== null || data.year !== null) {
+        problems.push(`${docPath}: kişisel alan kalmış`);
+      }
+      const account = docs[PATH_OF.account(id)];
+      if (!account || account.email !== '' || account.emailLower !== '' || account.fcmTokens.length) {
+        problems.push(`${docPath}: private/account boşaltılmamış`);
+      }
+    }
+    if (collection === 'memberships' && docPath.split('/').length === 2) {
+      if (!raw.clubs[data.clubId]) problems.push(`${docPath}: kulüp ${data.clubId} yok`);
+      if (data.status === 'active' || data.status === 'pending') problems.push(`${docPath}: üyelik kapanmamış (${data.status})`);
+      if (data.applicant.name !== ANONYMIZATION.deletedUserName || data.applicant.avatarSeed !== ANONYMIZATION.deletedAvatarSeed) {
+        problems.push(`${docPath}: applicant anonim değil`);
+      }
+      const contact = docs[PATH_OF.contact(id)];
+      if (!contact || contact.email !== '' || contact.note !== '') problems.push(`${docPath}: contact boşaltılmamış`);
+    }
+    if (collection === 'posts' && !raw.clubs[data.clubId]) problems.push(`${docPath}: kulüp ${data.clubId} yok`);
+    if ((collection === 'posts' && raw.posts[id]) || (collection === 'comments' && raw.comments[id])) {
+      problems.push(`${docPath}: demo-data.json'da zaten var`);
+    }
+    if (collection === 'comments' && !docs[PATH_OF.posts(data.postId)]) problems.push(`${docPath}: gönderi ${data.postId} yok`);
+  }
+  return problems;
+}
+
 module.exports = {
   SEED_SUSPEND_REASON,
   SEED_TITLES,
@@ -780,6 +944,9 @@ module.exports = {
   SUPPORT_TICKET_NO,
   convertSupport,
   validateSupport,
+  ANONYMIZATION,
+  convertDeleted,
+  validateDeleted,
   fileStamp,
   convert,
   expectedCounts,

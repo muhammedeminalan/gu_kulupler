@@ -1015,3 +1015,164 @@ describe('T-28 · destek talebi — senaryolar (kendi bağlamı, kurallar açık
     await assertSucceeds(getMetadata(ref(contextFor('super').storage(), scenario.upload.path)));
   });
 });
+
+// 10. T-29 — `contract.t29.scenarios`: hesap silme dizisinin GERÇEK okuma + yazımları
+//     (FirebaseAccountDeletionRepository + FirebaseMembershipRepository.anonymizeChunk; biçim `t22` ile aynı).
+//     Parçalar silinmiş sahibin bağlamında koşar (ön koşulda `users/{uid}` = `deletedUser`); `tx: true` ise
+//     okumalar + yazımlar tek transaction'dır (okumalar da kurallardan geçer). `denied` aynı parçanın kasıtlı
+//     bozuk biçimleridir (askıdaki hesap, sayaçsız, sahte anonim değer, bitmiş etkinlik — W-80, etkin başkan …):
+//     reddedilir, hiçbir belge değişmez. `sequence` uçtan uca dizidir (roadmap "emülatör uçtan uca"): tek
+//     veritabanında, kurallar açık, sırayla; `restartAt` sonrası yarıda kesilip yeniden başlatılan dizidir
+//     (adım 1 yazmadan geçer, tamamlanmış parçalar yalnızca okunur, kalan parça yazılır).
+describe('T-29 · hesap silme dizisi — senaryolar ve uçtan uca (silinmiş sahibi, kurallar açık)', () => {
+  const t29 = contract.t29;
+  const DAYS_AGO = '@daysAgo:';
+
+  /** Bağlamların kullanıcı ve üyelik belgeleri (roles.json). */
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Ön koşul nöbetçileri: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t29.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t29.fixtures[name]), ...fields };
+  }
+
+  function seedOf(entries, variant = {}) {
+    const docs = Object.fromEntries(Object.entries(entries).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...expand(patch) };
+    }
+    return { ...identityDocs(), ...Object.fromEntries(Object.entries(docs).map(([path, data]) => [path, seedValue(data)])) };
+  }
+
+  function writesOf(scenario, variant = {}) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    return scenario.writes
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+  }
+
+  /** Parçayı repository'nin gönderdiği biçimde gönderir (`tx`: okumalar + yazımlar tek transaction). */
+  async function run(db, scenario, writes) {
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of scenario.reads) await tx.get(doc(db, path));
+          for (const write of writes) applyWrite(db, tx, write);
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of scenario.reads) await getDoc(doc(db, path));
+    return writes.length === 0 ? undefined : send(db, writes);
+  }
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  const scenarioOf = (call) => {
+    const found = t29.scenarios.find((scenario) => scenario.call === call);
+    if (!found) throw new Error(`dizide bilinmeyen senaryo: ${call}`);
+    return found;
+  };
+
+  test('sözleşme: bağlamlar roles.json ile aynı; sayaç nöbetçisi ortak; anonim değerler Rules literalleriyle aynı', () => {
+    expect(t29.increment).toBe(INCREMENT);
+    for (const [role, uid] of Object.entries(t29.actors)) expect(definition(role).uid).toBe(uid);
+    const applicants = t29.scenarios.flatMap((s) => s.writes).filter((w) => w.data.applicant).map((w) => w.data.applicant);
+    expect(applicants.length).toBeGreaterThan(0);
+    for (const applicant of applicants) {
+      expect(applicant).toEqual({ name: 'Silinmiş kullanıcı', department: null, year: null, avatarSeed: 'deleted' });
+    }
+    expect(t29.sequence.map(scenarioOf).length).toBe(t29.sequence.length);
+  });
+
+  describe.each(t29.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      await seedDocs(seedOf(scenario.seed));
+      const writes = writesOf(scenario);
+
+      await assertSucceeds(run(db, scenario, writes));
+
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const seed = seedOf(scenario.seed, variant);
+      await seedDocs(seed);
+      const writes = writesOf(scenario, variant);
+      const paths = [...new Set([...Object.keys(seed), ...writes.map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, scenario, writes));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test('uçtan uca: dizinin tüm parçaları sırayla geçer; yarıda kesilip yeniden başlatılan dizi de geçer; son durum '
+    + 'domain-model §11 alan listesiyle aynı', async () => {
+    const db = contextFor('member').firestore();
+    await seedDocs(seedOf(t29.sequenceSeed));
+
+    for (const [index, call] of t29.sequence.entries()) {
+      const scenario = scenarioOf(call);
+      // Yeniden başlatma: önceki parçaların yazdıkları kalıcıdır, aynı parçanın yeniden yazımı yoktur.
+      if (index >= t29.restartAt) expect(scenario.writes.length === 0 || call.includes('softDeletePersonalChunk')).toBe(true);
+      await assertSucceeds(run(db, scenario, writesOf(scenario)));
+    }
+
+    const user = await readDoc('users/u_member');
+    expect(user).toMatchObject({
+      name: 'Silinmiş kullanıcı', nameLower: 'silinmiş kullanıcı', bio: '', interests: [], avatarPath: null,
+      department: null, year: null, status: 'deleted', isDeleted: true, deletedBy: 'u_member',
+      avatarSeed: 'u_member', profileComplete: true, staff: false,
+    });
+    expect(await readDoc('users/u_member/private/account')).toMatchObject({ email: '', emailLower: '', fcmTokens: [] });
+    expect((await readDoc('users/u_member/private/account')).lastLoginAt).not.toBeNull();
+    expect(await readDoc('memberships/c01_u_member')).toMatchObject({ status: 'left', role: 'member' });
+    expect(await readDoc('memberships/c02_u_member')).toMatchObject({ status: 'cancelled' });
+    expect(await readDoc('memberships/c03_u_member')).toMatchObject({ status: 'rejected', rejectReason: 'quota' });
+    for (const club of ['c01', 'c02', 'c03']) {
+      expect(await readDoc(`memberships/${club}_u_member/private/contact`)).toMatchObject({ email: '', emailLower: '', note: '' });
+    }
+    expect((await readDoc('clubs/c01')).memberCount).toBe(3);
+    expect((await readDoc('clubs/c02')).memberCount).toBe(3);
+    expect(await readDoc('rsvps/e01_u_member')).toMatchObject({ status: 'cancelled' });
+    expect(await readDoc('events/e01')).toMatchObject({ goingCount: 0 });
+    expect(await readDoc('events/e02')).toMatchObject({ waitlistCount: 0 });
+    for (const path of ['notifications/n_del01', 'savedPosts/u_member_p01', 'blocks/u_member_u_student']) {
+      expect(await readDoc(path)).toMatchObject({ isDeleted: true, deletedBy: 'u_member' });
+    }
+
+    // Silinmiş hesap artık yeni yazım yapamaz: aynı kişisel belgeyi geri yükleyemez, adım 1'i yeniden yazamaz.
+    await assertFails(updateDoc(doc(db, 'savedPosts/u_member_p01'), { isDeleted: false, deletedAt: null, deletedBy: null, updatedAt: serverTimestamp() }));
+    await assertFails(send(db, writesOf(scenarioOf(t29.sequence[0]))));
+  });
+});

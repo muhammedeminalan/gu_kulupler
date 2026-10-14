@@ -39,7 +39,8 @@ import 'package:gu_ui/gu_ui.dart';
 /// )
 /// ```
 class UserRow extends StatelessWidget {
-  /// [user] kullanıcısının satırı; `null` → "Silinmiş kullanıcı".
+  /// [user] kullanıcısının satırı; `null` ya da hesabı silinmiş (T-29) →
+  /// "Silinmiş kullanıcı".
   const UserRow({
     required this.user,
     this.sub,
@@ -114,15 +115,28 @@ class UserRow extends StatelessWidget {
   /// Silinmiş kullanıcının avatar metni ve renk tohumu (`art.js:44`).
   static const String _unknown = '?';
 
-  /// Görünen ad; kullanıcı yoksa `null` (→ "Silinmiş kullanıcı").
-  String? get name => user?.name ?? _name;
+  /// Görünen ad; kullanıcı yoksa ya da hesabı silinmişse `null` (→
+  /// "Silinmiş kullanıcı").
+  String? get name => user == null ? _name : _liveUser?.name;
 
   /// Avatar renk tohumu: `avatarSeed`, boşsa kullanıcı kimliği
-  /// (`art.js:44`); kullanıcı yoksa `?`.
+  /// (`art.js:44`); kullanıcı yoksa ya da hesabı silinmişse `?`.
   String get avatarSeed {
-    final user = this.user;
-    if (user == null) return _avatarSeed ?? _unknown;
+    final user = _liveUser;
+    if (user == null) {
+      return this.user == null ? _avatarSeed ?? _unknown : _unknown;
+    }
     return user.avatarSeed.isEmpty ? user.uid : user.avatarSeed;
+  }
+
+  /// Çizilecek kullanıcı belgesi: hesabı silinmiş (anonimleştirilmiş, T-29)
+  /// kullanıcı belgesi olmayan kullanıcıyla aynı çizilir — ad ARB
+  /// `commonDeletedUser` (veri literali `Anonymization.deletedUserName`
+  /// yerelleştirilmez), avatar `?`.
+  UserModel? get _liveUser {
+    final user = this.user;
+    if (user == null || user.isDeleted || user.isAnonymized) return null;
+    return user;
   }
 
   @override

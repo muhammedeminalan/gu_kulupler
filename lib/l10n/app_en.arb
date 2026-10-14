@@ -4324,6 +4324,10 @@
   "@searchTitle": {
     "description": "Key search.title"
   },
+  "set03ConfirmWord": "SİL",
+  "@set03ConfirmWord": {
+    "description": "Key set03.confirmWord"
+  },
   "settingsChangePassword": "Change password",
   "@settingsChangePassword": {
     "description": "Key settings.changePassword"

@@ -336,12 +336,11 @@ void main() {
   });
 
   group('T-15 · MembershipRepository · sözleşme', () {
-    test('PLAN §10.4 tablosunun T-15 ve T-16 üyeleri arayüzde aynı imzayla '
-        'var; sonraki task üyeleri yok', () {
+    test('PLAN §10.4 tablosunun T-15, T-16 ve T-29 üyeleri arayüzde aynı '
+        'imzayla var; sonraki task üyeleri yok', () {
       final plan = readPlanRepositoryMembers('$MembershipRepository');
-      final now = plan
-          .where((row) => row.note == '(T-15)' || row.note == '(T-16)')
-          .toList();
+      const tasks = {'(T-15)', '(T-16)', '(T-29)'};
+      final now = plan.where((row) => tasks.contains(row.note)).toList();
       // `reapply` ayrı bir üye değildir: `apply` ile aynı metottur.
       final reapply = now.singleWhere((row) => row.member == 'reapply');
       expect(reapply.signature, 'apply');
@@ -360,6 +359,7 @@ void main() {
         'listPending',
         'listMine',
         'readContact',
+        'anonymizeChunk',
       ]);
       expect(interfaceMembers(_interface, '$MembershipRepository').toSet(), {
         for (final row in members) normalizeDartSource(row.signature),

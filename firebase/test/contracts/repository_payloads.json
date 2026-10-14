@@ -5779,5 +5779,1159 @@
         ]
       }
     ]
+  },
+  "t29": {
+    "_doc": "T-29 — hesap silme dizisinin GERÇEK okuma + yazımları (FirebaseAccountDeletionRepository + FirebaseMembershipRepository.anonymizeChunk; docs/plans/T-29.md §4). Biçim `t22` ile aynıdır (fixtures, seed, reads, writes, tx, expect, denied; `@daysAgo:N` ön koşul zamanı, `{\"@increment\": n}` sayaç). Parçalar silinmiş sahibin bağlamında koşar (ön koşulda `users/{uid}` = `deletedUser`). `sequence`: dizinin tüm parçaları TEK veritabanında, kurallar açık, `sequenceSeed`ten başlayarak sırayla gönderilir; `restartAt` indeksinden sonrası yarıda kesilip yeniden başlatılan dizinin (plan güncel durumdan yeniden çıkar) okumalarıdır ve yazımsız ya da kalan parçadır — hepsi geçmelidir. Okuma sorguları (buildPlan: listMine, notifications / savedPosts / blocks süzgeçleri) bu sözleşmede değil, rules/queries.test.js ve account_deletion.test.js'tedir.",
+    "increment": "@increment",
+    "actors": {
+      "member": "u_member",
+      "advisor": "u_advisor",
+      "president": "u_president"
+    },
+    "fixtures": {
+      "user": {
+        "name": "Test u_member",
+        "nameLower": "test u_member",
+        "avatarSeed": "u_member",
+        "avatarPath": "users/u_member/20261001T090000Z_0a1b2c3d4e5f6071.jpg",
+        "department": "d01",
+        "year": "1",
+        "interests": [
+          "i01",
+          "i05"
+        ],
+        "bio": "Merhaba, ben üye.",
+        "status": "active",
+        "staff": false,
+        "profileComplete": true,
+        "createdAt": "@daysAgo:300",
+        "updatedAt": "@daysAgo:300",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "deletedUser": {
+        "name": "Silinmiş kullanıcı",
+        "nameLower": "silinmiş kullanıcı",
+        "avatarSeed": "u_member",
+        "avatarPath": null,
+        "department": null,
+        "year": null,
+        "interests": [],
+        "bio": "",
+        "status": "deleted",
+        "staff": false,
+        "profileComplete": true,
+        "createdAt": "@daysAgo:300",
+        "updatedAt": "@daysAgo:0",
+        "isDeleted": true,
+        "deletedAt": "@daysAgo:0",
+        "deletedBy": "u_member"
+      },
+      "account": {
+        "email": "member@ogr.gumushane.edu.tr",
+        "emailLower": "member@ogr.gumushane.edu.tr",
+        "fcmTokens": [
+          {
+            "token": "fcm-token-1",
+            "platform": "android",
+            "updatedAt": "@daysAgo:1"
+          }
+        ],
+        "lastLoginAt": "@daysAgo:1",
+        "suspendReason": null,
+        "createdAt": "@daysAgo:300",
+        "updatedAt": "@daysAgo:300",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "membership": {
+        "clubId": "c01",
+        "userId": "u_member",
+        "status": "active",
+        "role": "member",
+        "applicant": {
+          "name": "Test u_member",
+          "department": "d01",
+          "year": "1",
+          "avatarSeed": "u_member"
+        },
+        "appliedAt": "@daysAgo:30",
+        "decidedAt": "@daysAgo:29",
+        "decidedBy": "u_president",
+        "retryAfter": null,
+        "rejectReason": null,
+        "rejectNote": null,
+        "priorCount": 0,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "contact": {
+        "email": "member@ogr.gumushane.edu.tr",
+        "emailLower": "member@ogr.gumushane.edu.tr",
+        "note": "Kimliği ele veren başvuru notu.",
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "event": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:-3",
+        "endsAt": "@daysAgo:-4",
+        "placeId": "pl01",
+        "placeText": null,
+        "capacity": null,
+        "visibility": "public",
+        "status": "published",
+        "cancelReason": null,
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "coverPath": null,
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 1,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": "@daysAgo:1",
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "rsvp": {
+        "eventId": "e01",
+        "clubId": "c01",
+        "userId": "u_member",
+        "status": "going",
+        "reminder": "1h",
+        "ticketCode": "GU-AAAA-AAAB",
+        "waitlistAt": null,
+        "scannedAt": null,
+        "scannedBy": null,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "notification": {
+        "userId": "u_member",
+        "type": "system",
+        "refs": {
+          "textKey": "welcome"
+        },
+        "read": false,
+        "createdAt": "@daysAgo:3",
+        "updatedAt": "@daysAgo:3",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "saved": {
+        "userId": "u_member",
+        "postId": "p01",
+        "clubId": "c01",
+        "savedAt": "@daysAgo:1",
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "block": {
+        "blockerId": "u_member",
+        "blockedId": "u_student",
+        "createdAt": "@daysAgo:10",
+        "updatedAt": "@daysAgo:10",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "AccountDeletionRepository.markDeleted",
+        "role": "member",
+        "note": "adım 1 — tek batch, iki güncelleme: profil anonim + status deleted + soft delete alanları (avatarSeed / staff / profileComplete / createdAt dokunulmaz), private/account e-postası ve FCM jetonları boşalır (lastLoginAt / suspendReason dokunulmaz). Önce kullanıcı belgesi okunur (askı / zaten silinmiş denetimi).",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "user"
+          },
+          "users/u_member/private/account": {
+            "$fixture": "account"
+          }
+        },
+        "reads": [
+          "users/u_member"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "users/u_member",
+            "data": {
+              "name": "Silinmiş kullanıcı",
+              "nameLower": "silinmiş kullanıcı",
+              "bio": "",
+              "interests": [],
+              "avatarPath": null,
+              "department": null,
+              "year": null,
+              "status": "deleted",
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "users/u_member/private/account",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "fcmTokens": [],
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "users/u_member": {
+            "status": "deleted",
+            "name": "Silinmiş kullanıcı",
+            "isDeleted": true,
+            "deletedBy": "u_member",
+            "avatarSeed": "u_member",
+            "profileComplete": true,
+            "avatarPath": null
+          },
+          "users/u_member/private/account": {
+            "email": "",
+            "fcmTokens": []
+          }
+        },
+        "denied": [
+          {
+            "name": "askıdaki hesap silinemez",
+            "seed": {
+              "users/u_member": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "e-posta aynı batch'te boşaltılmadan (getAfter bağı)",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "avatarSeed değiştirilemez",
+            "patch": {
+              "0": {
+                "avatarSeed": "deleted"
+              }
+            }
+          },
+          {
+            "name": "ad sahte değerle bırakılamaz",
+            "patch": {
+              "0": {
+                "name": "Test u_member"
+              }
+            }
+          },
+          {
+            "name": "profil anonimleşmeden e-posta boşaltılamaz",
+            "without": [
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "call": "AccountDeletionRepository.markDeleted · zaten silinmiş (yeniden başlatma)",
+        "role": "member",
+        "note": "yeniden başlatma — profil zaten deleted: yalnızca okuma, yazım yok (idempotent)",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          }
+        },
+        "reads": [
+          "users/u_member"
+        ],
+        "writes": []
+      },
+      {
+        "call": "AccountDeletionRepository.cancelRsvpChunk · going + waitlist",
+        "role": "member",
+        "tx": true,
+        "note": "tek transaction: kayıt + etkinlik okunur (önce tüm okumalar), going → cancelled + goingCount −1, waitlist → cancelled + waitlistCount −1; lastRsvpRef yazılmaz (W-64). Etkinlik bitmemiş (W-80).",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          },
+          "rsvps/e01_u_member": {
+            "$fixture": "rsvp"
+          },
+          "events/e02": {
+            "$fixture": "event",
+            "title": "Dolu etkinlik",
+            "coverSeed": "event-e02",
+            "capacity": 1,
+            "waitlistCount": 1
+          },
+          "rsvps/e02_u_member": {
+            "$fixture": "rsvp",
+            "eventId": "e02",
+            "status": "waitlist",
+            "ticketCode": "GU-AAAA-AAAC",
+            "waitlistAt": "@daysAgo:1"
+          }
+        },
+        "reads": [
+          "rsvps/e01_u_member",
+          "events/e01",
+          "rsvps/e02_u_member",
+          "events/e02"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_member",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "rsvps/e02_u_member",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e02",
+            "data": {
+              "waitlistCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_member": {
+            "status": "cancelled"
+          },
+          "events/e01": {
+            "goingCount": 0
+          },
+          "rsvps/e02_u_member": {
+            "status": "cancelled"
+          },
+          "events/e02": {
+            "waitlistCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "bitmiş etkinliğin kaydı iptal edilemez (W-80)",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:3",
+                "endsAt": "@daysAgo:2"
+              }
+            }
+          },
+          {
+            "name": "yoklaması alınmış kayıt (attended) iptal edilemez (W-80)",
+            "seed": {
+              "rsvps/e01_u_member": {
+                "status": "attended",
+                "scannedAt": "@daysAgo:0",
+                "scannedBy": "u_board"
+              }
+            }
+          },
+          {
+            "name": "sayaçsız vazgeçme",
+            "without": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "call": "AccountDeletionRepository.cancelRsvpChunk · yeniden başlatma (zaten vazgeçilmiş)",
+        "role": "member",
+        "tx": true,
+        "note": "yeniden başlatma — kayıt zaten cancelled: yalnızca kayıt okunur, etkinlik okunmaz, yazım yok",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "goingCount": 0
+          },
+          "rsvps/e01_u_member": {
+            "$fixture": "rsvp",
+            "status": "cancelled"
+          }
+        },
+        "reads": [
+          "rsvps/e01_u_member"
+        ],
+        "writes": []
+      },
+      {
+        "call": "MembershipRepository.anonymizeChunk · etkin üye + bekleyen + geçmiş (M14)",
+        "role": "member",
+        "tx": true,
+        "note": "tek transaction (≤ Limits.accountDeletionChunk = 5): her üyelik + contact okunur; active → left + applicant anonim + clubs memberCount −1, pending → cancelled + applicant, geçmiş (rejected) yalnızca applicant; her contact email / emailLower / note boşalır. Günlük, users touch ve lastMembershipRef yazılmaz (CD-137 8q).",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "clubs/c02": {
+            "$fixture": "club",
+            "name": "Test Kulübü c02",
+            "nameLower": "test kulübü c02",
+            "coverSeed": "club-c02",
+            "memberCount": 3,
+            "presidentId": "u_mgr2"
+          },
+          "clubs/c03": {
+            "$fixture": "club",
+            "name": "Test Kulübü c03",
+            "nameLower": "test kulübü c03",
+            "coverSeed": "club-c03",
+            "memberCount": 2,
+            "presidentId": "u_mgr2"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership"
+          },
+          "memberships/c01_u_member/private/contact": {
+            "$fixture": "contact"
+          },
+          "memberships/c02_u_member": {
+            "$fixture": "membership",
+            "clubId": "c02",
+            "status": "pending",
+            "decidedAt": null,
+            "decidedBy": null
+          },
+          "memberships/c02_u_member/private/contact": {
+            "$fixture": "contact"
+          },
+          "memberships/c03_u_member": {
+            "$fixture": "membership",
+            "clubId": "c03",
+            "status": "rejected",
+            "decidedBy": "u_mgr2",
+            "rejectReason": "quota",
+            "rejectNote": ""
+          },
+          "memberships/c03_u_member/private/contact": {
+            "$fixture": "contact"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_member",
+          "memberships/c01_u_member/private/contact",
+          "memberships/c02_u_member",
+          "memberships/c02_u_member/private/contact",
+          "memberships/c03_u_member",
+          "memberships/c03_u_member/private/contact"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "status": "left",
+              "applicant": {
+                "name": "Silinmiş kullanıcı",
+                "department": null,
+                "year": null,
+                "avatarSeed": "deleted"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member/private/contact",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "note": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c02_u_member",
+            "data": {
+              "status": "cancelled",
+              "applicant": {
+                "name": "Silinmiş kullanıcı",
+                "department": null,
+                "year": null,
+                "avatarSeed": "deleted"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c02_u_member/private/contact",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "note": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c03_u_member",
+            "data": {
+              "applicant": {
+                "name": "Silinmiş kullanıcı",
+                "department": null,
+                "year": null,
+                "avatarSeed": "deleted"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c03_u_member/private/contact",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "note": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_member": {
+            "status": "left",
+            "applicant": {
+              "name": "Silinmiş kullanıcı",
+              "department": null,
+              "year": null,
+              "avatarSeed": "deleted"
+            }
+          },
+          "clubs/c01": {
+            "memberCount": 3
+          },
+          "memberships/c02_u_member": {
+            "status": "cancelled"
+          },
+          "memberships/c03_u_member": {
+            "status": "rejected",
+            "applicant": {
+              "name": "Silinmiş kullanıcı",
+              "department": null,
+              "year": null,
+              "avatarSeed": "deleted"
+            }
+          },
+          "memberships/c03_u_member/private/contact": {
+            "email": "",
+            "note": ""
+          }
+        },
+        "denied": [
+          {
+            "name": "etkin (silinmemiş) hesap M14 yazamaz",
+            "seed": {
+              "users/u_member": {
+                "$fixture": "user"
+              }
+            }
+          },
+          {
+            "name": "üye sayaç −1 olmadan left olamaz",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "applicant sahte adla bırakılamaz",
+            "patch": {
+              "0": {
+                "applicant": {
+                  "name": "Test u_member",
+                  "department": null,
+                  "year": null,
+                  "avatarSeed": "deleted"
+                }
+              }
+            }
+          },
+          {
+            "name": "etkin başkan üyeliği left yapılamaz, sayacı düşüremez (önce devir — sözleşme §4 c)",
+            "seed": {
+              "memberships/c01_u_member": {
+                "role": "president"
+              }
+            }
+          },
+          {
+            "name": "contact e-postası geri yazılamaz",
+            "patch": {
+              "2": {
+                "email": "member@ogr.gumushane.edu.tr"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.anonymizeChunk · yeniden başlatma (anonim geçmiş üyelik)",
+        "role": "member",
+        "tx": true,
+        "note": "yeniden başlatma — geçmiş üyelik ve contact zaten anonim: okunur, yazım yok (idempotent)",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "clubs/c02": {
+            "$fixture": "club",
+            "name": "Test Kulübü c02",
+            "nameLower": "test kulübü c02",
+            "coverSeed": "club-c02",
+            "memberCount": 3,
+            "presidentId": "u_mgr2"
+          },
+          "clubs/c03": {
+            "$fixture": "club",
+            "name": "Test Kulübü c03",
+            "nameLower": "test kulübü c03",
+            "coverSeed": "club-c03",
+            "memberCount": 2,
+            "presidentId": "u_mgr2"
+          },
+          "memberships/c03_u_member": {
+            "$fixture": "membership",
+            "clubId": "c03",
+            "status": "rejected",
+            "decidedBy": "u_mgr2",
+            "rejectReason": "quota",
+            "rejectNote": "",
+            "applicant": {
+              "name": "Silinmiş kullanıcı",
+              "department": null,
+              "year": null,
+              "avatarSeed": "deleted"
+            }
+          },
+          "memberships/c03_u_member/private/contact": {
+            "$fixture": "contact",
+            "email": "",
+            "emailLower": "",
+            "note": ""
+          }
+        },
+        "reads": [
+          "memberships/c03_u_member",
+          "memberships/c03_u_member/private/contact"
+        ],
+        "writes": []
+      },
+      {
+        "call": "MembershipRepository.anonymizeChunk · danışman (sayaçsız left)",
+        "role": "advisor",
+        "tx": true,
+        "note": "danışman memberCount'a sayılmaz (M13): active → left + applicant, sayaç yazımı yok",
+        "seed": {
+          "users/u_advisor": {
+            "$fixture": "deletedUser",
+            "avatarSeed": "u_advisor",
+            "deletedBy": "u_advisor"
+          },
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_advisor": {
+            "$fixture": "membership",
+            "userId": "u_advisor",
+            "role": "advisor",
+            "applicant": {
+              "name": "Test u_advisor",
+              "department": "d01",
+              "year": null,
+              "avatarSeed": "u_advisor"
+            }
+          },
+          "memberships/c01_u_advisor/private/contact": {
+            "$fixture": "contact",
+            "email": "advisor@gumushane.edu.tr",
+            "emailLower": "advisor@gumushane.edu.tr"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_advisor",
+          "memberships/c01_u_advisor/private/contact"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_advisor",
+            "data": {
+              "status": "left",
+              "applicant": {
+                "name": "Silinmiş kullanıcı",
+                "department": null,
+                "year": null,
+                "avatarSeed": "deleted"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c01_u_advisor/private/contact",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "note": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_advisor": {
+            "status": "left"
+          },
+          "clubs/c01": {
+            "memberCount": 4
+          }
+        }
+      },
+      {
+        "call": "MembershipRepository.anonymizeChunk · etkin başkan (durum aynı, applicant + contact)",
+        "role": "president",
+        "tx": true,
+        "note": "güvenlik incelemesi T-29: başkanlık engelini atlayan (değiştirilmiş istemci / devir yarışı) silinmiş hesabın etkin başkan üyeliği left OLMAZ (önce devir — M11; kulübün devri W-90) ama kişisel verisi boşalır: durum active kalır, yalnızca applicant + contact anonim, sayaç yazımı yok",
+        "seed": {
+          "users/u_president": {
+            "$fixture": "deletedUser",
+            "avatarSeed": "u_president",
+            "deletedBy": "u_president"
+          },
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_president": {
+            "$fixture": "membership",
+            "userId": "u_president",
+            "role": "president",
+            "decidedBy": "u_super",
+            "applicant": {
+              "name": "Test u_president",
+              "department": "d01",
+              "year": "3",
+              "avatarSeed": "u_president"
+            }
+          },
+          "memberships/c01_u_president/private/contact": {
+            "$fixture": "contact",
+            "email": "president@ogr.gumushane.edu.tr",
+            "emailLower": "president@ogr.gumushane.edu.tr"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_president",
+          "memberships/c01_u_president/private/contact"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_president",
+            "data": {
+              "applicant": {
+                "name": "Silinmiş kullanıcı",
+                "department": null,
+                "year": null,
+                "avatarSeed": "deleted"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c01_u_president/private/contact",
+            "data": {
+              "email": "",
+              "emailLower": "",
+              "note": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_president": {
+            "status": "active",
+            "role": "president"
+          },
+          "clubs/c01": {
+            "memberCount": 4
+          }
+        },
+        "denied": [
+          {
+            "name": "etkin başkan left yapılamaz (önce devir)",
+            "patch": {
+              "0": {
+                "status": "left"
+              }
+            }
+          },
+          {
+            "name": "etkin (silinmemiş) başkan anlık görüntüsünü boşaltamaz",
+            "seed": {
+              "users/u_president": {
+                "$fixture": "user",
+                "avatarSeed": "u_president"
+              }
+            }
+          },
+          {
+            "name": "applicant sahte adla bırakılamaz",
+            "patch": {
+              "0": {
+                "applicant": {
+                  "name": "Test u_president",
+                  "department": null,
+                  "year": null,
+                  "avatarSeed": "deleted"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "AccountDeletionRepository.cancelUnreadableRsvp · ayrılınan kulübün üyelere özel etkinliği",
+        "role": "member",
+        "note": "güvenlik incelemesi T-29: etkinliği okunamayan açık kayıt (M8 katılımı iptal etmez; üyelere özel etkinlik ayrılan üyeye kapalı) etkinlik OKUNMADAN vazgeçilir — tek batch: going → cancelled + goingCount −1 (sayaç kaydın durumundan). Rules canCancelRsvp okuma izni istemez; bitmiş etkinlikte reddeder (W-80 — repository reddi başarı sayar, kayıt korunur)",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "status": "left"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "visibility": "members"
+          },
+          "rsvps/e01_u_member": {
+            "$fixture": "rsvp"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_member",
+            "data": {
+              "status": "cancelled",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_member": {
+            "status": "cancelled"
+          },
+          "events/e01": {
+            "goingCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "bitmiş etkinlikte okumasız vazgeçme de reddedilir (W-80)",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:3",
+                "endsAt": "@daysAgo:2"
+              }
+            }
+          },
+          {
+            "name": "sayaçsız vazgeçme",
+            "without": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "call": "AccountDeletionRepository.softDeletePersonalChunk · bildirim + kayıt + engel",
+        "role": "member",
+        "note": "tek batch (≤ Limits.batchMaxWrites): kişisel belgeler SoftDelete.payload ile soft delete; restore ve oluşturma silinmiş hesaba kapalı",
+        "seed": {
+          "users/u_member": {
+            "$fixture": "deletedUser"
+          },
+          "notifications/n_del01": {
+            "$fixture": "notification"
+          },
+          "savedPosts/u_member_p01": {
+            "$fixture": "saved"
+          },
+          "blocks/u_member_u_student": {
+            "$fixture": "block"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "notifications/n_del01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "savedPosts/u_member_p01",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "blocks/u_member_u_student",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "notifications/n_del01": {
+            "isDeleted": true
+          },
+          "savedPosts/u_member_p01": {
+            "isDeleted": true
+          },
+          "blocks/u_member_u_student": {
+            "isDeleted": true,
+            "deletedBy": "u_member"
+          }
+        },
+        "denied": [
+          {
+            "name": "başkası adına (deletedBy) soft delete",
+            "patch": {
+              "1": {
+                "deletedBy": "u_student"
+              }
+            }
+          },
+          {
+            "name": "engel silinmiş hesapça soft delete dışında değiştirilemez",
+            "patch": {
+              "2": {
+                "blockedId": "u_board"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "sequenceSeed": {
+      "users/u_member": {
+        "$fixture": "user"
+      },
+      "users/u_member/private/account": {
+        "$fixture": "account"
+      },
+      "events/e01": {
+        "$fixture": "event"
+      },
+      "rsvps/e01_u_member": {
+        "$fixture": "rsvp"
+      },
+      "events/e02": {
+        "$fixture": "event",
+        "title": "Dolu etkinlik",
+        "coverSeed": "event-e02",
+        "capacity": 1,
+        "waitlistCount": 1
+      },
+      "rsvps/e02_u_member": {
+        "$fixture": "rsvp",
+        "eventId": "e02",
+        "status": "waitlist",
+        "ticketCode": "GU-AAAA-AAAC",
+        "waitlistAt": "@daysAgo:1"
+      },
+      "clubs/c01": {
+        "$fixture": "club"
+      },
+      "clubs/c02": {
+        "$fixture": "club",
+        "name": "Test Kulübü c02",
+        "nameLower": "test kulübü c02",
+        "coverSeed": "club-c02",
+        "memberCount": 3,
+        "presidentId": "u_mgr2"
+      },
+      "clubs/c03": {
+        "$fixture": "club",
+        "name": "Test Kulübü c03",
+        "nameLower": "test kulübü c03",
+        "coverSeed": "club-c03",
+        "memberCount": 2,
+        "presidentId": "u_mgr2"
+      },
+      "memberships/c01_u_member": {
+        "$fixture": "membership"
+      },
+      "memberships/c01_u_member/private/contact": {
+        "$fixture": "contact"
+      },
+      "memberships/c02_u_member": {
+        "$fixture": "membership",
+        "clubId": "c02",
+        "status": "pending",
+        "decidedAt": null,
+        "decidedBy": null
+      },
+      "memberships/c02_u_member/private/contact": {
+        "$fixture": "contact"
+      },
+      "memberships/c03_u_member": {
+        "$fixture": "membership",
+        "clubId": "c03",
+        "status": "rejected",
+        "decidedBy": "u_mgr2",
+        "rejectReason": "quota",
+        "rejectNote": ""
+      },
+      "memberships/c03_u_member/private/contact": {
+        "$fixture": "contact"
+      },
+      "notifications/n_del01": {
+        "$fixture": "notification"
+      },
+      "savedPosts/u_member_p01": {
+        "$fixture": "saved"
+      },
+      "blocks/u_member_u_student": {
+        "$fixture": "block"
+      }
+    },
+    "sequence": [
+      "AccountDeletionRepository.markDeleted",
+      "AccountDeletionRepository.cancelRsvpChunk · going + waitlist",
+      "MembershipRepository.anonymizeChunk · etkin üye + bekleyen + geçmiş (M14)",
+      "AccountDeletionRepository.markDeleted · zaten silinmiş (yeniden başlatma)",
+      "AccountDeletionRepository.cancelRsvpChunk · yeniden başlatma (zaten vazgeçilmiş)",
+      "MembershipRepository.anonymizeChunk · yeniden başlatma (anonim geçmiş üyelik)",
+      "AccountDeletionRepository.softDeletePersonalChunk · bildirim + kayıt + engel"
+    ],
+    "restartAt": 3
   }
 }

@@ -75,8 +75,6 @@ mixin SettingsViewMixin
   /// AUT-01'e taşır.
   Future<void> logout() => confirmSignOut();
 
-  /// "Hesabı sil" (`SET-01.delete`) → SET-03.
-  void openDeleteAccount() {
-    // TODO(T-29): `const DeleteAccountRoute().go(context)` (SET-03).
-  }
+  /// "Hesabı sil" (`SET-01.delete`) → SET-03 (W-33).
+  void openDeleteAccount() => const DeleteAccountRoute().go(context);
 }
