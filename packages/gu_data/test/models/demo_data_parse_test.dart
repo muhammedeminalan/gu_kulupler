@@ -609,7 +609,6 @@ void main() {
           reason: id,
         );
       }
-      expect(e03.lastRsvpRef, isNull);
       expect(e03.coverPath, isNull);
       expect(event('e22').status, EventStatus.draft);
       expect(event('e22').publishedAt, isNull);

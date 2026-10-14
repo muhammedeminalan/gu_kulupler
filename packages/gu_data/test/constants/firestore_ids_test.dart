@@ -395,7 +395,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 20 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 21 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -419,6 +419,8 @@ void main() {
         'vote',
         // T-19 · gönderi günlüğü kimliği ve sayaç işaretçileri (CD-141)
         'postActivity',
+        // T-22 · etkinlik yayın / iptal günlüğü kimliği
+        'eventActivity',
         'commentRef',
         'postRef',
         'clubCoverSeed',
@@ -446,6 +448,16 @@ void main() {
       );
       expect(FirestoreIds.commentRef('cm01'), 'comments/cm01');
       expect(FirestoreIds.postRef('p01'), 'posts/p01');
+    });
+  });
+
+  group('T-22 · FirestoreIds · etkinlik günlüğü', () {
+    test('eventActivity = {clubId}_{actorId}_{kind}_{eventId} (Security Rules '
+        'aynı dizgiyi kurar)', () {
+      expect(
+        FirestoreIds.eventActivity('c01', 'u_board', 'event_published', 'e03'),
+        'c01_u_board_event_published_e03',
+      );
     });
   });
 

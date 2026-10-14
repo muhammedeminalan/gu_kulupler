@@ -68,6 +68,14 @@ mixin ProjectDependencyMixin {
   AnnouncementCounterRepository get announcementCounterRepository =>
       GetIt.I<AnnouncementCounterRepository>();
 
+  /// Etkinlikler: taslak / yayın / yayından çekme / iptal, kopyala, kapak,
+  /// liste sorguları (T-22).
+  EventRepository get eventRepository => GetIt.I<EventRepository>();
+
+  /// Katılım kayıtları (katılımcı tarafı): katıl / bekleme listesi, vazgeç,
+  /// hatırlatma, bilet (T-22).
+  RsvpRepository get rsvpRepository => GetIt.I<RsvpRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

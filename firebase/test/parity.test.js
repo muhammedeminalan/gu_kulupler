@@ -310,13 +310,21 @@ describe('parite (g) · enum değerleri ↔ Rules değer listeleri (T-15)', () =
     expect(membershipStatuses.sort()).toEqual(['active', 'cancelled', 'left', 'pending', 'rejected', 'removed']);
     expect(clubRoles.sort()).toEqual(['advisor', 'board', 'member', 'president']);
 
-    const statuses = [...membershipStatuses, ...['club_status.dart', 'user_status.dart', 'report_status.dart'].flatMap(enumValues)];
+    // T-22: + EventStatus (draft / published / cancelled) ve RsvpStatus (going / waitlist / attended / cancelled).
+    const statuses = [
+      ...membershipStatuses,
+      ...['club_status.dart', 'user_status.dart', 'report_status.dart', 'event_status.dart', 'rsvp_status.dart'].flatMap(enumValues),
+    ];
     const used = { status: literalsOf('status'), role: literalsOf('role'), kind: literalsOf('kind') };
     expect(used.status).toEqual(expect.arrayContaining([...membershipStatuses, 'open']));
     for (const value of used.status) expect([value, statuses.includes(value)]).toEqual([value, true]);
     expect(used.role.sort()).toEqual(clubRoles);
-    // T-15: kendi üyelik geçişi · T-19: gönderi yayını (`post_created`, `announcement`, `poll`).
-    expect(used.kind.sort()).toEqual(['announcement', 'application_received', 'member_joined', 'member_left', 'poll', 'post_created']);
+    // T-15: kendi üyelik geçişi · T-19: gönderi yayını (`post_created`, `announcement`, `poll`) ·
+    // T-22: etkinlik yayını / iptali (`event_published`, `event_cancelled`).
+    expect(used.kind.sort()).toEqual([
+      'announcement', 'application_received', 'event_cancelled', 'event_published', 'member_joined', 'member_left', 'poll', 'post_created',
+    ]);
+    expect(used.status).toEqual(expect.arrayContaining([...enumValues('event_status.dart'), ...enumValues('rsvp_status.dart')]));
     for (const value of used.kind) expect([value, enumValues('activity_kind.dart').includes(value)]).toEqual([value, true]);
   });
 });
@@ -349,6 +357,77 @@ describe('parite (g) · enum değerleri ve desenler ↔ Rules (T-19)', () => {
     const ids = Array.from({ length: limits.ints.pollOptionsMax }, (_, i) => `o${i + 1}`);
     expect(firestoreRules).toContain(`d.optionId in [${ids.map((id) => `'${id}'`).join(', ')}][0:p.poll.options.size()]`);
     expect([...firestoreRules.matchAll(/optionHeadOk\(\w+, '(o\d)'\)/g)].map((m) => m[1])).toEqual(ids);
+  });
+});
+
+describe('parite (g) · enum değerleri, desenler ve alan beyaz listeleri ↔ Rules (T-22)', () => {
+  const SRC = path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src');
+  const readDart = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
+  const enumValues = (file) => [...readDart(`models/enums/${file}`).matchAll(/^\s+\w+\('([^']+)'[,)]/gm)].map((m) => m[1]);
+  const quoted = (source) => [...source.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  /** Rules'ta `anchor` ifadesinden sonraki ilk `[ … ]` listesinin dizgi elemanları. */
+  const listAfter = (anchor) => {
+    const at = firestoreRules.indexOf(anchor);
+    if (at < 0) throw new Error(`firestore.rules: "${anchor}" bulunamadı`);
+    const open = firestoreRules.indexOf('[', at);
+    return quoted(firestoreRules.slice(open, firestoreRules.indexOf(']', open)));
+  };
+  /** Modelin Firestore'a yazdığı anahtarlar: `@JsonKey(name: FirestoreFields.x)` → sabitin tel değeri. */
+  const modelKeys = (rel) => {
+    const fields = Object.fromEntries([...readDart('constants/firestore_fields.dart').matchAll(/static const String (\w+) = '([^']+)';/g)].map((m) => [m[1], m[2]]));
+    return [...readDart(rel).matchAll(/@JsonKey\(name: FirestoreFields\.(\w+)\)/g)].map((m) => fields[m[1]]);
+  };
+
+  test.each([
+    ['events.type', '// EventType (5)', 'event_type.dart', 5],
+    ['events.visibility', '// EventVisibility (2)', 'event_visibility.dart', 2],
+    ['events.coverPalette', '// ClubPalette (3)', 'club_palette.dart', 3],
+    ['events.coverPattern', '// ClubPattern (4)', 'club_pattern.dart', 4],
+    ['rsvps.reminder (CD-34)', '// ReminderOption (4', 'reminder_option.dart', 4],
+  ])('%s değer listesi = Dart enum değerleri', (_field, anchor, file, count) => {
+    const values = enumValues(file);
+    expect(values).toHaveLength(count);
+    expect(listAfter(anchor)).toEqual(values);
+  });
+
+  test('rsvps.ticketCode deseni = FirestoreIds.ticketCodePattern (Rules `matches` tüm dizgiyi eşler)', () => {
+    const pattern = /static const String ticketCodePattern =\s*r'\^([^']+)\$'/.exec(readDart('constants/firestore_ids.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`c.matches('${dart.toRulesLiteral(pattern[1])}')`);
+  });
+
+  test('events.coverPath deseni = events/{eventId}/ + StoragePaths.fileNamePattern (CD-47); kimlik deseni Storage ile aynı', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`d.coverPath.matches('events/' + eventId + '/${dart.toRulesLiteral(pattern[1])}')`);
+    expect(firestoreRules).toContain("&& eventId.matches('[A-Za-z0-9_-]+')");
+    expect(storageRules).toContain("&& eventId.matches('[A-Za-z0-9_-]+') && clubMetadataOnly()");
+  });
+
+  test('events.placeId deseni StaticTables.places kimliklerinin tamamını kabul eder (10)', () => {
+    const ids = [...readDart('constants/static_tables.dart').matchAll(/PlaceModel\(id: '([^']+)'/g)].map((m) => m[1]);
+    expect(ids).toHaveLength(10);
+    const literal = /d\.placeId\.matches\('([^']*)'\)/.exec(firestoreRules);
+    expect(literal).not.toBeNull();
+    const full = new RegExp(`^(?:${literal[1]})$`);
+    for (const id of ids) expect([id, full.test(id)]).toEqual([id, true]);
+    for (const other of ['pl1', 'pl001', 'p01', 'PL01', '']) expect([other, full.test(other)]).toEqual([other, false]);
+  });
+
+  // Modele alan eklenip Rules beyaz listesi eski kalırsa üretimde her oluşturma `permission-denied` olur.
+  test('create beyaz listeleri = modelin yazdığı anahtarlar (events: lastRsvpRef modelde de YOK — W-64)', () => {
+    const sorted = (keys) => [...new Set(keys)].sort();
+    const eventKeys = sorted(modelKeys('models/event_model.dart'));
+    // W-64: işaretçi etkinlik modelinden kaldırıldı (T-22 bağlama); model onu okumaz da yazmaz da.
+    expect(eventKeys).not.toContain('lastRsvpRef');
+    expect(eventKeys).toHaveLength(28);
+    expect(sorted(listAfter('function canCreateEvent()'))).toEqual(eventKeys);
+    expect(sorted(listAfter('function canJoin()'))).toEqual(sorted(modelKeys('models/rsvp_model.dart')));
+    // İşaretçi yalnızca yan belgededir (`events/{id}/private/counter`); alan sabiti ve şeması onu yazan T-30'da eklenir.
+    expect(listAfter('function canPointCounter()')).toEqual(['clubId', 'lastRsvpRef', 'updatedAt']);
+    expect(firestoreRules.match(/lastRsvpRef/g).length).toBeGreaterThan(0);
+    const eventBlock = firestoreRules.slice(firestoreRules.indexOf('match /events/{eventId} {'), firestoreRules.indexOf('match /private/{docId} {', firestoreRules.indexOf('match /events/{eventId} {')));
+    expect(eventBlock.replace(/\/\/[^\n]*/g, '')).not.toMatch(/'lastRsvpRef'/);
   });
 });
 

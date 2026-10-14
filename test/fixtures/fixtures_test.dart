@@ -11,6 +11,7 @@ import 'demo_data.dart';
 import 'event_model_fixtures.dart';
 import 'membership_model_fixtures.dart';
 import 'post_model_fixtures.dart';
+import 'rsvp_model_fixtures.dart';
 import 'user_model_fixtures.dart';
 
 void main() {
@@ -108,6 +109,85 @@ void main() {
         expect(feed[i - 1].createdAt!.isBefore(feed[i].createdAt!), isFalse);
       }
       expect(() => CommentModelFixtures.byId('yok'), throwsArgumentError);
+    });
+
+    test('T-22 · etkinlik ve katılım fixture’ları birbirine bağlıdır: '
+        'sayaçlar = kayıt sayıları, kontenjan aşılmaz, bekleme listesi '
+        'waitlistAt sırasıyla, kayıt yolu etkinlikte tutulmaz (W-64)', () {
+      for (final event in EventModelFixtures.all()) {
+        final rsvps = RsvpModelFixtures.ofEvent(event.id);
+        int count(Set<RsvpStatus> statuses) =>
+            rsvps.where((rsvp) => statuses.contains(rsvp.status)).length;
+        expect(
+          (event.goingCount, event.waitlistCount, event.attendedCount),
+          (
+            count({RsvpStatus.going, RsvpStatus.attended}),
+            count({RsvpStatus.waitlist}),
+            count({RsvpStatus.attended}),
+          ),
+          reason: event.id,
+        );
+        expect(
+          event.goingCount,
+          lessThanOrEqualTo(event.capacity ?? event.goingCount),
+          reason: event.id,
+        );
+        expect(
+          rsvps.every((rsvp) => rsvp.clubId == event.clubId),
+          isTrue,
+          reason: event.id,
+        );
+        expect(event.toJson(), isNot(contains('lastRsvpRef')));
+      }
+
+      final e03 = EventModelFixtures.e03;
+      expect((e03.isFull, e03.waitlistCount), (true, 4));
+      final waitlist = RsvpModelFixtures.ofEvent(
+        e03.id,
+      ).where((rsvp) => rsvp.status == RsvpStatus.waitlist).toList();
+      expect(waitlist, hasLength(4));
+      for (var i = 1; i < waitlist.length; i++) {
+        expect(
+          waitlist[i - 1].waitlistAt!.isBefore(waitlist[i].waitlistAt!),
+          isTrue,
+        );
+      }
+      expect(EventModelFixtures.e02.visibility, EventVisibility.membersOnly);
+      expect(EventModelFixtures.e21.status, EventStatus.cancelled);
+      expect(EventModelFixtures.e21.cancelReason, isNotEmpty);
+      expect(
+        (EventModelFixtures.e22.status, EventModelFixtures.e22.publishedAt),
+        (EventStatus.draft, null),
+      );
+      expect(EventModelFixtures.e19.attendedCount, 34);
+      expect(
+        EventModelFixtures.ofClub('c01').map((event) => event.clubId).toSet(),
+        {'c01'},
+      );
+
+      expect(
+        RsvpModelFixtures.ofUser('u_mehmet').map((rsvp) => rsvp.id),
+        unorderedEquals([
+          'e01_u_mehmet',
+          'e08_u_mehmet',
+          'e18_u_mehmet',
+          'e20_u_mehmet',
+        ]),
+      );
+      expect(RsvpModelFixtures.e01Mehmet.status, RsvpStatus.going);
+      // Prototipte anı olmayan bekleyen kayıt oluşturulduğu anda girmiş
+      // sayılır (seed dönüşümü).
+      expect(
+        RsvpModelFixtures.e08Mehmet.waitlistAt,
+        RsvpModelFixtures.e08Mehmet.createdAt,
+      );
+      expect(RsvpModelFixtures.e18Mehmet.status, RsvpStatus.attended);
+      expect(RsvpModelFixtures.e18Mehmet.scannedBy, isNotNull);
+      expect(
+        RsvpModelFixtures.e01Mehmet.ticketCode,
+        matches(FirestoreIds.ticketCodePattern),
+      );
+      expect(() => RsvpModelFixtures.byId('yok'), throwsArgumentError);
     });
   });
 }

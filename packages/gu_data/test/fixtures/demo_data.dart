@@ -540,7 +540,6 @@ final class _Converter {
               _rsvpCount(eventId, 'going') + _rsvpCount(eventId, 'attended'),
           'waitlistCount': _rsvpCount(eventId, 'waitlist'),
           'attendedCount': _rsvpCount(eventId, 'attended'),
-          'lastRsvpRef': null,
           'publishedAt': event['status'] == 'draft' ? null : _stamp(createdAt),
           ..._base(createdAt),
         };
@@ -565,7 +564,15 @@ final class _Converter {
           'status': rsvp['status'],
           'reminder': rsvp['reminder'],
           'ticketCode': rsvp['ticketCode'],
-          'waitlistAt': _stamp(_time(rsvp, 'waitlistAt')),
+          // Bekleme listesindeki kaydın sırası `waitlistAt`'tan okunur (T-22):
+          // prototipte anı olmayan bekleyen kayıt oluşturulduğu anda girmiş
+          // sayılır.
+          'waitlistAt': _stamp(
+            _time(rsvp, 'waitlistAt') ??
+                (rsvp['status'] == 'waitlist'
+                    ? _time(rsvp, 'createdAt')
+                    : null),
+          ),
           'scannedAt': _stamp(scannedAt),
           'scannedBy': scannedAt == null
               ? null

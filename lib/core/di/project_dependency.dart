@@ -184,6 +184,23 @@ abstract final class ProjectDependency {
       appClock,
     );
     final savedPostRepository = FirebaseSavedPostRepository(firestoreService);
+    // T-22 · etkinlik ve katılım. Yayın / iptal günlük kaydı asıl yazımla aynı
+    // işlemde yazılır (kayıtlı günlük repository'si paylaşılır); kapak
+    // görseli repository metoduyla yüklenir, dosya adının ve bilet kodunun
+    // rastgele kısmı kriptografik kaynaktan gelir. Bildirim dağıtımı burada
+    // yapılmaz (T-30 — PLAN §10.5).
+    final eventRepository = FirebaseEventRepository(
+      firestoreService,
+      storageService,
+      activityRepository,
+      appClock,
+      Random.secure(),
+    );
+    final rsvpRepository = FirebaseRsvpRepository(
+      firestoreService,
+      SecureTicketCodeGenerator(),
+      appClock,
+    );
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -216,6 +233,9 @@ abstract final class ProjectDependency {
       ..registerSingleton<AnnouncementCounterRepository>(
         announcementCounterRepository,
       )
+      // T-22 · etkinlik ve katılım repository'leri
+      ..registerSingleton<EventRepository>(eventRepository)
+      ..registerSingleton<RsvpRepository>(rsvpRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

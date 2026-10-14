@@ -324,7 +324,6 @@ function convert(raw, { now, randomHex }) {
       goingCount: rsvpCount(eventId, 'going') + rsvpCount(eventId, 'attended'),
       waitlistCount: rsvpCount(eventId, 'waitlist'),
       attendedCount: rsvpCount(eventId, 'attended'),
-      lastRsvpRef: null,
       publishedAt: event.status === 'draft' ? null : createdAt,
       ...base(createdAt),
     };
@@ -340,7 +339,9 @@ function convert(raw, { now, randomHex }) {
       status: rsvp.status,
       reminder: orNull(rsvp.reminder),
       ticketCode: orNull(rsvp.ticketCode),
-      waitlistAt: time(rsvp, 'waitlistAt'),
+      // Bekleme sırası `waitlistAt`'tan okunur (T-22): prototipte anı olmayan bekleyen kayıt oluşturulduğu anda
+      // girmiş sayılır.
+      waitlistAt: time(rsvp, 'waitlistAt') ?? (rsvp.status === 'waitlist' ? time(rsvp, 'createdAt') : null),
       scannedAt,
       scannedBy: scannedAt === null ? null : clubs[clubId].presidentId,
       ...base(time(rsvp, 'createdAt')),
@@ -564,6 +565,23 @@ function validate(docs, { announcementDailyLimit }) {
   }
   for (const [id, rsvp] of Object.entries(docs.rsvps)) {
     if (!TICKET_CODE.test(rsvp.ticketCode || '')) problems.push(`rsvps/${id}: ticketCode biçimi geçersiz`);
+    // T-22 · Rules'un katılım biçimi (firestore.rules `rsvps`): kimlik `{eventId}_{userId}`, kulüp etkinliğin
+    // kulübü; bekleyen kaydın sırası `waitlistAt`'tadır; yoklaması alınmış kayıt `scannedAt` + `scannedBy` taşır.
+    if (id !== `${rsvp.eventId}_${rsvp.userId}` || docs.events[rsvp.eventId]?.clubId !== rsvp.clubId) {
+      problems.push(`rsvps/${id}: kimlik ya da clubId tutarsız`);
+    }
+    if (rsvp.status === 'waitlist' && rsvp.waitlistAt === null) problems.push(`rsvps/${id}: bekleyen kaydın waitlistAt'i yok`);
+    if ((rsvp.status === 'attended') !== (rsvp.scannedAt !== null && rsvp.scannedBy !== null)) {
+      problems.push(`rsvps/${id}: yoklama alanları durumla tutarsız`);
+    }
+  }
+  for (const [eventId, event] of Object.entries(docs.events)) {
+    // Rules sayaç dalı: kayıtlı kontenjanı aşamaz; yalnızca yayındaki / iptal edilmiş etkinlikte kayıt olur.
+    if (event.capacity !== null && event.goingCount > event.capacity) {
+      problems.push(`events/${eventId}: goingCount ${event.goingCount} > capacity ${event.capacity}`);
+    }
+    if (event.status === 'draft' && event.goingCount + event.waitlistCount > 0) problems.push(`events/${eventId}: taslakta kayıt var`);
+    if (event.coverSeed !== `event-${eventId}`) problems.push(`events/${eventId}: coverSeed event-${eventId} değil`);
   }
   for (const [id, report] of Object.entries(docs.reports)) {
     if (id !== `${report.reporterId}_${report.targetType}_${report.targetId}`) problems.push(`reports/${id}: kimlik biçimi geçersiz`);

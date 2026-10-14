@@ -2,7 +2,8 @@
 // T-15 — sayaç tutarlılığı: `clubs.memberCount` (rules-spec §4; PLAN §11.2b `canBumpMemberCount`, CD-41).
 // T-19 — `posts.likeCount` (aynı belgedeki `likes` dizisi) ve `posts.commentCount` (+ `lastCommentRef`
 // işaretçisi; iki yönlü bağ) dosyanın sonundadır; `announcementCounters.count` → `announcement_limit.test.js`.
-// T-22 (`goingCount`, `waitlistCount`, `attendedCount`) kendi `describe` bloklarını bu dosyaya ekler.
+// T-22 — `events.goingCount` / `waitlistCount` / `attendedCount` dosyanın sonundadır: kendi dalı (yol oturumdan
+// türetilir) ve yönetici dalı (işaretçi `events/{id}/private/counter` yan belgesinde — W-64).
 //
 // İki yönlü doğrulama: üyelik dalı `counterDelta` ile sayacın aynı batch'te tam ±1 oynadığını, kulüp
 // dalı oturumun BU kulüpteki üyeliğinin (`memberships/{clubId}_{uid}`) aynı batch'te doğru geçişi
@@ -18,7 +19,7 @@ const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { arrayUnion, doc, getDoc, increment, serverTimestamp, updateDoc } = require('firebase/firestore');
 const budget = require('../helpers/budget');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
-const { readDoc, seedFixture } = require('../helpers/fixtures');
+const { readDoc, seedDocs, seedFixture } = require('../helpers/fixtures');
 const payloads = require('../helpers/payloads');
 
 const STUDENT = 'u_student';
@@ -310,5 +311,204 @@ describe('commentCount · yorum ekleme / silme / geri alma', () => {
     await assertSucceeds(updateDoc(doc(db, 'comments/cm01'), payloads.hidePayload('u_super')));
     expect(await readDoc('posts/p01')).toMatchObject({ commentCount: 1, lastCommentRef: null });
     await assertFails(updateDoc(doc(db, 'comments/cm02'), { ...payloads.hidePayload('u_super'), hiddenAt: serverTimestamp(), text: 'x' }));
+  });
+});
+
+// ── T-22 · events.goingCount / waitlistCount (kendi dalı) ───────────────────────────────────────
+// İki yönlü bağ (sözleşme §6.4): katılım kuralı etkinliğin üç sayacının İŞLEMİN TAMAMINDA tam beklenen kadar
+// oynadığını (`get` ↔ `getAfter`), etkinliğin sayaç dalı oturumun BU etkinlikteki kaydının
+// (`rsvps/{eventId}_{uid}`) aynı işlemde doğru geçişi yaptığını görür. Yol oturumdan türetilir; etkinlik
+// belgesine YAZILMAZ (W-64). `e_public`: yayında, 2 kayıtlı (u_member, u_susp), kontenjan 40.
+describe('goingCount / waitlistCount · katılım ve vazgeçme (kendi dalı)', () => {
+  const E = 'events/e_public';
+  const R = payloads.rsvpPath('e_public', STUDENT);
+  const R_MEMBER = payloads.rsvpPath('e_public', MEMBER);
+  const FULL = { patch: { [E]: { capacity: 2 } } };
+  const joinEvent = (options) => payloads.rsvpJoinWrites({ club: CLUB, uid: STUDENT, ...options });
+  const cancelOwn = (options) => payloads.rsvpCancelWrites({ uid: MEMBER, ...options });
+  const eventWrite = (data, path = E) => ({ op: 'update', path, data });
+  const bumps = (deltas, extra) => eventWrite(payloads.eventCountersBump(deltas, extra));
+  const counts = async (path = E) => {
+    const { goingCount, waitlistCount, attendedCount } = await readDoc(path);
+    return [goingCount, waitlistCount, attendedCount];
+  };
+
+  test('rsvp create + goingCount +1 tek batch geçer; etkinlik belgesi katılanın kimliğini taşımaz (W-64)', async () => {
+    await seedFixture('base');
+    await assertSucceeds(commit('student', joinEvent()));
+    await assertSucceeds(commit('member', cancelOwn()));
+    expect(await counts()).toEqual([2, 0, 0]);
+    expect((await readDoc(E)).updatedAt.toMillis()).toBe((await readDoc(R_MEMBER)).updatedAt.toMillis());
+
+    // Etkinliği doğrulanmış herkes okur — burada c01'de üyeliği olmayan başka kulüp yöneticisi.
+    const event = (await assertSucceeds(getDoc(doc(contextFor('otherManager').firestore(), E)))).data();
+    expect(event).not.toHaveProperty('lastRsvpRef');
+    const serialized = JSON.stringify(event);
+    for (const uid of [STUDENT, MEMBER]) expect(serialized).not.toContain(uid);
+    // Aynı bağlam o katılım kayıtlarını da okuyamaz.
+    await assertFails(getDoc(doc(contextFor('otherManager').firestore(), R)));
+  });
+
+  // KONTENJAN (W-51 iki biçim): anahtarsız ve açık null kontenjan sınırsızdır; dolu etkinlikte kayıtlı artmaz.
+  test.each([
+    ['kontenjan anahtarı yok (istemci biçimi) → sınırsız', { unset: { [E]: ['capacity'] } }, 'going', 'allow'],
+    ['kontenjan açık null (seed biçimi) → sınırsız', { patch: { [E]: { capacity: null } } }, 'going', 'allow'],
+    ['kontenjan dolu (2 / 2) → kayıtlı artamaz (goingCount <= capacity)', FULL, 'going', 'deny'],
+    ['kontenjan aşılmış (bozuk veri 2 / 1) → kayıtlı artamaz', { patch: { [E]: { capacity: 1 } } }, 'going', 'deny'],
+    ['kontenjan dolu → bekleyen +1', FULL, 'waitlist', 'allow'],
+    ['yer varken bekleyen +1', NO_EDIT, 'waitlist', 'deny'],
+  ])('%s → %s', async (_title, edit, status, expected) => {
+    await seedFixture('base', undefined, edit);
+    await expectWrite(commit('student', joinEvent({ status })), expected);
+    const moved = expected === 'allow' ? (status === 'going' ? [3, 0, 0] : [2, 1, 0]) : [2, 0, 0];
+    expect(await counts()).toEqual(moved);
+  });
+
+  // Satır: [başlık, bağlam, yazımlar, veri düzenlemesi?]. Taban: öğrencinin katılımı / üyenin vazgeçmesi.
+  test.each([
+    ['katılım kaydı olmadan goingCount +1', 'student', () => ({ event: joinEvent().event })],
+    ['sayaç yazımı olmayan katılım', 'student', () => ({ rsvp: joinEvent().rsvp })],
+    ['delta +2', 'student', () => ({ ...joinEvent(), event: bumps({ going: 2 }) })],
+    ['mutlak değer (goingCount: 100)', 'student', () => ({ ...joinEvent(), event: eventWrite({ goingCount: 100, ...payloads.baseUpdate() }) })],
+    ['ters yön: katılırken −1', 'student', () => ({ ...joinEvent(), event: bumps({ going: -1 }) })],
+    ['yanlış sayaç: going kayıt, waitlistCount +1', 'student', () => ({ ...joinEvent(), event: bumps({ waitlist: 1 }) }), FULL],
+    ['yanlış sayaç: waitlist kayıt, goingCount +1', 'student', () => ({ ...joinEvent({ status: 'waitlist' }), event: bumps({ going: 1 }) }), FULL],
+    ['iki sayaç birden (+1, +1, 0)', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1, waitlist: 1 }) })],
+    ['katılırken attendedCount +1 (kendi yoklaması)', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1, attended: 1 }) })],
+    ['kendi dalında terfi bileşimi (+1, −1, 0)', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1, waitlist: -1 }) }), { patch: { [E]: { waitlistCount: 1 } } }],
+    ['aynı batch\'te sayaç iki kez (+1, +1)', 'student', () => ({ ...joinEvent(), again: bumps({ going: 1 }) })],
+    ['sayaçla birlikte lastRsvpRef (katılım yolu herkese açık belgeye yazılamaz — W-64)', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1 }, { lastRsvpRef: R }) })],
+    ['sayaçla birlikte başka alan (title)', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1 }, { title: 'x' }) })],
+    ['sayaçla birlikte kontenjan artırma', 'student', () => ({ ...joinEvent(), event: bumps({ going: 1 }, { capacity: 100 }) }), FULL],
+    ['sayaç updatedAt taşımıyor', 'student', () => ({ ...joinEvent(), event: eventWrite({ goingCount: increment(1) }) })],
+    ['kayıt e_public\'e, sayaç e_members\'a', 'student', () => ({ rsvp: joinEvent().rsvp, event: eventWrite(payloads.eventCountersBump({ going: 1 }), 'events/e_members') })],
+    ['başka etkinliğin sayacı da oynatılıyor (e_members\'ta katılım yok)', 'student', () => ({ ...joinEvent(), other: eventWrite(payloads.eventCountersBump({ going: 1 }), 'events/e_members') })],
+    ['başkasının katılımıyla sayaç: üye, öğrencinin kaydını yazamaz', 'member', () => joinEvent()],
+    ['vazgeçmeden goingCount −1', 'member', () => ({ event: cancelOwn().event })],
+    ['sayaçsız vazgeçme', 'member', () => ({ rsvp: cancelOwn().rsvp })],
+    ['vazgeçerken +1', 'member', () => ({ ...cancelOwn(), event: bumps({ going: 1 }) })],
+    ['vazgeçerken yanlış sayaç (waitlistCount −1)', 'member', () => ({ ...cancelOwn(), event: bumps({ waitlist: -1 }) }), { patch: { [E]: { waitlistCount: 1 } } }],
+    ['vazgeçerken delta −2', 'member', () => ({ ...cancelOwn(), event: bumps({ going: -2 }) })],
+    ['başkasının kaydından vazgeçme (yönetici, sayaçla birlikte)', 'board', () => cancelOwn()],
+    ['yönetici, katılım kaydı olmadan goingCount −1', 'board', () => ({ event: cancelOwn().event })],
+    ['süper admin, katılım kaydı olmadan goingCount +1', 'super', () => ({ event: joinEvent().event })],
+  ])('%s → deny', async (_title, role, build, edit = NO_EDIT) => {
+    const seeded = await seedFixture('base', undefined, edit);
+    await assertFails(commit(role, build()));
+    expect(await counts()).toEqual([seeded[E].goingCount, seeded[E].waitlistCount, 0]);
+    expect(await counts('events/e_members')).toEqual([0, 0, 0]);
+    expect(await readDoc(R)).toBeNull();
+    expect((await readDoc(R_MEMBER)).status).toBe('going');
+  });
+
+  test('aynı işlemde vazgeç + yeniden katıl (net 0) ve çift vazgeçme reddedilir; sayaç sıfırın altına inemez', async () => {
+    await seedFixture('base');
+    const rejoin = payloads.rsvpRejoinWrites({ uid: MEMBER });
+    await assertFails(commit('member', { ...cancelOwn(), r2: rejoin.rsvp, e2: rejoin.event }));
+    await assertFails(commit('member', { ...cancelOwn(), e2: cancelOwn().event }));
+    expect(await counts()).toEqual([2, 0, 0]);
+
+    // Bozuk sayaç (0 kayıtlı görünür): vazgeçme sayacı eksiye düşüremez.
+    await seedFixture('base', undefined, { patch: { [E]: { goingCount: 0 } } });
+    await assertFails(commit('member', cancelOwn()));
+    expect((await readDoc(R_MEMBER)).status).toBe('going');
+  });
+});
+
+// ── T-22 · events.attendedCount ve terfi (yönetici dalı; yazan repository T-30) ─────────────────
+// Aktör kaydın sahibi değildir: eşlik eden kayıt, AYNI işlemde yazılan yan belgenin
+// (`events/{id}/private/counter`) işaretçisinden okunur. `e_live`: süren etkinlik, kontenjan 3,
+// sayaçlar (2, 1, 1) — u_member going, u_board attended, u_student waitlist.
+describe('attendedCount / terfi · yönetici dalı (işaretçi yan belgede — W-64)', () => {
+  const E = 'events/e_live';
+  const SIDE = payloads.eventCounterPath('e_live');
+  const R_MEMBER = payloads.rsvpPath('e_live', MEMBER);
+  const R_BOARD = payloads.rsvpPath('e_live', 'u_board');
+  const R_STUDENT = payloads.rsvpPath('e_live', STUDENT);
+  const attendOne = (options) => payloads.attendWrites({ club: CLUB, uid: 'u_board', ...options });
+  const promote = (options) => payloads.promoteWrites({ club: CLUB, ...options });
+  const bumps = (deltas, extra, path = E) => ({ op: 'update', path, data: payloads.eventCountersBump(deltas, extra) });
+  const side = (userId, extra, eventId = 'e_live') => ({ op: 'set', path: payloads.eventCounterPath(eventId), data: payloads.eventCounterData(CLUB, eventId, userId, extra) });
+  const counts = async (path = E) => {
+    const { goingCount, waitlistCount, attendedCount } = await readDoc(path);
+    return [goingCount, waitlistCount, attendedCount];
+  };
+
+  test('yoklama (0, 0, +1) ve terfi (+1, −1, 0) geçer; işaretçi yan belgededir, etkinlik belgesi kimlik taşımaz', async () => {
+    await seedFixture('base');
+    await assertSucceeds(commit('board', attendOne()));
+    expect(await counts()).toEqual([2, 1, 2]);
+    expect(await readDoc(SIDE)).toMatchObject({ clubId: CLUB, lastRsvpRef: R_MEMBER });
+    await assertSucceeds(commit('president', promote()));
+    expect(await counts()).toEqual([3, 0, 2]);
+    expect(await readDoc(SIDE)).toMatchObject({ lastRsvpRef: R_STUDENT });
+
+    // Etkinlik herkese açıktır ve kimin yoklamasının alındığını / terfi ettiğini taşımaz; yan belgeyi üye okuyamaz.
+    const event = (await assertSucceeds(getDoc(doc(contextFor('student').firestore(), E)))).data();
+    expect(event).not.toHaveProperty('lastRsvpRef');
+    for (const uid of [MEMBER, STUDENT, 'u_board']) expect(JSON.stringify({ ...event, createdBy: null })).not.toContain(uid);
+    await assertFails(getDoc(doc(contextFor('member').firestore(), SIDE)));
+  });
+
+  // Satır: [başlık, bağlam, yazımlar, veri düzenlemesi?]. Taban: yöneticinin u_member yoklaması / u_student terfisi.
+  test.each([
+    ['yan belge yok (işaretçisiz yoklama)', 'board', () => { const w = attendOne(); return { rsvp: w.rsvp, event: w.event }; }, { without: [SIDE] }],
+    ['yan belge bu işlemde yazılmıyor (eski işaretçi)', 'board', () => { const w = attendOne(); return { rsvp: w.rsvp, event: w.event }; }, { patch: { [SIDE]: { lastRsvpRef: R_MEMBER } } }],
+    ['yoklama kaydı olmadan attendedCount +1 (yan belgeyle)', 'board', () => { const w = attendOne(); return { event: w.event, counter: w.counter }; }],
+    ['sayaçsız yoklama (yan belgeyle)', 'board', () => { const w = attendOne(); return { rsvp: w.rsvp, counter: w.counter }; }],
+    ['yan belge tek başına', 'board', () => ({ counter: attendOne().counter })],
+    ['işaretçi geçiş yapmayan başka kaydı gösterir', 'board', () => ({ ...attendOne(), counter: side('u_board') })],
+    ['işaretçi başka etkinliğin kaydını gösterir', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { lastRsvpRef: payloads.rsvpPath('e_public', MEMBER) }) })],
+    ['işaretçi katılım yolu değil (kullanıcı belgesi)', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { lastRsvpRef: 'users/u_member' }) })],
+    ['işaretçi alt yol taşır', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { lastRsvpRef: `${R_MEMBER}/x/y` }) })],
+    ['yan belgede clubId başka kulüp', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { clubId: OTHER_CLUB }) })],
+    ['yan belgede updatedAt istemci saati', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { updatedAt: new Date(Date.now() - 60 * 1000) }) })],
+    ['yan belgede beyaz liste dışı alan', 'board', () => ({ ...attendOne(), counter: side(MEMBER, { ticketCode: 'GU-ABCD-2345' }) })],
+    ['yan belge başka belge adıyla (private/other)', 'board', () => ({ ...attendOne(), counter: { ...side(MEMBER), path: 'events/e_live/private/other' } })],
+    ['tek +1 ile iki yoklama (tek işaretçi)', 'board', () => ({ ...attendOne(), second: attendOne({ userId: STUDENT }).rsvp }), { patch: { [R_STUDENT]: { status: 'going' } } }],
+    ['iki yoklama, iki +1 (işlem başına tek geçiş)', 'board', () => ({ ...attendOne(), r2: attendOne({ userId: STUDENT }).rsvp, e2: attendOne().event }), { patch: { [R_STUDENT]: { status: 'going' } } }],
+    ['yoklamada delta +2', 'board', () => ({ ...attendOne(), event: bumps({ attended: 2 }) })],
+    ['yoklamada goingCount da oynar (0 → attended kayıtlıyı düşürmez — CD-130)', 'board', () => ({ ...attendOne(), event: bumps({ going: -1, attended: 1 }) })],
+    ['yoklamada mutlak değer', 'board', () => ({ ...attendOne(), event: { op: 'update', path: E, data: { attendedCount: 2, goingCount: 40, ...payloads.baseUpdate() } } })],
+    ['yoklama sayacıyla birlikte başka alan (capacity)', 'board', () => ({ ...attendOne(), event: bumps({ attended: 1 }, { capacity: 100 }) })],
+    ['attendedCount goingCount\'u aşar (bozuk sayaç 1 / 1)', 'board', () => attendOne(), { patch: { [E]: { goingCount: 1 } } }],
+    ['geri almada attendedCount sıfırın altına iner (bozuk sayaç)', 'board', () => attendOne({ userId: 'u_board', attended: false }), { patch: { [E]: { attendedCount: 0 } } }],
+    ['geri alma yönünde +1', 'board', () => ({ ...attendOne({ userId: 'u_board', attended: false }), event: bumps({ attended: 1 }) })],
+    ['terfi (+1, 0, 0) ile: waitlistCount düşmez', 'board', () => ({ ...promote(), event: bumps({ going: 1 }) })],
+    ['terfi (0, −1, 0) ile: goingCount artmaz', 'board', () => ({ ...promote(), event: bumps({ waitlist: -1 }) })],
+    // Aynı belgeye iki yazım tek yazım gibi değerlendirilir; (+1) + (−1, −1) toplamı işlemin tamamında (+1, −2, 0)'dır.
+    ['terfi iki ayrı yazımla, ikincisi fazladan −1 (işlemin tamamı +1, −2)', 'board', () => ({ ...promote(), event: bumps({ going: 1 }), e2: bumps({ waitlist: -2 }) })],
+    ['terfi: kontenjan dolu (2 / 2)', 'board', () => promote(), { patch: { [E]: { capacity: 2 } } }],
+    ['terfi kaydı olmadan (+1, −1, 0)', 'board', () => { const w = promote(); return { event: w.event, counter: w.counter }; }],
+    ['terfi işaretçisi going kaydı gösterir', 'board', () => ({ ...promote(), counter: side(MEMBER) })],
+    ['yönetici, yoklama + kendi katılımı tek işlemde (iki dal, tek sayaç yazımı)', 'president', () => ({ ...payloads.attendWrites({ club: CLUB, uid: 'u_president' }), event: bumps({ going: 1, attended: 1 }), own: { op: 'set', path: payloads.rsvpPath('e_live', 'u_president'), data: payloads.rsvpCreate({ club: CLUB, uid: 'u_president', eventId: 'e_live' }) } })],
+    ['danışman, tam yoklama işlemi', 'advisor', () => payloads.attendWrites({ club: CLUB, uid: 'u_advisor' })],
+    ['süper admin, tam terfi işlemi', 'super', () => promote()],
+    ['başka kulübün yöneticisi, tam yoklama işlemi', 'otherManager', () => payloads.attendWrites({ club: CLUB, uid: 'u_mgr2' })],
+    ['başka kulübün yöneticisi, kendi kulübü adına yan belge', 'otherManager', () => payloads.attendWrites({ club: OTHER_CLUB, uid: 'u_mgr2' })],
+  ])('%s → deny', async (_title, role, build, edit = NO_EDIT) => {
+    const seeded = await seedFixture('base', undefined, edit);
+    await assertFails(commit(role, build()));
+    expect(await counts()).toEqual([seeded[E].goingCount, 1, seeded[E].attendedCount]);
+    expect((await readDoc(R_MEMBER)).status).toBe('going');
+    expect((await readDoc(R_BOARD)).status).toBe('attended');
+    expect((await readDoc(R_STUDENT)).status).toBe(seeded[R_STUDENT].status);
+    expect(await readDoc('events/e_live/private/other')).toBeNull();
+  });
+
+  // Kimlik birleşimi belirsizdir: `e_live` + `u_member` = `e_live_u` + `member`. Kural işaretçideki belgenin
+  // `eventId` / `userId` alanlarından yolu yeniden kurar: tek kayıt geçişiyle iki etkinliğin sayacı oynatılamaz.
+  test('kimlik birleşimi kaydırılarak başka etkinliğin sayacı oynatılamaz', async () => {
+    const docs = await seedFixture('base');
+    await seedDocs({ 'events/e_live_u': docs[E] });
+    const twin = { e2: bumps({ attended: 1 }, {}, 'events/e_live_u'), c2: side('member', {}, 'e_live_u') };
+    expect(twin.c2.data.lastRsvpRef).toBe(R_MEMBER);
+
+    await assertFails(commit('board', { ...attendOne(), ...twin }));
+    await assertFails(commit('board', { rsvp: attendOne().rsvp, ...twin }));
+    expect(await counts('events/e_live_u')).toEqual([2, 1, 1]);
+    expect((await readDoc(R_MEMBER)).status).toBe('going');
+    // Denetim: aynı işlem ikiz yazımlar olmadan geçer.
+    await assertSucceeds(commit('board', attendOne()));
   });
 });

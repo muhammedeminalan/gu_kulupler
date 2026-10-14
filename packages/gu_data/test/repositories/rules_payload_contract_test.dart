@@ -41,6 +41,13 @@
 // Istanbul günü: Dart tarafında senaryo saatinin, jest tarafında emülatörün
 // günü) ve `merge: true` (`set(merge)` — sayaç artışı).
 //
+// T-22: `t22.scenarios` — `FirebaseEventRepository` ve
+// `FirebaseRsvpRepository` (`docs/plans/T-22.md §6`). Biçim `t19` ile
+// aynıdır; ek olarak `upload` (kapak: Storage yolu + `customMetadata`, gerçek
+// `StorageService` çağrısı) ve `@daysAhead:N` etkinlik zamanlarında (senaryo
+// saatinden tam gün). Yeni etkinliğin kimliği `@autoId`'dir (`newId`); bilet
+// kodu sıralı `FakeTicketCodeGenerator`'dan gelir.
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:typed_data';
@@ -51,6 +58,7 @@ import 'package:gu_data/gu_data.dart';
 
 import '../fakes/fake_app_clock.dart';
 import '../fakes/fake_notification_dispatcher.dart';
+import '../fakes/fake_ticket_code_generator.dart';
 import '../fakes/recording_storage_service.dart';
 import '../helpers/repo_sources.dart';
 
@@ -1054,6 +1062,244 @@ void main() {
         expect(db.transactions, scenario['tx'] == true ? 1 : 0);
       });
     }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
+      _expectWellFormedVariants(scenarios);
+    });
+  });
+  group('T-22 · Rules yük sözleşmesi (etkinlik / katılım)', () {
+    final t22 = contract['t22']! as Map<String, Object?>;
+    final fixtures = t22['fixtures']! as Map<String, Object?>;
+    final actors = (t22['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t22['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+    const eventId = 'e01';
+    DateTime daysAhead(int days) => _scenarioNow.add(Duration(days: days));
+
+    // MGT-05 formunun iki biçimi: kontenjanlı, tablodan mekânlı herkese açık
+    // etkinlik; kontenjansız, serbest metin mekânlı üyelere özel etkinlik
+    // (boş alanların anahtarı yazılmaz — W-51).
+    final workshop = EventDraft(
+      title: 'Flutter atölyesi',
+      desc: 'Mobil uygulama geliştirmeye giriş.',
+      type: EventType.training,
+      startsAt: daysAhead(7),
+      endsAt: daysAhead(8),
+      placeId: 'pl01',
+      capacity: 30,
+      coverPalette: ClubPalette.red,
+      coverPattern: ClubPattern.dots,
+    );
+    final meeting = EventDraft(
+      title: 'Kulüp içi toplantı',
+      type: EventType.social,
+      startsAt: daysAhead(5),
+      endsAt: daysAhead(6),
+      placeText: 'Kulüp odası',
+      visibility: EventVisibility.membersOnly,
+      coverPalette: ClubPalette.slate,
+      coverPattern: ClubPattern.lines,
+    );
+
+    late EventRepository events;
+    late RsvpRepository rsvps;
+
+    Future<FirestoreResult<RsvpModel>> join(String uid) => rsvps.join(
+      eventId: eventId,
+      clubId: clubId,
+      userId: uid,
+      reminder: ReminderOption.oneHour,
+    );
+    Future<FirestoreResult<void>> leave(String uid) =>
+        rsvps.cancel(eventId: eventId, userId: uid);
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı; argüman
+    /// senaryonun `role` bağlamının uid'idir.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'EventRepository.createDraft': (uid) =>
+              events.createDraft(workshop, clubId: clubId, createdBy: uid),
+          'EventRepository.create · doğrudan yayın (üyelere özel, '
+              'kontenjansız)': (uid) => events.create(
+            meeting,
+            clubId: clubId,
+            createdBy: uid,
+            status: EventStatus.published,
+          ),
+          'EventRepository.update · içerik (kontenjan, mekân, tarih)': (_) =>
+              events.update(
+                eventId,
+                EventEditPatch(
+                  title: 'Flutter atölyesi (2. oturum)',
+                  capacity: 2,
+                  placeId: 'pl02',
+                  clearPlaceText: true,
+                  startsAt: daysAhead(5),
+                  endsAt: daysAhead(6),
+                ),
+              ),
+          'EventRepository.publish · ilk yayın': (uid) =>
+              events.publish(eventId, actorId: uid),
+          'EventRepository.publish · yayından çekilmiş taslağı yeniden '
+              'yayınla': (uid) =>
+              events.publish(eventId, actorId: uid),
+          'EventRepository.unpublish · bekleme listesi varken': (_) =>
+              events.unpublish(eventId),
+          'EventRepository.cancel': (uid) => events.cancel(
+            eventId,
+            reason: '  Salon tadilatta.  ',
+            actorId: uid,
+          ),
+          'EventRepository.duplicate': (uid) => events.duplicate(
+            eventId,
+            createdBy: uid,
+            copyTitleSuffix: ' (kopya)',
+          ),
+          'EventRepository.setRegistrationOpen · kaydı kapat': (_) =>
+              events.setRegistrationOpen(eventId, false),
+          'EventRepository.softDeleteEvent': (uid) =>
+              events.softDeleteEvent(eventId, actorId: uid),
+          'EventRepository.restoreEvent': (_) => events.restoreEvent(eventId),
+          'EventRepository.uploadCover': (uid) => events.uploadCover(
+            eventId,
+            _image,
+            contentType: 'image/jpeg',
+            clubId: clubId,
+            uploaderId: uid,
+          ),
+          'EventRepository.getEvent · taslak (danışman)': (_) =>
+              events.getEvent(eventId),
+          'EventRepository.getEvent · herkese açık (üye olmayan)': (_) =>
+              events.getEvent(eventId),
+          'RsvpRepository.join · yeni kayıt (going)': join,
+          'RsvpRepository.join · kontenjan dolu → bekleme listesi': join,
+          'RsvpRepository.join · yeniden katılım (cancelled → going)': join,
+          'RsvpRepository.join · üyelere özel etkinlik (üye)': join,
+          'RsvpRepository.join · istemcinin oluşturduğu etkinlik '
+                  '(anahtarsız kontenjan — W-51)':
+              join,
+          'RsvpRepository.cancel · going': leave,
+          'RsvpRepository.cancel · waitlist': leave,
+          'RsvpRepository.cancel · askıdaki hesap': leave,
+          'RsvpRepository.setReminder': (uid) => rsvps.setReminder(
+            eventId: eventId,
+            userId: uid,
+            reminder: ReminderOption.oneDay,
+          ),
+          'RsvpRepository.getMine · kayıt yok': (uid) =>
+              rsvps.getMine(eventId: eventId, userId: uid),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      events = FirebaseEventRepository(
+        service,
+        storage,
+        FirebaseActivityRepository(service),
+        clock,
+        SequenceRandom(_randomBytes),
+      );
+      rsvps = FirebaseRsvpRepository(service, FakeTicketCodeGenerator(), clock);
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t22['autoId'], _autoId);
+      expect(t22['increment'], _increment);
+      expect(t22['daysAhead'], _daysAhead);
+      expect(
+        scenarios.map((scenario) => scenario['role']),
+        everyElement(isIn(actors.keys)),
+      );
+      // Bilet kodu sıralı üreticinin ilk kodudur (Rules deseni).
+      expect(
+        FakeTicketCodeGenerator.ticketCodeAt(1),
+        matches(FirestoreIds.ticketCodePattern),
+      );
+    });
+
+    test('her yazma metodu en az bir senaryoda: PLAN §10.4 T-22 yazma '
+        'yüzeyi', () {
+      final covered = {
+        for (final scenario in scenarios)
+          if ((scenario['writes']! as List<Object?>).isNotEmpty)
+            (scenario['call']! as String).split(' · ').first,
+      };
+
+      expect(covered, {
+        'EventRepository.createDraft',
+        'EventRepository.create',
+        'EventRepository.update',
+        'EventRepository.publish',
+        'EventRepository.unpublish',
+        'EventRepository.cancel',
+        'EventRepository.duplicate',
+        'EventRepository.setRegistrationOpen',
+        'EventRepository.softDeleteEvent',
+        'EventRepository.restoreEvent',
+        'EventRepository.uploadCover',
+        'RsvpRepository.join',
+        'RsvpRepository.cancel',
+        'RsvpRepository.setReminder',
+      });
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test(
+        '$call — okumalar, yazımlar ve yükleme sözleşmeyle birebir',
+        () async {
+          final seed = scenario['seed']! as Map<String, Object?>;
+          for (final MapEntry(key: path, value: entry) in seed.entries) {
+            db.docs[path] = _seedDoc(fixtures, entry);
+          }
+          final uid = actors[scenario['role']]!;
+
+          final result = await calls[call]!(uid);
+
+          expect(result.isSuccess, isTrue, reason: '$result');
+          expect(db.reads, scenario['reads']);
+          expect(_normalized(db.log), scenario['writes']);
+          // Birden çok belgeyi okuyup yazan yollar tek transaction'dır.
+          expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+          expect(
+            [
+              for (final upload in storage.uploads)
+                {
+                  'path': upload.path,
+                  'contentType': upload.contentType,
+                  'customMetadata': upload.customMetadata,
+                },
+            ],
+            [?scenario['upload']],
+          );
+        },
+      );
+    }
+
+    test("kapak: Firestore'a yazılan coverPath yüklenen dosyanın yoludur ve "
+        'etkinliğin klasöründedir (CD-47)', () {
+      final scenario = scenarios.singleWhere(
+        (scenario) => scenario['call'] == 'EventRepository.uploadCover',
+      );
+      final upload = scenario['upload']! as Map<String, Object?>;
+      final written =
+          ((scenario['writes']! as List<Object?>).single!
+                  as Map<String, Object?>)['data']!
+              as Map<String, Object?>;
+
+      expect(written['coverPath'], upload['path']);
+      expect(
+        StoragePaths.isEventCover(written['coverPath']! as String, eventId),
+        isTrue,
+      );
+    });
 
     test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
       _expectWellFormedVariants(scenarios);

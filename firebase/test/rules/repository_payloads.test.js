@@ -37,6 +37,11 @@
 //     (set(merge)), `@yyyyMMdd` / `@yyyy-MM-dd` (emülatörün Istanbul günü) ve koşu başına TEK `@autoId`
 //     (yorum yolu ↔ `lastCommentRef`). Bildirimli duyuru, oy, sabitleme ve gönderi silme repository'deki
 //     gibi tek transaction'dır: okumalar da kurallardan geçer.
+//  7. T-22 — `contract.t22.scenarios`: FirebaseEventRepository ve FirebaseRsvpRepository'nin GERÇEK okuma +
+//     yazımları (biçim `t19` ile aynı). Ek: `upload` (kapak — dosya senaryonun bağlamıyla, sözleşmedeki
+//     `customMetadata` ile Storage'a yüklenir, sonra Firestore yazımı gider; Storage kuralı etkinlik belgesini
+//     okumaz — W-73) ve kontenjan yarışı: kontenjan = 1 iken ikinci katılımcının eski okumaya dayanan `going`
+//     yazımı Rules'ta reddedilir, aynı kişinin bekleme listesi yazımı geçer.
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,
@@ -545,6 +550,222 @@ describe('T-19 · gönderi / yorum / oy / kayıt / duyuru sayacı — senaryolar
       await assertFails(run(db, scenario, writes, tokens));
 
       expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+});
+
+describe('T-22 · etkinlik / katılım — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t22 = contract.t22;
+  const DAYS_AGO = '@daysAgo:';
+  /** Kapak yüklemesinin baytları (ImagePickerService her zaman JPEG üretir). */
+  const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+
+  /** Bağlamların kullanıcı ve üyelik belgeleri (roles.json): `activeUser()` / `isMember()` bunları okur. */
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Koşunun TEK üretilen kimliği (yeni etkinlik: yol, coverSeed, günlük kimliği). */
+  const tokensFor = (db) => ({ [t22.autoId]: doc(collection(db, 'events')).id });
+
+  function fill(value, tokens) {
+    if (typeof value === 'string') {
+      return Object.entries(tokens).reduce((text, [token, actual]) => text.split(token).join(actual), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => fill(inner, tokens));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, fill(inner, tokens)]));
+    }
+    return value;
+  }
+
+  /** Ön koşul belgesindeki nöbetçiler: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t22.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t22.fixtures[name]), ...fields };
+  }
+
+  function seedOf(scenario, variant, tokens) {
+    const docs = Object.fromEntries(Object.entries(scenario.seed).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...patch };
+    }
+    const content = Object.fromEntries(
+      Object.entries(docs).map(([path, data]) => [fill(path, tokens), seedValue(fill(data, tokens))]),
+    );
+    return { ...identityDocs(), ...content };
+  }
+
+  function writesOf(scenario, variant, tokens) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    const writes = scenario.writes
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+    return fill(writes, tokens);
+  }
+
+  /** Senaryoyu repository'nin gönderdiği biçimde gönderir (`tx`: okumalar + yazımlar tek transaction). */
+  async function run(db, scenario, writes, tokens) {
+    const reads = fill(scenario.reads, tokens);
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of reads) await tx.get(doc(db, path));
+          for (const write of writes) applyWrite(db, tx, write);
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of reads) await getDoc(doc(db, path));
+    return writes.length === 0 ? undefined : send(db, writes);
+  }
+
+  /** Kapak dosyasını sözleşmedeki yol, tür ve üst veriyle [role] bağlamından yükler. */
+  const uploadOf = (role, upload) =>
+    uploadBytes(ref(contextFor(role).storage(), upload.path), JPEG, {
+      contentType: upload.contentType,
+      customMetadata: upload.customMetadata,
+    });
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  const scenarioOf = (call) => t22.scenarios.find((scenario) => scenario.call === call);
+
+  test('sözleşme: nöbetçiler ve bağlamlar roles.json ile aynı; etkinlik yazımlarında lastRsvpRef yok (W-64)', () => {
+    expect(t22.autoId).toBe(contract.t15.autoId);
+    expect(t22.increment).toBe(INCREMENT);
+    expect(t22.daysAhead).toBe(DAYS_AHEAD);
+    for (const [role, uid] of Object.entries(t22.actors)) expect(definition(role).uid).toBe(uid);
+    const eventWrites = t22.scenarios.flatMap((scenario) => scenario.writes).filter((write) => write.path.startsWith('events/'));
+    expect(eventWrites.length).toBeGreaterThan(10);
+    expect(eventWrites.filter((write) => 'lastRsvpRef' in write.data)).toEqual([]);
+  });
+
+  describe.each(t22.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      const tokens = tokensFor(db);
+      await seedDocs(seedOf(scenario, {}, tokens));
+      const writes = writesOf(scenario, {}, tokens);
+
+      if (scenario.upload) await assertSucceeds(uploadOf(scenario.role, scenario.upload));
+      await assertSucceeds(run(db, scenario, writes, tokens));
+
+      for (const write of writes) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(fill(path, tokens))).toMatchObject(fill(fields, tokens));
+      }
+      if (scenario.upload) {
+        const meta = await getMetadata(ref((await getAdminContext()).storage(), scenario.upload.path));
+        expect(meta.customMetadata).toEqual(scenario.upload.customMetadata);
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const tokens = tokensFor(db);
+      const seed = seedOf(scenario, variant, tokens);
+      await seedDocs(seed);
+      const writes = writesOf(scenario, variant, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...writes.map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, scenario, writes, tokens));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test('kapak yüklemesi: başka kulübün yöneticisi yükleyemez (Storage: metadata.clubId kulübünün yöneticisi)', async () => {
+    const scenario = scenarioOf('EventRepository.uploadCover');
+    await seedDocs(seedOf(scenario, {}, {}));
+
+    await assertFails(uploadOf('otherManager', { ...scenario.upload, customMetadata: { ...scenario.upload.customMetadata, uploaderId: 'u_mgr2' } }));
+    await assertFails(uploadOf('member', { ...scenario.upload, customMetadata: { ...scenario.upload.customMetadata, uploaderId: 'u_member' } }));
+  });
+
+  describe('kontenjan yarışı (kontenjan = 1) — Rules son savunma hattı', () => {
+    const going = () => scenarioOf('RsvpRepository.join · yeni kayıt (going)');
+    const waitlist = () => scenarioOf('RsvpRepository.join · kontenjan dolu → bekleme listesi');
+    /** Öğrencinin yazımlarını üyenin kaydına çevirir (aynı yük, başka sahip). */
+    const asMember = (writes) => JSON.parse(JSON.stringify(writes).split('u_student').join('u_member'));
+    const E = 'events/e01';
+
+    async function seedRace() {
+      const scenario = going();
+      await seedDocs(seedOf(scenario, { seed: { [E]: { capacity: 1, goingCount: 0 } } }, {}));
+    }
+
+    test('ilk katılım going geçer; ikinci katılımcının eski okumaya (kayıtlı 0) dayanan going yazımı RET; bekleme listesi yazımı geçer', async () => {
+      await seedRace();
+      const student = contextFor('student').firestore();
+      const member = contextFor('member').firestore();
+
+      await assertSucceeds(run(student, going(), going().writes, {}));
+      // Üyenin işlemi öğrencininkinden ÖNCE okumuştu (kayıtlı 0 → going): sunucu çakışmayı yakalamasa da
+      // etkinliğin sayaç dalı kayıtlı sayısının kontenjanı aşmasını reddeder.
+      await assertFails(send(member, asMember(going().writes)));
+      expect(await readDoc(E)).toMatchObject({ capacity: 1, goingCount: 1, waitlistCount: 0 });
+      expect(await readDoc('rsvps/e01_u_member')).toBeNull();
+
+      // Yeniden koşan işlem güncel sayacı (1/1) görür → bekleme listesi.
+      const memberWaitlist = { ...waitlist(), reads: asMember(waitlist().reads) };
+      await assertSucceeds(run(member, memberWaitlist, asMember(waitlist().writes), {}));
+      expect(await readDoc(E)).toMatchObject({ goingCount: 1, waitlistCount: 1 });
+      expect(await readDoc('rsvps/e01_u_member')).toMatchObject({ status: 'waitlist', userId: 'u_member' });
+    });
+
+    // Emülatör bulgusu: aynı anda okuyan iki işlemden kaybedenin commit'i çakışma (yeniden deneme) yerine
+    // Security Rules'a takılır — `permission-denied`, SDK yeniden denemez. FirebaseRsvpRepository.join bu
+    // yüzden Rules reddinde işlemi güncel sayaçla BİR KEZ daha koşar (Dart: firebase_rsvp_repository_test
+    // "Rules reddinde tek yeniden deneme").
+    test('iki eşzamanlı katılım (repository kararı + tek yeniden deneme, gerçek transaction): biri going, biri bekleme listesi; sayaçlar 1 / 1', async () => {
+      await seedRace();
+      /** Repository'nin kararı: işlemde okunan sayaçtan; yer yoksa bekleme listesi yükü. */
+      const attempt = (role, convert) => {
+        const db = contextFor(role).firestore();
+        return runTransaction(db, async (tx) => {
+          const event = (await tx.get(doc(db, E))).data();
+          await tx.get(doc(db, convert(going().reads)[1]));
+          const full = event.capacity != null && event.goingCount >= event.capacity;
+          for (const write of convert((full ? waitlist() : going()).writes)) applyWrite(db, tx, write);
+          return full ? 'waitlist' : 'going';
+        });
+      };
+      const denials = [];
+      const join = (role, convert) =>
+        attempt(role, convert).catch((error) => {
+          if (error.code !== 'permission-denied') throw error;
+          denials.push(role);
+          return attempt(role, convert);
+        });
+
+      const outcomes = await Promise.all([join('student', (x) => x), join('member', asMember)]);
+
+      expect([...outcomes].sort()).toEqual(['going', 'waitlist']);
+      expect(denials.length).toBeLessThanOrEqual(1);
+      expect(await readDoc(E)).toMatchObject({ capacity: 1, goingCount: 1, waitlistCount: 1 });
     });
   });
 });

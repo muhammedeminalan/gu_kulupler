@@ -8,13 +8,14 @@
 //
 // T-15: CLB-01 / getClubs · oturum üyelikleri / listMine · CLB-06 / MGT-03 / listManagers · MGT-02 ·
 // MGT-10 · ADM-04 · SET-02. T-19: FED-01 / listFeed · MGT-08 / listForManagement · FED-02 / watchComments ·
-// PRF-04 / listSaved · countVotes. T-22 (EVT-01, MGT-04, EVT-04, MGT-06) ve T-25 (`listByInterests`) kendi
-// satırlarını ekler.
+// PRF-04 / listSaved · countVotes. T-22: EVT-01 / listPublicUpcoming · listMembersUpcoming · MGT-04 / CLB-03 /
+// listClubEvents (üç biçim) · EVT-04 / listMine · MGT-06 katılımcılar · waitlistPosition · findByTicket.
+// T-25 (`listByInterests`) kendi satırlarını ekler.
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { collection, doc, documentId, getCountFromServer, getDoc, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
-const { seedFixture } = require('../helpers/fixtures');
+const { fromNow, eventDoc, rsvpDoc, seedDocs, seedFixture, DAY_MS, HOUR_MS } = require('../helpers/fixtures');
 
 const indexes = require(path.resolve(__dirname, '..', '..', 'firestore.indexes.json')).indexes;
 
@@ -35,6 +36,15 @@ const QUERIES = Object.freeze({
   listForManagement: { collection: 'posts', equals: ['clubId', 'isDeleted'], order: ['createdAt', 'desc'] },
   watchComments: { collection: 'comments', equals: ['postId', 'clubId', 'isDeleted', 'isHidden'], order: ['createdAt', 'asc'] },
   listSaved: { collection: 'savedPosts', equals: ['userId', 'isDeleted'], order: ['savedAt', 'desc'] },
+  // T-22 (sözleşme docs/plans/T-22.md §6.8) — `startsAt >= from` aralığı sıralama alanıyla aynıdır.
+  listPublicUpcoming: { collection: 'events', equals: ['visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'asc'] },
+  listMembersUpcoming: { collection: 'events', equals: ['clubId', 'visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'asc'] },
+  listClubEventsManagement: { collection: 'events', equals: ['clubId', 'isDeleted'], order: ['startsAt', 'desc'] },
+  listClubEventsMember: { collection: 'events', equals: ['clubId', 'isDeleted'], inField: 'status', order: ['startsAt', 'desc'] },
+  listClubEventsPublic: { collection: 'events', equals: ['clubId', 'visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'desc'] },
+  listMyRsvps: { collection: 'rsvps', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
+  // `waitlistPosition` (`waitlistAt < t` aralığı) ve T-30 `watchParticipants` (`orderBy status, waitlistAt`) aynı indeksi kullanır.
+  waitlistPosition: { collection: 'rsvps', equals: ['eventId', 'clubId', 'status'], order: ['waitlistAt', 'asc'] },
 });
 
 /**
@@ -58,7 +68,7 @@ function hasIndex(spec) {
 const dbOf = (role) => contextFor(role).firestore();
 const ids = (snapshot) => snapshot.docs.map((d) => d.id).sort();
 
-describe('indeksler · firestore.indexes.json sorguları karşılar (PLAN §11.4 T-15 / T-19 satırları)', () => {
+describe('indeksler · firestore.indexes.json sorguları karşılar (PLAN §11.4 T-15 / T-19 / T-22 satırları)', () => {
   test.each(Object.entries(QUERIES))('%s', (_name, spec) => {
     expect(hasIndex(spec)).toBe(true);
   });
@@ -302,5 +312,126 @@ describe('comments, votes ve savedPosts · sorgu biçimleri (rules-spec §6 FED-
     for (const role of ['board', 'super']) {
       await assertFails(getDocs(query(collection(dbOf(role), 'savedPosts'), where('postId', '==', 'p01'), where('isDeleted', '==', false))));
     }
+  });
+});
+
+describe('events · sorgu biçimleri (rules-spec §6 EVT-01, MGT-04; PLAN §10.4 EventRepository)', () => {
+  const events = (role) => collection(dbOf(role), 'events');
+  const shown = [where('status', 'in', ['published', 'cancelled']), where('isDeleted', '==', false)];
+  /** `fromUtc`: süren etkinlik (`e_live`, 1 sa önce başladı) listede kalır; 3 gün önceki `e_past` düşer. */
+  const from = () => where('startsAt', '>=', fromNow(-2 * HOUR_MS));
+  const publicUpcoming = (role) => query(events(role), where('visibility', '==', 'public'), ...shown, from(), orderBy('startsAt', 'asc'), limit(200));
+  const membersUpcoming = (role, club = CLUB) =>
+    query(events(role), where('clubId', '==', club), where('visibility', '==', 'members'), ...shown, from(), orderBy('startsAt', 'asc'), limit(200));
+  const clubEvents = (role, ...extra) => query(events(role), where('clubId', '==', CLUB), ...extra, where('isDeleted', '==', false), orderBy('startsAt', 'desc'), limit(20));
+  /** Ek veri: iptal edilmiş, geçmiş ve silinmiş herkese açık etkinlikler + başka kulübün üyelere özel etkinliği. */
+  const seedMore = async () => {
+    await seedFixture('base');
+    await seedDocs({
+      'events/e_cancelled': eventDoc('public', 'cancelled', 0, { cancelReason: 'Salon kapalı.' }),
+      'events/e_past': eventDoc('public', 'published', 0, { startsAt: fromNow(-3 * DAY_MS), endsAt: fromNow(-3 * DAY_MS + HOUR_MS) }),
+      'events/e_removed': eventDoc('public', 'published', 0, { isDeleted: true, deletedBy: 'u_board' }),
+      'events/e_other_members': eventDoc('members', 'published', 0, { clubId: OTHER_CLUB }),
+    });
+  };
+
+  test('listPublicUpcoming: herkese açık, yayında / iptal, silinmemiş, yaklaşan — taslak, üyelere özel, geçmiş ve silinmiş dönmez', async () => {
+    await seedMore();
+    for (const role of ['student', 'member', 'susp']) {
+      expect(ids(await assertSucceeds(getDocs(publicUpcoming(role))))).toEqual(['e_cancelled', 'e_live', 'e_public']);
+    }
+    // Süzgeç zorunludur: görünürlüksüz, durumsuz ya da taslakları da isteyen sorgu üye olmayana kapalıdır.
+    await assertFails(getDocs(query(events('student'), ...shown, from(), orderBy('startsAt', 'asc'))));
+    await assertFails(getDocs(query(events('student'), where('visibility', '==', 'public'), where('isDeleted', '==', false))));
+    await assertFails(getDocs(query(events('student'), where('visibility', '==', 'public'), where('status', 'in', ['draft', 'published']), where('isDeleted', '==', false))));
+    await assertFails(getDocs(query(events('student'), where('visibility', '==', 'public'), where('status', 'in', ['published', 'cancelled']))));
+  });
+
+  test('listMembersUpcoming: kulüp başına ayrı sorgu — üye kendi kulübünü okur; üye olmayan ve çok kulüplü sorgu reddedilir', async () => {
+    await seedMore();
+    expect(ids(await assertSucceeds(getDocs(membersUpcoming('member'))))).toEqual(['e_members']);
+    expect(ids(await assertSucceeds(getDocs(membersUpcoming('otherManager', OTHER_CLUB))))).toEqual(['e_other_members']);
+    // members-only görünürlük: üye olmayan (öğrenci, başka kulübün yöneticisi, ayrılmış üye) bu sorguyu çalıştıramaz.
+    for (const role of ['student', 'otherManager', 'former', 'pending']) await assertFails(getDocs(membersUpcoming(role)));
+    await assertFails(getDocs(membersUpcoming('member', OTHER_CLUB)));
+    await assertFails(getDocs(query(events('member'), where('visibility', '==', 'members'), ...shown)));
+    await assertFails(getDocs(query(events('member'), where('clubId', 'in', [CLUB, OTHER_CLUB]), where('visibility', '==', 'members'), ...shown)));
+  });
+
+  test('listClubEvents: yönetim taslakları da görür; üye yayın / iptal; ziyaretçi yalnızca herkese açık (publicOnly)', async () => {
+    await seedMore();
+    const visible = where('status', 'in', ['published', 'cancelled']);
+    const open = where('visibility', '==', 'public');
+    const all = ['e_cancelled', 'e_draft', 'e_live', 'e_members', 'e_past', 'e_public'];
+    for (const role of ['board', 'advisor', 'super']) expect(ids(await assertSucceeds(getDocs(clubEvents(role))))).toEqual(all);
+    expect(ids(await assertSucceeds(getDocs(clubEvents('member', visible))))).toEqual(all.filter((id) => id !== 'e_draft'));
+    expect(ids(await assertSucceeds(getDocs(clubEvents('student', open, visible))))).toEqual(['e_cancelled', 'e_live', 'e_past', 'e_public']);
+    // Yetkisinden geniş sorgu: üye taslakları, ziyaretçi üyelere özel etkinlikleri isteyemez.
+    await assertFails(getDocs(clubEvents('member')));
+    await assertFails(getDocs(clubEvents('student', visible)));
+    await assertFails(getDocs(clubEvents('otherManager', visible)));
+    await assertFails(getDocs(clubEvents('student', where('visibility', '==', 'members'), visible)));
+  });
+
+  // Kimlik listeli sorgu belge belge değerlendirilir: listedeki okunamayan TEK etkinlik (üyelere özel, taslak,
+  // silinmiş, olmayan) sorgunun tamamını düşürür. Bu yüzden getEvents tekil okumalar yapar ve okunamayanı atlar
+  // (sözleşme §6.10 madde 5).
+  test('getEvents: `documentId in […]` okunamayan tek etkinlikte tümden reddedilir; tekil okuma okunabileni döndürür', async () => {
+    await seedFixture('base');
+    const byIds = (role, list) => query(events(role), where(documentId(), 'in', list));
+    expect(ids(await assertSucceeds(getDocs(byIds('student', ['e_public', 'e_live']))))).toEqual(['e_live', 'e_public']);
+    for (const hidden of ['e_members', 'e_draft', 'e_missing']) await assertFails(getDocs(byIds('student', ['e_public', hidden])));
+    await assertSucceeds(getDoc(doc(dbOf('student'), 'events/e_public')));
+    await assertFails(getDoc(doc(dbOf('student'), 'events/e_members')));
+  });
+});
+
+describe('rsvps · sorgu biçimleri (rules-spec §6 EVT-04, MGT-06; PLAN §10.4 RsvpRepository)', () => {
+  const rsvps = (role) => collection(dbOf(role), 'rsvps');
+  const participants = [where('eventId', '==', 'e_live'), where('clubId', '==', CLUB)];
+
+  test('listMine (EVT-04 / PRF-03): userId == uid, isDeleted == false, createdAt azalan — yalnızca kendi kayıtları (vazgeçilmiş dahil)', async () => {
+    await seedFixture('base', undefined, { patch: { 'rsvps/e_public_u_member': { status: 'cancelled' } } });
+    const mine = (role, uid) => query(rsvps(role), where('userId', '==', uid), where('isDeleted', '==', false), orderBy('createdAt', 'desc'));
+    expect(ids(await assertSucceeds(getDocs(mine('member', 'u_member'))))).toEqual(['e_live_u_member', 'e_public_u_member']);
+    expect(ids(await assertSucceeds(getDocs(mine('susp', 'u_susp'))))).toEqual(['e_public_u_susp']);
+    await assertFails(getDocs(mine('member', 'u_susp')));
+    // Etkinliğe göre "kim katıldı" sorgusu katılımcıya kapalıdır (bilet kodu ve kimlik sızmaz).
+    await assertFails(getDocs(query(rsvps('member'), where('eventId', '==', 'e_public'))));
+    await assertFails(getDocs(query(rsvps('member'), where('eventId', '==', 'e_public'), where('clubId', '==', CLUB))));
+  });
+
+  test('katılımcılar (MGT-06): eventId + clubId, status / waitlistAt sıralı — yalnızca yönetim, danışman ve süper admin', async () => {
+    await seedFixture('base');
+    const listed = (role) => query(rsvps(role), ...participants, orderBy('status'), orderBy('waitlistAt'));
+    for (const role of ['board', 'advisor', 'super']) {
+      expect(ids(await assertSucceeds(getDocs(listed(role))))).toEqual(['e_live_u_board', 'e_live_u_member', 'e_live_u_student']);
+    }
+    for (const role of ['member', 'student', 'otherManager', 'susp']) await assertFails(getDocs(listed(role)));
+    // Kulüp süzgeci etkinliğin kulübü olmalıdır: başka kulübün yöneticisi kendi kulüp kimliğiyle yabancı etkinliği soramaz
+    // (sonuç boştur — kayıtların clubId'si c01'dir), c01 kimliğiyle de reddedilir.
+    expect(ids(await assertSucceeds(getDocs(query(rsvps('otherManager'), where('eventId', '==', 'e_live'), where('clubId', '==', OTHER_CLUB)))))).toEqual([]);
+  });
+
+  test('waitlistPosition: count() — eventId, clubId, status == waitlist, waitlistAt < t; katılımcıya kapalı (sözleşme §6.10 madde 6)', async () => {
+    await seedFixture('base');
+    const pendingAt = fromNow(-HOUR_MS);
+    await seedDocs({ 'rsvps/e_live_u_pending': rsvpDoc('e_live', 'u_pending', 'waitlist', { ticketCode: 'GU-LVPN-2345', waitlistAt: pendingAt }) });
+    const before = (role, t) => query(rsvps(role), ...participants, where('status', '==', 'waitlist'), where('waitlistAt', '<', t));
+    // u_student −2 sa, u_pending −1 sa bekliyor: ikincinin sırası = ondan önce girenler (1) + 1.
+    expect((await assertSucceeds(getCountFromServer(before('board', pendingAt)))).data().count).toBe(1);
+    expect((await assertSucceeds(getCountFromServer(before('advisor', fromNow(0))))).data().count).toBe(2);
+    for (const role of ['student', 'pending', 'member']) await assertFails(getCountFromServer(before(role, fromNow(0))));
+  });
+
+  // limit 2: Rules bilet kodunda tekillik aramaz (kodu istemci üretir) — kopyalanmış kod iki kayıt döndürür,
+  // FirebaseRsvpRepository.findByTicket bunu belirsiz eşleşme sayar (güvenlik incelemesi, CD-144; saldırı: rsvps.test.js).
+  test('findByTicket: eventId + clubId + ticketCode, limit 2 — yalnızca yönetim; bilet kodu etkinliğe kapsamlıdır', async () => {
+    await seedFixture('base');
+    const byTicket = (role, code, eventId = 'e_live') => query(rsvps(role), where('eventId', '==', eventId), where('clubId', '==', CLUB), where('ticketCode', '==', code), limit(2));
+    expect(ids(await assertSucceeds(getDocs(byTicket('board', 'GU-LVME-2345'))))).toEqual(['e_live_u_member']);
+    expect(ids(await assertSucceeds(getDocs(byTicket('board', 'GU-LVME-2345', 'e_public'))))).toEqual([]);
+    await assertFails(getDocs(byTicket('member', 'GU-LVME-2345')));
+    await assertFails(getDocs(query(rsvps('board'), where('ticketCode', '==', 'GU-LVME-2345'))));
   });
 });

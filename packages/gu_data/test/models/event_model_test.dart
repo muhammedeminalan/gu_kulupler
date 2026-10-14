@@ -38,7 +38,6 @@ final EventModel _full = EventModel(
   goingCount: 30,
   waitlistCount: 4,
   attendedCount: 10,
-  lastRsvpRef: 'rsvps/e03_u_ayse',
   publishedAt: DateTime.utc(2026, 10, 1, 9, 0, 0, 123),
   createdAt: DateTime.utc(2026, 9, 30, 8),
   updatedAt: DateTime.utc(2026, 10, 2, 8),
@@ -72,7 +71,6 @@ Map<String, Object?> _fields(EventModel m) => {
   'goingCount': m.goingCount,
   'waitlistCount': m.waitlistCount,
   'attendedCount': m.attendedCount,
-  'lastRsvpRef': m.lastRsvpRef,
   'publishedAt': m.publishedAt,
   'createdAt': m.createdAt,
   'updatedAt': m.updatedAt,
@@ -123,7 +121,6 @@ final Map<String, (EventModel, Object?)> _changed = {
   'goingCount': (_full.copyWith(goingCount: 31), 31),
   'waitlistCount': (_full.copyWith(waitlistCount: 5), 5),
   'attendedCount': (_full.copyWith(attendedCount: 11), 11),
-  'lastRsvpRef': (_full.copyWith(lastRsvpRef: 'rsvps/x'), 'rsvps/x'),
   'publishedAt': (_full.copyWith(publishedAt: _other), _other),
   'createdAt': (_full.copyWith(createdAt: _other), _other),
   'updatedAt': (_full.copyWith(updatedAt: _other), _other),
@@ -140,7 +137,6 @@ final Map<String, EventModel> _nulled = {
   'capacity': _full.copyWith(clearCapacity: true),
   'cancelReason': _full.copyWith(clearCancelReason: true),
   'coverPath': _full.copyWith(clearCoverPath: true),
-  'lastRsvpRef': _full.copyWith(clearLastRsvpRef: true),
   'publishedAt': _full.copyWith(clearPublishedAt: true),
   'createdAt': _full.copyWith(clearCreatedAt: true),
   'updatedAt': _full.copyWith(clearUpdatedAt: true),
@@ -298,6 +294,19 @@ void main() {
       expect(_full.copyWith(goingCount: 40).isFull, isTrue);
       expect(
         _full.copyWith(goingCount: 40, clearCapacity: true).isFull,
+        isFalse,
+      );
+    });
+
+    test('joinsWaitlist: kontenjan doluyken ya da önde bekleyen varken '
+        '(boşalan yer önce bekleyenindir — CD-144); sınırsız etkinlikte '
+        'hiçbir zaman', () {
+      final open = _full.copyWith(goingCount: 39, waitlistCount: 0);
+      expect(open.joinsWaitlist, isFalse);
+      expect(open.copyWith(goingCount: 40).joinsWaitlist, isTrue);
+      expect(open.copyWith(waitlistCount: 1).joinsWaitlist, isTrue);
+      expect(
+        open.copyWith(waitlistCount: 3, clearCapacity: true).joinsWaitlist,
         isFalse,
       );
     });

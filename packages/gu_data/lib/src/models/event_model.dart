@@ -19,7 +19,11 @@ part 'event_model.g.dart';
 ///
 /// Tüm zamanlar UTC'dir (D-26). Sayaçlar ([goingCount], [waitlistCount],
 /// [attendedCount]) yalnızca katılım kaydıyla aynı batch/transaction içinde
-/// ±1 değişir; [lastRsvpRef] o yazımın belge yolunu taşır (CD-41).
+/// ±1 değişir. Sayaçları son değiştiren kaydın yolu bu belgede **tutulmaz**
+/// (W-64: belge doğrulanmış herkese açıktır; kimin katıldığını sızdırırdı) —
+/// Security Rules kendi katılımında yolu oturumdan türetir, yönetici
+/// geçişlerinde (yoklama, terfi) işaretçi yan belgededir
+/// (`events/{eventId}/private/counter`, T-22 sözleşmesi §6.5).
 /// [goingCount] **kayıtlı** sayısıdır: yoklama (`going→attended`) onu
 /// düşürmez, yalnızca [attendedCount]'u artırır; yani [attendedCount],
 /// [goingCount]'un alt kümesidir (CD-130). "Geçmiş" bir durum değildir,
@@ -56,7 +60,6 @@ final class EventModel extends Equatable with BaseFields {
     this.goingCount = 0,
     this.waitlistCount = 0,
     this.attendedCount = 0,
-    this.lastRsvpRef,
     this.publishedAt,
     this.createdAt,
     this.updatedAt,
@@ -178,12 +181,9 @@ final class EventModel extends Equatable with BaseFields {
   @JsonKey(name: FirestoreFields.attendedCount)
   final int attendedCount;
 
-  /// Sayaçları son değiştiren katılım kaydının yolu
-  /// (`rsvps/{eventId}_{userId}`, CD-41).
-  @JsonKey(name: FirestoreFields.lastRsvpRef)
-  final String? lastRsvpRef;
-
-  /// Yayınlanma anı (sunucu zamanı, UTC); taslakta `null`.
+  /// Son yayınlanma anı (sunucu zamanı, UTC); hiç yayınlanmamış taslakta
+  /// `null`. Yayından çekilen etkinlikte (`published → draft`) **korunur**:
+  /// yayın günlüğü yalnızca ilk yayında yazılır (T-22 sözleşmesi).
   @TimestampConverter()
   @JsonKey(name: FirestoreFields.publishedAt)
   final DateTime? publishedAt;
@@ -218,6 +218,17 @@ final class EventModel extends Equatable with BaseFields {
   bool get isFull {
     final limit = capacity;
     return limit != null && goingCount >= limit;
+  }
+
+  /// Yeni katılım bekleme listesine mi düşer? Kontenjanlı etkinlikte kontenjan
+  /// doluyken **ya da** önde bekleyen varken (`waitlistCount > 0`): boşalan
+  /// yer önce bekleyenindir — Mod C'de yönetici terfi eder; bekleyen vazgeçip
+  /// yeniden katılarak, yeni gelen de sırayı atlayarak kayıtlı olamaz
+  /// (Security Rules `joinsWaitlist` / `ownGoingAllowed` ile aynı; CD-144).
+  /// Sınırsız etkinlikte ([capacity] `null`) hiçbir zaman.
+  bool get joinsWaitlist {
+    final limit = capacity;
+    return limit != null && (goingCount >= limit || waitlistCount > 0);
   }
 
   /// Yoklama oranı, `0`–`1`: `attendedCount / goingCount`; kayıtlı yoksa `0`.
@@ -273,7 +284,6 @@ final class EventModel extends Equatable with BaseFields {
     int? goingCount,
     int? waitlistCount,
     int? attendedCount,
-    String? lastRsvpRef,
     DateTime? publishedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -286,7 +296,6 @@ final class EventModel extends Equatable with BaseFields {
     bool clearCapacity = false,
     bool clearCancelReason = false,
     bool clearCoverPath = false,
-    bool clearLastRsvpRef = false,
     bool clearPublishedAt = false,
     bool clearCreatedAt = false,
     bool clearUpdatedAt = false,
@@ -316,7 +325,6 @@ final class EventModel extends Equatable with BaseFields {
     goingCount: goingCount ?? this.goingCount,
     waitlistCount: waitlistCount ?? this.waitlistCount,
     attendedCount: attendedCount ?? this.attendedCount,
-    lastRsvpRef: clearLastRsvpRef ? null : lastRsvpRef ?? this.lastRsvpRef,
     publishedAt: clearPublishedAt ? null : publishedAt ?? this.publishedAt,
     createdAt: clearCreatedAt ? null : createdAt ?? this.createdAt,
     updatedAt: clearUpdatedAt ? null : updatedAt ?? this.updatedAt,
@@ -350,7 +358,6 @@ final class EventModel extends Equatable with BaseFields {
     goingCount,
     waitlistCount,
     attendedCount,
-    lastRsvpRef,
     publishedAt,
     createdAt,
     updatedAt,
