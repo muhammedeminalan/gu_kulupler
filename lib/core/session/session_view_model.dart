@@ -48,6 +48,9 @@ part 'session_view_model.g.dart';
 /// baştan kurulur ([rescheduleReminders]); oturum kapanınca hepsi iptal
 /// edilir. Soğuk açılışın hatırlatıcı yükünü kabuk bir kez alır
 /// ([takeLaunchReminder]); oturum `active` dışında çözülürse yük atılır.
+/// Uygulama açıkken dokunulan hatırlatıcılar [reminderTaps]'tedir (yalnızca
+/// etkin oturumda); ikisini de kabuk `NotificationNavigator.openPayload`'a
+/// verir (T-26, CD-72).
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
     with ProjectDependencyMixin, SuspendedAccountMixin {
@@ -274,11 +277,12 @@ final class SessionViewModel extends _$SessionViewModel
     );
   }
 
-  /// Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa etkinliğin kimliği;
-  /// yoksa `null` (CD-72; PLAN §15.6). Uygulama ömründe **bir kez** yanıt
-  /// verir: kabuk ilk kuruluşta çağırır ve `EventDetailRoute`'a gider.
-  /// Hatırlatıcının liste belgesi (`event_reminder`) burada yazılır. Oturum
-  /// önce `active` dışında çözüldüyse yük atılmıştır.
+  /// Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa bildirimin yükü
+  /// (`event_reminder:<eventId>`); yoksa `null` (CD-72; PLAN §15.6).
+  /// Uygulama ömründe **bir kez** yanıt verir: kabuk ilk kuruluşta çağırır ve
+  /// yükü `NotificationNavigator.openPayload`'a verir (liste belgesi, bilet
+  /// ayrımı, yönlendirme orada). Oturum önce `active` dışında çözüldüyse yük
+  /// atılmıştır.
   Future<String?> takeLaunchReminder() async {
     final uid = state.uid;
     if (_launchHandled || uid == null || state.status != AuthStatus.active) {
@@ -286,10 +290,19 @@ final class SessionViewModel extends _$SessionViewModel
       return null;
     }
     _launchHandled = true;
-    final eventId = await _reminders.takeLaunchEventId(uid);
+    final payload = await _reminders.takeLaunchPayload();
     if (!ref.mounted || state.uid != uid) return null;
-    return eventId;
+    return payload;
   }
+
+  /// Uygulama çalışırken (ön / arka planda) dokunulan hatırlatıcıların
+  /// yükleri (`LocalReminderService.tappedPayloads`); yalnızca etkin oturumda
+  /// iletilir (CD-72). Kabuk dinler ve `NotificationNavigator.openPayload`'a
+  /// verir.
+  Stream<String> get reminderTaps => localReminderService.tappedPayloads.where(
+    (_) =>
+        ref.mounted && state.uid != null && state.status == AuthStatus.active,
+  );
 
   /// Bekleyen askı bildirimini (DLG-01 "Hesabın askıya alındı") gösterir ve
   /// kapanana kadar bekler; bekleyen bildirim yoksa etkisizdir. Giriş ekranı

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T08:28:06.967Z",
+  "updated": "2026-10-14T10:03:42.072Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -391,11 +391,13 @@
       "notes": ""
     },
     "T-26": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T08:28:35.577Z",
+      "finishedAt": "2026-10-14T10:03:42.071Z",
+      "commits": [
+        "7c9017a"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-27": {
@@ -1198,7 +1200,10 @@
       "resolveIn": [
         "T-26"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-26",
+      "closedAt": "2026-10-14T09:52:29.333Z",
+      "closeNote": "NotificationsViewModel → unreadNotificationClubsProvider → club_list_view MyClubChip.unread (T-26)"
     },
     {
       "id": "W-69",
@@ -1380,7 +1385,10 @@
       "resolveIn": [
         "T-26"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-26",
+      "closedAt": "2026-10-14T09:52:29.360Z",
+      "closeNote": "NTF-02 eventReminders/reminderTime kaydı + NTF-01 'Bu türü kapat' → rescheduleReminders; LocalReminderService.tappedPayloads → SessionViewModel.reminderTaps → AppShellView → NotificationNavigator.openPayload (createSelf + bilet/etkinlik); soğuk açılış takeLaunchReminder → openPayload; rozet watchInbox + NotificationPreferenceFilter (T-26; test/flows/notification_flow_test.dart)"
     },
     {
       "id": "W-86",

@@ -73,8 +73,12 @@ final class _FakePlugin extends Fake
     onDidReceiveBackgroundNotificationResponse,
   }) async {
     initialized.add(settings);
+    onResponse = onDidReceiveNotificationResponse;
     return true;
   }
+
+  /// Kurulumda verilen dokunma geri çağrısı.
+  DidReceiveNotificationResponseCallback? onResponse;
 
   @override
   Future<void> zonedSchedule({
@@ -328,6 +332,31 @@ void main() {
         expect(await service.initialLaunchPayload(), 'event_reminder:e01');
       },
     );
+
+    test('tappedPayloads: dinlemek eklentiyi kurar; dokunuş yükü iletilir, '
+        'yüksüz dokunuş iletilmez (T-26)', () async {
+      final taps = <String>[];
+      final subscription = service.tappedPayloads.listen(taps.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+      expect(plugin.initialized, hasLength(1));
+
+      plugin.onResponse!(
+        const NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotification,
+          payload: 'event_reminder:e01',
+        ),
+      );
+      plugin.onResponse!(
+        const NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotification,
+        ),
+      );
+      await pumpEventQueue();
+      expect(taps, ['event_reminder:e01']);
+    });
   });
 
   group('FlutterLocalReminderService · rescheduleAll (T-25)', () {

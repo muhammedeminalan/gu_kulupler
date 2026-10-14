@@ -12,6 +12,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_list_toolbar.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/first_club_card.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/my_clubs_strip.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
+import 'package:gu_kulupler/product/notification/unread_notification_clubs.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/club/my_club_chip.dart';
@@ -58,8 +59,13 @@ class _ClubListViewState extends ConsumerState<ClubListView>
   static const int _gridColumns = 2;
 
   /// "Kulüplerim": etkin üyeliği olan kulüpler, oturumdaki üyelik sırasıyla
-  /// (`actions.js:31`; listede olmayan kulüp atlanır).
-  List<Widget> _myClubChips(ClubListState state, SessionState session) => [
+  /// (`actions.js:31`; listede olmayan kulüp atlanır). Okunmamış bildirimi
+  /// olan kulübün kartında nokta (W-68; `screens-clubs.js:25`).
+  List<Widget> _myClubChips(
+    ClubListState state,
+    SessionState session,
+    Set<String> unreadClubIds,
+  ) => [
     for (final membership in session.memberships.values)
       if (membership.status == MembershipStatus.active)
         if (state.clubById(membership.clubId) case final club?)
@@ -68,8 +74,7 @@ class _ClubListViewState extends ConsumerState<ClubListView>
             manager:
                 membership.role == ClubRole.board ||
                 membership.role == ClubRole.president,
-            // TODO(T-26): kulübe ait okunmamış bildirim noktası
-            // (`screens-clubs.js:25` `notifsFor`).
+            unread: unreadClubIds.contains(club.id),
             actionKey: GuKey.action('CLB-01.myClub.${club.id}'),
             onTap: () => openClub(club.id),
           ),
@@ -154,7 +159,11 @@ class _ClubListViewState extends ConsumerState<ClubListView>
     final session = ref.watch(sessionViewModelProvider);
     final visible = state.visible;
     final selectedCategory = state.filters.singleCategoryId;
-    final myClubs = _myClubChips(state, session);
+    final myClubs = _myClubChips(
+      state,
+      session,
+      ref.watch(unreadNotificationClubsProvider),
+    );
     final hasMembership = session.memberships.values.any(
       (membership) => membership.status == MembershipStatus.active,
     );

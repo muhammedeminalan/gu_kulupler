@@ -17,11 +17,11 @@ import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 ///   henüz bitmemiş hatırlatıcının liste belgesi yazılır (`createSelf` —
 ///   PLAN §15.6 `event_reminder` satırı; belgesi olan yeniden yazılmaz).
 ///   Okuma hatasında mevcut planlar korunur.
-/// * [takeLaunchEventId] — soğuk açılış (CD-72): hatırlatıcıya dokunarak
-///   başlatılan uygulamanın yükü `event_reminder:<eventId>` çözülür,
-///   hatırlatıcının liste belgesi yazılır (en iyi çaba) ve etkinlik kimliği
-///   döner; yönlendirmeyi kabuk yapar (`EventDetailRoute`). Ön planda dokunma
-///   ve `NotificationNavigator.openPayload` (bilet ayrımı) T-26'dadır.
+/// * [takeLaunchPayload] — soğuk açılış (CD-72): hatırlatıcıya dokunarak
+///   başlatılan uygulamanın yükü (`event_reminder:<eventId>`) döner; biçimi
+///   tanınmayan yük atılır. Liste belgesi (`createSelf`), bilet ayrımı ve
+///   yönlendirme `NotificationNavigator.openPayload`'dadır (T-26) — kabuk
+///   çağırır; uygulama açıkken dokunma da aynı yoldan geçer.
 ///
 /// Hiçbir metot fırlatmaz: okuma / yazma hatası günlüğe düşer.
 final class SessionReminderSync with ProjectDependencyMixin {
@@ -84,23 +84,16 @@ final class SessionReminderSync with ProjectDependencyMixin {
     }
   }
 
-  /// Soğuk açılışın hatırlatıcı yükündeki etkinlik kimliği; yük yoksa ya da
-  /// biçimi tanınmıyorsa `null`. [uid] oturumun kendi kimliğidir (liste
-  /// belgesi ona yazılır).
-  Future<String?> takeLaunchEventId(String uid) async {
-    final eventId = LocalReminderService.eventIdOfPayload(
-      await localReminderService.initialLaunchPayload(),
-    );
-    if (eventId == null) return null;
-    // Kulüp kimliği etkinlikten okunur; okunamazsa (silinmiş, yetki) belge
-    // yazılmaz, etkinlik ekranı kendi durumunu gösterir.
-    switch (await eventRepository.getEvent(eventId)) {
-      case FirebaseSuccess(data: final event):
-        await _recordReminder(uid, event.id, event.clubId);
-      case FirebaseFailure(:final error):
-        AppLogger.warn('Hatırlatıcı etkinliği okunamadı: ${error.name}');
+  /// Soğuk açılışın hatırlatıcı yükü; yük yoksa ya da biçimi tanınmıyorsa
+  /// `null` (tanınmayan yük günlüğe düşer).
+  Future<String?> takeLaunchPayload() async {
+    final payload = await localReminderService.initialLaunchPayload();
+    if (payload == null) return null;
+    if (LocalReminderService.eventIdOfPayload(payload) == null) {
+      AppLogger.warn('Açılış bildirimi yükü tanınmadı: $payload');
+      return null;
     }
-    return eventId;
+    return payload;
   }
 
   /// Tüm planları iptal eder (oturum kapandı).

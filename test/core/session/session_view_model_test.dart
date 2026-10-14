@@ -1502,20 +1502,50 @@ void main() {
       expect(reminders.rescheduleCalls, 2);
     });
 
-    test('soğuk açılış: hatırlatıcı yükünün etkinliği bir kez döner ve liste '
-        'belgesi yazılır; tanınmayan yük null', () async {
+    test('soğuk açılış: hatırlatıcı yükü bir kez döner (liste belgesi ve '
+        'yönlendirme NotificationNavigator.openPayload içinde — T-26); '
+        'tanınmayan yük null', () async {
       events.put(eventIn('e01', const Duration(minutes: 30)));
       reminders.launchPayload = LocalReminderService.payloadFor('e01');
       final container = await resolvedActive();
 
-      expect(await notifierOf(container).takeLaunchReminder(), 'e01');
       expect(
-        inbox.notifications['event_reminder_e01_u1']?.refs.clubId,
-        'c01',
+        await notifierOf(container).takeLaunchReminder(),
+        'event_reminder:e01',
       );
+      expect(inbox.callsTo('createSelf'), isEmpty);
       expect(await notifierOf(container).takeLaunchReminder(), isNull);
       expect(LocalReminderService.eventIdOfPayload('başka:e01'), isNull);
       expect(LocalReminderService.eventIdOfPayload('event_reminder:'), isNull);
+    });
+
+    test('soğuk açılış: tanınmayan yük atılır', () async {
+      reminders.launchPayload = 'event:e01';
+      final container = await resolvedActive();
+      expect(await notifierOf(container).takeLaunchReminder(), isNull);
+    });
+
+    test('uygulama açıkken hatırlatıcı dokunuşu yalnızca etkin oturumda '
+        'iletilir', () async {
+      final container = await resolvedActive();
+      final taps = <String>[];
+      final subscription = notifierOf(
+        container,
+      ).reminderTaps.listen(taps.add);
+      addTearDown(subscription.cancel);
+
+      reminders.tap(LocalReminderService.payloadFor('e01'));
+      await pumpEventQueue();
+      expect(taps, ['event_reminder:e01']);
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      reminders.tap(LocalReminderService.payloadFor('e02'));
+      await pumpEventQueue();
+      expect(taps, ['event_reminder:e01']);
     });
 
     test('oturumsuz açılışta yük atılır: sonradan giriş yapılsa da etkinliğe '
