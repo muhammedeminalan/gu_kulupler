@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T09:52:29.361Z",
+  "updated": "2026-10-14T10:03:42.072Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": "T-26",
+  "currentTask": null,
   "statusValues": [
     "pending",
     "planning",
@@ -391,11 +391,13 @@
       "notes": ""
     },
     "T-26": {
-      "status": "in_progress",
+      "status": "done",
       "startedAt": "2026-10-14T08:28:35.577Z",
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "finishedAt": "2026-10-14T10:03:42.071Z",
+      "commits": [
+        "7c9017a"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-27": {
