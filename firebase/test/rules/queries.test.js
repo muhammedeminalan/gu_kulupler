@@ -48,6 +48,8 @@ const QUERIES = Object.freeze({
   waitlistPosition: { collection: 'rsvps', equals: ['eventId', 'clubId', 'status'], order: ['waitlistAt', 'asc'] },
   // T-25 (sözleşme docs/plans/T-25.md §6.g)
   watchInbox: { collection: 'notifications', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
+  // T-28: SupportRepository.listMine (talepler soft delete edilmez — `isDeleted` süzgeci istemcide).
+  listMyTickets: { collection: 'supportTickets', equals: ['userId'], order: ['createdAt', 'desc'] },
 });
 
 /**

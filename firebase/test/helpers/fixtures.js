@@ -353,14 +353,18 @@ function baseDocs(options = {}) {
   for (const uid of ['u_susp', 'u_former']) {
     docs[`savedPosts/${uid}_p01`] = base({ userId: uid, postId: 'p01', clubId: CLUB, savedAt: serverTimestamp() });
   }
-  docs['supportTickets/t01'] = base({
-    userId: 'u_student',
-    ticketNo: 'GU-ABC234',
-    topic: 'other',
-    message: 'Rules testi destek talebi.',
-    attachmentPaths: [],
-    status: 'open',
-  });
+  // T-28: belge kimliği = talep numarası (`supportTickets/{ticketNo}`); askıdaki kullanıcının askıdan ÖNCE
+  // açtığı talep (okur; yeni talep açamaz).
+  for (const [ticketNo, userId] of [['GU-ABC234', 'u_student'], ['GU-SUSP23', 'u_susp']]) {
+    docs[`supportTickets/${ticketNo}`] = base({
+      userId,
+      ticketNo,
+      subject: 'other',
+      message: 'Rules testi destek talebi.',
+      attachmentPaths: [],
+      status: 'open',
+    });
+  }
   // Sayaç günü sabittir; gün sınırı vakaları (T-19 announcement_limit) kendi sayacını kurar.
   docs[`announcementCounters/${CLUB}_20261008`] = {
     clubId: CLUB,

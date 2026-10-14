@@ -240,6 +240,9 @@ void main() {
       ('tickets', '/events/mine'),
       ('saved', '/profile/saved'),
       ('interest.i01', '/clubs'),
+      // W-32 (T-28): ayarlar girişleri → SET-01.
+      ('settings', '/profile/settings'),
+      ('settingsRow', '/profile/settings'),
     ]) {
       testWidgets('$action → $location', (tester) async {
         final router = await _pumpRoute(tester);

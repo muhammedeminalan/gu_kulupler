@@ -536,6 +536,32 @@ function savedCreate({ club, uid, postId = 'p01' }, extra) {
 /** `save` — silinmiş kayıt: restore + `savedAt` yenilenir. */
 const savedResave = () => ({ ...restore(), savedAt: serverTimestamp() });
 
+// ── T-28 · supportTickets ─────────────────────────────────────────────────────────────────────
+
+/** Matrisin yeni talep numarası (`newDocPath` = `supportTickets/GU-NEWT23`). */
+const NEW_TICKET_NO = 'GU-NEWT23';
+
+/** `support/{ticketNo}/` + StoragePaths.newFileName biçiminde ek yolu. */
+const supportAttachmentPath = (ticketNo = NEW_TICKET_NO, file = '20261014T090000Z_0123456789abcdef.jpg') =>
+  `support/${requireId(ticketNo, 'ticketNo')}/${file}`;
+
+/**
+ * `SupportRepository.createTicket` — `SupportTicketModel.toJson()` + `BaseFieldsPayload.create()`:
+ * `ticketNo` (= belge kimliği), `userId`, `subject`, `message`, `attachmentPaths`, `status: open`.
+ */
+function ticketCreate({ uid, ticketNo = NEW_TICKET_NO, attachmentPaths = [] }, extra) {
+  return {
+    ticketNo,
+    userId: requireId(uid, 'uid'),
+    subject: 'bug',
+    message: 'Bildirimler gelmiyor.',
+    attachmentPaths,
+    status: 'open',
+    ...baseCreate(),
+    ...extra,
+  };
+}
+
 // ── T-22 · etkinlik, katılım, yoklama, terfi ──────────────────────────────────────────────────
 // Yazma yolları docs/plans/T-22.md §6.2 – §6.5 tablolarındaki içeriktir (EventRepository / RsvpRepository;
 // yoklama ve terfi yüklerini T-30 `AttendanceRepository` yazar — kuralları T-22'de açılır).
@@ -881,6 +907,11 @@ const variants = new Map([
   ['notificationRead', () => notificationRead()],
   ['notificationUnread', () => ({ read: false, ...baseUpdate() })],
   ['notificationRetype', () => ({ type: 'announcement', ...baseUpdate() })],
+  // T-28 · supportTickets
+  ['ticketCreate', (ctx) => ticketCreate({ uid: ctx.uid })],
+  ['ticketCreateWithAttachment', (ctx) => ticketCreate({ uid: ctx.uid, attachmentPaths: [supportAttachmentPath()] })],
+  ['ticketClose', () => ({ status: 'closed', ...baseUpdate() })],
+  ['ticketEditMessage', () => ({ message: 'Değiştirilmiş mesaj.', ...baseUpdate() })],
 ]);
 
 /**
@@ -1008,6 +1039,9 @@ module.exports = {
   restoreCommentWrites,
   savedCreate,
   savedResave,
+  NEW_TICKET_NO,
+  supportAttachmentPath,
+  ticketCreate,
   HOUR_MS,
   EVENT_NULLS,
   RSVP_NULLS,

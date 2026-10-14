@@ -707,6 +707,64 @@ function withExtras(raw, extras) {
   return { ...raw, notifications };
 }
 
+// ── T-28 · supportTickets (demo-support.json) ───────────────────────────────────────────────────
+
+/** `supportTickets/{ticketNo}` deseni (Dart `FirestoreIds.supportTicketNoPattern`; firestore.rules aynı). */
+const SUPPORT_TICKET_NO = /^GU-[A-HJ-NP-Z2-9]{6}$/;
+/** `SupportSubject` (5) ve `TicketStatus` (2) JSON değerleri. */
+const SUPPORT_SUBJECTS = Object.freeze(['bug', 'suggestion', 'account', 'club', 'other']);
+const TICKET_STATUSES = Object.freeze(['open', 'closed']);
+/** Destek mesajının üst sınırı (Dart `Limits.supportMessageMax`). */
+const SUPPORT_MESSAGE_MAX = 500;
+
+/**
+ * Demo destek talepleri → `supportTickets` belgeleri (`SupportTicketModel.toJson()` + BaseFields). Bu
+ * koleksiyon demo-data.json'da yoktur: `COLLECTIONS` (17, Dart DemoDataFixture ile aynı) dışında tutulur.
+ * Zamanlar `meta.today` → `now` tam gün kaydırılır; `updatedAt` verilmezse `createdAt`.
+ */
+function convertSupport(raw, extras, { now }) {
+  const shift = dayShiftMs(new Date(raw.meta.today), now);
+  const at = (iso) => new Date(new Date(iso).getTime() + shift);
+  const docs = {};
+  for (const [ticketNo, ticket] of Object.entries(extras.supportTickets || {})) {
+    const createdAt = at(ticket.createdAt);
+    docs[ticketNo] = {
+      ticketNo,
+      userId: ticket.userId,
+      subject: ticket.subject,
+      message: ticket.message,
+      attachmentPaths: [],
+      status: ticket.status,
+      createdAt,
+      updatedAt: typeof ticket.updatedAt === 'string' ? at(ticket.updatedAt) : createdAt,
+      isDeleted: false,
+      deletedAt: null,
+      deletedBy: null,
+    };
+  }
+  return docs;
+}
+
+/** Destek taleplerinin Rules biçimi (firestore.rules `supportTickets`); sorun listesi döner, boş = tutarlı. */
+function validateSupport(tickets, users) {
+  const problems = [];
+  for (const [id, t] of Object.entries(tickets)) {
+    const where = `supportTickets/${id}`;
+    if (!SUPPORT_TICKET_NO.test(id) || t.ticketNo !== id) problems.push(`${where}: kimlik talep numarası değil`);
+    if (!users[t.userId]) problems.push(`${where}: kullanıcı ${t.userId} demo verisinde yok`);
+    if (!SUPPORT_SUBJECTS.includes(t.subject)) problems.push(`${where}: bilinmeyen konu ${t.subject}`);
+    if (!TICKET_STATUSES.includes(t.status)) problems.push(`${where}: bilinmeyen durum ${t.status}`);
+    if (typeof t.message !== 'string' || t.message.length === 0 || t.message.length > SUPPORT_MESSAGE_MAX) {
+      problems.push(`${where}: mesaj 1 – ${SUPPORT_MESSAGE_MAX} karakter değil`);
+    }
+    if (!Array.isArray(t.attachmentPaths) || t.attachmentPaths.length > 1) problems.push(`${where}: en çok 1 ek`);
+    if (!(t.createdAt instanceof Date) || !(t.updatedAt instanceof Date) || t.updatedAt < t.createdAt) {
+      problems.push(`${where}: zaman alanları geçersiz`);
+    }
+  }
+  return problems;
+}
+
 module.exports = {
   SEED_SUSPEND_REASON,
   SEED_TITLES,
@@ -719,6 +777,9 @@ module.exports = {
   dayShiftMs,
   notificationDocId,
   withExtras,
+  SUPPORT_TICKET_NO,
+  convertSupport,
+  validateSupport,
   fileStamp,
   convert,
   expectedCounts,

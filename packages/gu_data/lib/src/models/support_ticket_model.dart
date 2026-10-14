@@ -8,7 +8,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'support_ticket_model.g.dart';
 
-/// Destek talebi — `supportTickets/{id}` (PLAN §9.6.17, domain-model §2.15).
+/// Destek talebi — `supportTickets/{ticketNo}` (PLAN §9.6.17,
+/// domain-model §2.15).
 ///
 /// Talebi sahibi oluşturur ve okur; süper admin okur ve kapatır.
 ///
@@ -42,7 +43,8 @@ final class SupportTicketModel extends Equatable with BaseFields {
     required String id,
   }) => _$SupportTicketModelFromJson(json).copyWith(id: id);
 
-  /// Belge kimliği (Firestore otomatik kimliği).
+  /// Belge kimliği: talep numarasıyla aynıdır ([ticketNo]; otomatik kimlik
+  /// değil — numara tekilliğini Rules sağlar, CD-151).
   @JsonKey(includeFromJson: false, includeToJson: false)
   final String id;
 

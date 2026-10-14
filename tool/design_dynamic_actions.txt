@@ -106,3 +106,8 @@ PRF-03.menu.*.leave    # design/prototype/app/screens-profile.js:47 — "Kulüpt
 PRF-03.menu.*.cancel   # design/prototype/app/screens-profile.js:48 — "İsteği iptal et" yalnızca menü açıkken ve bekleyen başvuruda; yakalama kapalı menü
 PRF-03.menu.*.reapply  # design/prototype/app/screens-profile.js:49 — "Tekrar başvur" yalnızca menü açıkken ve reddedilen / çıkarılan üyelikte; yakalama kapalı menü
 PRF-04.retry           # lib/features/profile/view/saved_view.dart — yalnızca kayıtlar / gönderiler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+SET-02.retry           # lib/features/settings/view/blocked_users_view.dart — yalnızca engeller / kullanıcılar okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+SET-04.licenseLink.*   # design/prototype/app/screens-profile.js:101 — "Lisansı görüntüle" yalnızca lisans satırı açıkken (`open[k]`); yakalamada satırlar kapalı
+SET-05.subject.*   # design/prototype/app/screens-profile.js:122 — konu menüsünün öğeleri (`SET-05.subject.<konu>`) yalnızca menü açıkken (`menu`); yakalama kapalı menü
+SET-05.scrim       # design/prototype/app/ui.js:191 + screens-profile.js:122 — konu menüsünün saydam scrim'i (`PopMenu id="SET-05"`) yalnızca menü açıkken
+SET-05.newRequest  # design/prototype/app/screens-profile.js:116 — "Yeni talep" yalnızca talep gönderildikten sonraki başarı kartında (`f.sent`); yakalama boş form

@@ -5,6 +5,8 @@
 // `firestore.rules` `match` bloklarıyla karşılaştırılır.
 // Bir koleksiyon sahibi task'ta açıldığında o satır buradan düşer (aşağıdaki OPENED listesi) ve
 // kendi `rules/<koleksiyon>.test.js` matrisine taşınır; kalanlar kapalı kalmaya devam eder.
+// T-28 ile 19 satırın tamamı açıldı: koleksiyon bazlı ret bloğu boş kalır (yalnızca koleksiyon grubu
+// `private` — T-37 — ve tanımsız yollar kapalıdır; aşağıdaki bloklar onları sınar).
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -31,6 +33,7 @@ const budget = require('../helpers/budget');
  * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
  * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
  * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`. T-25: `notifications`.
+ * T-28: `supportTickets`.
  */
 const OPENED = [
   'users', 'users/private', 'settings',
@@ -38,6 +41,7 @@ const OPENED = [
   'posts', 'posts/votes', 'comments', 'savedPosts', 'announcementCounters',
   'events', 'events/private', 'rsvps',
   'notifications',
+  'supportTickets',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -77,7 +81,14 @@ describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
   });
 });
 
-describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e) => [e.collection, e]))(
+const CLOSED = expectations.filter((e) => !OPENED.includes(e.collection));
+
+test('T-28 sonrası kapalı koleksiyon satırı kalmadı (19 / 19 açık)', () => {
+  expect(CLOSED.map((e) => e.collection)).toEqual([]);
+});
+
+// `describe.each` boş tabloyu reddeder: kapalı satır kalmadığında blok kurulmaz.
+(CLOSED.length ? describe.each(CLOSED.map((e) => [e.collection, e])) : () => {})(
   'deny-all · %s',
   (_name, exp) => {
     // Bağlam başına tek test, dört işlem (18 × 12 × 4 = 864 istek): hedef belge bir kez kurulur.
@@ -101,8 +112,15 @@ describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e)
 );
 
 describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vakası süzgeçsiz ikiziyle koşar', () => {
-  // Henüz kapalı bir koleksiyon (T-28): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
-  const posts = loadExpectations('support_tickets.json');
+  // Kurallarda tanımsız bir koleksiyon (varsayılan ret — T-28 ile bütün satırlar açıldı): süzgeçli sorgu
+  // da süzgeçsiz ikizi de reddedilir.
+  const posts = {
+    ...loadExpectations('support_tickets.json'),
+    collection: 'unknownCollection',
+    docPath: 'unknownCollection/x',
+    newDocPath: 'unknownCollection/y',
+    listPath: 'unknownCollection',
+  };
   const filtered = { where: [['isDeleted', '==', false]], orderBy: [['createdAt', 'desc']] };
   runCases(
     posts,
@@ -143,16 +161,18 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumayı dener: destek talebi.
-  // Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap / ayar belgesi
-  // T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy, kayıt ve duyuru sayacı T-19'da; etkinlik ve
-  // katılım T-22'de; bildirim T-25'te açıldı.)
-  test.each(ALL_CONTEXTS)('%s · destek talebi → deny', async (role) => {
+  // Her bağlam, kuralları açıldığında süper admine izinli olacak okumayı dener: `private` koleksiyon
+  // grubu (ADM-05 e-posta araması — T-37). Üyelik, kullanıcı ve gizli hesap belgeleri yerindeyken de sonuç
+  // rettir. (Kendi kullanıcı / hesap / ayar belgesi T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy,
+  // kayıt ve duyuru sayacı T-19'da; etkinlik ve katılım T-22'de; bildirim T-25'te; destek talebi T-28'de
+  // açıldı.)
+  test.each(ALL_CONTEXTS)('%s · private koleksiyon grubu → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    await assertFails(getDoc(doc(db, 'supportTickets/t01')));
+    expect(Object.keys(docs).some((p) => /\/private\/(account|contact)$/.test(p))).toBe(true);
+    await assertFails(getDocs(collectionGroup(db, 'private')));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 

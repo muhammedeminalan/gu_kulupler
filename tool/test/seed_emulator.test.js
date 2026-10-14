@@ -8,7 +8,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { TOOL_DIR } = require('./helpers');
-const { COLLECTIONS, PATH_OF, convert, dayShiftMs, expectedCounts, staticTablesDiff, validate, withExtras } = require('../seed/lib/convert');
+const {
+  COLLECTIONS, PATH_OF, SUPPORT_TICKET_NO, convert, convertSupport, dayShiftMs, expectedCounts, staticTablesDiff, validate,
+  validateSupport, withExtras,
+} = require('../seed/lib/convert');
 const { GuardError, encodeValue, resolveTarget } = require('../seed/lib/emulator_rest');
 const { placeholderPng } = require('../seed/placeholder_png');
 
@@ -81,6 +84,8 @@ test('seed · --dry-run ağa çıkmadan sayıları basar; bilinmeyen argüman ku
   assert.match(dry.stdout, /^\s+rsvps\s+944$/m);
   // T-25: demo-notifications.json'daki 5 ek tür birleştirilir (40 + 5).
   assert.match(dry.stdout, /^\s+notifications\s+45$/m);
+  // T-28: demo-support.json'daki 5 destek talebi (COLLECTIONS dışında, kendi satırı).
+  assert.match(dry.stdout, /^\s+supportTickets\s+5$/m);
   assert.match(dry.stdout, /^\s+auth\s+226$/m);
   assert.equal(dry.stdout.includes(raw.meta.demoPassword), false, 'parola çıktıya yazılmamalı');
   assert.equal(run(['--sil'], {}).code, 2);
@@ -319,4 +324,31 @@ test('seed · T-25 ek bildirimler: 13 türün hepsi, okunmuş ve okunmamış; ki
   broken.notifications.system_seedn001000000000000_u_ayse.refs = { textKey: 'welcome', clubId: 'c01' };
   const problems = validate(broken, { announcementDailyLimit: 2 });
   assert.equal(problems.length, 2, problems.join('\n'));
+});
+
+test('seed · T-28 destek talepleri: numara = kimlik, durum karışık, kullanıcılar demo verisinde; validate bozuğu yakalar', () => {
+  const extras = JSON.parse(fs.readFileSync(path.join(TOOL_DIR, 'seed', 'demo-support.json'), 'utf8'));
+  const tickets = convertSupport(raw, extras, { now: TODAY });
+  assert.equal(Object.keys(tickets).length, 5);
+  assert.deepEqual(validateSupport(tickets, raw.users), []);
+  for (const [id, t] of Object.entries(tickets)) {
+    assert.match(id, SUPPORT_TICKET_NO);
+    assert.equal(t.ticketNo, id);
+    assert.deepEqual(t.attachmentPaths, []);
+    assert.equal(t.isDeleted, false);
+  }
+  const statuses = new Set(Object.values(tickets).map((t) => t.status));
+  assert.deepEqual([...statuses].sort(), ['closed', 'open']);
+  // Kapalı talebin updatedAt'i createdAt'ten sonradır; zamanlar meta.today → now tam gün kayar.
+  assert.ok(tickets['GU-H2W9TB'].updatedAt > tickets['GU-H2W9TB'].createdAt);
+  const shifted = convertSupport(raw, extras, { now: new Date(TODAY.getTime() + 3 * DAY_MS) });
+  assert.equal(shifted['GU-4825KM'].createdAt.getTime(), tickets['GU-4825KM'].createdAt.getTime() + 3 * DAY_MS);
+
+  const broken = structuredClone(tickets);
+  broken['GU-4825KM'].status = 'pending';
+  broken['GU-7KD3MP'].message = 'x'.repeat(501);
+  broken['GU-ZP5R8C'].userId = 'u_yok';
+  broken['GU-I01OAB'] = { ...broken['GU-Q6V4NE'], ticketNo: 'GU-I01OAB' };
+  const problems = validateSupport(broken, raw.users);
+  assert.equal(problems.length, 4, problems.join('\n'));
 });

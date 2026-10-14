@@ -1,7 +1,7 @@
 // T-26 · Derin bağlantı tablosu (PLAN §13.7, navigation.md §4.1):
 // `NotificationTargets.locationFor` her `NotificationType` için beklenen
 // konum ve sekme; türün gerektirdiği kimlik eksikse SYS-04. Geçici hedefler
-// (W-28 → T-32, W-29 → T-40, W-30 → T-28) borç kapanınca güncellenir.
+// (W-28 → T-32, W-29 → T-40) borç kapanınca güncellenir.
 // `NotificationNavigator.open` / `openPayload`: okundu, bilet ayrımı
 // (going / attended → EVT-03; waitlist / kayıt yok → EVT-02), silinmiş /
 // gizli hedef → SYS-04, TST-17, hatırlatıcı liste belgesi, bozuk yük; gerçek
@@ -86,9 +86,8 @@ void main() {
         NotificationType.reportResolved: (null, null),
         // Geçici: T-40 `AdminReportsRoute(reportId:)` (W-29).
         NotificationType.newReport: ('/admin', GuTab.admin),
-        // Geçici: T-28 `AboutRoute` (W-30).
-        NotificationType.system: ('/profile', GuTab.profile),
-        NotificationType.unknown: ('/profile', GuTab.profile),
+        NotificationType.system: ('/profile/settings/about', GuTab.profile),
+        NotificationType.unknown: ('/profile/settings/about', GuTab.profile),
       };
       expect(expected.keys, unorderedEquals(NotificationType.values));
       for (final MapEntry(key: type, value: (location, tab))

@@ -21,6 +21,10 @@
 // T-27 · `ProfileRoute` kökü gerçek view (PRF-01), `EditProfileRoute`
 // (`/profile/edit`), `MyClubsRoute` (`/profile/clubs?tab=`), `SavedRoute`
 // (`/profile/saved`).
+// T-28 · `SettingsRoute` (`/profile/settings`, SET-01) ve alt rotaları:
+// `SettingsNotificationPrefsRoute` (NTF-02 paylaşılan), `BlockedRoute`
+// (SET-02), `BlockedUserProfileRoute` (CLB-07 paylaşılan), `AboutRoute`
+// (SET-04), `SupportRoute` (SET-05).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -34,7 +38,8 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27).
+/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
+/// T-28).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -80,6 +85,13 @@ const Map<GoRouteData, String> _routes = {
   EditProfileRoute(): '/profile/edit',
   MyClubsRoute(): '/profile/clubs',
   SavedRoute(): '/profile/saved',
+  // Ayarlar (T-28: SET-01, NTF-02, SET-02, CLB-07, SET-04, SET-05)
+  SettingsRoute(): '/profile/settings',
+  SettingsNotificationPrefsRoute(): '/profile/settings/notifications',
+  BlockedRoute(): '/profile/settings/blocked',
+  BlockedUserProfileRoute(userId: _userId): '/profile/settings/blocked/:userId',
+  AboutRoute(): '/profile/settings/about',
+  SupportRoute(): '/profile/settings/support',
 };
 
 /// Parametreli kulüp rotalarının örnek kimliği.
@@ -142,11 +154,39 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 33 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 39 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
-        'T-23: +2, T-24: +1, T-26: +1, T-27: +3)', () {
+        'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(33));
+      expect(_routes, hasLength(39));
+    });
+
+    test('T-28 · ayarlar rotaları `/profile/settings` altındadır; '
+        'BlockedUserProfileRoute `userId` yol parametresidir; hepsi aktif '
+        'oturum (A) ister', () {
+      const blockedProfile = BlockedUserProfileRoute(userId: _userId);
+      expect(blockedProfile.location, '/profile/settings/blocked/u01');
+      final locations = <String>[
+        const SettingsRoute().location,
+        const SettingsNotificationPrefsRoute().location,
+        const BlockedRoute().location,
+        blockedProfile.location,
+        const AboutRoute().location,
+        const SupportRoute().location,
+      ];
+      expect(locations, [
+        '/profile/settings',
+        '/profile/settings/notifications',
+        '/profile/settings/blocked',
+        '/profile/settings/blocked/u01',
+        '/profile/settings/about',
+        '/profile/settings/support',
+      ]);
+      for (final location in locations) {
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.access, RouteAccess.active, reason: location);
+        expect(match.clubId, isNull, reason: location);
+      }
     });
 
     test('T-27 · profil rotaları: sabit parçalar; MyClubsRoute `tab` sorgu '

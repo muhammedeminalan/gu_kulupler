@@ -30,6 +30,11 @@
 // T-22 — `events/{eventId}/{file}` (etkinlik kapağı, CD-47): posts/ ile AYNI kalıp ve aynı iki yardımcı
 // (`isManagerOf(metadata.clubId)` + `accountActive()` = 2 belge — W-73). Etkinlik belgesi OKUNMAZ (üçüncü
 // belge olurdu): klasör ↔ kulüp bağı Firestore `events.coverPath` kuralındadır (rules/events.test.js).
+//
+// T-28 — `support/{ticketNo}/{file}` (destek eki, SET-05): tek dosya okuması YALNIZCA yükleyene
+// (`metadata.uploaderId`) ve süper admine; klasör listesi kapalı; yükleme doğrulanmış ve hesabı etkin her
+// kullanıcıya, kendi kimliğiyle (`uploaderId` tek özel üst veri), yeni adla, klasör adı talep numarası
+// deseninde. Talep belgesi okunmaz (1 Firestore belgesi: hesap); iliştirmeyi Firestore kuralı denetler.
 const fs = require('node:fs');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { deleteObject, getBytes, getMetadata, listAll, ref, updateMetadata, uploadBytes } = require('firebase/storage');
@@ -39,11 +44,14 @@ const { CONTEXTS, VARIANTS, contextFor, definition, uidOf } = require('../helper
 const { buildFixture, editDocs, seedDocs } = require('../helpers/fixtures');
 const { STORAGE_PREFIX, parseMatches } = require('../helpers/matrix');
 
-/** Yükleme (`create`) kuralı açılmış yol kökleri. T-14: users/ · T-21: posts/ · T-22: events/. */
-const OPENED = ['users', 'posts', 'events'];
+/** Yükleme (`create`) kuralı açılmış yol kökleri. T-14: users/ · T-21: posts/ · T-22: events/ · T-28: support/. */
+const OPENED = ['users', 'posts', 'events', 'support'];
 
 /** Tek dosya okuması (`get`) açılmış yol kökleri. T-14: users/ · T-16: clubs/ · T-21: posts/ · T-22: events/. */
 const READABLE = ['users', 'clubs', 'posts', 'events'];
+
+/** Tek dosya okuması yalnızca yükleyene + süper admine açık kökler (`metadata.uploaderId`). T-28: support/. */
+const UPLOADER_READABLE = ['support'];
 
 /**
  * Çapraz servis yardımcıları → okudukları Firestore belgesi sayısı. Üretimde tek kural değerlendirmesi
@@ -53,7 +61,7 @@ const READABLE = ['users', 'clubs', 'posts', 'events'];
 const CROSS_SERVICE = { accountActive: 1, isManagerOf: 1 };
 const MAX_FIRESTORE_DOCS = 2;
 /** Yol kökü → `create` kuralının okuduğu Firestore belgesi sayısı (bütçe tablosu; rules-spec §7). */
-const CREATE_BUDGET = { users: 1, posts: 2, events: 2 };
+const CREATE_BUDGET = { users: 1, posts: 2, events: 2, support: 1 };
 
 /** PLAN §11.5'in beş yol kökü (StoragePaths ile aynı). */
 const ROOTS = ['users', 'clubs', 'events', 'posts', 'support'];
@@ -184,7 +192,7 @@ describe('storage · storage.rules yapısı', () => {
     }
   });
 
-  test('yol başına Firestore okuması: users/ 1 · posts/ 2 · events/ 2 (etkinlik belgesi okunmaz — W-73)', () => {
+  test('yol başına Firestore okuması: users/ 1 · posts/ 2 · events/ 2 (etkinlik belgesi okunmaz — W-73) · support/ 1', () => {
     expect(Object.keys(CREATE_BUDGET).sort()).toEqual([...OPENED].sort());
     for (const [root, budgeted] of Object.entries(CREATE_BUDGET)) {
       const create = new RegExp(`match \\/${root}\\/\\{\\w+\\}\\/\\{file\\} \\{[^}]*?(allow create:[^;]*;)`).exec(rulesText);
@@ -230,10 +238,27 @@ describe('storage · storage.rules yapısı', () => {
     expect(allows[3]).toBe('allow update, delete: if false;');
   });
 
-  test('okuması açılan kökler: users/, clubs/, posts/ ve events/; `allow read` hiçbir açık yolda yazılmaz', () => {
+  test('okuması açılan kökler: users/, clubs/, posts/, events/ (+ support/ yalnızca yükleyen); `allow read` hiçbir açık yolda yazılmaz', () => {
     const reads = (rulesText.match(/^\s*allow (?:get|read)[^:]*:[^;]*;/gm) || []).map((rule) => rule.trim());
-    expect(reads.filter((rule) => rule.startsWith('allow get'))).toHaveLength(READABLE.length);
+    expect(reads.filter((rule) => rule.startsWith('allow get'))).toHaveLength(READABLE.length + UPLOADER_READABLE.length);
     for (const rule of reads.filter((rule) => rule.startsWith('allow read'))) expect(rule).toMatch(/: if false;$/);
+  });
+
+  test('support/ bloğu: okuma yalnızca yükleyen + süper admin (`get`), liste kapalı; yükleme kalıbı + yalnızca `uploaderId` üst verisi + hesap (T-28)', () => {
+    // Blok kapanışı satır başı girintisiyle aranır: `{6}` niceleyicisi de `}` taşır.
+    const block = /match \/support\/\{ticketNo\}\/\{file\} \{([\s\S]*?)\n\s{4}\}/.exec(rulesText);
+    expect(block).not.toBeNull();
+    const allows = block[1].split(';').map((rule) => rule.trim().replace(/\s+/g, ' ')).filter((rule) => rule.startsWith('allow ')).map((rule) => `${rule};`);
+    expect(allows.map((line) => line.slice(0, line.indexOf(':')))).toEqual(['allow get', 'allow list', 'allow create', 'allow update, delete']);
+    expect(allows[0]).toBe('allow get: if signedInVerified() && (isSuperAdmin() || resource.metadata.uploaderId == request.auth.uid);');
+    expect(allows[1]).toBe('allow list: if false;');
+    for (const condition of ['signedInVerified()', 'isNewFile()', 'imageOk()', 'fileNameOk(file)', 'uploaderMetadataOnly()']) {
+      expect(allows[2]).toContain(condition);
+    }
+    expect(allows[2]).not.toContain('noCustomMetadata()');
+    expect(allows[2]).toContain("ticketNo.matches('GU-[A-HJ-NP-Z2-9]{6}')");
+    expect(allows[2].endsWith('&& uploaderMetadataOnly() && accountActive();')).toBe(true);
+    expect(allows[3]).toBe('allow update, delete: if false;');
   });
 
   test('clubs/ yüklemesi kapalıdır (T-36\'da açılır)', () => {
@@ -243,7 +268,14 @@ describe('storage · storage.rules yapısı', () => {
   });
 });
 
-describe.each(ROOTS.filter((r) => !OPENED.includes(r) && !READABLE.includes(r)))('storage deny-all · %s/{id}/{file}', (root) => {
+const CLOSED_ROOTS = ROOTS.filter((r) => !OPENED.includes(r) && !READABLE.includes(r));
+
+test('storage · T-28 sonrası tamamen kapalı yol kökü kalmadı (clubs/ yalnızca okuma — yükleme T-36)', () => {
+  expect(CLOSED_ROOTS).toEqual([]);
+});
+
+// `describe.each` boş tabloyu reddeder: kapalı kök kalmadığında blok kurulmaz.
+(CLOSED_ROOTS.length ? describe.each(CLOSED_ROOTS) : () => {})('storage deny-all · %s/{id}/{file}', (root) => {
   const existing = `${root}/id1/${EXISTING_FILE}`;
   const created = `${root}/id1/${NEW_FILE}`;
 
@@ -1192,6 +1224,200 @@ describe('storage events/{eventId}/{file} · üzerine yazma / üst veri / silme 
     await seedFile(existing);
     await assertSucceeds(upload(MANAGER, coverFile(NEW_FILE), PNG, clubMeta()));
     expect([await fileExists(existing), await fileExists(coverFile(NEW_FILE))]).toEqual([true, true]);
+  });
+});
+
+// ── support/{ticketNo}/{file} — destek eki (T-28, SET-05) ─────────────────────────────────────
+
+const TICKET_NO = 'GU-ABC234';
+const supportFile = (file, ticketNo = TICKET_NO) => `support/${ticketNo}/${file}`;
+/** `support/` yüklemesinin üst verisi: yalnızca yükleyenin kimliği. */
+const supportMetaFor = (uid, extra = {}) => ({ ...IMAGE, customMetadata: { uploaderId: uid, ...extra } });
+const supportMeta = (role, extra = {}) => supportMetaFor(uidOf(role), extra);
+const UPLOADER = 'student';
+const UPLOADER_DOC = `users/${uidOf(UPLOADER)}`;
+
+/** Ek dosyasını kuralları atlayarak [uploaderId] izine sahip olarak kurar (yükleyen = talep sahibi). */
+async function seedSupportFile(path, uploaderId = uidOf(UPLOADER)) {
+  const metadata = uploaderId === null ? IMAGE : supportMetaFor(uploaderId);
+  await uploadBytes(ref((await getAdminContext()).storage(), path), PNG, metadata);
+}
+
+describe('storage support/{ticketNo}/{file} · okuma (yalnızca yükleyen + süper admin)', () => {
+  const existing = supportFile(EXISTING_FILE);
+
+  test.each([UPLOADER, 'super'])('%s · eki (tek dosya) okur → allow', async (role) => {
+    await seedSupportFile(existing);
+    const storage = contextFor(role).storage();
+    await assertSucceeds(getBytes(ref(storage, existing)));
+    await assertSucceeds(getMetadata(ref(storage, existing)));
+  });
+
+  // Yükleyen ve süper admin dışındaki herkes: kulüp yöneticileri, danışman, diğer öğrenciler,
+  // askıdaki / silinmiş hesap, doğrulanmamış ve oturumsuz bağlam.
+  test.each(ALL_ROLES.filter((role) => ![UPLOADER, 'super'].includes(role)))('%s · başkasının ekini okuyamaz → deny', async (role) => {
+    await seedSupportFile(existing);
+    const storage = contextFor(role).storage();
+    await assertFails(getBytes(ref(storage, existing)));
+    await assertFails(getMetadata(ref(storage, existing)));
+  });
+
+  test('askıdaki hesap kendi yüklediği eki okur (okuma hesap durumuna bakmaz); doğrulanmamış hesap kendi ekini de okuyamaz', async () => {
+    const own = supportFile(EXISTING_FILE, 'GU-SUSP23');
+    await seedSupportFile(own, uidOf('susp'));
+    await assertSucceeds(getBytes(ref(contextFor('susp').storage(), own)));
+    const unverified = supportFile(EXISTING_FILE, 'GU-UNVR23');
+    await seedSupportFile(unverified, uidOf('unver'));
+    await assertFails(getBytes(ref(contextFor('unver').storage(), unverified)));
+  });
+
+  test('yükleyen izi olmayan dosya: yalnızca süper admin okur', async () => {
+    await seedSupportFile(existing, null);
+    await assertSucceeds(getBytes(ref(contextFor('super').storage(), existing)));
+    await assertFails(getBytes(ref(contextFor(UPLOADER).storage(), existing)));
+  });
+
+  test.each(ALL_ROLES)('%s · klasör listelenemez → deny', async (role) => {
+    await seedSupportFile(existing);
+    const storage = contextFor(role).storage();
+    await assertFails(listAll(ref(storage, `support/${TICKET_NO}`)));
+    await assertFails(listAll(ref(storage, 'support')));
+  });
+});
+
+describe('storage support/{ticketNo}/{file} · yükleme (kimlik ve hesap durumu)', () => {
+  const path = supportFile(NEW_FILE);
+
+  beforeEach(seedUsers);
+
+  test.each(UPLOADERS)('%s · kendi kimliğiyle yükler → allow; nesne yükleyenin izini taşır', async (role) => {
+    await assertSucceeds(upload(role, path, PNG, supportMeta(role)));
+    const stored = await getMetadata(ref((await getAdminContext()).storage(), path));
+    expect(stored.customMetadata).toEqual({ uploaderId: uidOf(role) });
+  });
+
+  test.each([...INACTIVE, ...UNVERIFIED])('%s · yükleyemez (askıdaki / silinmiş / doğrulanmamış / oturumsuz) → deny', async (role) => {
+    await assertFails(upload(role, path, PNG, supportMeta(role)));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  // Talep belgesi okunmaz (yükleme belgeden ÖNCEdir): başkasının numarasına da dosya yüklenebilir, ama
+  // iliştirilemez — talebin kimliği numaradır ve belgeyi yalnızca sahibi yazar (rules/support_tickets.test.js).
+  test('talep belgesi aranmaz: olmayan ve başkasının numarasına yükleme → allow (yetim dosya; iz yükleyenin)', async () => {
+    for (const ticketNo of ['GU-NEWT23', TICKET_NO]) {
+      const target = supportFile(NEW_FILE, ticketNo);
+      await assertSucceeds(upload('board', target, PNG, supportMeta('board')));
+      const stored = await getMetadata(ref((await getAdminContext()).storage(), target));
+      expect(stored.customMetadata).toEqual({ uploaderId: uidOf('board') });
+    }
+  });
+
+  test.each([
+    ['talep numarası', TICKET_NO, 'allow'],
+    ['küçük harf', 'GU-abc234', 'deny'],
+    ['karışan karakter (0, 1, I, O)', 'GU-AB01IO', 'deny'],
+    ['7 karakter', 'GU-ABC2345', 'deny'],
+    ['önek yok', 'ABC234', 'deny'],
+    ['belge kimliği deseni', 'pYeni_01', 'deny'],
+  ])('klasör adı (%s) → %s', async (_title, ticketNo, expected) => {
+    const target = supportFile(NEW_FILE, ticketNo);
+    await (expected === 'allow' ? assertSucceeds : assertFails)(upload(UPLOADER, target, PNG, supportMeta(UPLOADER)));
+    expect(await fileExists(target)).toBe(expected === 'allow');
+  });
+
+  test('alt klasör ve kök düzeyi dosya `support/{ticketNo}/{file}` kalıbına girmez → deny', async () => {
+    await assertFails(upload(UPLOADER, `support/${TICKET_NO}/alt/${NEW_FILE}`, PNG, supportMeta(UPLOADER)));
+    await assertFails(upload(UPLOADER, `support/${NEW_FILE}`, PNG, supportMeta(UPLOADER)));
+  });
+});
+
+describe('storage support/{ticketNo}/{file} · yükleme (hesap durumu: users/{uid}.status)', () => {
+  const path = supportFile(NEW_FILE);
+
+  // Veri her vakada kendisi kurulur (önceki `seedUsers` belgesi kalmasın).
+  test.each([
+    ['profil belgesi yok', { without: [UPLOADER_DOC] }],
+    ['hesap askıda', { patch: { [UPLOADER_DOC]: { status: 'suspended' } } }],
+    ['hesap silinmiş', { patch: { [UPLOADER_DOC]: { status: 'deleted' } } }],
+  ])('%s → deny', async (_title, edit) => {
+    await seedDocs(editDocs(USER_DOCS, edit));
+    await assertFails(upload(UPLOADER, path, PNG, supportMeta(UPLOADER)));
+    expect(await fileExists(path)).toBe(false);
+  });
+});
+
+describe('storage support/{ticketNo}/{file} · yükleme (üst veri, tür, boyut, dosya adı)', () => {
+  const path = supportFile(NEW_FILE);
+  const UID = uidOf(UPLOADER);
+
+  beforeEach(seedUsers);
+
+  test.each([
+    ['üst veri yok', IMAGE],
+    ['boş özel üst veri', { ...IMAGE, customMetadata: {} }],
+    ['uploaderId başkasının kimliği', supportMetaFor(uidOf('member'))],
+    ['fazladan anahtar (clubId)', supportMeta(UPLOADER, { clubId: 'c01' })],
+    ['jeton + fazladan anahtar', supportMeta(UPLOADER, { firebaseStorageDownloadTokens: 'jeton', ticketNo: TICKET_NO })],
+    ['contentEncoding: gzip', { ...supportMeta(UPLOADER), contentEncoding: 'gzip' }],
+    ['contentDisposition: attachment + dosya adı', { ...supportMeta(UPLOADER), contentDisposition: 'attachment; filename="odev.exe"' }],
+    ['izinli olmayan içerik türü (image/gif)', { ...supportMeta(UPLOADER), contentType: 'image/gif' }],
+    ['izinli olmayan içerik türü (image/svg+xml)', { ...supportMeta(UPLOADER), contentType: 'image/svg+xml' }],
+    ['uzantı içerik türüyle uyuşmuyor (image/jpeg + .png)', { ...supportMeta(UPLOADER), contentType: 'image/jpeg' }],
+  ])('%s → deny', async (_title, metadata) => {
+    await assertFails(upload(UPLOADER, path, PNG, metadata));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  test('uploaderId + indirme jetonu + sunucu varsayılanı sunum üst verisi → allow', async () => {
+    const disposition = `inline; filename*=utf-8''support%2F${TICKET_NO}%2F${NEW_FILE}`;
+    const metadata = { ...supportMetaFor(UID, { firebaseStorageDownloadTokens: 'jeton' }), contentDisposition: disposition, contentEncoding: 'identity' };
+    await assertSucceeds(upload(UPLOADER, path, PNG, metadata));
+    expect(await fileExists(path)).toBe(true);
+  });
+
+  test.each(TYPES)('%s + .%s → allow', async (contentType, extension) => {
+    const target = supportFile(`${STAMP}.${extension}`);
+    await assertSucceeds(upload(UPLOADER, target, PNG, { ...supportMeta(UPLOADER), contentType }));
+    expect(await fileExists(target)).toBe(true);
+  });
+
+  test('boyut sınırı: imageMaxBytes − 1 → allow, imageMaxBytes → deny; boş dosya → deny', async () => {
+    const under = supportFile(`${STAMP}.jpg`);
+    const exact = supportFile('20261008T201503Z_0a1b2c3d4e5f6071.jpg');
+    const empty = supportFile('20261008T201504Z_0a1b2c3d4e5f6071.jpg');
+    const jpeg = { ...supportMeta(UPLOADER), contentType: 'image/jpeg' };
+    await assertSucceeds(upload(UPLOADER, under, new Uint8Array(IMAGE_MAX_BYTES - 1), jpeg));
+    await assertFails(upload(UPLOADER, exact, new Uint8Array(IMAGE_MAX_BYTES), jpeg));
+    await assertFails(upload(UPLOADER, empty, new Uint8Array(0), jpeg));
+    expect([await fileExists(under), await fileExists(exact), await fileExists(empty)]).toEqual([true, false, false]);
+  });
+
+  test.each([['ekran.png'], ['0.jpg'], ['20261008T201502Z_0A1B2C3D4E5F6071.png'], ['20261008T201502Z_0a1b2c3d4e5f6071.png.png']])(
+    'StoragePaths.newFileName şeması dışındaki ad "%s" → deny (sabit `{n}.jpg` yok)',
+    async (file) => {
+      await assertFails(upload(UPLOADER, supportFile(file), PNG, supportMeta(UPLOADER)));
+      expect(await fileExists(supportFile(file))).toBe(false);
+    },
+  );
+});
+
+describe('storage support/{ticketNo}/{file} · üzerine yazma / üst veri / silme (D-10)', () => {
+  const existing = supportFile(EXISTING_FILE);
+
+  beforeEach(seedUsers);
+
+  test.each(ALL_ROLES)('%s · var olan ekte üzerine yazma / metadata / delete → deny (yükleyen ve süper admin dahil)', async (role) => {
+    await seedSupportFile(existing);
+    const storage = contextFor(role).storage();
+    // Aynı ada ikinci yükleme `create`tir: üzerine yazmayı kuraldaki `isNewFile()` engeller.
+    await assertFails(uploadBytes(ref(storage, existing), PNG, supportMeta(role)));
+    // Yükleyen izi değiştirilemez: okuma kuralı bu alana güvenir.
+    await assertFails(updateMetadata(ref(storage, existing), { customMetadata: { uploaderId: uidOf(role) } }));
+    // D-10 ret vakası: dosya silme yalnızca burada, reddedildiğini kanıtlamak için denenir.
+    await assertFails(deleteObject(ref(storage, existing)));
+    expect(await fileExists(existing)).toBe(true);
+    const stored = await getMetadata(ref((await getAdminContext()).storage(), existing));
+    expect(stored.customMetadata).toEqual({ uploaderId: uidOf(UPLOADER) });
   });
 });
 

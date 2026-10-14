@@ -29,7 +29,9 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { COLLECTIONS, PATH_OF, convert, expectedCounts, staticTablesDiff, validate, withExtras } = require('./lib/convert');
+const {
+  COLLECTIONS, PATH_OF, convert, convertSupport, expectedCounts, staticTablesDiff, validate, validateSupport, withExtras,
+} = require('./lib/convert');
 const rest = require('./lib/emulator_rest');
 const { placeholderPng } = require('./placeholder_png');
 const dart = require('../lib/dart_sources');
@@ -39,6 +41,8 @@ const REPO = path.resolve(__dirname, '..', '..');
 const DATA_FILE = path.join(__dirname, 'demo-data.json');
 /** T-25 · demo-data.json'da örneği olmayan bildirim türleri (README madde 4). */
 const EXTRA_NOTIFICATIONS_FILE = path.join(__dirname, 'demo-notifications.json');
+/** T-28 · demo destek talepleri (README madde 4; `COLLECTIONS` dışında, kendi sayım satırı). */
+const SUPPORT_FILE = path.join(__dirname, 'demo-support.json');
 const STATIC_TABLES = path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart');
 
 /** Aynı anda açık Auth / Storage isteği sayısı. */
@@ -66,6 +70,8 @@ const COUNT_QUERIES = Object.freeze({
   savedPosts: ['savedPosts', false, /^savedPosts\/[^/]+$/],
   announcementCounters: ['announcementCounters', false, /^announcementCounters\/[^/]+$/],
 });
+/** T-28 · `supportTickets` sayımı (`COLLECTIONS` dışında). */
+const SUPPORT_QUERY = Object.freeze(['supportTickets', false, /^supportTickets\/[^/]+$/]);
 
 class UsageError extends Error {}
 
@@ -139,9 +145,12 @@ async function countEmulator(target, bucket) {
     const [collectionId, group, filter] = COUNT_QUERIES[name];
     counts[name] = (await paths(collectionId, group)).filter((p) => filter.test(p)).length;
   }
+  const [supportId, supportGroup, supportFilter] = SUPPORT_QUERY;
+  const support = (await paths(supportId, supportGroup)).filter((p) => supportFilter.test(p)).length;
   const authUsers = await rest.listAuthUsers(target);
   return {
     counts,
+    support,
     auth: authUsers.length,
     superAdmins: authUsers.filter((u) => /"superadmin":\s*true/.test(u.customAttributes || '')).length,
     files: target.storage ? (await rest.listFiles(target, bucket, 'posts/')).length : null,
@@ -161,12 +170,14 @@ async function main(argv) {
   );
   const now = args.now || new Date();
   const { docs, authUsers, images } = convert(raw, { now, randomHex: () => crypto.randomBytes(8).toString('hex') });
+  const supportTickets = convertSupport(raw, JSON.parse(fs.readFileSync(SUPPORT_FILE, 'utf8')), { now });
 
   // Yazmadan önce: dönüşüm tutarlı mı, referans listeleri Dart StaticTables ile aynı mı?
   const limits = dart.readLimits(REPO);
   const problems = [
     ...validate(docs, { announcementDailyLimit: limits.ints.announcementDailyLimit }),
     ...staticTablesDiff(raw, fs.readFileSync(STATIC_TABLES, 'utf8')),
+    ...validateSupport(supportTickets, raw.users),
   ];
   const expected = expectedCounts(raw);
   for (const name of COLLECTIONS) {
@@ -182,6 +193,7 @@ async function main(argv) {
   if (args.dryRun) {
     printCounts(`${NAME}: kuru koşum (yazılmadı) · now=${now.toISOString()}`, [
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
+      ['supportTickets', String(Object.keys(supportTickets).length)],
       ['auth', String(authUsers.length)],
       ['storage', String(images.length)],
     ]);
@@ -196,7 +208,10 @@ async function main(argv) {
 
   await pool(authUsers, CONCURRENCY, (user) => rest.upsertAuthUser(target, user, password));
 
-  const writes = COLLECTIONS.flatMap((name) => Object.entries(docs[name]).map(([id, data]) => [PATH_OF[name](id), data]));
+  const writes = [
+    ...COLLECTIONS.flatMap((name) => Object.entries(docs[name]).map(([id, data]) => [PATH_OF[name](id), data])),
+    ...Object.entries(supportTickets).map(([id, data]) => [`supportTickets/${id}`, data]),
+  ];
   await rest.writeDocuments(target, writes);
 
   if (target.storage) {
@@ -216,6 +231,7 @@ async function main(argv) {
   if (!args.check) {
     printCounts(`${NAME}: yazıldı`, [
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
+      ['supportTickets', String(Object.keys(supportTickets).length)],
       ['auth', String(authUsers.length)],
       ['storage', target.storage ? String(images.length) : 'atlandı'],
     ]);
@@ -228,6 +244,7 @@ async function main(argv) {
   const superAdmins = authUsers.filter((u) => u.claims && u.claims.superadmin).length;
   const rows = [
     ...COLLECTIONS.map((name) => [name, found.counts[name], expected[name]]),
+    ['supportTickets', found.support, Object.keys(supportTickets).length],
     ['auth', found.auth, authUsers.length],
     ['auth:superadmin', found.superAdmins, superAdmins],
     ...(found.files === null ? [] : [['storage posts/', found.files, images.length]]),
@@ -235,7 +252,7 @@ async function main(argv) {
   const mark = (actual, wanted) => (actual === wanted ? '✓' : '✗');
   printCounts(`${NAME}: sayım (emülatör / demo-data.json)`, rows.map(([name, a, e]) => [name, String(a).padStart(4), String(e).padStart(4), mark(a, e)]));
   const bad = rows.filter(([, a, e]) => a !== e);
-  const total = COLLECTIONS.reduce((sum, name) => sum + found.counts[name], 0);
+  const total = COLLECTIONS.reduce((sum, name) => sum + found.counts[name], 0) + found.support;
   if (bad.length) {
     console.error(`${NAME}: SAYIM TUTMUYOR — ${bad.map(([name, a, e]) => `${name} ${a}≠${e}`).join(', ')} (emülatör boş başlatıldı mı?)`);
     return 1;
