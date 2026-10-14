@@ -11,6 +11,7 @@
 // T-18 · `ClubMembersRoute` (`/clubs/:clubId/members`),
 // `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`).
 // T-20 · `PostDetailRoute` (`/clubs/:clubId/posts/:postId`).
+// T-21 · `ComposeRoute` (`/clubs/:clubId/compose?edit=`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -24,7 +25,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17 + T-18 + T-20).
+/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -44,7 +45,7 @@ const Map<GoRouteData, String> _routes = {
   // Kabuk: beş sekme kökü
   ClubsRoute(): '/clubs',
   // Kulüpler dalı (T-17: CLB-02; T-18: CLB-07, CLB-06; T-16: CLB-03,
-  // CLB-04, CLB-05; T-20: FED-02)
+  // CLB-04, CLB-05; T-20: FED-02; T-21: FED-03)
   ClubsSearchRoute(): '/clubs/search',
   ClubUserProfileRoute(userId: _userId): '/clubs/user/:userId',
   ClubDetailRoute(clubId: _clubId): '/clubs/:clubId',
@@ -53,6 +54,7 @@ const Map<GoRouteData, String> _routes = {
   ClubMembersRoute(clubId: _clubId): '/clubs/:clubId/members',
   PostDetailRoute(clubId: _clubId, postId: _postId):
       '/clubs/:clubId/posts/:postId',
+  ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak)
   EventsSearchRoute(): '/events/search',
@@ -113,10 +115,27 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 25 yol (T-11: 14, T-13: +2, '
-        'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1)', () {
+    test('router yolları = kapsamdaki 26 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(25));
+      expect(_routes, hasLength(26));
+    });
+
+    test('T-21 · gönderi oluşturma rotası: `clubId` yol, `edit` sorgu '
+        'parametresidir; guard yöneticiyi (M) ister', () {
+      const compose = ComposeRoute(clubId: _clubId);
+      expect(compose.location, '/clubs/c01/compose');
+      expect(compose.edit, isNull);
+      expect(ComposeRoute.segment, 'compose');
+      const edit = ComposeRoute(clubId: _clubId, edit: _postId);
+      expect(edit.location, '/clubs/c01/compose?edit=p01');
+      // Sorgu yolu ve guard'ı değiştirmez.
+      for (final location in [compose.location, edit.location]) {
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, '/clubs/:clubId/compose', reason: location);
+        expect(match.access, RouteAccess.manager, reason: location);
+        expect(match.clubId, _clubId, reason: location);
+      }
     });
 
     test('T-20 · gönderi detayı rotası: `clubId` ve `postId` yol '

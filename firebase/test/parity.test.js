@@ -246,6 +246,20 @@ describe('parite (g) · StaticTables / enum değerleri ↔ Rules değer listeler
     expect(storageRules).toContain('request.resource.size > 0');
   });
 
+  test('posts/ yüklemesi: FirebasePostRepository.uploadImages yalnızca `clubId` + `uploaderId` özel üst verisi gönderir (CD-39)', () => {
+    // Rules `metadata.keys().hasOnly(['clubId', 'uploaderId', jeton])` ve `uploaderId == request.auth.uid`
+    // ister: repository başka bir anahtar göndermeye başlarsa, birini göndermezse (ya da anahtarın adı
+    // değişirse) üretimde her gönderi görseli yüklemesi `unauthorized` olur.
+    const repository = readDart('repositories/firebase_post_repository.dart');
+    expect(repository).toContain("static const String _clubIdMetadata = 'clubId';");
+    expect(repository).toContain("static const String _uploaderIdMetadata = 'uploaderId';");
+    expect(repository).toMatch(/customMetadata: \{\s*_clubIdMetadata: clubId,\s*_uploaderIdMetadata: uploaderId,\s*\}/);
+    expect(repository.match(/customMetadata:/g)).toHaveLength(1);
+    expect(storageRules).toContain("request.resource.metadata.keys().hasOnly(['clubId', 'uploaderId', 'firebaseStorageDownloadTokens'])");
+    expect(storageRules).toContain('request.resource.metadata.uploaderId == request.auth.uid');
+    expect(storageRules).toContain('isManagerOf(request.resource.metadata.clubId)');
+  });
+
   test('account.fcmTokens[].platform değer listesi = Limits.platforms', () => {
     const platforms = /static const Set<String> platforms = \{([^}]*)\}/.exec(readDart('constants/limits.dart'));
     expect(platforms).not.toBeNull();

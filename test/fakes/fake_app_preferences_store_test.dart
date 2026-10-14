@@ -110,6 +110,25 @@ void main() {
       expect(fake.recentSearches, isEmpty);
     });
 
+    test('composeDraft: kulüp başına tek taslak; null kaldırır; failNext '
+        'yazımı false yapar ama değer kalır', () async {
+      final fake = FakeAppPreferencesStore();
+      expect(fake.composeDraft('c03'), isNull);
+      expect(await fake.setComposeDraft('c03', '{"text":"a"}'), isTrue);
+      expect(fake.composeDraft('c03'), '{"text":"a"}');
+      expect(fake.composeDraft('c01'), isNull);
+      expect(
+        fake.values[AppPreferenceKeys.composeDraft('c03')],
+        '{"text":"a"}',
+      );
+      fake.failNext();
+      expect(await fake.setComposeDraft('c03', '{"text":"b"}'), isFalse);
+      expect(fake.composeDraft('c03'), '{"text":"b"}');
+      expect(await fake.setComposeDraft('c03', null), isTrue);
+      expect(fake.composeDraft('c03'), isNull);
+      expect(fake.values, isEmpty);
+    });
+
     test('failNext: yazım false döner ama bellekteki değer güncellenir '
         '(gerçek depo gibi)', () async {
       final fake = FakeAppPreferencesStore()..failNext();

@@ -3,6 +3,8 @@
 // gerçek repository + Security Rules sonuçlarını izler
 // (docs/plans/T-19.md §6). Kuraldan bağımsız sonuçlar son grupta gerçek
 // `FirebasePostRepository` ile aynı komut dizisi üzerinde karşılaştırılır.
+import 'dart:math';
+
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -11,6 +13,7 @@ import 'package:gu_data/gu_data.dart';
 import '../fixtures/post_model_fixtures.dart';
 import '../helpers/fake_app_clock.dart';
 import 'fake_post_repository.dart';
+import 'fake_storage_service.dart';
 import 'register_fakes.dart';
 
 const String _club = 'c01';
@@ -593,9 +596,11 @@ void main() {
       );
       final real = FirebasePostRepository(
         service,
+        FakeStorageService(),
         FirebaseActivityRepository(service),
         counters,
         realClock,
+        Random(0),
       );
       // Gerçek sabitleme kulüp belgesini okur.
       for (final clubId in [_club, 'c02']) {

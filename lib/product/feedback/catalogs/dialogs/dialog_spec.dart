@@ -277,6 +277,19 @@ abstract final class DialogCatalog {
       destructive: true,
     ),
 
+    /// Design: DLG-24 — Bugünkü duyuru hakkın doldu (`dialogs.js:42`): günün
+    /// bildirimli duyuru hakkı dolmuşken FED-03'te bildirimli yayın istenince
+    /// (Q-10). "Bildirimsiz yayınla" → `true` (duyuru bildirimsiz yayınlanır),
+    /// "Vazgeç" → `false`.
+    DialogId.dlg24: DialogSpec(
+      title: (l10n, _) => l10n.dlg24Title,
+      body: (l10n, _) => l10n.dlg24Body,
+      primary: (l10n) => l10n.dlg24Silent,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.megaphone,
+      primaryAction: 'silent',
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,

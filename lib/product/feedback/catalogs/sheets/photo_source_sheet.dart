@@ -58,9 +58,10 @@ class PhotoSourceSheet extends StatelessWidget {
   /// Kaldırılabilecek bir görsel var mı (prototip `props.hasPhoto`).
   final bool hasPhoto;
 
-  /// Galeriden seçilebilecek en çok görsel (prototip `props.max`). Çağıran
-  /// aynı değeri seçiciye verir; T-14'te hep 1'dir (tek görsel), çoklu seçim
-  /// ve TST-X5 sınırı FED-03 ile bağlanır (T-21, W-09).
+  /// Galeriden seçilebilecek en çok görsel (prototip `props.max`). Profil
+  /// fotoğrafında hep 1'dir; FED-03 kalan görsel hakkını verir (sınır
+  /// dolmuşsa sayfa açılmaz, TST-X5 gösterilir). Seçici her açılışta tek
+  /// görsel verir (CD-143).
   final int maxImages;
 
   /// [choice] satırının anahtarı (`SHT-16.<action>`).

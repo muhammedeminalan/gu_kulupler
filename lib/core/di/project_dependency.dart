@@ -169,11 +169,15 @@ abstract final class ProjectDependency {
       firestoreService,
       appClock,
     );
+    // T-21 · gönderi görselleri repository metoduyla yüklenir
+    // (`uploadImages`); dosya adının rastgele kısmı kriptografik kaynaktan.
     final postRepository = FirebasePostRepository(
       firestoreService,
+      storageService,
       activityRepository,
       announcementCounterRepository,
       appClock,
+      Random.secure(),
     );
     final commentRepository = FirebaseCommentRepository(
       firestoreService,

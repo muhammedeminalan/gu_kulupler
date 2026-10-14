@@ -239,7 +239,7 @@ function convert(raw, { now, randomHex }) {
     const postImages = post.images.map((seed) => {
       // StoragePaths.newFileName şeması: damga = gönderinin oluşturulma anı, 16 hex rastgele.
       const path = `posts/${postId}/${fileStamp(createdAt)}_${randomHex()}.png`;
-      images.push({ path, seed, clubId: post.clubId, width: IMAGE_WIDTH, height: IMAGE_HEIGHT });
+      images.push({ path, seed, clubId: post.clubId, uploaderId: post.authorId, width: IMAGE_WIDTH, height: IMAGE_HEIGHT });
       return { path, w: IMAGE_WIDTH, h: IMAGE_HEIGHT };
     });
     postDocs[postId] = {

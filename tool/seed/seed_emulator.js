@@ -198,7 +198,8 @@ async function main(argv) {
       rest.uploadFile(
         target,
         bucket,
-        { path: image.path, contentType: 'image/png', metadata: { clubId: image.clubId } },
+        // Uygulamanın yüklediği üst veriyle aynı (storage.rules `clubMetadataOnly()`): kulüp + yükleyen.
+        { path: image.path, contentType: 'image/png', metadata: { clubId: image.clubId, uploaderId: image.uploaderId } },
         placeholderPng(image.seed, image.width, image.height),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/src/models/enums/post_type.dart';
 import 'package:gu_data/src/models/post_image_model.dart';
@@ -99,4 +101,40 @@ final class PostEditPatch extends Equatable {
 
   @override
   List<Object?> get props => [text, title, images];
+}
+
+/// Yüklenmeyi bekleyen gönderi görseli (`PostRepository.uploadImages`
+/// girdisi; T-21, CD-39).
+///
+/// [bytes] **yeniden kodlanmış** görseldir (uygulamanın görsel seçicisinin
+/// çıktısı — EXIF ayıklanmış, CD-135); özgün kamera / galeri dosyası buraya
+/// verilmez. [width] ve [height] yeniden kodlanmış görselin piksel boyutudur
+/// ve yüklenen görselin modeline (`PostImageModel.w / h`) aynen yazılır.
+///
+/// Eşitlik kimlikledir (megabaytlarca bayt karşılaştırılmaz).
+final class PostImageUpload {
+  /// [contentType] türünde, [width] × [height] piksel görsel.
+  const PostImageUpload({
+    required this.bytes,
+    required this.contentType,
+    required this.width,
+    required this.height,
+  });
+
+  /// Yeniden kodlanmış görselin baytları (boş değil,
+  /// `Limits.imageMaxBytes` sınırının altında).
+  final Uint8List bytes;
+
+  /// İçerik türü (`StoragePaths.extensionByContentType` anahtarı).
+  final String contentType;
+
+  /// Genişlik, piksel (≥ 1).
+  final int width;
+
+  /// Yükseklik, piksel (≥ 1).
+  final int height;
+
+  @override
+  String toString() =>
+      'PostImageUpload($contentType, $width×$height, ${bytes.length} bayt)';
 }

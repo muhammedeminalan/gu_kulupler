@@ -20,8 +20,14 @@ enum MediaSource {
 /// Eşitlik kimlikledir (her seçim yeni örnektir): State `props`'una
 /// girdiğinde megabaytlarca bayt karşılaştırılmaz.
 final class PickedImage {
-  /// [bytes] baytları ve [contentType] türüyle.
-  const PickedImage({required this.bytes, required this.contentType});
+  /// [bytes] baytları, [contentType] türü ve [width] × [height] piksel
+  /// boyutuyla.
+  const PickedImage({
+    required this.bytes,
+    required this.contentType,
+    required this.width,
+    required this.height,
+  });
 
   /// Görselin baytları (önizleme `Image.memory`, yükleme
   /// `UserRepository.updateAvatar(bytes:)`).
@@ -30,6 +36,13 @@ final class PickedImage {
   /// İçerik türü (`StoragePaths.extensionByContentType` anahtarı).
   /// `DeviceImagePickerService` her zaman `image/jpeg` üretir.
   final String contentType;
+
+  /// Yeniden kodlanmış görselin genişliği, piksel (gönderi görselinde
+  /// `PostImageUpload.width` → `PostImageModel.w`; T-21).
+  final int width;
+
+  /// Yeniden kodlanmış görselin yüksekliği, piksel.
+  final int height;
 
   @override
   String toString() => 'PickedImage($contentType, ${bytes.length} bayt)';
@@ -134,6 +147,8 @@ typedef ImageCompress = Future<Uint8List> Function(Uint8List bytes);
 ///   [ImagePickError.failed], değilse [ImagePickError.invalidType].
 /// * Galeri sistem seçicisidir (Android Photo Picker / iOS PHPicker) ve
 ///   fotoğraf izni **istemez**: `requestFullMetadata: false` (CD-16).
+/// * Piksel boyutu ([PickedImage.width] / `height`) yeniden kodlanmış JPEG'in
+///   çerçeve başlığından okunur ([jpegSizeOf]; T-21: `PostImageModel.w / h`).
 final class DeviceImagePickerService implements ImagePickerService {
   /// Platform çağrıları yalnızca testte verilir.
   const DeviceImagePickerService({
@@ -199,10 +214,66 @@ final class DeviceImagePickerService implements ImagePickerService {
     if (bytes.length >= maxBytes) {
       return const ImagePickFailure(ImagePickError.tooLarge);
     }
+    // Boyut yeniden kodlanmış baytlardan okunur (yön düzeltmesi uygulanmış,
+    // EXIF ayıklanmış çıktı). Okunamazsa 0 × 0: avatar akışı boyut kullanmaz;
+    // gönderi görseli yüklemesi (`PostRepository.uploadImages`) boyutsuz
+    // görseli ön denetimde reddeder.
+    final size = jpegSizeOf(bytes);
     return ImagePickSuccess(
-      PickedImage(bytes: bytes, contentType: _jpegContentType),
+      PickedImage(
+        bytes: bytes,
+        contentType: _jpegContentType,
+        width: size?.width ?? 0,
+        height: size?.height ?? 0,
+      ),
     );
   }
+
+  /// [bytes] JPEG görselinin piksel boyutu — çerçeve başlığından (SOF)
+  /// okunur, görsel çözülmez. JPEG değilse, başlık bulunamazsa (kesik dosya)
+  /// ya da boyut sıfırsa `null`. Hiçbir zaman fırlatmaz.
+  static ({int width, int height})? jpegSizeOf(Uint8List bytes) {
+    if (!_startsWith(bytes, _jpegMagic)) return null;
+    var offset = _markerSize;
+    while (offset + _segmentHeaderSize <= bytes.length) {
+      if (bytes[offset] != _markerPrefix) return null;
+      final marker = bytes[offset + 1];
+      if (marker == _markerPrefix) {
+        // Dolgu baytı: işaretçi bir sonraki bayttadır.
+        offset++;
+        continue;
+      }
+      if (_standaloneMarkers.contains(marker)) {
+        offset += _markerSize;
+        continue;
+      }
+      // Tarama verisi (SOS) ya da dosya sonu (EOI): çerçeve başlığı yok.
+      if (marker == _sosMarker || marker == _eoiMarker) return null;
+      final length = _uint16(bytes, offset + _markerSize);
+      if (length < _lengthFieldSize) return null;
+      if (_isFrameHeader(marker)) {
+        // SOF: uzunluk (2) · örnek derinliği (1) · yükseklik (2) · genişlik (2).
+        final heightAt = offset + _segmentHeaderSize + 1;
+        final widthAt = heightAt + _lengthFieldSize;
+        if (widthAt + _lengthFieldSize > bytes.length) return null;
+        final height = _uint16(bytes, heightAt);
+        final width = _uint16(bytes, widthAt);
+        return width > 0 && height > 0 ? (width: width, height: height) : null;
+      }
+      offset += _markerSize + length;
+    }
+    return null;
+  }
+
+  /// SOF0 – SOF15; aralıktaki üç işaretçi çerçeve başlığı değildir (DHT, JPG,
+  /// DAC).
+  static bool _isFrameHeader(int marker) =>
+      marker >= _sofFirst &&
+      marker <= _sofLast &&
+      !_nonFrameMarkers.contains(marker);
+
+  static int _uint16(Uint8List bytes, int offset) =>
+      (bytes[offset] << _byteBits) | bytes[offset + 1];
 
   /// [bytes] içeriğinin türü (dosya imzasından): `image/jpeg`, `image/png`,
   /// `image/webp`; başka her içerik için `null`. Dosya adına ve seçicinin
@@ -285,4 +356,21 @@ final class DeviceImagePickerService implements ImagePickerService {
   static const List<int> _riffMagic = [0x52, 0x49, 0x46, 0x46];
   static const List<int> _webpMagic = [0x57, 0x45, 0x42, 0x50];
   static const int _webpOffset = 8;
+
+  // JPEG bölüt yapısı (ITU-T T.81 §B.1): `FF <işaretçi> <uzunluk: 2 bayt>`.
+  static const int _markerPrefix = 0xFF;
+  static const int _markerSize = 2;
+  static const int _lengthFieldSize = 2;
+  static const int _segmentHeaderSize = _markerSize + _lengthFieldSize;
+  static const int _byteBits = 8;
+  static const int _sofFirst = 0xC0;
+  static const int _sofLast = 0xCF;
+  static const Set<int> _nonFrameMarkers = {0xC4, 0xC8, 0xCC};
+  static const int _sosMarker = 0xDA;
+  static const int _eoiMarker = 0xD9;
+
+  /// Uzunluk alanı taşımayan işaretçiler: TEM, RST0 – RST7, SOI.
+  static const Set<int> _standaloneMarkers = {
+    0x01, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, //
+  };
 }

@@ -23,7 +23,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   "Gönderiler" sekmesine iner.
 /// * Gönderi kartının eylemleri ViewModel'e gider (`PostActionsMixin`):
 ///   beğen / kaydet / oy / paylaş (SHT-15) / "…" (SHT-08). SHT-08'de gönderi
-///   kaldırılınca ekran geri döner; "Düzenle" FED-03'ü açar (W-25, T-21).
+///   kaldırılınca ekran geri döner; "Düzenle" FED-03'ü düzenleme kipinde
+///   açar (`ComposeRoute(edit:)`, `go`).
 /// * Yazar satırı ve yorum avatarı CLB-07'yi kulüp bağlamıyla açar. Yorumun
 ///   "…" düğmesi: kendi yorumu → DLG-11; başkası → SHT-27.
 /// * Görsel hücresi SHT-34'ü açar.
@@ -128,9 +129,8 @@ mixin PostDetailViewMixin on ConsumerState<PostDetailView> {
       case PostMenuOutcome.none:
         break;
       case PostMenuOutcome.edit:
-        // TODO(T-21): FED-03 düzenleme kipi açılır (`ComposeRoute(clubId,
-        // edit: postId)`) — bağlama borcu W-25.
-        break;
+        // FED-03 düzenleme kipi; oradan geri kulübün sayfasına dönülür.
+        ComposeRoute(clubId: widget.clubId, edit: widget.postId).go(context);
       case PostMenuOutcome.removed:
         goBack();
     }

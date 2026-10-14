@@ -27,7 +27,8 @@ enum PostMenuAction {
   /// "Kullanıcıyı engelle" (`SHT-08.block`) → DLG-13.
   blockAuthor('block', GuIcons.ban),
 
-  /// "Düzenle" (`SHT-08.edit`) → FED-03 düzenleme kipi (W-25, T-21).
+  /// "Düzenle" (`SHT-08.edit`) → FED-03 düzenleme kipi
+  /// (`ComposeRoute(edit:)`).
   edit('edit', GuIcons.pencil),
 
   /// "Sabitle" (`SHT-08.pin`) → TST-53.

@@ -167,6 +167,10 @@ Future<GoRouter> _pumpRoute(
               path: 'posts/:postId',
               builder: (_, state) => _Stub(state.uri.toString()),
             ),
+            GoRoute(
+              path: 'compose',
+              builder: (_, state) => _Stub(state.uri.toString()),
+            ),
           ],
         ),
       ],
@@ -627,16 +631,45 @@ void main() {
       expect(find.byType(GuListEnd), findsOneWidget);
     });
 
-    testWidgets('yönetici: "Kulübüne bir şey yaz…" dokunulabilir (FED-03 '
-        'bağlantısı T-21 işidir)', (tester) async {
+    testWidgets('yönetici: "Kulübüne bir şey yaz…" → FED-03 (`ComposeRoute`); '
+        'geri dönülünce akış yenilenir (yeni gönderi başta)', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: feedSession(role: ClubRole.board),
       );
       await _tapKey(tester, _compose);
       await tester.pumpAndSettle();
-      expect(_location(router), _feedPath);
+      expect(_location(router), '$_feedPath/compose');
       expect(_feedback().toasts, isEmpty);
+
+      final published = extraFeedPosts(1).single;
+      feedPosts().put(published);
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(_location(router), _feedPath);
+      expect(_stateOf(tester).postById(published.id), isNotNull);
+      expect(_stateOf(tester).isFetching, isFalse);
+    });
+
+    testWidgets('"…" → SHT-08 "Düzenle" → FED-03 düzenleme kipi (`?edit=`); '
+        'geri dönülünce gönderi yeniden okunur', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        session: feedSession(role: ClubRole.board),
+      );
+      _feedback().nextSheetResult = PostMenuAction.edit;
+      await _tapKey(tester, _menu(kImagePost.id));
+      await tester.pumpAndSettle();
+      expect(_feedback().sheets, [SheetId.sht08]);
+      expect(_location(router), '$_feedPath/compose?edit=${kImagePost.id}');
+
+      feedPosts().put(kImagePost.copyWith(text: 'Düzenlenmiş metin'));
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(
+        _stateOf(tester).postById(kImagePost.id)!.text,
+        'Düzenlenmiş metin',
+      );
     });
   });
 

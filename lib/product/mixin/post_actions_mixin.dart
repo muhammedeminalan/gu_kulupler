@@ -42,7 +42,7 @@ enum PostMenuOutcome {
   none,
 
   /// "Düzenle": view yazı düzenleme ekranına gider (FED-03 düzenleme kipi —
-  /// W-25, T-21).
+  /// `ComposeRoute(edit:)`).
   edit,
 
   /// Gönderi kaldırıldı (TST-45 gösterildi): gönderi detayı (FED-02) önceki
@@ -574,8 +574,8 @@ mixin PostActionsMixin
       case PostMenuAction.blockAuthor:
         await blockPostAuthor(post.id);
       case PostMenuAction.edit:
-        // Yazı düzenleme ekranına (FED-03 düzenleme kipi) view gider —
-        // W-25, T-21.
+        // Yazı düzenleme ekranına (FED-03 düzenleme kipi) view gider
+        // (`ComposeRoute(edit:)`).
         if (ensurePostWritable(post.clubId)) return PostMenuOutcome.edit;
       case PostMenuAction.pin || PostMenuAction.unpin:
         await togglePostPin(post.id);

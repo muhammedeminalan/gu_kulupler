@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-13T23:04:07.753Z",
+  "updated": "2026-10-14T00:14:14.322Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -341,11 +341,13 @@
       "notes": ""
     },
     "T-21": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-13T23:05:01.668Z",
+      "finishedAt": "2026-10-14T00:14:14.322Z",
+      "commits": [
+        "6b66a0e"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-22": {
@@ -623,7 +625,10 @@
       "resolveIn": [
         "T-21"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-21",
+      "closedAt": "2026-10-13T23:50:14.633Z",
+      "closeNote": "FED-03: SHT-16'ya maxImages = kalan hak verilir; dolunca TST-X5 (seçici tek tek seçtirir — CD-143 madde 5)"
     },
     {
       "id": "W-10",
@@ -692,7 +697,10 @@
       "resolveIn": [
         "T-21"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-21",
+      "closedAt": "2026-10-13T23:50:14.659Z",
+      "closeNote": "CLB-03 'Gönderiler' sekmesindeki FED-01.compose → ComposeRoute (W-24 ile aynı çağrı yeri)"
     },
     {
       "id": "W-17",
@@ -749,7 +757,10 @@
       "resolveIn": [
         "T-21"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-21",
+      "closedAt": "2026-10-13T23:50:14.683Z",
+      "closeNote": "FED-01.compose → ComposeRoute(clubId).go; dönüşte akış yenilenir (test/flows/compose_flow_test.dart)"
     },
     {
       "id": "W-25",
@@ -758,7 +769,10 @@
       "resolveIn": [
         "T-21"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-21",
+      "closedAt": "2026-10-13T23:50:14.708Z",
+      "closeNote": "SHT-08 'Düzenle' (FED-01, FED-02) → ComposeRoute(clubId, edit: postId).go"
     },
     {
       "id": "W-26",
@@ -1187,11 +1201,14 @@
       "resolveIn": [
         "T-21"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "FED-03.publish",
         "SHT-08.edit"
-      ]
+      ],
+      "closedIn": "T-21",
+      "closedAt": "2026-10-13T23:50:14.732Z",
+      "closeNote": "(a) düzenlenen ankette soru / seçenekler salt okunur, PostEditPatch.text gönderilmez; (b) permissionDenied → TST-X18 (compose_view_model_test); kullanıcı teyidi K-75 (d)"
     },
     {
       "id": "W-72",
@@ -1204,6 +1221,34 @@
       "actions": [
         "FED-01.back"
       ]
+    },
+    {
+      "id": "W-73",
+      "declaredIn": "T-21",
+      "text": "Storage Rules tek değerlendirmede en çok 2 Firestore belgesi okuyabilir (emülatör uygulamaz; CD-143, rules-spec §7): events/ kapak yükleme kuralı (PLAN §11.5 taslağı 3 okuma: eventClubId + üyelik + hesap) 2 belgeyle kurulur (ör. posts/ gibi metadata.clubId + Firestore coverPath denetimi); storage.test.js CROSS_SERVICE tablosu güncellenir → T-22",
+      "resolveIn": [
+        "T-22"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-74",
+      "declaredIn": "T-21",
+      "text": "Gizlenen / silinen gönderinin görseli Storage'da kalır ve okunur (yolu bilen doğrulanmış kullanıcı; jetonlu indirme adresi oturumsuz ve süresiz — rules-spec §9.11d): zararlı görsel için süper admin yordamı yazılır (konsoldan nesne silme ya da indirme jetonu iptali; yükleyen metadata.uploaderId alanından bulunur) → T-37 betik / T-46 konsol listesi. Ayrıca storage.rules imageOk() cacheControl alanına bakmıyor (public, immutable kabul): koşul yalnızca canlıda sunucu varsayılanı görüldükten sonra eklenir (T-14 dersi)",
+      "resolveIn": [
+        "T-37",
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-75",
+      "declaredIn": "T-21",
+      "text": "posts/ Storage kuralı gerçek sunucuda denenmedi (emülatör göstermez: customMetadata clubId + uploaderId ile sunucunun doldurduğu contentDisposition / indirme jetonu anahtarı; 2 belgelik çapraz servis sınırı; Android'de size > 0): kurallar canlıya yüklendikten HEMEN sonra Android ve iOS'ta birer gönderi görseli yüklenir; unauthorized gelirse T-21 yeniden açılır. Aynı denemede düşük bellekli Android'de büyük pikselli (ör. 8000×8000) PNG'li gönderiyle BoundedImage sınırı doğrulanır (hücre yer tutucuda kalmalı, uygulama düşmemeli)",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [
@@ -1268,6 +1313,11 @@
       "date": "2026-10-13",
       "task": "T-20",
       "text": "T-20 otonom kararlar CD-142: PostActionsMixin metot adları / state alanları PLAN §12'den farklı; widget'larda screenId yerine anahtar nesneleri; FED-01.newPosts çipi ve çek-yenile yok; FED-01.back W-72 ile ertelendi (kullanıcı onayı bekliyor)"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-21",
+      "text": "T-21 otonom kararlar CD-143: uploadImages imzası (PostImageUpload + clubId + onUploaded) PLAN §10.4'ten farklı; Storage posts/ kuralı 2 belge sınırı nedeniyle kulübün askı durumunu okumaz (yetim dosya olabilir) ve görsel okuması üyelik aramaz; seçici tek tek görsel seçtirir; taslak görselleri saklamaz, DLG-25 'Kaydetmeden çık' eski taslağı silmez; anket süresi varsayılanı 3 gün; düzenlemede anket sorusu salt okunur (kullanıcı teyidi bekliyor — K-75)"
     }
   ],
   "knownIssuesAdded": [
@@ -1360,6 +1410,11 @@
       "date": "2026-10-13",
       "task": "T-20",
       "text": "K-74 göreli zamanda hafta: prototip yuvarlar, uygulama tam hafta (T-08) — kullanıcı kararı"
+    },
+    {
+      "date": "2026-10-13",
+      "task": "T-21",
+      "text": "K-75 FED-03 / SHT-18 prototipten farklar: önizleme kartı köşesi 20, 'Kaldır' 32 dp, tek tek görsel seçimi, düzenlemede anket sorusu salt okunur (Rules), SHT-18 seçili işaret / iskelet / hata — açık nokta"
     }
   ]
 }

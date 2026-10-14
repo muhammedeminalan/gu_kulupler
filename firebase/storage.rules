@@ -5,8 +5,15 @@ rules_version = '2';
 //
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
-// (`isManagerOf`, `eventClubId` — firestore.get/exists) ilk kullanan task'ta eklenir (T-36 / T-22).
-// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36).
+// ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi; `eventClubId` T-22'de.
+// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21).
+//
+// ÇAPRAZ SERVİS SINIRI (T-21): tek kural değerlendirmesinde EN ÇOK 2 Firestore belgesine erişilebilir
+// (Firebase belgesi: "No more than two Firestore documents may be accessed in a single Rules
+// evaluation"). Emülatör bu sınırı UYGULAMAZ — üçüncü belgeyi okuyan kural testte yeşil kalır, üretimde
+// her yüklemeyi reddeder. Bu yüzden her `create` kuralı en çok iki FARKLI belge okur (yapı testi:
+// storage.test.js "en çok 2 Firestore belgesi"). T-22 (`events/`: etkinlik + üyelik + hesap = 3) bu
+// sınıra göre tasarlanmalıdır.
 //
 // Her açılan `create` kuralının taşıdığı kalıp (CD-135 madde 6 ve 8; storage.test.js yapı testleri):
 //   kimlik (`signedInVerified()` + yol sahibi/rolü) && `isNewFile()` && `imageOk()` && dosya adı deseni
@@ -90,6 +97,37 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
+    // Yükleme yalnızca iki özel üst veri taşır (CD-39, CD-143): `clubId` — yükleyenin hangi kulüp adına
+    // yüklediği — ve `uploaderId` — yükleyenin kendi kimliği.
+    //  - `clubId` belge yoluna gömülür (`memberships/{clubId}_{uid}`): kimlik karakter kümesi dışındaki
+    //    değer (boş, `/`, `.` …) başka bir belgeyi gösteremesin diye reddedilir (Firestore `posts`
+    //    create kuralındaki `postId` deseniyle aynı).
+    //  - `uploaderId` oturumdaki uid ile AYNI olmalıdır (başkasının adı yazılamaz, alan atlanamaz).
+    //    Storage nesnesi yükleyeni kendiliğinden kaydetmez ve klasör adı (`{postId}`) kimlik taşımaz:
+    //    bu alan olmadan dosya yığan yöneticinin kim olduğu konsoldan bulunamaz, tek fren olan hesap
+    //    askısı (rules-spec §9.8) uygulanamazdı. `users/` yolunda klasör = uid olduğu için gerekmez.
+    // Üst veri hiç yoksa ya da alanlardan biri eksikse ifade hata verir = ret. İndirme jetonu
+    // anahtarına `noCustomMetadata()` ile aynı gerekçeyle izin vardır.
+    function clubMetadataOnly() {
+      return request.resource.metadata.keys().hasOnly(['clubId', 'uploaderId', 'firebaseStorageDownloadTokens'])
+          && request.resource.metadata.uploaderId == request.auth.uid
+          && request.resource.metadata.clubId is string
+          && request.resource.metadata.clubId.matches('[A-Za-z0-9_-]+');
+    }
+    // Yükleyen, `clubId` kulübünün ETKİN yöneticisi mi? (çapraz servis: 1 Firestore belgesi)
+    // Firestore `isManager(c)` ile aynı koşul: üyelik `active` ve rol yönetim kurulu / başkan. Danışman,
+    // üye, başvurusu bekleyen, ayrılmış ve başka kulübün yöneticisi yükleyemez; süper admin de (gönderiyi
+    // yalnızca kulüp yönetimi yayınlar). Üyelik belgesi yoksa ifade hata verir = ret. Belge kimliği
+    // FirestoreIds.membership kalıbıdır (`{clubId}_{uid}`); kimlik oturumdan türetilir, üst veriden değil.
+    // Kimlik birleşimi tek başına belirsizdir (`c01_u` + `x` = `c01` + `u_x`): okunan belgenin kendi
+    // `userId` / `clubId` alanları da eşleşmelidir — üst verideki kulüp kimliğini kaydırarak başka bir
+    // kullanıcının üyelik belgesi gösterilemez.
+    function isManagerOf(clubId) {
+      let m = firestore.get(/databases/(default)/documents/memberships/$(clubId + '_' + request.auth.uid)).data;
+      return m.userId == request.auth.uid && m.clubId == clubId
+          && m.status == 'active' && m.role in ['board', 'president'];
+    }
+
     // users/{uid}/{file} — avatar · T-14
     //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`). Klasör listelenemez: eski
     //    avatarlar silinmediği için (D-10) liste, sahibinin değiştirdiği fotoğrafları da açardı;
@@ -128,10 +166,37 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    // posts/{postId}/{file} — gönderi görseli · T-21 (CD-39: metadata.clubId)
+    // posts/{postId}/{file} — gönderi görseli · T-21 (CD-39: metadata.clubId + metadata.uploaderId)
+    //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`). Yol yalnızca gönderi belgesinde
+    //    (`posts.images[].path`) durur ve o belgeyi yalnızca kulübün içini görenler okur; dosya adı
+    //    tahmin edilemez (64 bit rastgele) ve klasör listelenemez — yolu bilmeyen görsele ulaşamaz.
+    //    Üyelik okumada ARANMAZ (görsel başına bir Firestore okuması olurdu; indirme adresi jetonu
+    //    zaten kuralları atlar). Liste kapalıdır: düzenlemeyle kaldırılan görseller silinmez (D-10).
+    //  - Yükleme: yalnızca `metadata.clubId` kulübünün etkin yöneticisi (yönetim kurulu / başkan),
+    //    yeni adla (`isNewFile()`), hesabı etkinken; üst veride kendi kimliğiyle (`uploaderId`).
+    //    Klasör adı (`{postId}`) belge kimliği karakter kümesindedir (Firestore `posts` create
+    //    kuralıyla aynı desen): boşluk, `$(…)`, Türkçe harf gibi keyfi adlı klasör açılamaz.
+    //    Gönderi belgesi yükleme anında YOKTUR (K-18: önce görseller, sonra gönderi; `postId`
+    //    istemcide önceden üretilir) — kural gönderi belgesine bakmaz. Bu yüzden başka kulübün
+    //    yöneticisi de KENDİ kulübü adına bu klasöre dosya yükleyebilir (kabul edilen davranış;
+    //    storage.test.js "başkasının gönderi klasörü"); yükleyen dosyayı gönderiye İLİŞTİREMEZ —
+    //    `posts.images` alanını yalnızca gönderinin yazarı yazar (Firestore `posts` C / U kuralı).
+    //    Firestore yalnızca yol DESENİNE bakar (`images[i].path` = `posts/{postId}/` + dosya adı
+    //    deseni): dosyanın varlığını, yükleyenini ve `metadata.clubId` değerini denetlemez; yazar
+    //    klasördeki başka bir dosyanın (ya da var olmayan bir dosyanın) yolunu yazabilir. Sonuç
+    //    yetki yükseltme değil, yetim dosyadır; yükleyeni `metadata.uploaderId` gösterir.
+    //  - Gizlenen / silinen gönderinin görseli SİLİNMEZ ve okunmaya devam eder (rules-spec §9.11d).
+    //  - Çapraz servis: 2 belge (üyelik + hesap) = sınırın tamamı (yukarıda). Bu yüzden KULÜBÜN durumu
+    //    (askıda / silinmiş) burada okunmaz: askıdaki kulübün yöneticisi dosya yükleyebilir ama gönderiyi
+    //    yayınlayamaz / düzenleyemez (Firestore `clubLive`) — dosya yetim kalır, kimse göremez. İki
+    //    okumadan hesap durumu seçildi: askıya alınan yönetici (Mod C'de Auth hesabı açık kalır) silinemeyen
+    //    dosya yığmayı sürdüremesin (users/ ile aynı fren).
     match /posts/{postId}/{file} {
-      allow read: if false;
-      allow create: if false;
+      allow get: if signedInVerified();
+      allow list: if false;
+      allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
+          && postId.matches('[A-Za-z0-9_-]+') && clubMetadataOnly()
+          && isManagerOf(request.resource.metadata.clubId) && accountActive();
       allow update, delete: if false;
     }
 

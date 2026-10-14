@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:gu_ui/src/extensions/build_context_x.dart';
 import 'package:gu_ui/src/icons/gu_icon.dart';
@@ -332,6 +333,8 @@ class GuToastController extends ChangeNotifier {
 ///
 /// * [bottomInset]: alt sekme çubuğu görünürken `GuSizes.bottomNavHeight`
 ///   (`.above-nav`), değilse 0.
+/// * Ekranın kendi alt çubuğu (yorum yazma çubuğu) [GuToastBottomObstacle]
+///   ile bildirilir: toast o çubuğun da 12 üstünde durur.
 /// * Giriş `toastIn` (css:416): 24 px yukarı + solma, `GuMotion.slow` /
 ///   `easeEmphasized`; çıkış aynı hareketin tersi, `GuMotion.base`.
 ///   Azaltılmış harekette ikisi de anında.
@@ -374,6 +377,35 @@ class _GuToastHostState extends State<GuToastHost>
   /// [_entry]'nin `GuToastController.serial` değeri.
   int _serial = 0;
   Timer? _timer;
+
+  /// Alt çubuğunu bildiren ekranlar ([GuToastBottomObstacle]) → ekranın
+  /// altından çubuğun üst kenarına uzaklık.
+  final Map<Object, double> _obstacles = <Object, double>{};
+
+  /// Uygulanan engel yüksekliği ([_obstacles] en büyüğü).
+  double _obstruction = 0;
+  bool _obstructionSyncScheduled = false;
+
+  /// [owner] çubuğunun yüksekliğini kaydeder; `null` → kaydı siler. Bildirim
+  /// build / layout / dispose sırasında gelir, bu yüzden uygulaması kare
+  /// sonuna ertelenir.
+  void _setObstacle(Object owner, double? height) {
+    if (height == null) {
+      _obstacles.remove(owner);
+    } else {
+      _obstacles[owner] = height;
+    }
+    if (_obstructionSyncScheduled) return;
+    _obstructionSyncScheduled = true;
+    WidgetsBinding.instance
+      ..addPostFrameCallback((_) {
+        _obstructionSyncScheduled = false;
+        if (!mounted) return;
+        final next = _obstacles.values.fold<double>(0, math.max);
+        if (next != _obstruction) setState(() => _obstruction = next);
+      })
+      ..ensureVisualUpdate();
+  }
 
   @override
   void initState() {
@@ -464,8 +496,11 @@ class _GuToastHostState extends State<GuToastHost>
     final media = MediaQuery.of(context);
     final bottom =
         math.max(
-          media.viewInsets.bottom,
-          media.viewPadding.bottom + widget.bottomInset,
+          math.max(
+            media.viewInsets.bottom,
+            media.viewPadding.bottom + widget.bottomInset,
+          ),
+          _obstruction,
         ) +
         GuSizes.toastBottomExtra;
 
@@ -515,5 +550,107 @@ class _GuToastHostState extends State<GuToastHost>
           ),
       ],
     );
+  }
+}
+
+/// Ekranın alt kenarına sabitlenmiş çubuğu (yorum yazma çubuğu) toast
+/// katmanına bildirir: toast çubuğun üstüne binmez, 12 üstünde durur
+/// (`GuSizes.toastBottomExtra`).
+///
+/// [child] alt kenara oturan çubuğun **tamamıdır** — kendi güvenli alan ve
+/// klavye dolgusuyla (`Scaffold.bottomNavigationBar`'a verilen widget):
+/// yüksekliği, ekranın altından çubuğun üst kenarına uzaklık sayılır. Çubuk
+/// büyüdükçe (çok satırlı alan, klavye) toast da yükselir.
+///
+/// Bildirim yalnızca çubuğun sayfası görünürken geçerlidir: altta kalan
+/// sayfanın ve etkin olmayan sekme dalının çubuğu toastı itmez. Kök gezgine
+/// itilen sheet / dialog sayfayı örtmüş sayılmaz. Üstte [GuToastHost] yoksa
+/// etkisizdir.
+///
+/// ```dart
+/// Scaffold(
+///   body: …,
+///   bottomNavigationBar: GuToastBottomObstacle(child: GuStickyCta(…)),
+/// )
+/// ```
+class GuToastBottomObstacle extends StatefulWidget {
+  const GuToastBottomObstacle({required this.child, super.key});
+
+  /// Alt kenara sabitlenmiş çubuk.
+  final Widget child;
+
+  @override
+  State<GuToastBottomObstacle> createState() => _GuToastBottomObstacleState();
+}
+
+class _GuToastBottomObstacleState extends State<GuToastBottomObstacle> {
+  _GuToastHostState? _host;
+  double _height = 0;
+  bool _isCurrent = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final host = context.findAncestorStateOfType<_GuToastHostState>();
+    if (!identical(host, _host)) {
+      _host?._setObstacle(this, null);
+      _host = host;
+    }
+    // Görünür sayfa: gezgininde en üstte ve sahnede (örtülen sayfa ile etkin
+    // olmayan sekme dalının `TickerMode`'u kapalıdır).
+    _isCurrent =
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.isCurrentOf(context) ?? true);
+    _report();
+  }
+
+  @override
+  void dispose() {
+    _host?._setObstacle(this, null);
+    super.dispose();
+  }
+
+  void _onHeight(double height) {
+    _height = height;
+    _report();
+  }
+
+  void _report() => _host?._setObstacle(this, _isCurrent ? _height : 0);
+
+  @override
+  Widget build(BuildContext context) =>
+      _GuMeasuredHeight(onChanged: _onHeight, child: widget.child);
+}
+
+/// Çocuğunun yüksekliğini her değişimde bildirir (yerleşim sırasında).
+class _GuMeasuredHeight extends SingleChildRenderObjectWidget {
+  const _GuMeasuredHeight({required this.onChanged, required super.child});
+
+  final ValueChanged<double> onChanged;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderGuMeasuredHeight(onChanged);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderGuMeasuredHeight renderObject,
+  ) => renderObject.onChanged = onChanged;
+}
+
+class _RenderGuMeasuredHeight extends RenderProxyBox {
+  _RenderGuMeasuredHeight(this.onChanged);
+
+  ValueChanged<double> onChanged;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final height = size.height;
+    if (height == _reported) return;
+    _reported = height;
+    onChanged(height);
   }
 }

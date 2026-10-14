@@ -18,10 +18,13 @@ import 'package:gu_kulupler/product/service/image_picker_service.dart';
 
 import 'fake_base.dart';
 
-/// En küçük JPEG imzalı örnek görsel (`image/jpeg`).
+/// En küçük JPEG imzalı örnek görsel (`image/jpeg`); bildirilen boyutu
+/// 1200 × 900 pikseldir (baytlar gerçek bir görsel değildir — çizilmez).
 final PickedImage kFakeJpeg = PickedImage(
   bytes: Uint8List.fromList(const [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]),
   contentType: 'image/jpeg',
+  width: 1200,
+  height: 900,
 );
 
 final class FakeImagePickerService extends FakeBase

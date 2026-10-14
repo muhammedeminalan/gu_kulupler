@@ -970,9 +970,11 @@ void main() {
       counters = counterRepository;
       posts = FirebasePostRepository(
         service,
+        storage,
         FirebaseActivityRepository(service),
         counterRepository,
         clock,
+        SequenceRandom(_randomBytes),
       );
       comments = FirebaseCommentRepository(service, clock);
       saved = FirebaseSavedPostRepository(service);

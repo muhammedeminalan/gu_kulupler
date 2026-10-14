@@ -1,9 +1,11 @@
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/page_request.dart';
 import 'package:gu_data/src/core/page_result.dart';
 import 'package:gu_data/src/models/enums/post_type.dart';
 import 'package:gu_data/src/models/post_draft.dart';
+import 'package:gu_data/src/models/post_image_model.dart';
 import 'package:gu_data/src/models/post_model.dart';
 
 /// Kulüp akışı gönderileri — `posts/{postId}` ve `posts/{postId}/votes/{uid}`
@@ -27,6 +29,54 @@ abstract interface class PostRepository {
   /// her görsel `StoragePaths.postImage(postId, file)` yoluna yüklenir ve
   /// [create] aynı kimlikle çağrılır (CD-39).
   String newPostId();
+
+  /// [clubId] kulübünün henüz yayınlanmamış [postId] gönderisi için [images]
+  /// görsellerini Storage'a yükler ve yüklenen görsellerin modellerini
+  /// **girdi sırasıyla** döner (`PostDraft.images` / `PostEditPatch.images`
+  /// değeri). Firestore'a hiçbir şey yazmaz (K-18: önce görseller, sonra
+  /// [create] / [update]).
+  ///
+  /// Her görsel `posts/{postId}/{yeni dosya adı}` yoluna
+  /// (`StoragePaths.postImage` + `StoragePaths.newFileName`; sabit ad yok),
+  /// `customMetadata: {'clubId': clubId, 'uploaderId': uploaderId}` ile
+  /// yüklenir: Storage Rules yükleyenin o kulübün yöneticisi olduğunu
+  /// `clubId` üst verisinden doğrular (CD-39) ve `uploaderId` değerinin
+  /// oturumdaki kullanıcı olmasını ister — [uploaderId] oturumdaki
+  /// kullanıcının kimliğidir (dosyayı kimin yüklediği yalnızca bu alandan
+  /// izlenir; başka kimlik `StorageError.unauthorized` alır). Var olan
+  /// dosyanın üzerine yazılmaz, dosya silinmez (D-10).
+  ///
+  /// [images] yeniden kodlanmış baytlardır (`PostImageUpload` — CD-135).
+  /// Çağrı başına en çok `Limits.postImagesMax` (4) görsel; her biri
+  /// `image/jpeg`, `image/png` ya da `image/webp`, boş değil ve
+  /// `Limits.imageMaxBytes` (5 MB) sınırının altında. Boş liste hiçbir şey
+  /// yüklemeden başarı (boş liste) döner.
+  ///
+  /// **Ön denetim (hiçbir dosya gönderilmeden, tüm liste için):**
+  /// - geçersiz [postId] / [clubId] / [uploaderId], 4'ten çok görsel ya da
+  ///   boyutu (`width` / `height`) 1'den küçük görsel →
+  ///   [MediaDocumentError] ([FirestoreError.invalidArgument]);
+  /// - izinsiz tür → [MediaUploadError] (`StorageError.invalidType`); boş
+  ///   bayt → `StorageError.noFile`; sınırda ya da üstünde boyut →
+  ///   `StorageError.sizeLimit`.
+  ///
+  /// **Yükleme ve kısmi hata:** görseller sırayla, birer birer yüklenir. Her
+  /// başarılı yüklemenin ardından [onUploaded] girdi sırasındaki `index` ve
+  /// yüklenen model ile çağrılır. Bir yükleme başarısız olursa (ağ, zaman
+  /// aşımı ya da Storage Rules reddi: yönetici olmayan yükleyici
+  /// `StorageError.unauthorized` alır) kalanlar **gönderilmez** ve sonuç o
+  /// hatayı taşıyan [MediaUploadError]'dır. O ana kadar yüklenen dosyalar
+  /// yerinde kalır
+  /// (silinmez); çağıran [onUploaded] ile öğrendiği modelleri saklar ve
+  /// yeniden denemede **yalnızca kalan** görselleri gönderir (her çağrı yeni
+  /// dosya adı üretir, üzerine yazma olmaz).
+  Future<MediaUpdateResult<List<PostImageModel>>> uploadImages(
+    String postId,
+    List<PostImageUpload> images, {
+    required String clubId,
+    required String uploaderId,
+    void Function(int index, PostImageModel image)? onUploaded,
+  });
 
   /// [authorId] adına [clubId] kulübünde [draft] gönderisini [postId]
   /// kimliğiyle yayınlar ve yazılan modeli döner.

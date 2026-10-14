@@ -235,6 +235,48 @@ void main() {
     });
   });
 
+  group('T-21 · SharedAppPreferencesStore · composeDraft (FED-03, CD-45)', () {
+    test('anahtar `compose_draft_<clubId>`; kulüp başına tek taslak diske '
+        'işler, yeni depo okur; null taslağı kaldırır', () async {
+      expect(AppPreferenceKeys.composeDraft('c03'), 'compose_draft_c03');
+      final store = SharedAppPreferencesStore();
+      expect(store.composeDraft('c03'), isNull);
+      await store.load();
+      expect(store.composeDraft('c03'), isNull);
+
+      expect(await store.setComposeDraft('c03', '{"text":"a"}'), isTrue);
+      expect(await store.setComposeDraft('c03', '{"text":"b"}'), isTrue);
+      expect(store.composeDraft('c03'), '{"text":"b"}');
+      expect(store.composeDraft('c01'), isNull);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('compose_draft_c03'), '{"text":"b"}');
+
+      final reopened = SharedAppPreferencesStore();
+      await reopened.load();
+      expect(reopened.composeDraft('c03'), '{"text":"b"}');
+
+      expect(await reopened.setComposeDraft('c03', null), isTrue);
+      expect(reopened.composeDraft('c03'), isNull);
+      expect(prefs.containsKey('compose_draft_c03'), isFalse);
+    });
+
+    test('depo açılamazsa yazım false döner ama taslak oturum boyunca '
+        'geçerlidir; yanlış tipte değer taslak sayılmaz', () async {
+      final broken = SharedAppPreferencesStore(
+        open: () async => throw StateError('disk yok'),
+      );
+      expect(await broken.setComposeDraft('c03', '{}'), isFalse);
+      expect(broken.composeDraft('c03'), '{}');
+
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.composeDraft('c03'): 7,
+      });
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      expect(store.composeDraft('c03'), isNull);
+    });
+  });
+
   group('T-17 · SharedAppPreferencesStore · recentSearches (CLB-02)', () {
     test('anahtar adı; varsayılan boş (load öncesi ve boş diskte)', () async {
       expect(AppPreferenceKeys.recentSearches, 'pref.recentSearches');

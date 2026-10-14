@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/product/feedback/feedback_keys.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
+import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 import 'package:gu_kulupler/product/widget/post/image_grid.dart';
 import 'package:gu_kulupler/product/widget/post/image_viewer.dart';
 
@@ -11,6 +13,10 @@ import 'package:gu_kulupler/product/widget/post/image_viewer.dart';
 ///
 /// * [images] gönderinin görselleri, [initialIndex] dokunulan hücre, [club]
 ///   yer tutucu deseninin kaynağı.
+/// * Görseller `postImageResolverProvider` ile Storage'dan çözülür (akış
+///   kartıyla aynı çözücü: adres çoğu kez hazırdır; sonradan gelirse sayfa
+///   yeniden çizilir, alınamazsa yer tutucu kalır — K-18). [imageOf] verilirse
+///   o kullanılır (yüklenmemiş görsellerin önizlemesi).
 /// * "Paylaş" [onShare]'dir (çağıran `PostActionsMixin.sharePost` → SHT-15).
 ///   X, aşağı sürükleme ve geri sayfayı kapatır (`pop`); sonuç değeri yoktur.
 /// * Tam ekrandır: overlay içeriği sınırsız yükseklikte ölçüldüğü için
@@ -32,7 +38,7 @@ import 'package:gu_kulupler/product/widget/post/image_viewer.dart';
 /// ```
 ///
 /// Design: SHT-34
-class ImageViewerSheet extends StatelessWidget {
+class ImageViewerSheet extends ConsumerWidget {
   /// [images] görsellerini [initialIndex] sayfasından açar.
   const ImageViewerSheet({
     required this.images,
@@ -55,7 +61,7 @@ class ImageViewerSheet extends StatelessWidget {
   /// Paylaş → SHT-15.
   final VoidCallback? onShare;
 
-  /// Görsel çözücü; `null` → sayfalar yer tutucu (K-18).
+  /// Görsel çözücü; `null` → `postImageResolverProvider` (Storage).
   final PostImageResolver? imageOf;
 
   /// Kapat düğmesinin anahtarı (`SHT-34.close`).
@@ -72,7 +78,7 @@ class ImageViewerSheet extends StatelessWidget {
       FeedbackKeys.of(SheetId.sht34.designId, 'zoom.$index');
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context, WidgetRef ref) => SizedBox(
     height: MediaQuery.sizeOf(context).height,
     child: ImageViewer(
       images: images,
@@ -84,7 +90,7 @@ class ImageViewerSheet extends StatelessWidget {
       shareKey: shareKey,
       swipeKey: swipeKey,
       zoomKey: zoomKey,
-      imageOf: imageOf,
+      imageOf: imageOf ?? ref.watch(postImageResolverProvider),
     ),
   );
 }

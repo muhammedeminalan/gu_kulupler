@@ -6,6 +6,7 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/feed/provider/post_detail_state.dart';
 import 'package:gu_kulupler/features/feed/view/mixin/post_detail_view_mixin.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comment_composer.dart';
+import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 import 'package:gu_kulupler/product/widget/post/comment_row.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -28,6 +29,8 @@ import 'package:gu_ui/gu_ui.dart';
 /// * Gönderi yoksa, silinmişse ya da gizlenmişse SYS-04'e gidilir.
 /// * Yorum sayısı ve liste engellenen yazarların yorumlarını içermez.
 /// * Klavye açıkken yorum çubuğu klavyenin üstünde kalır (`GuStickyCta`).
+/// * Toast alt çubuğun (yorum çubuğu / salt okunur bant) üstünde çıkar
+///   (`GuToastBottomObstacle`).
 ///
 /// Davranış `PostDetailViewMixin`'dedir.
 ///
@@ -180,6 +183,9 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
             onSave: save,
             onVote: vote,
             onImage: openImage,
+            // Görseller Storage'dan çözülür; adres gelene dek yer tutucu
+            // (K-18).
+            imageOf: ref.watch(postImageResolverProvider),
           ),
           Semantics(
             header: true,
@@ -289,9 +295,12 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
         backActionKey: GuKey.action('FED-02.back'),
       ),
       body: body,
+      // Toast alt çubuğun üstünde durur ("Gönder" düğmesine binmez).
       bottomNavigationBar: post == null
           ? null
-          : _bottomBar(isAdvisor: isAdvisor, me: me),
+          : GuToastBottomObstacle(
+              child: _bottomBar(isAdvisor: isAdvisor, me: me),
+            ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
@@ -8,9 +10,11 @@ import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/page_request.dart';
 import 'package:gu_data/src/core/page_result.dart';
 import 'package:gu_data/src/core/soft_delete.dart';
+import 'package:gu_data/src/core/storage_error.dart';
 import 'package:gu_data/src/models/activity_draft.dart';
 import 'package:gu_data/src/models/activity_refs_model.dart';
 import 'package:gu_data/src/models/club_model.dart';
@@ -32,6 +36,7 @@ import 'package:gu_data/src/repositories/query_x.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
+import 'package:gu_data/src/services/storage_service.dart';
 import 'package:gu_data/src/utils/field_validators.dart';
 
 /// [PostRepository] uygulaması: `posts/{postId}`, `posts/{postId}/votes/{uid}`,
@@ -49,20 +54,38 @@ import 'package:gu_data/src/utils/field_validators.dart';
 /// yetkiyi Security Rules denetler, repository aktöre göre dallanmaz.
 /// Bildirim dağıtımı burada yapılmaz (PLAN §10.5: çağıran yapar).
 final class FirebasePostRepository implements PostRepository {
-  /// [_firestore] üzerinden okur ve yazar; günlük kaydını [_activity] ile,
-  /// duyuru sayacını [_counters] ile yayın işlemine ekler. Anket bitişi ve
-  /// sayaç günü [_clock] saatinden hesaplanır.
+  /// [_firestore] üzerinden okur ve yazar; gönderi görsellerini [_storage]
+  /// ile yükler; günlük kaydını [_activity] ile, duyuru sayacını [_counters]
+  /// ile yayın işlemine ekler. Anket bitişi, sayaç günü ve görsel dosya adı
+  /// damgası [_clock] saatinden; dosya adının rastgele kısmı [_random]
+  /// kaynağından gelir (kompozisyon kökü `Random.secure()` verir; `gu_data`
+  /// rastgele kaynağı kendisi kurmaz).
   FirebasePostRepository(
     this._firestore,
+    this._storage,
     this._activity,
     this._counters,
     this._clock,
+    this._random,
   );
 
   final FirestoreService _firestore;
+  final StorageService _storage;
   final FirebaseActivityRepository _activity;
   final FirebaseAnnouncementCounterRepository _counters;
   final AppClock _clock;
+  final Random _random;
+
+  /// Gönderi görselinin özel üst veri anahtarı: Storage Rules yükleyenin
+  /// yöneticiliğini `request.resource.metadata.clubId` kulübünde doğrular
+  /// (CD-39). [_uploaderIdMetadata] dışında özel üst veri gönderilmez (Rules
+  /// reddeder).
+  static const String _clubIdMetadata = 'clubId';
+
+  /// Yükleyenin kimliği: Storage Rules değerin oturumdaki uid olmasını ister.
+  /// Storage nesnesi yükleyeni kendiliğinden kaydetmez; dosyayı kimin
+  /// yüklediği (moderasyon, hesap askısı) yalnızca bu alandan izlenir.
+  static const String _uploaderIdMetadata = 'uploaderId';
 
   /// `likeCount` deltası: beğeni eklendi.
   static const int _liked = 1;
@@ -76,6 +99,104 @@ final class FirebasePostRepository implements PostRepository {
 
   @override
   String newPostId() => _firestore.newId(FirestoreCollections.posts);
+
+  @override
+  Future<MediaUpdateResult<List<PostImageModel>>> uploadImages(
+    String postId,
+    List<PostImageUpload> images, {
+    required String clubId,
+    required String uploaderId,
+    void Function(int index, PostImageModel image)? onUploaded,
+  }) async {
+    // Ön denetim tüm liste içindir: tek görsel bile geçersizse hiçbir dosya
+    // gönderilmez (yüklenen dosya silinemez — D-10).
+    if (_rejectUploads(postId, clubId, uploaderId, images)
+        case final rejected?) {
+      return rejected;
+    }
+    final uploaded = <PostImageModel>[];
+    for (final (index, upload) in images.indexed) {
+      // Her görsel yeni adla yüklenir (üzerine yazma yok); uzantı içerik
+      // türünden gelir — ön denetim türü doğruladı.
+      final extension =
+          StoragePaths.extensionByContentType[upload.contentType]!;
+      final result = await _storage.upload(
+        path: StoragePaths.postImage(
+          postId,
+          StoragePaths.newFileName(_clock, _random, extension),
+        ),
+        bytes: upload.bytes,
+        contentType: upload.contentType,
+        customMetadata: {
+          _clubIdMetadata: clubId,
+          _uploaderIdMetadata: uploaderId,
+        },
+      );
+      switch (result) {
+        case FirebaseFailure(:final error, :final message):
+          // Kalanlar gönderilmez; o ana kadar yüklenenler yerinde kalır ve
+          // çağıran onları `onUploaded` ile zaten öğrenmiştir.
+          return FirebaseFailure(MediaUploadError(error), message: message);
+        case FirebaseSuccess(data: final path):
+          final image = PostImageModel(
+            path: path,
+            w: upload.width,
+            h: upload.height,
+          );
+          uploaded.add(image);
+          onUploaded?.call(index, image);
+      }
+    }
+    return FirebaseSuccess(uploaded);
+  }
+
+  /// [uploadImages] ön denetimi; sorun yoksa `null`. Önce çağrının kendisi
+  /// (kimlikler, adet, boyut bilgisi — belge hatası), sonra her görselin
+  /// baytları (tür → boş → boyut sınırı — yükleme hatası) denetlenir;
+  /// `StorageService.upload` ile aynı koşullar, ağ çağrısından önce.
+  static MediaUpdateResult<List<PostImageModel>>? _rejectUploads(
+    String postId,
+    String clubId,
+    String uploaderId,
+    List<PostImageUpload> images,
+  ) {
+    final invalid =
+        RepositoryHelpers.rejectInvalidIds<void>({
+          'postId': postId,
+          'clubId': clubId,
+          'uploaderId': uploaderId,
+        }) ??
+        RepositoryHelpers.rejectInvalidFields<void>({
+          FirestoreFields.images: FieldValidators.postImageCount(
+            images.length,
+          ),
+        }) ??
+        (images.any((image) => image.width < 1 || image.height < 1)
+            ? RepositoryHelpers.invalidArgument<void>(
+                'uploadImages: görsel boyutu (width / height) 1 pikselden küçük',
+              )
+            : null);
+    if (invalid case FirebaseFailure(:final error, :final message)) {
+      return FirebaseFailure(MediaDocumentError(error), message: message);
+    }
+    for (final image in images) {
+      final StorageError? error;
+      if (!StoragePaths.extensionByContentType.containsKey(
+        image.contentType,
+      )) {
+        error = StorageError.invalidType;
+      } else if (image.bytes.isEmpty) {
+        error = StorageError.noFile;
+      } else if (image.bytes.length >= Limits.imageMaxBytes) {
+        // Storage Rules `size < imageMaxBytes` ister: sınırın kendisi de ret.
+        error = StorageError.sizeLimit;
+      } else {
+        error = null;
+      }
+      if (error != null) return FirebaseFailure(MediaUploadError(error));
+    }
+    return null;
+  }
 
   @override
   Future<FirestoreResult<PostModel>> create(

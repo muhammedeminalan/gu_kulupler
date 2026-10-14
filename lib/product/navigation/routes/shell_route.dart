@@ -7,6 +7,7 @@ import 'package:gu_kulupler/features/clubs/view/club_list_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_members_view.dart';
 import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/join_application_sheet.dart';
+import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/search/view/search_view.dart';
