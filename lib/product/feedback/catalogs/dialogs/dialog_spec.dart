@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
+import 'package:gu_kulupler/product/l10n/cancel_reason_labels.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Dialog metinlerinin değişkenleri: ARB yer tutucu adı → değer
@@ -27,6 +28,20 @@ abstract final class DialogParamKeys {
 
   /// Kullanıcı adı — DLG-12 "… kullanıcısını da engelle" (`{name}`).
   static const String name = 'name';
+
+  /// Bekleme listesinden çıkış mı (`bool`) — DLG-14 gövdesi
+  /// (`dlg14BodyWaitlist`; `dialogs.js:30` `p.waitlist`).
+  static const String waitlist = 'waitlist';
+
+  /// Bekleyen kişi sayısı (`int`) — DLG-15 gövdesi (`{n}`).
+  static const String n = 'n';
+
+  /// Etkinlik başlığı — DLG-16 gövdesi (`{event}`).
+  static const String event = 'event';
+
+  /// İptal nedeni (`events.cancelReason` kimliği; adını katalog çözer —
+  /// `CancelReasonLabels`) — DLG-16 gövdesi (`{reason}`).
+  static const String reason = 'reason';
 }
 
 /// Standart (başlık + gövde + en çok iki düğme) bir dialogun katalog kaydı —
@@ -275,6 +290,58 @@ abstract final class DialogCatalog {
       secondary: (l10n) => l10n.commonGiveUp,
       icon: GuIcons.ban,
       destructive: true,
+    ),
+
+    /// Design: DLG-14 — Katılımdan vazgeç? (`dialogs.js:30`): ikon ve birincil
+    /// düğme `danger`; [DialogParamKeys.waitlist] `true` ise gövde bekleme
+    /// listesi metnidir. Sonuç `true` → kayıt iptal edilir
+    /// (`EventDetailViewModel.cancelRsvp`; ardından TST-42).
+    DialogId.dlg14: DialogSpec(
+      title: (l10n, _) => l10n.dlg14Title,
+      body: (l10n, params) => params[DialogParamKeys.waitlist] == true
+          ? l10n.dlg14BodyWaitlist
+          : l10n.dlg14Body,
+      primary: (l10n) => l10n.commonGiveUp,
+      secondary: (l10n) => l10n.dlg14Stay,
+      icon: GuIcons.calendarX,
+      destructive: true,
+    ),
+
+    /// Design: DLG-15 — Kontenjan doldu (`dialogs.js:31`): gövde bekleyen
+    /// sayısını taşır ([DialogParamKeys.n] — `events.waitlistCount`). Sonuç
+    /// `true` → bekleme listesine katılınır (`EventDetailViewModel.join`;
+    /// ardından TST-43).
+    DialogId.dlg15: DialogSpec(
+      title: (l10n, _) => l10n.dlg15Title,
+      body: (l10n, params) =>
+          l10n.dlg15Body(switch (params[DialogParamKeys.n]) {
+            final int count => count,
+            _ => 0,
+          }),
+      primary: (l10n) => l10n.eventCtaWaitlist,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.hourglass,
+    ),
+
+    /// Design: DLG-16 — Etkinlik iptal edildi (`dialogs.js:32`): ikon
+    /// `danger`, birincil düğme olağan; gövde etkinliğin başlığını
+    /// ([DialogParamKeys.event]) ve iptal nedenini ([DialogParamKeys.reason])
+    /// taşır. "Tamam" → `true`; "Benzer etkinlikleri gör" → `false`
+    /// (çağıran Etkinlikler sekmesine döner).
+    DialogId.dlg16: DialogSpec(
+      title: (l10n, _) => l10n.dlg16Title,
+      body: (l10n, params) => l10n.dlg16Body(
+        _text(params, DialogParamKeys.event),
+        CancelReasonLabels.of(l10n, _text(params, DialogParamKeys.reason)) ??
+            '',
+      ),
+      primary: (l10n) => l10n.commonOk,
+      secondary: (l10n) => l10n.dlg16Similar,
+      icon: GuIcons.calendarX,
+      destructive: true,
+      primaryDanger: false,
+      primaryAction: 'ok',
+      secondaryAction: 'similar',
     ),
 
     /// Design: DLG-24 — Bugünkü duyuru hakkın doldu (`dialogs.js:42`): günün

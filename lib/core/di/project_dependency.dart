@@ -13,7 +13,9 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
@@ -38,6 +40,8 @@ final class ProjectDependencyOverrides {
     this.shareService,
     this.permissionService,
     this.imagePickerService,
+    this.fileService,
+    this.localReminderService,
     this.appPreferencesStore,
   });
 
@@ -76,6 +80,12 @@ final class ProjectDependencyOverrides {
 
   /// `ImagePickerService` yerine.
   final ImagePickerService? imagePickerService;
+
+  /// `FileService` yerine.
+  final FileService? fileService;
+
+  /// `LocalReminderService` yerine.
+  final LocalReminderService? localReminderService;
 
   /// `AppPreferencesStore` yerine.
   final AppPreferencesStore? appPreferencesStore;
@@ -263,6 +273,14 @@ abstract final class ProjectDependency {
       )
       ..registerSingleton<ImagePickerService>(
         overrides.imagePickerService ?? const DeviceImagePickerService(),
+      )
+      // T-23 · geçici dosya (.ics) ve yerel hatırlatıcı (CD-08, CD-09)
+      ..registerSingleton<FileService>(
+        overrides.fileService ?? const DeviceFileService(),
+      )
+      ..registerSingleton<LocalReminderService>(
+        overrides.localReminderService ??
+            FlutterLocalReminderService(clock: appClock),
       )
       // Depo burada yalnızca kaydedilir; `AppBootstrap` `load()` çağırır.
       ..registerSingleton<AppPreferencesStore>(

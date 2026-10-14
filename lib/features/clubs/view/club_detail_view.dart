@@ -15,6 +15,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_locked_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_members_tab.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/widget/club/club_cta.dart';
+import 'package:gu_kulupler/product/widget/event/event_cta.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Kulüp ekranı — `ClubDetailRoute` (`/clubs/:clubId?tab=`); prototip
@@ -51,6 +52,7 @@ class ClubDetailView extends ConsumerStatefulWidget {
     required this.clubId,
     this.tab,
     this.commentsSheetBuilder,
+    this.eventJoinFlow,
     super.key,
   });
 
@@ -65,9 +67,26 @@ class ClubDetailView extends ConsumerStatefulWidget {
   /// gövdeyi rota (kompozisyon kökü) verir (`ClubFeedTab`'a aktarılır).
   final Widget Function(String clubId, String postId)? commentsSheetBuilder;
 
+  /// "Etkinlikler" sekmesindeki kartın "Katıl" (SHT-12) / "Bekleme listesine
+  /// katıl" (DLG-15) akışı. Akış `features/events` altındadır (katılım
+  /// yazımı + hatırlatıcı) ve feature'lar birbirini içe aktaramaz; rota
+  /// (kompozisyon kökü) verir. `null` → etkinlik sayfası (EVT-02) açılır,
+  /// katılım orada yapılır.
+  final EventJoinFlow? eventJoinFlow;
+
   @override
   ConsumerState<ClubDetailView> createState() => _ClubDetailViewState();
 }
+
+/// CLB-03 etkinlik kartından katılım akışı: [kind] `join` (SHT-12) ya da
+/// `joinWaitlist` (DLG-15). `true` → katılım kaydı değişti (sekme yeniden
+/// okunur).
+typedef EventJoinFlow =
+    Future<bool> Function(
+      BuildContext context,
+      EventModel event,
+      EventCtaKind kind,
+    );
 
 class _ClubDetailViewState extends ConsumerState<ClubDetailView>
     with ClubDetailViewMixin {
@@ -118,11 +137,22 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
       ),
       ClubDetailTab.events => ClubEventsTab(
         events: state.events,
+        club: club,
+        rsvps: state.rsvps,
+        nowUtc: ref.watch(appClockProvider).nowUtc(),
+        isFetching: state.isEventsFetching,
+        isError: state.isEventsError,
         segment: eventSegment,
         onSegmentChanged: selectEventSegment,
         seesInside: state.seesInside,
+        onRetry: retryEvents,
+        onEvent: openEvent,
+        onQuickAction: onEventQuickAction,
         segmentKeyOf: (segment) =>
             GuKey.action('CLB-03.eventSeg.${segment.name}'),
+        cardKeyOf: (eventId) => GuKey.action('CLB-03.card.$eventId'),
+        joinKeyOf: (eventId) => GuKey.action('CLB-03.join.$eventId'),
+        retryKey: GuKey.action('CLB-03.eventsRetry'),
       ),
       ClubDetailTab.posts =>
         state.seesInside

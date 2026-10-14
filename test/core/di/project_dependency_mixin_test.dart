@@ -11,7 +11,9 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
@@ -84,6 +86,12 @@ void main() {
       expect(
         consumer.imagePickerService,
         same(GetIt.I<ImagePickerService>()),
+      );
+      // T-23 · geçici dosya ve yerel hatırlatıcı
+      expect(consumer.fileService, same(GetIt.I<FileService>()));
+      expect(
+        consumer.localReminderService,
+        same(GetIt.I<LocalReminderService>()),
       );
     });
 

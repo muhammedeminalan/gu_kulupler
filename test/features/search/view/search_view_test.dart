@@ -68,6 +68,9 @@ Key _join(String clubId) => GuKey.action('CLB-02.join.$clubId');
 
 Key _clubResult(String clubId) => GuKey.action('CLB-02.result.club.$clubId');
 
+Key _eventResult(String eventId) =>
+    GuKey.action('CLB-02.result.event.$eventId');
+
 /// Akış kipinde yollar.
 const String _clubsPath = '/clubs';
 const String _searchPath = '/clubs/search';
@@ -118,12 +121,27 @@ Future<GoRouter> _pumpRoute(
   WidgetTester tester, {
   SessionState? session,
   void Function()? seed,
+  String path = _searchPath,
 }) async {
   GoRouter? created;
   await tester.pumpAppRouter(
     routerOf: (_) => created ??= GoRouter(
       initialLocation: _clubsPath,
       routes: [
+        GoRoute(
+          path: '/events',
+          builder: (_, _) => const _Stub('/events'),
+          routes: [
+            GoRoute(
+              path: 'search',
+              builder: (_, _) => const SearchView(scope: SearchScope.events),
+            ),
+            GoRoute(
+              path: ':eventId',
+              builder: (_, state) => _Stub(state.uri.path),
+            ),
+          ],
+        ),
         GoRoute(
           path: _clubsPath,
           builder: (_, _) => const _Stub(_clubsPath),
@@ -154,7 +172,7 @@ Future<GoRouter> _pumpRoute(
   seedSearch();
   _store().values[AppPreferenceKeys.recentSearches] = kRecent;
   seed?.call();
-  router.go(_searchPath);
+  router.go(path);
   await tester.pumpAndSettle();
   return router;
 }
@@ -592,6 +610,46 @@ void main() {
       await _tapKey(tester, GuKey.action('CLB-02.status.${kPhoto.id}'));
       await tester.pumpAndSettle();
       expect(_location(router), '$_clubsPath/${kPhoto.id}/application');
+    });
+  });
+
+  group('CLB-02 · Arama · etkinlik sonuçları (W-19)', () {
+    testWidgets('Etkinlikler sekmesi: gerçek havuzdan eşleşme → terim son '
+        'aramalara yazılır + EVT-02 (go)', (tester) async {
+      final router = await _pumpRoute(tester, seed: seedSearchEvents);
+      await _tapKey(tester, _tab(SearchScope.events));
+      await tester.enterText(find.byKey(_input), 'satranç');
+      await tester.pump(Limits.searchDebounce);
+      expect(find.byKey(_eventResult(kChessCup.id)), findsOneWidget);
+      expect(find.byKey(_eventResult(kPhotoWalk.id)), findsNothing);
+
+      await _tapKey(tester, _eventResult(kChessCup.id));
+      await tester.pumpAndSettle();
+      expect(_location(router), '/events/${kChessCup.id}');
+      expect(_store().recentSearches.first, 'satranç');
+    });
+
+    testWidgets('EventsSearchRoute: Etkinlikler sekmesiyle açılır; kayıtlı '
+        'mekân adıyla da bulunur', (tester) async {
+      await _pumpRoute(
+        tester,
+        seed: seedSearchEvents,
+        path: '/events/search',
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SearchView)),
+      );
+      expect(
+        container.read(searchViewModelProvider(SearchScope.events)).scope,
+        SearchScope.events,
+      );
+      final place = StaticLabels.place(
+        tester.element(find.byType(SearchView)),
+        kPhotoWalk.placeId!,
+      );
+      await tester.enterText(find.byKey(_input), place);
+      await tester.pump(Limits.searchDebounce);
+      expect(find.byKey(_eventResult(kPhotoWalk.id)), findsOneWidget);
     });
   });
 

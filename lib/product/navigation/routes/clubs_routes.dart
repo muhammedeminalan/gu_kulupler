@@ -67,7 +67,9 @@ Widget joinApplicationSheetBuilder(String clubId) =>
 /// Guard `A` (aktif oturum; `RouteAccessTable`). Kulübün içine özel sekmeler
 /// (gönderiler, üyeler) rota düzeyinde korunmaz: ziyaretçi ekranı görür,
 /// sekme kilitli bloğu gösterir (`screens-clubs.js:84`). Geçiş platform
-/// varsayılanıdır (D-06); `go` ile açılır, geri CLB-01'e döner.
+/// varsayılanıdır (D-06); `go` ile açılır, geri CLB-01'e döner. Etkinlik
+/// kartından katılım (SHT-12 / DLG-15) `features/events`'tedir
+/// ([runEventJoinFlow]); rota iki feature'ı burada bağlar.
 final class ClubDetailRoute extends GoRouteData
     with $ClubDetailRoute, PlatformPageMixin {
   /// [clubId] kulübünün sayfası; [tab] ilk açılan sekmedir.
@@ -88,6 +90,7 @@ final class ClubDetailRoute extends GoRouteData
     clubId: clubId,
     tab: tab,
     commentsSheetBuilder: commentsSheetBuilder,
+    eventJoinFlow: runEventJoinFlow,
   );
 }
 

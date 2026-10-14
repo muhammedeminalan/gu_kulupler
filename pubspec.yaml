@@ -46,6 +46,10 @@ dependencies:
   image_picker: ^1.2.4 # T-14: kamera / galeri seçimi (SHT-16; Photo Picker / PHPicker — CD-16)
   flutter_image_compress: ^2.5.1 # T-14: yükleme öncesi JPEG'e sıkıştırma (Q-19, ≤ 5 MB)
   share_plus: ^13.3.1 # T-16: bağlantı paylaşma (SHT-15; .ics SHT-14 T-23 — K-D)
+  flutter_local_notifications: ^22.3.1 # T-23: yerel etkinlik hatırlatıcısı (Q-07, CD-09)
+  timezone: ^0.11.1 # T-23: Europe/Istanbul zonedSchedule (yalnızca LocalReminderService — D-26)
+  path_provider: ^2.1.6 # T-23: .ics geçici dosyası (SHT-14, FileService)
+  qr_flutter: ^4.1.0 # T-23: bilet QR'ı (EVT-03, QrCodeView — D-30)
 
   # --- Firebase (Mod C: firebase_messaging / cloud_functions yok — Q-02) ---
   firebase_core: ^4.15.0

@@ -5,6 +5,11 @@
          (Android Photo Picker) açılır, depolama izni istenmez. -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- T-23 (PLAN §5.6.2, CD-09): yeniden başlatmadan sonra planlı yerel hatırlatıcılar
+         korunur (flutter_local_notifications boot alıcısı). Hatırlatıcılar
+         AndroidScheduleMode.inexactAllowWhileIdle ile kurulur: SCHEDULE_EXACT_ALARM /
+         USE_EXACT_ALARM bilerek YOK. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
         android:label="GÜ Kulüpler"
         android:name="${applicationName}"
@@ -33,6 +38,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- T-23 (PLAN §5.6.2): flutter_local_notifications planlı bildirim alıcıları
+             (README "Android setup"). -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -48,6 +48,8 @@ part 'club_detail_view_model.g.dart';
 /// | [openEmail] · [openInstagram] · [openWeb] | onay → açıldı | DLG-32 |
 /// | | e-posta açılamadı | adres kopyalanır, TST-08 |
 /// | [submitReport] → [showReportReceived] | yazıldı / zaten bildirilmiş | DLG-12 |
+/// | [fetchEvents] | etkinlikler + kullanıcının kayıtları | sekme içi hata |
+/// | [showRegistrationClosed] | "Kayıtlar kapalı" kartı | TST-X2 |
 /// | yazan her işlem | çevrimdışı / ağ · yetki yok | TST-24 · TST-X18 |
 ///
 /// Design: CLB-03
@@ -68,6 +70,10 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
 
   bool _isLoading = false;
   bool _isConfirmingLeave = false;
+
+  /// Etkinlik okumalarının sırası: eski kipin (ziyaretçi ↔ üye) geç gelen
+  /// sonucu yenisinin üstüne yazılmaz.
+  int _eventsGeneration = 0;
 
   @override
   ClubDetailState build(String clubId) {
@@ -121,6 +127,23 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
         state = state.copyWith(isRefreshing: false);
     }
   }
+
+  /// "Etkinlikler" sekmesini yeniden okur — sekme içi hata görünümündeki
+  /// "Yeniden dene" ve karttan katılım / bekleme listesi akışı sonrası
+  /// (kart durumları).
+  ///
+  /// Okuma kullanıcının kipine göre sınırlıdır (Rules süzgeç değildir —
+  /// `EventRepository.listClubEvents`): kulübün içini gören (üye, yönetici,
+  /// danışman, süper admin) yayındaki ve iptal edilmiş tüm etkinlikleri,
+  /// görmeyen yalnızca herkese açık olanları okur; taslaklar hiç okunmaz
+  /// (CLB-03 taslak göstermez — `screens-clubs.js:81`). Kullanıcının katılım
+  /// kayıtları (`rsvpRepository.listMine`) aynı anda okunur; okunamazsa
+  /// kartlar durum rozetsiz çizilir.
+  Future<void> fetchEvents() => _loadEvents();
+
+  /// Devre dışı "Kayıtlar kapalı" kart düğmesi (`CLB-03.join.<eventId>`) →
+  /// TST-X2.
+  void showRegistrationClosed() => feedback.showToast(ToastId.tstX2);
 
   /// Sekme değişti (`CLB-03.tab.*`, `CLB-03.memberCount`, `?tab=`).
   void setTab(ClubDetailTab tab) {
@@ -353,7 +376,10 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
       membership: membership,
       clearMembership: membership == null,
     );
-    if (state.seesInside != sawInside) unawaited(_loadPeople());
+    if (state.seesInside != sawInside) {
+      unawaited(_loadPeople());
+      unawaited(_loadEvents());
+    }
   }
 
   /// Kulübü okur ve ilk yüklemeyi bitirir.
@@ -366,7 +392,7 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     switch (result) {
       case FirebaseSuccess(:final data):
         state = state.copyWith(club: data, isFetching: false, isError: false);
-        await _loadPeople();
+        await (_loadPeople(), _loadEvents()).wait;
       case FirebaseFailure(:final error) when _missingErrors.contains(error):
         state = state.copyWith(isFetching: false, isNotFound: true);
       case FirebaseFailure(:final error, :final message):
@@ -406,6 +432,52 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
         FirebaseFailure() => state.memberPreview,
       },
     );
+  }
+
+  /// Etkinlikleri ve kullanıcının bu kulüpteki katılım kayıtlarını okur
+  /// ([fetchEvents]). Okuma hatası var olan listeyi silmez.
+  Future<void> _loadEvents() async {
+    final generation = ++_eventsGeneration;
+    final inside = state.seesInside;
+    final uid = ref.read(sessionViewModelProvider).uid;
+    state = state.copyWith(isEventsFetching: true, isEventsError: false);
+    final (events, rsvps) = await (
+      eventRepository.listClubEvents(
+        clubId,
+        const PageRequest(),
+        publicOnly: !inside,
+      ),
+      uid == null
+          ? Future<FirestoreResult<List<RsvpModel>>?>.value()
+          : rsvpRepository.listMine(uid),
+    ).wait;
+    if (!ref.mounted || generation != _eventsGeneration) return;
+    if (rsvps case FirebaseFailure(:final error, :final message)) {
+      AppLogger.warn(
+        'Katılım kayıtları okunamadı: ${error.name}',
+        error: message,
+      );
+    }
+    switch (events) {
+      case FirebaseSuccess(:final data):
+        state = state.copyWith(
+          events: data.items,
+          rsvps: switch (rsvps) {
+            FirebaseSuccess(:final data) => {
+              for (final rsvp in data)
+                if (rsvp.clubId == clubId) rsvp.eventId: rsvp,
+            },
+            _ => state.rsvps,
+          },
+          isEventsFetching: false,
+        );
+      case FirebaseFailure(:final error, :final message):
+        AppLogger.warn(
+          'Kulüp etkinlikleri okunamadı: ${error.name}',
+          error: message,
+        );
+        state = state.copyWith(isEventsFetching: false, isEventsError: true);
+    }
   }
 
   /// DLG-09 "Ayrılamazsın".

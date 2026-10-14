@@ -9,8 +9,11 @@ import 'package:gu_kulupler/features/search/provider/search_state.dart';
 
 import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_club_repository.dart';
+import '../../fakes/fake_event_repository.dart';
 import '../../fakes/fake_session_states.dart';
+import '../../fakes/register_fakes.dart';
 import '../../fixtures/club_model_fixtures.dart';
+import '../../fixtures/event_model_fixtures.dart';
 import '../../fixtures/user_model_fixtures.dart';
 
 /// Oturumdaki kullanıcının kimliği (`FakeSessionStates.uid`).
@@ -86,4 +89,51 @@ void seedSearch() {
       email: kEmail,
       emailVerified: true,
     );
+}
+
+/// [id] demo etkinliği, "şimdi"den ([kDefaultFakeNowUtc]) [inDays] gün sonra
+/// başlayan iki saatlik kopya ([clubId] verilirse o kulübün).
+EventModel upcomingEvent(String id, {required int inDays, String? clubId}) {
+  final start = kDefaultFakeNowUtc.add(Duration(days: inDays));
+  return EventModelFixtures.byId(id).copyWith(
+    clubId: clubId,
+    startsAt: start,
+    endsAt: start.add(const Duration(hours: 2)),
+  );
+}
+
+/// `e08` — Satranç Turnuvası (c09, herkese açık), yarın.
+final EventModel kChessCup = upcomingEvent('e08', inDays: 1);
+
+/// `e07` — Karadeniz Fotoğraf Yürüyüşü (c07, herkese açık), iki gün sonra.
+final EventModel kPhotoWalk = upcomingEvent('e07', inDays: 2);
+
+/// `e02` — Hackathon Hazırlık Buluşması (c01, üyelere özel), üç gün sonra.
+final EventModel kHackathonPrep = upcomingEvent('e02', inDays: 3);
+
+/// Askıdaki kulübün (c14) herkese açık etkinliği, yarın (havuza girmez).
+final EventModel kSuspendedEvent = upcomingEvent(
+  'e15',
+  inDays: 1,
+  clubId: kSuspended.id,
+);
+
+/// `e20` — geçmiş etkinlik (c07), iki gün önce (sorgu dışı).
+final EventModel kPastEvent = upcomingEvent('e20', inDays: -2);
+
+/// `c01` kulübünün etkin üyesi oturum.
+final SessionState kSoftwareMemberSession = FakeSessionStates.withMembership(
+  kSoftware.id,
+).copyWith(user: kUser);
+
+/// Kayıtlı etkinlik fake'ine arama etkinliklerini yazar.
+void seedSearchEvents() {
+  final events = GetIt.I<EventRepository>() as FakeEventRepository;
+  [
+    kChessCup,
+    kPhotoWalk,
+    kHackathonPrep,
+    kSuspendedEvent,
+    kPastEvent,
+  ].forEach(events.put);
 }

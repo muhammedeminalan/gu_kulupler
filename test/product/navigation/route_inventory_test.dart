@@ -12,6 +12,8 @@
 // `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`).
 // T-20 · `PostDetailRoute` (`/clubs/:clubId/posts/:postId`).
 // T-21 · `ComposeRoute` (`/clubs/:clubId/compose?edit=`).
+// T-23 · `EventDetailRoute` (`/events/:eventId?showCancelled=`),
+// `TicketRoute` (`/events/:eventId/ticket`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -25,7 +27,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21).
+/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -56,8 +58,10 @@ const Map<GoRouteData, String> _routes = {
       '/clubs/:clubId/posts/:postId',
   ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
   EventsRoute(): '/events',
-  // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak)
+  // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03)
   EventsSearchRoute(): '/events/search',
+  EventDetailRoute(eventId: _eventId): '/events/:eventId',
+  TicketRoute(eventId: _eventId): '/events/:eventId/ticket',
   NotificationsRoute(): '/notifications',
   AdminRoute(): '/admin',
   ProfileRoute(): '/profile',
@@ -71,6 +75,9 @@ const String _userId = 'u01';
 
 /// Parametreli gönderi rotalarının örnek kimliği.
 const String _postId = 'p01';
+
+/// Parametreli etkinlik rotalarının örnek kimliği.
+const String _eventId = 'e01';
 
 /// Yol parametresi işareti (`/clubs/:clubId`).
 const String _parameterMark = ':';
@@ -96,7 +103,8 @@ Set<String> _collectPaths(List<RouteBase> routes, [String parent = '']) {
 ///
 /// Kulüp yollarındaki `:id` parçası `:clubId` olarak okunur — navigation.md
 /// §2.2 notu: "`:id` ve `:clubId` aynı kulüp kimliğidir (yol parametresi adı
-/// `clubId` olarak birleştirilir)".
+/// `clubId` olarak birleştirilir)". Etkinlik yollarındaki `:id` aynı kuralla
+/// `:eventId`'dir (§2.3; MGT satırları zaten `:eventId` yazar).
 Map<String, String> _documentedPaths() {
   final row = RegExp(r'^\|[^|]*\|\s*`([^`]+)`[^|]*\|\s*`(\w+Route)`\s*\|');
   return {
@@ -109,16 +117,57 @@ Map<String, String> _documentedPaths() {
             .replaceFirst(
               RegExp(r'^/clubs/:id(?=/|$)'),
               '/clubs/:${RouteAccessTable.clubIdParameter}',
+            )
+            .replaceFirst(
+              RegExp(r'^/events/:id(?=/|$)'),
+              '/events/:${RouteAccessTable.eventIdParameter}',
             ),
   };
 }
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 26 yol (T-11: 14, T-13: +2, '
-        'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1)', () {
+    test('router yolları = kapsamdaki 28 yol (T-11: 14, T-13: +2, '
+        'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
+        'T-23: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(26));
+      expect(_routes, hasLength(28));
+    });
+
+    test('T-23 · etkinlik detayı ve bilet: `eventId` yol, `showCancelled` '
+        'sorgu parametresidir; ikisi de aktif oturum (A) ister', () {
+      const detail = EventDetailRoute(eventId: _eventId);
+      expect(detail.location, '/events/e01');
+      expect(detail.showCancelled, isFalse);
+      const cancelled = EventDetailRoute(
+        eventId: _eventId,
+        showCancelled: true,
+      );
+      expect(cancelled.location, '/events/e01?showCancelled=true');
+      const ticket = TicketRoute(eventId: _eventId);
+      expect(ticket.location, '/events/e01/ticket');
+      expect(EventDetailRoute.segment, ':eventId');
+      expect(TicketRoute.segment, 'ticket');
+      for (final MapEntry(key: location, value: pattern) in {
+        detail.location: '/events/:eventId',
+        cancelled.location: '/events/:eventId',
+        ticket.location: '/events/:eventId/ticket',
+      }.entries) {
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, pattern, reason: location);
+        expect(match.access, RouteAccess.active, reason: location);
+        expect(match.clubId, isNull, reason: location);
+      }
+      // Sabit `search` parçası `:eventId` kalıbına düşmez.
+      expect(
+        RouteAccessTable.match(Uri.parse('/events/search')).pattern,
+        '/events/search',
+      );
+      // Kimlik yolda kodlanır (ayırıcı içeren değer yolu bölmez).
+      expect(
+        const EventDetailRoute(eventId: 'a/b').location,
+        '/events/a%2Fb',
+      );
     });
 
     test('T-21 · gönderi oluşturma rotası: `clubId` yol, `edit` sorgu '

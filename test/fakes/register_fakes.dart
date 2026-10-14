@@ -11,7 +11,9 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
@@ -30,8 +32,10 @@ import 'fake_connectivity_service.dart';
 import 'fake_crash_service.dart';
 import 'fake_event_repository.dart';
 import 'fake_feedback_service.dart';
+import 'fake_file_service.dart';
 import 'fake_firestore_service.dart';
 import 'fake_image_picker_service.dart';
+import 'fake_local_reminder_service.dart';
 import 'fake_membership_repository.dart';
 import 'fake_notification_dispatcher.dart';
 import 'fake_permission_service.dart';
@@ -119,5 +123,8 @@ void registerDefaultFakes() {
     ..registerSingleton<ShareService>(FakeShareService())
     // T-14 · izinler ve görsel seçimi
     ..registerSingleton<PermissionService>(FakePermissionService())
-    ..registerSingleton<ImagePickerService>(FakeImagePickerService());
+    ..registerSingleton<ImagePickerService>(FakeImagePickerService())
+    // T-23 · geçici dosya (.ics) ve yerel hatırlatıcı
+    ..registerSingleton<FileService>(FakeFileService())
+    ..registerSingleton<LocalReminderService>(FakeLocalReminderService(clock));
 }

@@ -29,12 +29,16 @@ import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
+import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
 import '../../../fakes/fake_report_repository.dart';
+import '../../../fakes/fake_rsvp_repository.dart';
 import '../../../fakes/fake_share_service.dart';
 import '../../../fakes/fake_url_launcher_service.dart';
 import '../../../fakes/register_fakes.dart';
+import '../../../fixtures/event_model_fixtures.dart';
+import '../../../fixtures/rsvp_model_fixtures.dart';
 import '../../../helpers/test_container.dart';
 import '../club_detail_test_support.dart';
 
@@ -167,7 +171,11 @@ void main() {
       await pumpEventQueue();
 
       expect(stateOf(container), _visitorLoaded);
-      expect(states, [ClubDetailState(club: kClub), _visitorLoaded]);
+      // Etkinlik sekmesinin ara durumları (`isEventsFetching`) ayrı sınanır.
+      expect(states.where((s) => !s.isEventsFetching), [
+        ClubDetailState(club: kClub),
+        _visitorLoaded,
+      ]);
       expect(_visitorLoaded.managers, kManagers);
       expect(_visitorLoaded.memberPreview, kManagers.take(4));
       expect(_visitorLoaded.memberPreview.first.role, ClubRole.president);
@@ -256,7 +264,7 @@ void main() {
 
       states.clear();
       await vmOf(container).fetch();
-      expect(states, [
+      expect(states.where((s) => !s.isEventsFetching), [
         const ClubDetailState(isFetching: true),
         ClubDetailState(club: kClub),
         _visitorLoaded,
@@ -360,6 +368,102 @@ void main() {
       setSession(container, kVisitorSession.copyWith(blockedUserIds: {'u9'}));
       await pumpEventQueue();
       expect(states, isEmpty);
+    });
+  });
+
+  group('CLB-03 · ClubDetailViewModel · etkinlikler (W-15)', () {
+    late FakeEventRepository events;
+    late FakeRsvpRepository rsvps;
+
+    /// `c03` etkinlikleri (taslak dahil) + kullanıcının iki kaydı: biri bu
+    /// kulüpte (`e03` bekleme listesi), biri başka kulüpte (`e01`).
+    final waitlisted = RsvpModelFixtures.e01Mehmet.copyWith(
+      id: FirestoreIds.rsvp('e03', kUid),
+      eventId: 'e03',
+      clubId: kClubId,
+      status: RsvpStatus.waitlist,
+    );
+
+    setUp(() {
+      events = GetIt.I<EventRepository>() as FakeEventRepository;
+      rsvps = GetIt.I<RsvpRepository>() as FakeRsvpRepository;
+      EventModelFixtures.ofClub(kClubId).forEach(events.put);
+      rsvps
+        ..put(waitlisted)
+        ..put(RsvpModelFixtures.e01Mehmet);
+    });
+
+    test('ziyaretçi: yalnızca herkese açık etkinlikler (publicOnly) ve bu '
+        'kulüpteki kayıtlar okunur', () async {
+      final container = containerOf(kVisitorSession);
+      await pumpEventQueue();
+      final state = stateOf(container);
+
+      final call = events.callsTo('listClubEvents').single;
+      expect(call.args, [kClubId, const PageRequest(), false, true]);
+      expect(state.events, isNotEmpty);
+      expect(
+        state.events.every((e) => e.visibility == EventVisibility.public),
+        isTrue,
+      );
+      expect(state.rsvps, {'e03': waitlisted});
+      expect(state.isEventsFetching, isFalse);
+      expect(state.isEventsError, isFalse);
+    });
+
+    test(
+      'üye: yayındaki / iptal edilmiş tüm etkinlikler; taslak yok',
+      () async {
+        final container = containerOf(sessionWith());
+        await pumpEventQueue();
+        final call = events.callsTo('listClubEvents').single;
+        expect(call.args, [kClubId, const PageRequest(), false, false]);
+        final ids = stateOf(container).events.map((e) => e.id);
+        expect(ids, contains('e16')); // üyelere özel
+        expect(ids, isNot(contains('e22'))); // taslak
+      },
+    );
+
+    test('okuma hatası → isEventsError; fetchEvents() yeniden dener', () async {
+      final container = containerOf(kVisitorSession);
+      events.failNext(FirestoreError.unavailable);
+      await pumpEventQueue();
+      expect(stateOf(container).isEventsError, isTrue);
+      expect(stateOf(container).events, isEmpty);
+
+      await vmOf(container).fetchEvents();
+      expect(stateOf(container).isEventsError, isFalse);
+      expect(stateOf(container).events, isNotEmpty);
+    });
+
+    test('kayıtlar okunamazsa etkinlikler yine yüklenir (rozetsiz)', () async {
+      final container = containerOf(kVisitorSession);
+      rsvps.failNext(FirestoreError.unavailable);
+      await pumpEventQueue();
+      expect(stateOf(container).events, isNotEmpty);
+      expect(stateOf(container).rsvps, isEmpty);
+      expect(stateOf(container).isEventsError, isFalse);
+    });
+
+    test(
+      'kip değişince (ziyaretçi → üye) etkinlikler yeniden okunur',
+      () async {
+        final container = await loaded(kVisitorSession);
+        events.calls.clear();
+        setSession(container, sessionWith());
+        await pumpEventQueue();
+        expect(
+          events.callsTo('listClubEvents').single.args,
+          [kClubId, const PageRequest(), false, false],
+        );
+        expect(stateOf(container).events.map((e) => e.id), contains('e16'));
+      },
+    );
+
+    test('TST-X2: "Kayıtlar kapalı" kartı', () async {
+      final container = await loaded(kVisitorSession);
+      vmOf(container).showRegistrationClosed();
+      expect(feedback.toasts, [ToastId.tstX2]);
     });
   });
 

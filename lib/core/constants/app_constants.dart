@@ -54,6 +54,18 @@ abstract final class AppConstants {
     }),
   };
 
+  /// Yerel etkinlik hatırlatıcısının Android bildirim kanalı kimliği (Q-07,
+  /// PLAN §14.10, §15.6 — tek tanım; kanal adı ARB `eventReminder`).
+  static const String reminderChannelId = 'event_reminders';
+
+  /// Hatırlatıcı seçeneklerinin başlangıçtan önceki süreleri (CD-34;
+  /// `LocalReminderService.leadTimeOf`). `ReminderOption.none` süresizdir.
+  static const Map<ReminderOption, Duration> reminderLeadTimes = {
+    ReminderOption.fifteenMinutes: Duration(minutes: 15),
+    ReminderOption.oneHour: Duration(hours: 1),
+    ReminderOption.oneDay: Duration(days: 1),
+  };
+
   static const String _mailScheme = 'mailto';
   static const String _appStoreHost = 'apps.apple.com';
   static const String _playStoreHost = 'play.google.com';

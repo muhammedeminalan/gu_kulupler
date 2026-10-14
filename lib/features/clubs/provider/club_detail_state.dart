@@ -42,6 +42,9 @@ final class ClubDetailState extends Equatable {
     this.membership,
     this.tab = ClubDetailTab.about,
     this.events = const [],
+    this.rsvps = const {},
+    this.isEventsFetching = false,
+    this.isEventsError = false,
     this.managers = const [],
     this.memberPreview = const [],
     this.isFetching = false,
@@ -63,8 +66,21 @@ final class ClubDetailState extends Equatable {
   /// Seçili sekme (`?tab=`).
   final ClubDetailTab tab;
 
-  /// Etkinlikler sekmesinin içeriği. T-23'e kadar boştur (W-15).
+  /// Etkinlikler sekmesinin içeriği: kulübün yayındaki / iptal edilmiş
+  /// etkinliklerinden bir sayfa (`listClubEvents`, en yeni başlangıç üstte);
+  /// kulübün içini görmeyene yalnızca herkese açık olanlar. Taslak yok.
   final List<EventModel> events;
+
+  /// Kullanıcının bu kulübün etkinliklerindeki katılım kayıtları, etkinlik
+  /// kimliğine göre (kart durum rozeti ve hızlı eylem — `EventCardStatus`);
+  /// vazgeçilmiş kayıtlar dahil (durum türetimi yok sayar).
+  final Map<String, RsvpModel> rsvps;
+
+  /// Etkinlikler okunuyor mu (sekme iskeleti)?
+  final bool isEventsFetching;
+
+  /// Etkinlikler okunamadı mı (sekme içi hata)?
+  final bool isEventsError;
 
   /// Yönetim kurulu: aktif başkan ve yönetim kurulu üyelikleri, başkan önde.
   final List<MembershipModel> managers;
@@ -129,6 +145,9 @@ final class ClubDetailState extends Equatable {
     membership,
     tab,
     events,
+    rsvps,
+    isEventsFetching,
+    isEventsError,
     managers,
     memberPreview,
     isFetching,
@@ -147,6 +166,9 @@ final class ClubDetailState extends Equatable {
     bool clearMembership = false,
     ClubDetailTab? tab,
     List<EventModel>? events,
+    Map<String, RsvpModel>? rsvps,
+    bool? isEventsFetching,
+    bool? isEventsError,
     List<MembershipModel>? managers,
     List<MembershipModel>? memberPreview,
     bool? isFetching,
@@ -160,6 +182,9 @@ final class ClubDetailState extends Equatable {
     membership: clearMembership ? null : membership ?? this.membership,
     tab: tab ?? this.tab,
     events: events ?? this.events,
+    rsvps: rsvps ?? this.rsvps,
+    isEventsFetching: isEventsFetching ?? this.isEventsFetching,
+    isEventsError: isEventsError ?? this.isEventsError,
     managers: managers ?? this.managers,
     memberPreview: memberPreview ?? this.memberPreview,
     isFetching: isFetching ?? this.isFetching,

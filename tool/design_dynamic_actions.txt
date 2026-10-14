@@ -19,6 +19,9 @@ CLB-03.status.*      # design/prototype/app/cards.js:23–25 — `ClubCTA` durum
 CLB-03.openManage    # design/prototype/app/screens-clubs.js:108–109 — alt çubuk yalnızca yönetici / süper admin ("Yönetim") ve danışmanda ("Yönetimi görüntüle"); yakalama ziyaretçi
 CLB-03.createEvent   # design/prototype/app/screens-clubs.js:108 — alt çubuk yalnızca yönetici / süper adminde; yakalama ziyaretçi
 CLB-03.eventSeg.*    # design/prototype/app/screens-clubs.js:102 — "Yaklaşan / Geçmiş" dilimi yalnızca Etkinlikler sekmesinde (`tab === 'events'`); yakalama Hakkında sekmesi
+CLB-03.card.*        # design/prototype/app/screens-clubs.js:104, cards.js:70 — etkinlik kartı (`EventCard screen="CLB-03"`) yalnızca Etkinlikler sekmesinde ve etkinlik varken; yakalama Hakkında sekmesi
+CLB-03.join.*        # design/prototype/app/cards.js:79 — etkinlik kartının hızlı eylemi (`${screen}.join.${ev.id}`, Etkinlikler sekmesi); envanterdeki `CLB-03.join.<clubId>` kulüp "Katıl" düğmesidir, etkinlik kimlikli olanlar yakalamada yok
+CLB-03.eventsRetry   # lib/features/clubs/view/widget/club_events_tab.dart — Etkinlikler sekmesinin satır içi hata durumu "Yeniden dene" (`ListState` hata gövdesi); prototip verisi eşzamanlıdır, hata durumu yoktur
 CLB-03.allMembers    # design/prototype/app/screens-clubs.js:106 — "Tüm üyeler" yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`); yakalama ziyaretçi, Hakkında sekmesi
 CLB-03.member.*      # design/prototype/app/cards.js:168 — üye önizleme satırı (`MemberRow`, ilk beş üye) yalnızca Üyeler sekmesinde ve kulübün içini görende (`inside`, screens-clubs.js:106); yakalama ziyaretçi, Hakkında sekmesi
 CLB-01.myClub.*      # design/prototype/app/cards.js:42 — "Kulüplerim" kartı yalnızca etkin üyeliği olan kullanıcıda (`mine.length`, screens-clubs.js:25); yakalama üyeliksiz kullanıcı (u_ayse → "İlk kulübünü bul")
@@ -59,3 +62,16 @@ FED-03.removeOption.*  # design/prototype/app/screens-clubs.js:211 — seçenek 
 FED-03.addOption       # design/prototype/app/screens-clubs.js:211 — "Seçenek ekle" yalnızca "Anket" türünde ve dörtten az seçenek varken; yakalama "Gönderi" türü
 FED-03.duration.*      # design/prototype/app/screens-clubs.js:212 — süre dilimi (1 / 3 / 7 gün) yalnızca "Anket" türünde; yakalama "Gönderi" türü
 FED-03.showAfterVote   # design/prototype/app/screens-clubs.js:213 — "Sonuçlar oy verince görünsün" anahtarı yalnızca "Anket" türünde; yakalama "Gönderi" türü
+EVT-03.retry           # lib/features/events/view/ticket_view.dart — yalnızca etkinlik / bilet okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+EVT-02.leave            # design/prototype/app/screens-events.js:50–51 — "Vazgeç" / "Ayrıl" yalnızca kayıtlı (`going`) ya da bekleme listesindeki (`waitlist`) kullanıcının bitmemiş etkinliğinde; yakalama kaydı olmayan kullanıcı (u_ayse → e01)
+EVT-02.ticket           # design/prototype/app/screens-events.js:50 — "Biletini göster" yalnızca kayıtlı (`going`) kullanıcıda; yakalama kaydı olmayan kullanıcı
+EVT-02.waitlist         # design/prototype/app/screens-events.js:52 — "Bekleme listesine katıl" yalnızca yeni katılım bekleme listesine düşerken (`joinsWaitlist`; W-81); yakalama yer olan etkinlik
+EVT-02.applyClub        # design/prototype/app/screens-events.js:51 — "Kulübe başvur" yalnızca üyelere özel etkinlikte kulübün içini görmeyende (`members`); yakalama herkese açık etkinlik
+EVT-02.ended            # design/prototype/app/screens-events.js:49 — devre dışı "Etkinlik sona erdi" yalnızca bitmiş etkinlikte (yoklaması alınmamış kullanıcı); yakalama yaklaşan etkinlik
+EVT-02.edit             # design/prototype/app/screens-events.js:47 — yönetici çubuğu yalnızca kulüp yöneticisi / süper adminde (`manager`); yakalama ziyaretçi
+EVT-02.attendees        # design/prototype/app/screens-events.js:47 — yönetici çubuğu "Katılımcılar" yalnızca yönetici / süper adminde; yakalama ziyaretçi
+EVT-02.scan             # design/prototype/app/screens-events.js:47 — yönetici çubuğu "Yoklama başlat" yalnızca yönetici / süper adminde; yakalama ziyaretçi
+EVT-02.attendeesPreview # design/prototype/app/screens-events.js:74 — katılımcı satırı yalnızca kulübün içini görende ve kayıtlı varken (`inside && reg.length`); yakalama ziyaretçi (u_ayse → c01)
+EVT-02.menu.*           # design/prototype/app/sheets.js:12 — EVT-MENU satırları (`reminder` yalnızca kaydı olanda, `calendar`, `share`, `report`) yalnızca ⋮ menüsü açıkken; yakalama kapalı menü
+EVT-02.scrim            # design/prototype/app/ui.js:191 + sheets.js:12 — EVT-MENU saydam scrim'i (`PopMenu id="EVT-02"`) yalnızca menü açıkken
+EVT-02.retry            # lib/features/events/view/event_detail_view.dart — yalnızca etkinlik / kulüp okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
