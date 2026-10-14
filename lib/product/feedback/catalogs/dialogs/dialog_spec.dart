@@ -472,6 +472,19 @@ abstract final class DialogCatalog {
       primaryAction: 'silent',
     ),
 
+    /// Design: DLG-31 — Taslak silinsin mi? (`dialogs.js:51`): ikon
+    /// `trash-2`, `danger`; "Sil" → `true` (taslak soft delete edilir — D-10,
+    /// `EventRepository.softDeleteEvent`; ardından TST-45 "Geri al"),
+    /// "Vazgeç" → `false` (`ManageEventActionsMixin.softDeleteDraft`).
+    DialogId.dlg31: DialogSpec(
+      title: (l10n, _) => l10n.dlg31Title,
+      body: (l10n, _) => l10n.dlg31Body,
+      primary: (l10n) => l10n.commonDelete,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.trash2,
+      destructive: true,
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,

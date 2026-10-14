@@ -1725,6 +1725,34 @@
   "@contentTitle": {
     "description": "Key content.title"
   },
+  "coverPaletteBordeaux": "Bordeaux–Sand",
+  "@coverPaletteBordeaux": {
+    "description": "Key cover.palette.bordeaux"
+  },
+  "coverPaletteRed": "Red–Cream",
+  "@coverPaletteRed": {
+    "description": "Key cover.palette.red"
+  },
+  "coverPaletteSlate": "Slate–Navy",
+  "@coverPaletteSlate": {
+    "description": "Key cover.palette.slate"
+  },
+  "coverPatternDots": "Dot grid",
+  "@coverPatternDots": {
+    "description": "Key cover.pattern.dots"
+  },
+  "coverPatternLines": "Lines",
+  "@coverPatternLines": {
+    "description": "Key cover.pattern.lines"
+  },
+  "coverPatternMountain": "Mountain silhouette",
+  "@coverPatternMountain": {
+    "description": "Key cover.pattern.mountain"
+  },
+  "coverPatternWaves": "Waves",
+  "@coverPatternWaves": {
+    "description": "Key cover.pattern.waves"
+  },
   "dateTimeAt": "{date}, {time}",
   "@dateTimeAt": {
     "description": "Key time.dateTimeAt",
@@ -2489,6 +2517,10 @@
   "@eventCapacity": {
     "description": "Key event.capacity"
   },
+  "eventCopySuffix": " (copy)",
+  "@eventCopySuffix": {
+    "description": "Key event.copySuffix"
+  },
   "eventCtaApplyClub": "Apply to club",
   "@eventCtaApplyClub": {
     "description": "Key event.cta.applyClub"
@@ -2720,6 +2752,21 @@
   "@eventFormPreviewNote": {
     "description": "Key eventForm.previewNote"
   },
+  "eventFormProgress": "{title} · {step}/{total}",
+  "@eventFormProgress": {
+    "description": "Key eventForm.progress",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "step": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "eventFormPublish": "Publish",
   "@eventFormPublish": {
     "description": "Key eventForm.publish"
@@ -2744,6 +2791,10 @@
   "eventFormTime": "Time",
   "@eventFormTime": {
     "description": "Key eventForm.time"
+  },
+  "eventFormTimeLocked": "The event has started, so its date and time can no longer be changed.",
+  "@eventFormTimeLocked": {
+    "description": "Key eventForm.timeLocked"
   },
   "eventFormTitle": "Create event",
   "@eventFormTitle": {
@@ -4811,6 +4862,10 @@
   "sht23Unpublish": "Unpublish / move to drafts",
   "@sht23Unpublish": {
     "description": "Key sht.23.unpublish"
+  },
+  "sht23UnpublishBlocked": "Can't move to drafts while people are registered.",
+  "@sht23UnpublishBlocked": {
+    "description": "Key sht.23.unpublishBlocked"
   },
   "sht24Invalid": "Invalid ticket",
   "@sht24Invalid": {

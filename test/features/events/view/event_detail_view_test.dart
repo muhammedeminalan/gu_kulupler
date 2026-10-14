@@ -28,6 +28,8 @@ import 'package:gu_kulupler/features/events/view/event_detail_view.dart';
 import 'package:gu_kulupler/features/events/view/widget/event_detail_cta_bar.dart';
 import 'package:gu_kulupler/features/events/view/widget/event_menu.dart';
 import 'package:gu_kulupler/features/events/view/widget/rsvp_confirm_sheet.dart';
+import 'package:gu_kulupler/product/feedback/catalogs/sheets/event_menu_sheet.dart'
+    as sht23;
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/menu_id.dart';
@@ -37,6 +39,7 @@ import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fixtures/event_model_fixtures.dart';
 import '../../../fixtures/rsvp_model_fixtures.dart';
@@ -125,6 +128,12 @@ Future<GoRouter> _pumpRoute(
         GoRoute(
           path: '/clubs/:clubId',
           builder: (_, state) => _Stub(state.uri.path),
+          routes: [
+            GoRoute(
+              path: 'manage/events/:eventId/edit',
+              builder: (_, state) => _Stub(state.uri.path),
+            ),
+          ],
         ),
         GoRoute(
           path: '/not-found',
@@ -422,6 +431,31 @@ void main() {
   });
 
   group('EVT-02 · Etkinlik · aksiyonlar', () {
+    testWidgets('yönetici (W-27): "Düzenle" → MGT-05; "⋮" → SHT-23 → '
+        '"Çoğalt" → TST-13 → kopyanın MGT-05\'i', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        session: memberSession(role: ClubRole.board),
+      );
+      final editPath = '/clubs/${kEvent.clubId}/manage/events';
+      await _tap(tester, _k('edit'));
+      await tester.pumpAndSettle();
+      expect(_location(router), '$editPath/${kEvent.id}/edit');
+
+      unawaited(router.push('/events/${kEvent.id}'));
+      await tester.pumpAndSettle();
+      final feedback = _feedback()
+        ..nextSheetResult = sht23.EventMenuAction.duplicate;
+      await _tap(tester, _k('menu'));
+      await tester.pumpAndSettle();
+      expect(feedback.sheets, [SheetId.sht23]);
+      expect(feedback.toasts, [ToastId.tst13]);
+      final copy =
+          (GetIt.I<EventRepository>() as FakeEventRepository).created.single;
+      expect(copy.startsAt, kEvent.startsAt.add(const Duration(days: 7)));
+      expect(_location(router), '$editPath/${copy.id}/edit');
+    });
+
     testWidgets('"Katıl" → SHT-12 (çipler, varsayılan 1 sa) → katılım → '
         'TST-41', (tester) async {
       await _pump(tester);

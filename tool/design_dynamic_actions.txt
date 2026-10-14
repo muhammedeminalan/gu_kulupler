@@ -137,3 +137,18 @@ MGT-03.retry           # lib/features/management/view/manage_members_view.dart �
 MGT-03.scrim           # design/prototype/app/ui.js:191 + screens-manage.js:73–74 — "⋮" ve sıralama menülerinin (`PopMenu id="MGT-03"`) saydam scrim'i; yalnızca menü açıkken
 MGT-03.export          # design/prototype/app/screens-manage.js:73 — "Üye listesini dışa aktar (CSV)" yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
 MGT-03.sort.*          # design/prototype/app/screens-manage.js:74 — sıralama menüsü satırları (`name`, `joined`; `rate` yerine `role` — T-33, üye başına katılım oranı verisi yok) yalnızca menü açıkken; yakalama kapalı menü
+MGT-04.switchClub      # design/prototype/app/screens-manage.js:7–9 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-04.retry           # lib/features/management/view/manage_events_view.dart — yalnızca etkinlikler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-05.startDate       # design/prototype/app/screens-manage.js:107 — `EventForm` 2. adım (`f.step === 2`) başlangıç tarihi (SHT-28); yakalama 1. adım
+MGT-05.startTime       # design/prototype/app/screens-manage.js:107 — `EventForm` 2. adım başlangıç saati (SHT-29); yakalama 1. adım
+MGT-05.endDate         # design/prototype/app/screens-manage.js:108 — `EventForm` 2. adım bitiş tarihi (SHT-28); yakalama 1. adım
+MGT-05.endTime         # design/prototype/app/screens-manage.js:108 — `EventForm` 2. adım bitiş saati (SHT-29); yakalama 1. adım
+MGT-05.place           # design/prototype/app/screens-manage.js:110 — `EventForm` 2. adım mekân seçici (SHT-30); yakalama 1. adım
+MGT-05.unlimited       # design/prototype/app/screens-manage.js:111 — `EventForm` 2. adım kontenjan "Sınırsız" anahtarı; yakalama 1. adım
+MGT-05.capacity.*      # design/prototype/app/screens-manage.js:112 — `EventForm` 2. adım kontenjan − / + (`minus`, `plus`; yalnızca sınırlıyken); yakalama 1. adım
+MGT-05.visibility.*    # design/prototype/app/screens-manage.js:113 — `EventForm` 2. adım görünürlük dilimi (`Segmented` → `MGT-05.visibility.<public|members>`, ui.js:58); yakalama 1. adım
+MGT-05.autoReminder    # design/prototype/app/screens-manage.js:114 — `EventForm` 2. adım otomatik hatırlatıcı anahtarı; yakalama 1. adım
+MGT-05.back            # design/prototype/app/screens-manage.js:11,117 — alt çubuk "Geri" yalnızca 2. ve 3. adımda (`f.step > 1`); ayrıca yetkisiz görünümün (`NoAccess`) geri düğmesi; yakalama 1. adım
+MGT-05.saveDraft       # design/prototype/app/screens-manage.js:117 — alt çubuk "Taslak olarak kaydet" yalnızca 3. adımda (`f.step === 3`); yakalama 1. adım
+MGT-05.publish         # design/prototype/app/screens-manage.js:117 — alt çubuk "Yayınla" / "Kaydet" yalnızca 3. adımda; yakalama 1. adım
+MGT-05.retry           # lib/features/management/view/event_form_view.dart — yalnızca düzenlenecek etkinlik okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

@@ -45,7 +45,9 @@ void main() {
         '`ExternalLinkDialog`); T-18 → DLG-13; T-20 → DLG-10, DLG-11; '
         'T-21 → DLG-24; T-23 → DLG-14, DLG-15, DLG-16; T-32 → DLG-17, '
         'DLG-18; T-33 → DLG-20 (DLG-19 girdili, DLG-21 adımlı: '
-        '`RemoveMemberDialog`, `TransferPresidencyDialog`)', () {
+        '`RemoveMemberDialog`, `TransferPresidencyDialog`); T-34 → DLG-31 '
+        '(DLG-22 onay kutulu, DLG-23 seçenekli: `PublishEventDialog`, '
+        '`CancelEventDialog`)', () {
       expect(DialogCatalog.ids.toSet(), {
         DialogId.dlg01,
         DialogId.dlg03,
@@ -68,6 +70,7 @@ void main() {
         DialogId.dlg24,
         DialogId.dlg26,
         DialogId.dlg27,
+        DialogId.dlg31,
       });
       for (final id in DialogId.values) {
         expect(

@@ -108,6 +108,11 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
                   ManageView(clubId: s.pathParameters['clubId']!),
               routes: [
                 GoRoute(path: 'activity', builder: (_, s) => stub(s)),
+                GoRoute(
+                  path: 'events',
+                  builder: (_, s) => stub(s),
+                  routes: [GoRoute(path: 'new', builder: (_, s) => stub(s))],
+                ),
               ],
             ),
           ],
@@ -286,6 +291,17 @@ void main() {
   });
 
   group('MGT-01 · Yönetim paneli · aksiyonlar', () {
+    testWidgets('"Yaklaşan etkinlik" → MGT-04; "Etkinlik oluştur" → MGT-05 '
+        '(W-38)', (tester) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, GuKey.action('MGT-01.kpi.events'));
+      expect(_location(router), '$_managePath/events');
+      router.go(_managePath);
+      await tester.pumpAndSettle();
+      await _tapKey(tester, GuKey.action('MGT-01.quick.event'));
+      expect(_location(router), '$_managePath/events/new');
+    });
+
     testWidgets('"Tümü" → MGT-10; geri → CLB-03', (tester) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _activityAll);

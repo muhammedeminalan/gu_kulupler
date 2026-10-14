@@ -84,6 +84,10 @@ mixin ProjectDependencyMixin {
   NotificationRepository get notificationRepository =>
       GetIt.I<NotificationRepository>();
 
+  /// Çok alıcılı bildirimlerin alıcı çözücüsü (T-25); ViewModel'ler yalnızca
+  /// tahmin için okur — DLG-22 "{n}" = `estimateEventNew` (CD-38, T-34).
+  RecipientResolver get recipientResolver => GetIt.I<RecipientResolver>();
+
   /// Destek talepleri: talep + ek (SET-05), kendi taleplerim (T-28).
   SupportRepository get supportRepository => GetIt.I<SupportRepository>();
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/events/provider/event_calendar_mixin.dart';
 import 'package:gu_kulupler/features/events/provider/event_detail_state.dart';
@@ -16,6 +17,7 @@ import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart'
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/external_link_mixin.dart';
+import 'package:gu_kulupler/product/mixin/manage_event_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -47,6 +49,7 @@ part 'event_detail_view_model.g.dart';
 /// | `addToCalendar` | — | `EventCalendarMixin`: `.ics` → paylaşım · Google Takvim (DLG-32) · kopyala | TST-36 · TST-35 |
 /// | [share] | — | SHT-15 seçimi | TST-35 · DLG-32 · sistem paylaşımı |
 /// | [submitReport] → [showReportReceived] | çevrimdışı | `reportRepository.report` | DLG-12 |
+/// | [openManageMenu] (yönetici "⋮") | `ManageEventActionsMixin` | SHT-23 satırları (MGT-04 ile ortak) | TST-13 · TST-X19 · TST-48 · TST-45 |
 ///
 /// Design: EVT-02, DLG-14, DLG-15, DLG-16
 @riverpod
@@ -56,7 +59,8 @@ final class EventDetailViewModel extends _$EventDetailViewModel
         WriteGuardMixin,
         ExternalLinkMixin,
         EventCalendarMixin,
-        ReportReceivedMixin {
+        ReportReceivedMixin,
+        ManageEventActionsMixin {
   /// Etkinliğin olmadığını söyleyen okuma hataları (→ SYS-04).
   static const Set<FirestoreError> _missingErrors = {
     FirestoreError.notFound,
@@ -365,6 +369,39 @@ final class EventDetailViewModel extends _$EventDetailViewModel
   /// DLG-12 "Şikayetin alındı" (etkinlik şikayetinde engellenecek kişi yok).
   Future<void> showReportReceived() async {
     await showReportReceivedDialog();
+  }
+
+  // ───────────────────────────── yönetim (W-27) ─────────────────────────────
+
+  /// Yönetici "⋮" (`EVT-02.menu`): SHT-23 → `ManageEventActionsMixin`
+  /// (MGT-04 ile ortak). Gezinme (düzenle, kopya, katılımcılar, yoklama,
+  /// silinen taslaktan çıkış) view'a döner.
+  Future<ManageEventOutcome> openManageMenu(ManageEventTexts texts) async {
+    final event = state.event;
+    if (event == null || !state.canManage) {
+      return (next: ManageEventNext.none, eventId: eventId);
+    }
+    return openEventMenu(event, texts);
+  }
+
+  @override
+  SessionState? get eventSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  @override
+  void onEventChanged(EventModel event) => _replaceEvent(event);
+
+  @override
+  void onEventRestored(EventModel event) => _replaceEvent(event);
+
+  @override
+  void onEventListStale(String clubId) {
+    if (ref.mounted) unawaited(refresh());
+  }
+
+  void _replaceEvent(EventModel event) {
+    if (!ref.mounted || event.id != eventId) return;
+    state = state.copyWith(event: event);
   }
 
   // ─────────────────────────────── DLG-16 ───────────────────────────────────

@@ -44,6 +44,7 @@ import 'fake_notification_dispatcher.dart';
 import 'fake_notification_repository.dart';
 import 'fake_permission_service.dart';
 import 'fake_post_repository.dart';
+import 'fake_recipient_resolver.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_report_repository.dart';
 import 'fake_rsvp_repository.dart';
@@ -117,6 +118,8 @@ void registerDefaultFakes() {
     ..registerSingleton<BlockRepository>(FakeBlockRepository())
     ..registerSingleton<ActivityRepository>(FakeActivityRepository())
     ..registerSingleton<NotificationDispatcher>(FakeNotificationDispatcher())
+    // T-34 · DLG-22 "{n}" alıcı tahmini
+    ..registerSingleton<RecipientResolver>(FakeRecipientResolver())
     // T-19 · gönderi, yorum, kayıt, duyuru sayacı
     ..registerSingleton<PostRepository>(posts)
     ..registerSingleton<CommentRepository>(comments)
