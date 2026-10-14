@@ -1725,6 +1725,34 @@
   "@contentTitle": {
     "description": "Key content.title"
   },
+  "coverPaletteBordeaux": "Bordo–Kum",
+  "@coverPaletteBordeaux": {
+    "description": "Key cover.palette.bordeaux"
+  },
+  "coverPaletteRed": "Kırmızı–Krem",
+  "@coverPaletteRed": {
+    "description": "Key cover.palette.red"
+  },
+  "coverPaletteSlate": "Slate–Lacivert",
+  "@coverPaletteSlate": {
+    "description": "Key cover.palette.slate"
+  },
+  "coverPatternDots": "Nokta ızgarası",
+  "@coverPatternDots": {
+    "description": "Key cover.pattern.dots"
+  },
+  "coverPatternLines": "Çizgi",
+  "@coverPatternLines": {
+    "description": "Key cover.pattern.lines"
+  },
+  "coverPatternMountain": "Dağ silüeti",
+  "@coverPatternMountain": {
+    "description": "Key cover.pattern.mountain"
+  },
+  "coverPatternWaves": "Dalga",
+  "@coverPatternWaves": {
+    "description": "Key cover.pattern.waves"
+  },
   "dateTimeAt": "{date}, {time}",
   "@dateTimeAt": {
     "description": "Key time.dateTimeAt",
@@ -2489,6 +2517,10 @@
   "@eventCapacity": {
     "description": "Key event.capacity"
   },
+  "eventCopySuffix": " (kopya)",
+  "@eventCopySuffix": {
+    "description": "Key event.copySuffix"
+  },
   "eventCtaApplyClub": "Kulübe başvur",
   "@eventCtaApplyClub": {
     "description": "Key event.cta.applyClub"
@@ -2720,6 +2752,21 @@
   "@eventFormPreviewNote": {
     "description": "Key eventForm.previewNote"
   },
+  "eventFormProgress": "{title} · {step}/{total}",
+  "@eventFormProgress": {
+    "description": "Key eventForm.progress",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "step": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "eventFormPublish": "Yayınla",
   "@eventFormPublish": {
     "description": "Key eventForm.publish"
@@ -2744,6 +2791,10 @@
   "eventFormTime": "Saat",
   "@eventFormTime": {
     "description": "Key eventForm.time"
+  },
+  "eventFormTimeLocked": "Etkinlik başladığı için tarih ve saat değiştirilemez.",
+  "@eventFormTimeLocked": {
+    "description": "Key eventForm.timeLocked"
   },
   "eventFormTitle": "Etkinlik oluştur",
   "@eventFormTitle": {
@@ -4811,6 +4862,10 @@
   "sht23Unpublish": "Yayından kaldır / taslağa al",
   "@sht23Unpublish": {
     "description": "Key sht.23.unpublish"
+  },
+  "sht23UnpublishBlocked": "Kayıtlı katılımcı varken taslağa alınamaz.",
+  "@sht23UnpublishBlocked": {
+    "description": "Key sht.23.unpublishBlocked"
   },
   "sht24Invalid": "Geçersiz bilet",
   "@sht24Invalid": {

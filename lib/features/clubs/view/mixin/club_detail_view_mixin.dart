@@ -39,9 +39,10 @@ import 'package:gu_ui/gu_ui.dart';
 /// * Kişi satırları CLB-07'ye, "Tüm üyeler" CLB-06'ya gider (`go`).
 /// * Etkinlik kartı EVT-02'ye, bilet düğmesi EVT-03'e gider; karttan katılım
 ///   rotanın verdiği akışla ([ClubDetailView.eventJoinFlow]) yapılır.
-/// * "Yönetim" girişi MGT-01'e gider (W-12, T-31). Hedefi henüz yazılmamış
-///   girişler (MGT-05, MGT-09, SHT-25) anahtarlarıyla yerindedir; hedef
-///   ekranın task'ında bağlanır (bağlama borçları W-13…W-17).
+/// * "Yönetim" girişi MGT-01'e (W-12, T-31), "Etkinlik oluştur" MGT-05'e
+///   (W-17, T-34) gider. Hedefi henüz yazılmamış girişler (MGT-09, SHT-25)
+///   anahtarlarıyla yerindedir; hedef ekranın task'ında bağlanır (bağlama
+///   borçları W-13…W-16).
 mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// Sayfanın kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -282,9 +283,7 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   void openManage() => ManageRoute(clubId: widget.clubId).go(context);
 
   /// "Etkinlik oluştur" (`CLB-03.createEvent`) → MGT-05.
-  void createEvent() {
-    // TODO(T-34): `EventFormRoute(clubId: widget.clubId)` (MGT-05; W-17).
-  }
+  void createEvent() => EventFormRoute(clubId: widget.clubId).go(context);
 
   /// "Kulüp ayarları" (SHT-06) → MGT-09.
   void openSettings() {

@@ -23,6 +23,7 @@ import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
 import 'package:gu_kulupler/product/feedback/menu_id.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/mixin/manage_event_actions_mixin.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
 import 'package:gu_kulupler/product/widget/event/event_place_label.dart';
@@ -290,8 +291,7 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
     final state = _state;
     if (state.event == null) return;
     if (state.canManage) {
-      // TODO(T-34): SHT-23 "Etkinlik menüsü" (yönetici — düzenle, çoğalt,
-      // kayıtları aç / kapa, iptal).
+      await _openManageMenu();
       return;
     }
     final action = await _feedback.showMenu<EventMenuAction>(
@@ -325,9 +325,36 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
     }
   }
 
-  /// "Düzenle" (`EVT-02.edit`) → MGT-05.
+  /// "Düzenle" (`EVT-02.edit`) → MGT-05 (`EventEditRoute`).
   void openEdit() {
-    // TODO(T-34): `EventFormRoute(clubId:, eventId:)` (MGT-05).
+    final event = _state.event;
+    if (event == null) return;
+    EventEditRoute(clubId: event.clubId, eventId: event.id).go(context);
+  }
+
+  /// Yönetici "⋮": SHT-23 (`EventDetailViewModel.openManageMenu`; yazım
+  /// ViewModel'de) → düzenle / kopya MGT-05, katılımcılar / yoklama
+  /// MGT-06 / 07, silinen taslak → geri.
+  Future<void> _openManageMenu() async {
+    final l10n = context.l10n;
+    final clubId = _state.event?.clubId;
+    final outcome = await viewModel.openManageMenu((
+      copySuffix: l10n.eventCopySuffix,
+      draftLabel: l10n.statusDraft,
+    ));
+    if (!mounted || clubId == null) return;
+    switch (outcome.next) {
+      case ManageEventNext.edit:
+        EventEditRoute(clubId: clubId, eventId: outcome.eventId).go(context);
+      case ManageEventNext.attendees:
+        openAttendees();
+      case ManageEventNext.scan:
+        openScan();
+      case ManageEventNext.removed:
+        back();
+      case ManageEventNext.none:
+        break;
+    }
   }
 
   /// "Katılımcılar" (`EVT-02.attendees`) → MGT-06.

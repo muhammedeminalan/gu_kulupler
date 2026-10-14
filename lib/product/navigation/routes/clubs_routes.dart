@@ -4,7 +4,8 @@ part of 'shell_route.dart';
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
 // profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
 // panelini ve faaliyet geçmişini, T-32 başvuru yönetimini, T-33 üye
-// yönetimini kurar; kalan alt rotalar PLAN §13.3.2
+// yönetimini, T-34 etkinlik yönetimini ve formunu kurar; kalan alt rotalar
+// PLAN §13.3.2
 // tablosundaki task'larda eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
@@ -33,6 +34,13 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
             ),
             TypedGoRoute<ManageMembersRoute>(
               path: ManageMembersRoute.segment,
+            ),
+            TypedGoRoute<ManageEventsRoute>(
+              path: ManageEventsRoute.segment,
+              routes: <TypedRoute<RouteData>>[
+                TypedGoRoute<EventFormRoute>(path: EventFormRoute.segment),
+                TypedGoRoute<EventEditRoute>(path: EventEditRoute.segment),
+              ],
             ),
             TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
           ],
@@ -310,6 +318,75 @@ final class ManageMembersRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ManageMembersView(clubId: clubId, openTransfer: transfer);
+}
+
+/// MGT-04 Etkinlik yönetimi — `/clubs/:clubId/manage/events?tab=`. MGT-01'in
+/// alt rotasıdır (guard `V`: yönetici ya da danışman; danışman salt okunur
+/// görür, yazma eylemleri TST-26 — `RouteAccessTable`). MGT-01 hızlı eylemi
+/// "Etkinlikler" (W-38) `go` ile açar, geri panele döner.
+final class ManageEventsRoute extends GoRouteData
+    with $ManageEventsRoute, PlatformPageMixin {
+  /// [clubId] kulübünün etkinlikleri; [tab] ilk açılan sekme.
+  const ManageEventsRoute({required this.clubId, this.tab});
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'events';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// İlk açılan sekme (`?tab=published|draft|past|cancelled`); `null` ya da
+  /// tanınmayan değer → yayındakiler.
+  final ManageEventsTab? tab;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ManageEventsView(clubId: clubId, tab: tab);
+}
+
+/// MGT-05 Etkinlik oluştur — `/clubs/:clubId/manage/events/new`. MGT-04'ün
+/// alt rotasıdır (guard `M`: yalnızca kulüp yönetimi). Düzenleme aynı
+/// ekranı [EventEditRoute] ile açar (iki rota sınıfı, tek `EventFormView` —
+/// CD-54). CLB-03 "Etkinlik oluştur" (W-17), MGT-01 hızlı eylemi (W-38) ve
+/// MGT-04 "+" `go` ile açar; geri MGT-04'e döner.
+final class EventFormRoute extends GoRouteData
+    with $EventFormRoute, PlatformPageMixin {
+  /// [clubId] kulübünde yeni etkinlik formu.
+  const EventFormRoute({required this.clubId});
+
+  /// `/clubs/:clubId/manage/events` altındaki yol parçası; sabit `new`
+  /// parçası etkinlik kimliğiyle çakışmaz (düzenleme `:eventId/edit`).
+  static const String segment = 'new';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      EventFormView(clubId: clubId);
+}
+
+/// MGT-05 Etkinlik düzenle — `/clubs/:clubId/manage/events/:eventId/edit`.
+/// MGT-04'ün alt rotasıdır (guard `M`). [EventFormRoute] ile aynı
+/// `EventFormView`'u [eventId] ile açar (CD-54). SHT-23 "Düzenle" ve EVT-02
+/// yönetici "Düzenle" (W-27) `go` ile açar; geri MGT-04'e döner.
+final class EventEditRoute extends GoRouteData
+    with $EventEditRoute, PlatformPageMixin {
+  /// [clubId] kulübünün [eventId] etkinliğinin düzenleme formu.
+  const EventEditRoute({required this.clubId, required this.eventId});
+
+  /// `/clubs/:clubId/manage/events` altındaki yol parçası.
+  static const String segment = ':eventId/edit';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Düzenlenen etkinliğin kimliği (yol parametresi).
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      EventFormView(clubId: clubId, eventId: eventId);
 }
 
 /// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt

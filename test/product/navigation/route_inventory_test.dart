@@ -31,6 +31,9 @@
 // ?tab=&applicant=`, MGT-02).
 // T-33 · `ManageMembersRoute` (`/clubs/:clubId/manage/members?transfer=`,
 // MGT-03).
+// T-34 · `ManageEventsRoute` (`/clubs/:clubId/manage/events?tab=`, MGT-04),
+// `EventFormRoute` (`…/events/new`) + `EventEditRoute`
+// (`…/events/:eventId/edit`) — tek `EventFormView` (MGT-05, CD-54).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -45,7 +48,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -81,6 +84,11 @@ const Map<GoRouteData, String> _routes = {
       '/clubs/:clubId/manage/applications',
   ManageMembersRoute(clubId: _clubId): '/clubs/:clubId/manage/members',
   ActivityLogRoute(clubId: _clubId): '/clubs/:clubId/manage/activity',
+  // T-34: MGT-04, MGT-05 (iki rota sınıfı, tek view — CD-54)
+  ManageEventsRoute(clubId: _clubId): '/clubs/:clubId/manage/events',
+  EventFormRoute(clubId: _clubId): '/clubs/:clubId/manage/events/new',
+  EventEditRoute(clubId: _clubId, eventId: _eventId):
+      '/clubs/:clubId/manage/events/:eventId/edit',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
   // T-24: EVT-04)
@@ -125,6 +133,13 @@ const String _parameterMark = ':';
 
 /// Tasarım kimliği olmayan rotalar (CD-69).
 const Set<String> _idlessPaths = {'/debug'};
+
+/// navigation.md §2'de kendi satırı olmayan, bir satırın **ikinci yolu**
+/// olan rota sınıfları (CD-54: bir rota sınıfı = bir yol) → o satırın sınıfı
+/// ve ikinci yolun `…` sonrası parçası.
+const Map<String, (String, String)> _secondPathRoutes = {
+  'EventEditRoute': ('EventFormRoute', '/events/:eventId/edit'),
+};
 
 /// Router ağacındaki tüm tam yollar.
 Set<String> _collectPaths(List<RouteBase> routes, [String parent = '']) {
@@ -171,10 +186,64 @@ void main() {
     test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2, T-32: +1, T-33: +1)', () {
+        'T-31: +2, T-32: +1, T-33: +1, T-34: +3)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(44));
+      expect(_routes, hasLength(47));
     });
+
+    test(
+      "T-34 · MGT-04 MGT-01'in altındadır (V; `tab` sorgu parametresi); "
+      "MGT-05 iki rota sınıfı tek view'dır (CD-54) ve MGT-04'ün altındadır (M)",
+      () {
+        expect(ManageEventsRoute.segment, 'events');
+        expect(EventFormRoute.segment, 'new');
+        expect(EventEditRoute.segment, ':eventId/edit');
+        expect(ManageEventsTab.values.map((tab) => tab.name), [
+          'published',
+          'draft',
+          'past',
+          'cancelled',
+        ]);
+        const plain = ManageEventsRoute(clubId: _clubId);
+        expect(plain.tab, isNull);
+        expect(plain.location, '/clubs/c01/manage/events');
+        final deep = Uri.parse(
+          const ManageEventsRoute(
+            clubId: _clubId,
+            tab: ManageEventsTab.draft,
+          ).location,
+        );
+        expect(deep.path, '/clubs/c01/manage/events');
+        expect(deep.queryParameters, {'tab': 'draft'});
+        for (final MapEntry(key: route, value: (location, access))
+            in <GoRouteData, (String, RouteAccess)>{
+              plain: (
+                '/clubs/c01/manage/events',
+                RouteAccess.managerOrAdvisor,
+              ),
+              const EventFormRoute(clubId: _clubId): (
+                '/clubs/c01/manage/events/new',
+                RouteAccess.manager,
+              ),
+              const EventEditRoute(clubId: _clubId, eventId: _eventId): (
+                '/clubs/c01/manage/events/e01/edit',
+                RouteAccess.manager,
+              ),
+            }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, access, reason: name);
+          expect(match.clubId, _clubId, reason: name);
+        }
+        // navigation.md MGT-05 satırı iki yolu birlikte yazar (CD-54).
+        final row = readText(
+          'docs/navigation.md',
+        ).split('\n').firstWhere((line) => line.contains('`EventFormRoute`'));
+        expect(row, contains('`…/events/:eventId/edit`'));
+      },
+    );
 
     test(
       "T-33 · MGT-03 MGT-01'in altındadır (V); `transfer` sorgu "
@@ -536,6 +605,16 @@ void main() {
       for (final MapEntry(key: route, value: path) in _routes.entries) {
         if (_idlessPaths.contains(path)) continue;
         final name = '${route.runtimeType}';
+        if (_secondPathRoutes[name] case (final owner, final tail)) {
+          // Satırın ilk yolunun `/events/…` öncesi + ikinci yolun parçası.
+          final first = documented[owner]!;
+          expect(
+            '${first.substring(0, first.lastIndexOf('/events/'))}$tail',
+            path,
+            reason: name,
+          );
+          continue;
+        }
         expect(documented, contains(name), reason: name);
         expect(documented[name], path, reason: name);
       }
@@ -545,7 +624,9 @@ void main() {
       final documented = _documentedPaths();
       final idless = {
         for (final MapEntry(key: route, value: path) in _routes.entries)
-          if (!documented.containsKey('${route.runtimeType}')) path,
+          if (!documented.containsKey('${route.runtimeType}') &&
+              !_secondPathRoutes.containsKey('${route.runtimeType}'))
+            path,
       };
       expect(idless, _idlessPaths);
     });

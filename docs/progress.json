@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T22:23:39.787Z",
+  "updated": "2026-10-14T23:16:59.948Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -471,11 +471,13 @@
       "notes": ""
     },
     "T-34": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T22:24:04.522Z",
+      "finishedAt": "2026-10-14T23:16:59.947Z",
+      "commits": [
+        "c459174"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-35": {
@@ -742,7 +744,10 @@
       "resolveIn": [
         "T-34"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-34",
+      "closedAt": "2026-10-14T23:02:26.840Z",
+      "closeNote": "CLB-03 'Etkinlik oluştur' → EventFormRoute (club_detail_view_mixin; club_detail_view_test)"
     },
     {
       "id": "W-18",
@@ -831,17 +836,15 @@
     {
       "id": "W-27",
       "declaredIn": "T-23",
-      "text": "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35; EVT-02 yönetici ⋮ menüsü → SHT-23 (T-34). Yerinde TODO(T-34)/TODO(T-35) anahtarlarıyla",
+      "text": "yönetici düğmeleri: Katılımcılar/Yoklama (MGT-06/07) → T-35. T-34 payı kapandı: Düzenle → EventEditRoute (MGT-05), yönetici ⋮ → SHT-23 (ManageEventActionsMixin). Yerinde TODO(T-35) anahtarlarıyla",
       "resolveIn": [
         "T-34",
         "T-35"
       ],
       "status": "open",
       "actions": [
-        "EVT-02.edit",
         "EVT-02.attendees",
-        "EVT-02.scan",
-        "EVT-02.menu"
+        "EVT-02.scan"
       ]
     },
     {
@@ -956,7 +959,10 @@
       "resolveIn": [
         "T-34"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-34",
+      "closedAt": "2026-10-14T23:02:26.865Z",
+      "closeNote": "MGT-01 hızlı eylemler: Etkinlikler → ManageEventsRoute, Etkinlik oluştur → EventFormRoute (manage_view_mixin; manage_view_test, event_management_flow_test)"
     },
     {
       "id": "W-39",
@@ -1429,7 +1435,10 @@
       "resolveIn": [
         "T-34"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-34",
+      "closedAt": "2026-10-14T23:02:26.889Z",
+      "closeNote": "EventFormViewModel.timeLocked: yayındaki başlamış etkinlikte tarih / saat seçicileri devre dışı + açıklama, zaman alanları yamaya girmez; eventEnded reddi başlangıç alanına (event_form_view_model_test)"
     },
     {
       "id": "W-83",

@@ -87,9 +87,7 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
 
   /// "Yaklaşan etkinlik" (`MGT-01.kpi.events`) / "Tümü"
   /// (`MGT-01.eventsAll`) → MGT-04.
-  void openEvents() {
-    // TODO(T-34): `ManageEventsRoute(clubId:).go` (MGT-04; W-38).
-  }
+  void openEvents() => ManageEventsRoute(clubId: widget.clubId).go(context);
 
   /// "Bu ay duyuru" (`MGT-01.kpi.announcements`) → MGT-08 duyurular sekmesi.
   void openAnnouncements() {
@@ -119,7 +117,7 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
   /// "Etkinlik oluştur" (`MGT-01.quick.event`) → MGT-05.
   void createEvent() {
     if (!viewModel.ensureWritable()) return;
-    // TODO(T-34): `EventFormRoute(clubId:).go` (MGT-05; W-38).
+    EventFormRoute(clubId: widget.clubId).go(context);
   }
 
   /// "Yoklama al" (`MGT-01.quick.attendance`) → MGT-06; etkinlik yoksa

@@ -289,6 +289,9 @@ abstract final class ProjectDependency {
       // T-15 · kulüp ve üyelik repository'leri; T-25 · bildirim dağıtıcısı
       // ve gelen kutusu
       ..registerSingleton<NotificationDispatcher>(notificationDispatcher)
+      // T-34 · DLG-22 "{n}" tahmini (`estimateEventNew` — CD-38); dağıtıcıyla
+      // aynı örnek (aynı iki sorgu).
+      ..registerSingleton<RecipientResolver>(recipientResolver)
       ..registerSingleton<NotificationRepository>(notificationRepository)
       ..registerSingleton<ClubRepository>(clubRepository)
       ..registerSingleton<MembershipRepository>(membershipRepository)

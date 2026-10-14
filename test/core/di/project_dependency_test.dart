@@ -768,6 +768,9 @@ void main() {
         consumer.attendanceRepository,
         same(GetIt.I<AttendanceRepository>()),
       );
+      // T-34 · DLG-22 tahmini: dağıtıcının kullandığı çözücü.
+      expect(GetIt.I<RecipientResolver>(), isA<FirebaseRecipientResolver>());
+      expect(consumer.recipientResolver, same(GetIt.I<RecipientResolver>()));
       expect(
         consumer.managementRepository.isReadOnly(ClubAccess.advisor),
         isTrue,

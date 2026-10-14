@@ -17,7 +17,9 @@ import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/management/view/activity_log_view.dart';
+import 'package:gu_kulupler/features/management/view/event_form_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_applications_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_events_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_members_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notification_prefs_view.dart';
@@ -36,6 +38,7 @@ import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/applications_tab.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/navigation/gu_page_transitions.dart';
+import 'package:gu_kulupler/product/navigation/manage_events_tab.dart';
 import 'package:gu_kulupler/product/navigation/my_clubs_tab.dart';
 import 'package:gu_kulupler/product/navigation/my_events_tab.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
@@ -47,6 +50,8 @@ export 'package:gu_kulupler/product/navigation/applications_tab.dart'
     show ApplicationsTab;
 export 'package:gu_kulupler/product/navigation/club_detail_tab.dart'
     show ClubDetailTab;
+export 'package:gu_kulupler/product/navigation/manage_events_tab.dart'
+    show ManageEventsTab;
 export 'package:gu_kulupler/product/navigation/my_clubs_tab.dart'
     show MyClubsTab;
 export 'package:gu_kulupler/product/navigation/my_events_tab.dart'

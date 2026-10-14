@@ -211,6 +211,7 @@ Future<GoRouter> _pumpRoute(
                   'application',
                   'members',
                   'manage',
+                  'manage/events/new',
                 ])
                   GoRoute(
                     path: segment,
@@ -1061,8 +1062,8 @@ void main() {
       expect(segmented().value, ClubEventSegment.upcoming.name);
     });
 
-    testWidgets('yönetici düğmeleri: "Etkinlik oluştur" (MGT-05) henüz bağlı '
-        'değil; "Yönetim" → MGT-01 (W-12)', (tester) async {
+    testWidgets('yönetici düğmeleri: "Etkinlik oluştur" → MGT-05 (W-17); '
+        '"Yönetim" → MGT-01 (W-12)', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: sessionWith(role: ClubRole.board),
@@ -1071,7 +1072,9 @@ void main() {
       await _tapKey(tester, _createEvent);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(_location(router), '$_clubsPath/$kClubId?tab=members');
+      expect(_location(router), '$_clubsPath/$kClubId/manage/events/new');
+      router.go('$_clubsPath/$kClubId?tab=members');
+      await tester.pumpAndSettle();
       await _tapKey(tester, _openManage);
       await tester.pumpAndSettle();
       expect(_location(router), '$_clubsPath/$kClubId/manage');
