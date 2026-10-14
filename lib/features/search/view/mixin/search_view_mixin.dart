@@ -18,13 +18,14 @@ import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 
 /// CLB-02 davranışı: sorgu, sekme, son aramalar, katılım akışı ve gezinme.
 ///
-/// * Kategori adları ekranın dilinde ViewModel'e verilir (kulüp araması
-///   kategori adını da tarar); dil değişince yenilenir.
+/// * Kategori ve mekân adları ekranın dilinde ViewModel'e verilir (kulüp
+///   araması kategori adını, etkinlik araması mekân adını da tarar); dil
+///   değişince yenilenir.
 /// * Toast'ları ViewModel gösterir (TST-06, TST-34, TST-X1, TST-24 …).
 /// * "Katıl": ViewModel hangi yolun gerektiğini söyler — SHT-05 (başvuru)
 ///   → CLB-04, bekleme → CLB-05, onaysız kulüp → doğrudan katılım (TST-34).
-/// * Hedefi henüz yazılmamış giriş (etkinlik sonucu → EVT-02) anahtarıyla
-///   yerindedir; T-23'te bağlanır.
+/// * Etkinlik sonucu EVT-02'ye gider (`go`; Etkinlikler sekmesine geçilir —
+///   Q-20).
 mixin SearchViewMixin on ConsumerState<SearchView> {
   Locale? _labelsLocale;
 
@@ -50,9 +51,16 @@ mixin SearchViewMixin on ConsumerState<SearchView> {
       for (final category in StaticTables.categories)
         category.id: StaticLabels.category(context, category.id),
     };
+    final places = {
+      for (final place in StaticTables.places)
+        place.id: StaticLabels.place(context, place.id),
+    };
     // Yapım sırasında sağlayıcı değiştirilmez: ilk kareden sonra.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) viewModel.setCategoryLabels(labels);
+      if (!mounted) return;
+      viewModel
+        ..setCategoryLabels(labels)
+        ..setPlaceLabels(places);
     });
   }
 
@@ -170,8 +178,7 @@ mixin SearchViewMixin on ConsumerState<SearchView> {
   /// yazılır, etkinlik açılır (EVT-02).
   void openEventResult(EventModel event) {
     submit();
-    // TODO(T-23): `EventDetailRoute(eventId: event.id).go(context)` (EVT-02;
-    // bağlama borcu "CLB-02 etkinlik sonuçları → EVT-02").
+    EventDetailRoute(eventId: event.id).go(context);
   }
 
   /// [instant] anının yerel ayara göre tarihi (`12 Ekim 2026`): TST-X4.

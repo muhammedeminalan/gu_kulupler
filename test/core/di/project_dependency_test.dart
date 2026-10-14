@@ -18,7 +18,9 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
@@ -111,6 +113,12 @@ void main() {
       // T-14 · izinler ve görsel seçimi (aynı kural).
       expect(GetIt.I<PermissionService>(), isA<DevicePermissionService>());
       expect(GetIt.I<ImagePickerService>(), isA<DeviceImagePickerService>());
+      // T-23 · geçici dosya ve yerel hatırlatıcı (aynı kural).
+      expect(GetIt.I<FileService>(), isA<DeviceFileService>());
+      expect(
+        GetIt.I<LocalReminderService>(),
+        isA<FlutterLocalReminderService>(),
+      );
     });
 
     test('PermissionService ve ImagePickerService verilen örneklerle '

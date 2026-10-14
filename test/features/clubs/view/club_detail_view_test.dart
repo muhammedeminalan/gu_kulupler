@@ -48,6 +48,9 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_kulupler/product/widget/club/club_cta.dart';
+import 'package:gu_kulupler/product/widget/event/event_card.dart';
+import 'package:gu_kulupler/product/widget/event/event_card_status.dart';
+import 'package:gu_kulupler/product/widget/event/event_cta.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -55,11 +58,15 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
+import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
+import '../../../fakes/fake_rsvp_repository.dart';
 import '../../../fakes/fake_share_service.dart';
 import '../../../fakes/fake_url_launcher_service.dart';
 import '../../../fakes/register_fakes.dart';
+import '../../../fixtures/event_model_fixtures.dart';
+import '../../../fixtures/rsvp_model_fixtures.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -111,6 +118,11 @@ const String _clubsPath = '/clubs';
 
 FakeFeedbackService _feedback() =>
     GetIt.I<FeedbackService>() as FakeFeedbackService;
+
+FakeEventRepository _events() =>
+    GetIt.I<EventRepository>() as FakeEventRepository;
+
+FakeRsvpRepository _rsvps() => GetIt.I<RsvpRepository>() as FakeRsvpRepository;
 
 FakeClubRepository _clubs() => GetIt.I<ClubRepository>() as FakeClubRepository;
 
@@ -200,6 +212,16 @@ Future<GoRouter> _pumpRoute(
                     builder: (_, state) => _Stub(state.uri.path),
                   ),
               ],
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/events/:eventId',
+          builder: (_, state) => _Stub(state.uri.path),
+          routes: [
+            GoRoute(
+              path: 'ticket',
+              builder: (_, state) => _Stub(state.uri.path),
             ),
           ],
         ),
@@ -1195,6 +1217,213 @@ void main() {
       // Kulübün içini görende bant yok.
       await _pump(tester, session: sessionWith(), tab: ClubDetailTab.events);
       expect(find.byType(GuBanner), findsNothing);
+    });
+  });
+
+  group('CLB-03 · Kulüp · etkinlikler sekmesi (W-15)', () {
+    /// `c03` etkinlikleri: `e03` (yaklaşan, dolu), `e16` (üyelere özel),
+    /// `e19` (geçmiş), `e22` (taslak).
+    void seedEvents() =>
+        EventModelFixtures.ofClub(kClubId).forEach(_events().put);
+
+    Key card(String id) => GuKey.action('CLB-03.card.$id');
+    Key join(String id) => GuKey.action('CLB-03.join.$id');
+
+    testWidgets('ziyaretçi: yaklaşan dilimde herkese açık kartlar '
+        '(kompakt, kulüp satırı yok); geçmiş dilimde biten etkinlik', (
+      tester,
+    ) async {
+      await _pumpRoute(tester, seed: seedEvents, query: '?tab=events');
+      expect(find.byKey(card('e03')), findsOneWidget);
+      expect(find.byKey(card('e16')), findsNothing); // üyelere özel
+      expect(find.byKey(card('e19')), findsNothing); // geçmiş
+      final e03 = tester.widget<EventCard>(find.byType(EventCard).first);
+      expect(e03.compact, isTrue);
+      expect(e03.showClub, isFalse);
+      expect(e03.status, EventCardStatus.full);
+      expect(e03.quickAction?.kind, EventCtaKind.joinWaitlist);
+
+      await _tapKey(tester, _segment(ClubEventSegment.past));
+      expect(find.byKey(card('e19')), findsOneWidget);
+      expect(find.byKey(card('e03')), findsNothing);
+      expect(find.byKey(card('e22')), findsNothing); // taslak
+      expect(
+        tester.widget<EventCard>(find.byType(EventCard)).status,
+        EventCardStatus.past,
+      );
+    });
+
+    testWidgets('üye: üyelere özel etkinlik de listelenir; bant yok', (
+      tester,
+    ) async {
+      await _pumpRoute(
+        tester,
+        session: sessionWith(),
+        seed: seedEvents,
+        query: '?tab=events',
+      );
+      expect(find.byKey(card('e16')), findsOneWidget);
+      expect(find.byType(GuBanner), findsNothing);
+    });
+
+    testWidgets('kart → EVT-02 (go); "Bekleme listesine katıl" akış '
+        'verilmemişse EVT-02', (tester) async {
+      var router = await _pumpRoute(
+        tester,
+        seed: seedEvents,
+        query: '?tab=events',
+      );
+      await _tapKey(tester, card('e03'));
+      await tester.pumpAndSettle();
+      expect(_location(router), '/events/e03');
+
+      router = await _pumpRoute(tester, seed: seedEvents, query: '?tab=events');
+      await _tapKey(tester, join('e03'));
+      await tester.pumpAndSettle();
+      expect(_location(router), '/events/e03');
+    });
+
+    testWidgets('kayıtlıysa "Biletini göster" → EVT-03', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        seed: () {
+          seedEvents();
+          _rsvps().put(
+            RsvpModelFixtures.e01Mehmet.copyWith(
+              id: FirestoreIds.rsvp('e03', kUid),
+              eventId: 'e03',
+              clubId: kClubId,
+            ),
+          );
+        },
+        query: '?tab=events',
+      );
+      expect(
+        tester.widget<EventCard>(find.byType(EventCard).first).status,
+        EventCardStatus.going,
+      );
+      await _tapKey(tester, join('e03'));
+      await tester.pumpAndSettle();
+      expect(_location(router), '/events/e03/ticket');
+    });
+
+    testWidgets('"Katıl" / "Bekleme listesine katıl" rotanın akışına gider; '
+        'değiştiyse sekme yeniden okunur', (tester) async {
+      final calls = <(String, EventCtaKind)>[];
+      // `e03` yaklaşan; kontenjansız kopyası "Katıl" çizer.
+      final full = EventModelFixtures.e03;
+      final open = full.copyWith(id: 'e90', clearCapacity: true);
+      await tester.pumpApp(
+        ClubDetailView(
+          clubId: kClubId,
+          tab: ClubDetailTab.events,
+          eventJoinFlow: (context, event, kind) async {
+            calls.add((event.id, kind));
+            // Yalnızca bekleme listesine katılım kaydı değiştirmiş olsun.
+            return event.id == full.id;
+          },
+        ),
+        overrides: _overrides(
+          kVisitorSession,
+          state: loadedState(
+            kVisitorSession,
+            base: ClubDetailState(
+              tab: ClubDetailTab.events,
+              events: [open, full],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await _tapKey(tester, join(open.id));
+      expect(calls, [(open.id, EventCtaKind.join)]);
+      expect(_events().callsTo('listClubEvents'), isEmpty);
+
+      await _tapKey(tester, join(full.id));
+      await tester.pump();
+      expect(calls.last, (full.id, EventCtaKind.joinWaitlist));
+      expect(_events().callsTo('listClubEvents'), hasLength(1));
+    });
+
+    testWidgets('TST-X2: "Kayıtlar kapalı" (devre dışı) dokunması', (
+      tester,
+    ) async {
+      final closed = EventModelFixtures.e03.copyWith(
+        clearCapacity: true,
+        registrationOpen: false,
+      );
+      await _pump(
+        tester,
+        state: loadedState(
+          kVisitorSession,
+          base: ClubDetailState(tab: ClubDetailTab.events, events: [closed]),
+        ),
+      );
+      final button = tester.widget<GuButton>(find.byKey(join(closed.id)));
+      expect(button.disabled, isTrue);
+      await _tapKey(tester, join(closed.id));
+      expect(_feedback().toasts, [ToastId.tstX2]);
+    });
+
+    testWidgets('yükleniyor: 3 kart iskeleti; hata: satır içi hata → '
+        '"Yeniden dene" sekmeyi yeniden okur', (tester) async {
+      await _pump(
+        tester,
+        state: loadedState(
+          kVisitorSession,
+          base: const ClubDetailState(
+            tab: ClubDetailTab.events,
+            isEventsFetching: true,
+          ),
+        ),
+      );
+      final skeleton = tester.widget<GuSkeletonList>(
+        find.byType(GuSkeletonList),
+      );
+      expect(skeleton.count, ClubEventsTab.skeletonCount);
+      expect(skeleton.variant, GuSkeletonVariant.card);
+
+      await _pumpRoute(
+        tester,
+        seed: () {
+          seedEvents();
+          _events().failNext(FirestoreError.unavailable);
+        },
+        query: '?tab=events',
+      );
+      expect(find.byType(GuErrorState), findsOneWidget);
+      await _tapKey(tester, GuKey.action('CLB-03.eventsRetry'));
+      await tester.pumpAndSettle();
+      expect(find.byType(GuErrorState), findsNothing);
+      expect(find.byKey(card('e03')), findsOneWidget);
+    });
+
+    testWidgets('aksiyon envanteri: kartlar envanter dışı anahtar üretmez', (
+      tester,
+    ) async {
+      await _pumpRoute(tester, seed: seedEvents, query: '?tab=events');
+      expectActionInventory(
+        tester,
+        'CLB-03',
+        extraExempt: {'CLB-03.about.*', 'CLB-03.report'},
+      );
+    });
+
+    testWidgets('cihaz matrisi: dolu etkinlikler sekmesi', (tester) async {
+      await DeviceMatrix.run(
+        tester,
+        (_) => clubDetailView(tab: ClubDetailTab.events),
+        overrides: _overrides(
+          kVisitorSession,
+          state: loadedState(
+            kVisitorSession,
+            base: ClubDetailState(
+              tab: ClubDetailTab.events,
+              events: EventModelFixtures.ofClub(kClubId),
+            ),
+          ),
+        ),
+      );
     });
   });
 

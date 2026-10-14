@@ -22,7 +22,16 @@ part 'search_view_model.g.dart';
 /// * Arama istemci tarafındadır: havuz ([loadPools]) açılışta bir kez okunur,
 ///   sorgu `Limits.searchDebounce` (250 ms) sonra havuzda aranır. Eşleşme
 ///   Türkçe küçük harfle (`trLower`, CD-11): kulüpte ad + özet + tanıtım +
-///   kategori adı, etkinlikte başlık + açıklama + serbest metin mekân.
+///   kategori adı, etkinlikte başlık + açıklama + mekân adı (kayıtlı mekân
+///   ARB'den — view verir — ya da serbest metin).
+/// * Etkinlik havuzu (prototip `visibleEvents`): herkese açık yaklaşan
+///   etkinlikler (`listPublicUpcoming`) + kullanıcının etkin üyesi olduğu her
+///   kulübün üyelere özel yaklaşanları (`listMembersUpcoming`, kulüp başına
+///   tek sorgu — Rules süzgeç değildir); her sorgu
+///   `Limits.upcomingEventsFetchMax` ile sınırlıdır. Tekilleştirilir,
+///   askıdaki / havuzda olmayan kulübün etkinliği süzülür (rules-spec §9.5),
+///   en yakın üstte. Etkinlik okuması düşerse kulüp araması sürer (etkinlik
+///   sonuçları boş kalır, günlüğe düşer).
 /// * Son aramalar cihazda tutulur (`AppPreferencesStore.recentSearches`);
 ///   yazım hatası kullanıcıya gösterilmez, günlüğe düşer.
 /// * Sheet açma ve gezinme view'dadır; [join] hangisinin gerektiğini sonuç
@@ -49,6 +58,7 @@ final class SearchViewModel extends _$SearchViewModel
   Timer? _debounce;
   bool _isLoading = false;
   Map<String, String> _categoryLabels = const <String, String>{};
+  Map<String, String> _placeLabels = const <String, String>{};
 
   @override
   SearchState build(SearchScope initialScope) {
@@ -76,6 +86,15 @@ final class SearchViewModel extends _$SearchViewModel
   /// ve dil değişince).
   void setCategoryLabels(Map<String, String> labels) {
     _categoryLabels = labels;
+    if (!ref.mounted || !state.hasTerm || state.isSearching) return;
+    _search();
+  }
+
+  /// Kayıtlı mekân adları (`pl04` → "Bilgisayar Laboratuvarı-2"), ekranın
+  /// dilinde. Etkinlik araması mekân adını da tarar (`screens-clubs.js:43`
+  /// `placeName`); adlar ARB'dedir, bu yüzden view verir.
+  void setPlaceLabels(Map<String, String> labels) {
+    _placeLabels = labels;
     if (!ref.mounted || !state.hasTerm || state.isSearching) return;
     _search();
   }
@@ -241,9 +260,21 @@ final class SearchViewModel extends _$SearchViewModel
   Future<void> _load() async {
     if (!ref.mounted || _isLoading) return;
     _isLoading = true;
-    final result = await clubRepository.fetchActiveClubs();
-    // TODO(T-23): `eventRepository.listPublicUpcoming(fromUtc:
-    // appClock.nowUtc())` → `eventPool` (`EventRepository` T-22'de gelir).
+    final now = appClock.nowUtc();
+    final session = ref.read(sessionViewModelProvider);
+    final memberClubIds = [
+      for (final MapEntry(key: clubId, value: membership)
+          in session.memberships.entries)
+        if (membership.status == MembershipStatus.active) clubId,
+    ];
+    final (result, publicEvents, memberEvents) = await (
+      clubRepository.fetchActiveClubs(),
+      eventRepository.listPublicUpcoming(fromUtc: now),
+      Future.wait([
+        for (final clubId in memberClubIds)
+          eventRepository.listMembersUpcoming(clubId, fromUtc: now),
+      ]),
+    ).wait;
     _isLoading = false;
     if (!ref.mounted) return;
     switch (result) {
@@ -255,6 +286,10 @@ final class SearchViewModel extends _$SearchViewModel
         final suggested = _suggest(pool);
         state = state.copyWith(
           clubPool: pool,
+          eventPool: mergeEvents(
+            clubIds: {for (final club in pool) club.id},
+            results: [publicEvents, ...memberEvents],
+          ),
           suggested: suggested,
           isFetching: false,
           isError: false,
@@ -293,12 +328,40 @@ final class SearchViewModel extends _$SearchViewModel
   ].join(_fieldSeparator).trLower();
 
   /// Etkinliğin aranan metni (`screens-clubs.js:43`).
-  // TODO(T-23): kayıtlı mekân adı (`placeId` → ARB) da taranır.
   String _eventText(EventModel event) => [
     event.title,
     event.desc,
-    event.placeText ?? '',
+    switch (event.placeId) {
+      final placeId? => _placeLabels[placeId] ?? '',
+      null => event.placeText ?? '',
+    },
   ].join(_fieldSeparator).trLower();
+
+  /// Etkinlik sorgularının sonuçlarını birleştirir: başarısız sorgu
+  /// günlüğe düşer ve atlanır; aynı etkinlik bir kez; yalnızca [clubIds]
+  /// kulüplerinin (havuzdaki etkin kulüpler) etkinlikleri; başlangıca göre
+  /// artan.
+  static List<EventModel> mergeEvents({
+    required Set<String> clubIds,
+    required List<FirestoreResult<List<EventModel>>> results,
+  }) {
+    final byId = <String, EventModel>{};
+    for (final result in results) {
+      switch (result) {
+        case FirebaseSuccess(:final data):
+          for (final event in data) {
+            if (clubIds.contains(event.clubId)) byId[event.id] = event;
+          }
+        case FirebaseFailure(:final error, :final message):
+          AppLogger.warn(
+            'Arama etkinlik havuzu okunamadı: ${error.name}',
+            error: message,
+          );
+      }
+    }
+    return byId.values.toList()
+      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+  }
 
   /// Önerilen kulüpler: kullanıcının aktif üyesi olmadığı kulüpler, ilgi
   /// alanlarının kategorileri önde; her grupta havuz sırası korunur.

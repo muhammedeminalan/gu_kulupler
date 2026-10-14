@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T05:08:02.302Z",
+  "updated": "2026-10-14T06:11:40.541Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -361,11 +361,13 @@
       "notes": ""
     },
     "T-23": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T05:08:47.406Z",
+      "finishedAt": "2026-10-14T06:11:40.540Z",
+      "commits": [
+        "a4cd89d"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-24": {
@@ -690,7 +692,10 @@
       "resolveIn": [
         "T-23"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-23",
+      "closedAt": "2026-10-14T06:01:16.611Z",
+      "closeNote": "CLB-03 Etkinlikler sekmesi: CLB-03.card.<id> → EventDetailRoute (go); CLB-03.join.<id> hızlı eylemi → bilet / EVT-02 / TST-X2 / rota runEventJoinFlow (SHT-12, DLG-15); test/flows/event_flow_test.dart"
     },
     {
       "id": "W-16",
@@ -729,7 +734,10 @@
       "resolveIn": [
         "T-23"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-23",
+      "closedAt": "2026-10-14T06:01:16.640Z",
+      "closeNote": "CLB-02 result.event.<id> → son aramaya yaz → EventDetailRoute (go); havuz listPublicUpcoming + üyelik başına listMembersUpcoming"
     },
     {
       "id": "W-20",
@@ -788,12 +796,18 @@
     {
       "id": "W-27",
       "declaredIn": "T-23",
-      "text": "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35",
+      "text": "yönetici düğmeleri: Düzenle (MGT-05) → T-34, Katılımcılar/Yoklama (MGT-06/07) → T-35; EVT-02 yönetici ⋮ menüsü → SHT-23 (T-34). Yerinde TODO(T-34)/TODO(T-35) anahtarlarıyla",
       "resolveIn": [
         "T-34",
         "T-35"
       ],
-      "status": "open"
+      "status": "open",
+      "actions": [
+        "EVT-02.edit",
+        "EVT-02.attendees",
+        "EVT-02.scan",
+        "EVT-02.menu"
+      ]
     },
     {
       "id": "W-28",
@@ -1262,7 +1276,10 @@
       "resolveIn": [
         "T-23"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-23",
+      "closedAt": "2026-10-14T06:01:16.665Z",
+      "closeNote": "EVT-02 sıra = katılımdan hemen sonra okunan events.waitlistCount (TST-43 {n}); sonradan sırasız 'Bekleme listesindesin' (CD sapması, docs/decisions.md T-23 satırı)"
     },
     {
       "id": "W-77",
@@ -1303,7 +1320,7 @@
     {
       "id": "W-81",
       "declaredIn": "T-22",
-      "text": "Katılım UI (T-22 güvenlik incelemesi, CD-144 (10)): (a) EVT-02 'Bekleme listesine katıl' kararı EventModel.joinsWaitlist ile verilir (isFull değil): kontenjanlı etkinlikte önde bekleyen varken yer boş olsa da yeni katılım waitlist'e düşer (Rules ownGoingAllowed / joinsWaitlist); (b) vazgeçme (DLG-14; EVT-02 / EVT-03 / EVT-04 'Vazgeç') yalnızca endsAt > şimdi iken gösterilir — sonrasında RsvpRepository.cancel ruleViolation(eventEnded) döner (TST-X6)",
+      "text": "Katılım UI (T-22 güvenlik incelemesi, CD-144 (10)): (a) EVT-02 'Bekleme listesine katıl' kararı EventModel.joinsWaitlist ile verilir (isFull değil): kontenjanlı etkinlikte önde bekleyen varken yer boş olsa da yeni katılım waitlist'e düşer (Rules ownGoingAllowed / joinsWaitlist); (b) vazgeçme (DLG-14; EVT-02 / EVT-03 / EVT-04 'Vazgeç') yalnızca endsAt > şimdi iken gösterilir — sonrasında RsvpRepository.cancel ruleViolation(eventEnded) döner (TST-X6) — T-23 payı KARŞILANDI: EVT-02 bekleme kararı joinsWaitlist (EventCardStatus.full / EventCtaKind), EVT-02 ve EVT-03 Vazgeç yalnız endsAt > şimdi (aksi TST-X6). KALAN (T-24): EVT-04 Vazgeç ve EVT-01 kart kararı aynı kuralla",
       "resolveIn": [
         "T-23",
         "T-24"

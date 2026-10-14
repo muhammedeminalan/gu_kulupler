@@ -7,18 +7,23 @@ import 'package:gu_kulupler/features/clubs/provider/club_detail_state.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 
 import '../../../fixtures/event_model_fixtures.dart';
+import '../../../fixtures/rsvp_model_fixtures.dart';
 import '../club_detail_test_support.dart';
 
 void main() {
   final now = DateTime.utc(2026, 10, 12, 16, 30);
   final membership = sessionWith().memberships[kClubId]!;
   final event = EventModelFixtures.e01;
+  final rsvp = RsvpModelFixtures.e01Mehmet;
   final full = ClubDetailState(
     club: kClub,
     access: ClubAccess.manager,
     membership: membership,
     tab: ClubDetailTab.events,
     events: [event],
+    rsvps: {event.id: rsvp},
+    isEventsFetching: true,
+    isEventsError: true,
     managers: kManagers,
     memberPreview: [kPresident],
     isFetching: true,
@@ -37,6 +42,9 @@ void main() {
       expect(state.membership, isNull);
       expect(state.tab, ClubDetailTab.about);
       expect(state.events, isEmpty);
+      expect(state.rsvps, isEmpty);
+      expect(state.isEventsFetching, isFalse);
+      expect(state.isEventsError, isFalse);
       expect(state.managers, isEmpty);
       expect(state.memberPreview, isEmpty);
       expect(state.isFetching, isFalse);
@@ -46,13 +54,16 @@ void main() {
       expect(state.isActing, isFalse);
     });
 
-    test('props tüm alanları içerir (12 alan)', () {
+    test('props tüm alanları içerir (15 alan)', () {
       expect(full.props, [
         kClub,
         ClubAccess.manager,
         membership,
         ClubDetailTab.events,
         [event],
+        {event.id: rsvp},
+        true,
+        true,
         kManagers,
         [kPresident],
         true,
@@ -72,6 +83,9 @@ void main() {
         base.copyWith(membership: membership),
         base.copyWith(tab: ClubDetailTab.posts),
         base.copyWith(events: [event]),
+        base.copyWith(rsvps: {event.id: rsvp}),
+        base.copyWith(isEventsFetching: true),
+        base.copyWith(isEventsError: true),
         base.copyWith(managers: kManagers),
         base.copyWith(memberPreview: [kPresident]),
         base.copyWith(isFetching: true),
@@ -85,13 +99,16 @@ void main() {
       expect(variants[2].membership, membership);
       expect(variants[3].tab, ClubDetailTab.posts);
       expect(variants[4].events, [event]);
-      expect(variants[5].managers, kManagers);
-      expect(variants[6].memberPreview, [kPresident]);
-      expect(variants[7].isFetching, isTrue);
-      expect(variants[8].isRefreshing, isTrue);
-      expect(variants[9].isError, isTrue);
-      expect(variants[10].isNotFound, isTrue);
-      expect(variants[11].isActing, isTrue);
+      expect(variants[5].rsvps, {event.id: rsvp});
+      expect(variants[6].isEventsFetching, isTrue);
+      expect(variants[7].isEventsError, isTrue);
+      expect(variants[8].managers, kManagers);
+      expect(variants[9].memberPreview, [kPresident]);
+      expect(variants[10].isFetching, isTrue);
+      expect(variants[11].isRefreshing, isTrue);
+      expect(variants[12].isError, isTrue);
+      expect(variants[13].isNotFound, isTrue);
+      expect(variants[14].isActing, isTrue);
       // Her kopya tabandan ve diğerlerinden farklıdır (tek alan değişti).
       expect({base, ...variants}, hasLength(variants.length + 1));
     });
@@ -101,6 +118,9 @@ void main() {
       expect(full.copyWith(), full);
       final cleared = full.copyWith(
         events: const [],
+        rsvps: const {},
+        isEventsFetching: false,
+        isEventsError: false,
         managers: const [],
         memberPreview: const [],
         isFetching: false,

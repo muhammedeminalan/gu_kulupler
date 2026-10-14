@@ -23,6 +23,7 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
+import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
 import '../../../fakes/fake_session_states.dart';
@@ -179,6 +180,66 @@ void main() {
     });
   });
 
+  group('CLB-02 · SearchViewModel · etkinlik havuzu (W-19)', () {
+    late FakeEventRepository events;
+
+    setUp(() {
+      events = GetIt.I<EventRepository>() as FakeEventRepository;
+      seedSearchEvents();
+    });
+
+    test('ziyaretçi: herkese açık yaklaşanlar; askıdaki / havuz dışı kulüp ve '
+        'geçmiş etkinlik yok; en yakın üstte', () async {
+      final container = containerOf();
+      await pumpEventQueue();
+      expect(stateOf(container).eventPool, [kChessCup, kPhotoWalk]);
+      expect(
+        events.callsTo('listPublicUpcoming').single.args,
+        [kDefaultFakeNowUtc],
+      );
+      expect(events.callsTo('listMembersUpcoming'), isEmpty);
+    });
+
+    test('üye: üye olunan kulübün üyelere özel yaklaşanları kulüp başına tek '
+        'sorguyla eklenir', () async {
+      final container = containerOf(session: kSoftwareMemberSession);
+      await pumpEventQueue();
+      expect(stateOf(container).eventPool, [
+        kChessCup,
+        kPhotoWalk,
+        kHackathonPrep,
+      ]);
+      expect(events.membersUpcomingQueries, [kSoftware.id]);
+    });
+
+    test('etkinlik okuması düşerse kulüp araması sürer; havuz boş, günlüğe '
+        'düşer', () async {
+      final logs = captureLogs();
+      events.failNext(FirestoreError.unavailable);
+      final container = containerOf();
+      await pumpEventQueue();
+      expect(stateOf(container).isError, isFalse);
+      expect(stateOf(container).clubPool, kPool);
+      expect(stateOf(container).eventPool, isEmpty);
+      expect(logs.join('\n'), contains('Arama etkinlik havuzu okunamadı'));
+    });
+
+    testWidgets('eşleşme: başlık, açıklama ve kayıtlı mekân adı (view verir)', (
+      tester,
+    ) async {
+      final container = await loadedIn(tester);
+      final vm = vmOf(container)..setQuery('SATRANÇ');
+      await tester.pump(Limits.searchDebounce);
+      expect(stateOf(container).eventResults, [kChessCup]);
+
+      vm
+        ..setPlaceLabels({kPhotoWalk.placeId!: 'Zigana Geçidi Başlangıcı'})
+        ..setQuery('zİgana geçİdİ');
+      await tester.pump(Limits.searchDebounce);
+      expect(stateOf(container).eventResults, [kPhotoWalk]);
+    });
+  });
+
   group('CLB-02 · SearchViewModel · sorgu', () {
     testWidgets('sonuçlar Limits.searchDebounce sonra gelir; yazmaya devam '
         'edilirse bekleme yeniden başlar', (tester) async {
@@ -227,7 +288,6 @@ void main() {
       vm.setQuery('bulunmayan terim');
       await tester.pump(Limits.searchDebounce);
       expect(stateOf(container).clubResults, isEmpty);
-      // Etkinlik havuzu T-23'e kadar boştur.
       expect(stateOf(container).eventResults, isEmpty);
     });
 

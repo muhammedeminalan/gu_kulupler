@@ -47,6 +47,15 @@
   "@a11yPrevMonth": {
     "description": "Key a11y.prevMonth"
   },
+  "a11yTicketQr": "Ticket QR code, {status}",
+  "@a11yTicketQr": {
+    "description": "Key a11y.ticketQr",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "aboutBuild": "Demo build",
   "@aboutBuild": {
     "description": "Key about.build"
@@ -2463,6 +2472,15 @@
   "@eventCancelledBanner": {
     "description": "Key event.cancelledBanner"
   },
+  "eventCancelledBannerReason": "This event was cancelled. — {reason}",
+  "@eventCancelledBannerReason": {
+    "description": "Key event.cancelledBannerReason",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "eventCapacity": "Capacity",
   "@eventCapacity": {
     "description": "Key event.capacity"
@@ -2522,6 +2540,15 @@
   "eventFull": "Fully booked",
   "@eventFull": {
     "description": "Key event.full"
+  },
+  "eventMapPlaceholder": "map placeholder · {place}",
+  "@eventMapPlaceholder": {
+    "description": "Key event.mapPlaceholder",
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
   },
   "eventPast": "Past",
   "@eventPast": {
@@ -2593,6 +2620,10 @@
         "type": "int"
       }
     }
+  },
+  "eventWaitlistIn": "You're on the waitlist",
+  "@eventWaitlistIn": {
+    "description": "Key event.waitlistIn"
   },
   "eventWaitlistNote": "We'll notify you if a spot opens.",
   "@eventWaitlistNote": {

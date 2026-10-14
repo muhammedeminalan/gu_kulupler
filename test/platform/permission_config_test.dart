@@ -111,12 +111,33 @@ void main() {
       r'<uses-permission\s+android:name="([^"]+)"',
     ).allMatches(manifest).map((match) => match.group(1)).toList();
 
-    test('kamera (DLG-04) ve bildirim (DLG-03) izni bildirilir; başka izin '
-        'yok', () {
+    test('kamera (DLG-04), bildirim (DLG-03) ve — T-23 — yeniden başlatma '
+        '(yerel hatırlatıcı) izni bildirilir; başka izin yok', () {
       expect(permissions, [
         'android.permission.CAMERA',
         'android.permission.POST_NOTIFICATIONS',
+        'android.permission.RECEIVE_BOOT_COMPLETED',
       ]);
+    });
+
+    test('T-23 · kesin alarm izni YOK (inexactAllowWhileIdle — CD-09); '
+        'flutter_local_notifications alıcıları kayıtlı', () {
+      expect(permissions, isNot(contains(endsWith('SCHEDULE_EXACT_ALARM'))));
+      expect(permissions, isNot(contains(endsWith('USE_EXACT_ALARM'))));
+      const receivers = 'com.dexterous.flutterlocalnotifications';
+      expect(manifest, contains('$receivers.ScheduledNotificationReceiver"'));
+      expect(
+        manifest,
+        contains('$receivers.ScheduledNotificationBootReceiver"'),
+      );
+      expect(manifest, contains('android.intent.action.BOOT_COMPLETED'));
+      final gradle = readText('android/app/build.gradle.kts');
+      expect(gradle, contains('isCoreLibraryDesugaringEnabled = true'));
+      expect(gradle, contains('coreLibraryDesugaring("com.android.tools:'));
+      expect(
+        readText('ios/Runner/AppDelegate.swift'),
+        contains('UNUserNotificationCenter.current().delegate = self'),
+      );
     });
 
     test('depolama / fotoğraf izni YOK: galeri sistem fotoğraf seçicisiyle '

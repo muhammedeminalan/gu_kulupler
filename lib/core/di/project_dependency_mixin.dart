@@ -5,7 +5,9 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/app_info_service.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
@@ -114,4 +116,12 @@ mixin ProjectDependencyMixin {
   /// Kamera / galeriden görsel seçimi (T-14). Ekranlar doğrudan değil
   /// `PermissionPromptMixin.pickImage` üzerinden çağırır.
   ImagePickerService get imagePickerService => GetIt.I<ImagePickerService>();
+
+  /// Geçici dosya yazma — SHT-14 `.ics` (T-23).
+  FileService get fileService => GetIt.I<FileService>();
+
+  /// Cihazda planlı etkinlik hatırlatıcısı (T-23, CD-09). İzin istemez —
+  /// bildirim izni [permissionService]'tedir.
+  LocalReminderService get localReminderService =>
+      GetIt.I<LocalReminderService>();
 }

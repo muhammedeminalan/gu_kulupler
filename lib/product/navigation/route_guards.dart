@@ -77,6 +77,9 @@ abstract final class RouteAccessTable {
   /// Kulüp kimliği yol parametresinin adı.
   static const String clubIdParameter = 'clubId';
 
+  /// Etkinlik kimliği yol parametresinin adı (`/events/:eventId`).
+  static const String eventIdParameter = 'eventId';
+
   /// `/legal/:tip` parametresinin adı.
   static const String legalTabParameter = 'tip';
 

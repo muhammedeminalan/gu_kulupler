@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/app_clock_provider.dart';
 import 'package:gu_kulupler/core/format/app_date_formats.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
@@ -21,6 +22,7 @@ import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
+import 'package:gu_kulupler/product/widget/event/event_cta.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// CLB-03 davranışı: kaydırma (parallax, durum çubuğu), sekmeler, katılım
@@ -35,6 +37,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   → CLB-04, bekleme → CLB-05, onaysız kulüp → doğrudan katılım (TST-34).
 /// * Kulüp yoksa / silinmişse SYS-04'e gidilir.
 /// * Kişi satırları CLB-07'ye, "Tüm üyeler" CLB-06'ya gider (`go`).
+/// * Etkinlik kartı EVT-02'ye, bilet düğmesi EVT-03'e gider; karttan katılım
+///   rotanın verdiği akışla ([ClubDetailView.eventJoinFlow]) yapılır.
 /// * Hedefi henüz yazılmamış girişler (MGT-01, MGT-05, MGT-09, SHT-25)
 ///   anahtarlarıyla yerindedir; hedef ekranın task'ında bağlanır (bağlama
 ///   borçları W-12…W-17).
@@ -131,6 +135,43 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// "Yaklaşan / Geçmiş" dilimi (`CLB-03.eventSeg.<dilim>`).
   void selectEventSegment(ClubEventSegment segment) =>
       setState(() => eventSegment = segment);
+
+  /// Etkinlikler sekmesi hata görünümündeki "Yeniden dene"
+  /// (`CLB-03.eventsRetry`).
+  Future<void> retryEvents() => viewModel.fetchEvents();
+
+  /// Etkinlik kartı (`CLB-03.card.<eventId>`) → EVT-02 (Etkinlikler
+  /// sekmesine geçilir — Q-20).
+  void openEvent(EventModel event) =>
+      EventDetailRoute(eventId: event.id).go(context);
+
+  /// Etkinlik kartının hızlı eylemi (`CLB-03.join.<eventId>`; prototip
+  /// `eventQuickAction`, `cards.js:58–67`): bilet → EVT-03; bekleme
+  /// listesindeyse → EVT-02; "Kulübe başvur" → bu kulübün katılım akışı;
+  /// "Kayıtlar kapalı" → TST-X2; "Katıl" / "Bekleme listesine katıl" → rotanın
+  /// verdiği akış (SHT-12 / DLG-15, `ClubDetailView.eventJoinFlow`; yoksa
+  /// EVT-02). Akış katılımı değiştirdiyse sekme yeniden okunur.
+  Future<void> onEventQuickAction(EventModel event, EventCtaKind kind) async {
+    switch (kind) {
+      case EventCtaKind.ticket:
+        TicketRoute(eventId: event.id).go(context);
+      case EventCtaKind.waitlist:
+        openEvent(event);
+      case EventCtaKind.applyClub:
+        await join();
+      case EventCtaKind.closed:
+        viewModel.showRegistrationClosed();
+      case EventCtaKind.join:
+      case EventCtaKind.joinWaitlist:
+        final flow = widget.eventJoinFlow;
+        if (flow == null) {
+          openEvent(event);
+          return;
+        }
+        final changed = await flow(context, event, kind);
+        if (changed && mounted) await viewModel.fetchEvents();
+    }
+  }
 
   /// "Katıl" (`CLB-03.join.<clubId>`).
   Future<void> join() async {
