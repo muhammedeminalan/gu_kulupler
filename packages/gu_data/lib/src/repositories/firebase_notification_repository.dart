@@ -218,6 +218,24 @@ final class FirebaseNotificationRepository
     batch.set(_ref(draft, recipientId), _payload(draft, recipientId));
   }
 
+  @override
+  void addToTransaction(
+    Transaction transaction,
+    NotificationDraft draft, {
+    required String recipientId,
+  }) {
+    final rejected =
+        _rejectDraft<void>(draft) ?? _rejectRecipients<void>([recipientId]);
+    if (rejected case FirebaseFailure(:final message)) {
+      throw FirebaseException(
+        plugin: _plugin,
+        code: _invalidArgumentCode,
+        message: message,
+      );
+    }
+    transaction.set(_ref(draft, recipientId), _payload(draft, recipientId));
+  }
+
   /// Yinelenen alıcı kimlikleri tek belgeye indirgenir; dönen sayı ve
   /// [Limits.batchMaxWrites] sınırı tekil alıcılar üzerindendir.
   @override

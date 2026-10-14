@@ -1176,3 +1176,166 @@ describe('T-29 · hesap silme dizisi — senaryolar ve uçtan uca (silinmiş sah
     await assertFails(send(db, writesOf(scenarioOf(t29.sequence[0]))));
   });
 });
+
+// 11. T-30 — `contract.t30.scenarios`: yönetici yazımlarının GERÇEK okuma + yazımları (FirebaseMembershipRepository
+//     M5 / M6 / M9–M12, FirebaseManagementRepository.updateClubSettings, FirebaseAttendanceRepository yoklama / terfi;
+//     kritik bildirim aynı transaction'da — W-83). Biçim `t22` ile aynıdır; `tx: true` okumalar + yazımlar tek
+//     transaction (henüz olmayan günlük kaydının varlık okuması da kurallardan geçer), `tx` yoksa ön okuma + tek batch.
+//     Ret varyantlarında `swap` yazım yollarında / değerlerinde alt dizgi değişimidir: o bağlamın repository'sinin
+//     üreteceği aktör kimliği (decidedBy, sabit günlük kimliği, actorId). Danışman, başka kulübün yöneticisi, askıdaki
+//     kulüp, sayaçsız / yan belgesiz yük, silinmiş başvuran (W-89) ve 30 sn penceresi dışı geri alma reddedilir.
+describe('T-30 · yönetim — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t30 = contract.t30;
+  const DAYS_AGO = '@daysAgo:';
+  const SIDE = /^(clubs|events)\/[^/]+\/private\/counter$/;
+
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Koşunun TEK üretilen kimliği (bildirim olay anahtarı / otomatik günlük kimliği; 20 karakter). */
+  const tokensFor = (db) => ({ [t30.autoId]: doc(collection(db, 'notifications')).id });
+
+  function replaceAll(value, pairs) {
+    if (typeof value === 'string') {
+      return Object.entries(pairs).reduce((text, [from, to]) => text.split(from).join(to), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => replaceAll(inner, pairs));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, replaceAll(inner, pairs)]));
+    }
+    return value;
+  }
+
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t30.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t30.fixtures[name]), ...fields };
+  }
+
+  function seedOf(scenario, variant) {
+    const docs = Object.fromEntries(Object.entries(scenario.seed).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...patch };
+    }
+    const content = Object.fromEntries(Object.entries(docs).map(([path, data]) => [path, seedValue(data)]));
+    return { ...identityDocs(), ...content };
+  }
+
+  /** Varyantın okuma + yazımları: önce `swap` (aktör kimliği), sonra `patch` / `without`, en son koşu kimliği. */
+  function callOf(scenario, variant, tokens) {
+    const swap = variant.swap || {};
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    const writes = replaceAll(scenario.writes, swap)
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+    return { reads: replaceAll(replaceAll(scenario.reads, swap), tokens), writes: replaceAll(writes, tokens) };
+  }
+
+  /** Repository'nin gönderdiği biçim: `tx` → okumalar + yazımlar tek transaction; değilse ön okuma + tek batch. */
+  async function run(db, scenario, { reads, writes }) {
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of reads) await tx.get(doc(db, path));
+          for (const write of writes) applyWrite(db, tx, write);
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of reads) await getDoc(doc(db, path));
+    const batch = writeBatch(db);
+    for (const write of writes) applyWrite(db, batch, write);
+    return batch.commit();
+  }
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  const scenarioOf = (call) => t30.scenarios.find((scenario) => scenario.call === call);
+
+  test('sözleşme: bağlamlar roles.json ile aynı; işaretçi yalnızca yan belgede, sayaçlı her yönetici yazımı yan belgeyi aynı işlemde yazar (W-64)', () => {
+    expect(t30.autoId).toBe(contract.t15.autoId);
+    expect(t30.increment).toBe(INCREMENT);
+    expect(t30.daysAhead).toBe(DAYS_AHEAD);
+    for (const [role, uid] of Object.entries(t30.actors)) expect(definition(role).uid).toBe(uid);
+    for (const scenario of t30.scenarios) {
+      const counters = scenario.writes.filter(
+        (write) => /^(clubs|events)\/[^/]+$/.test(write.path) && Object.values(write.data).some((v) => v && v[INCREMENT] !== undefined),
+      );
+      const side = scenario.writes.filter((write) => SIDE.test(write.path));
+      expect(side.length).toBe(counters.length > 0 ? 1 : 0);
+      for (const write of scenario.writes.filter((w) => /^(clubs|events)\/[^/]+$/.test(w.path))) {
+        expect(write.data).not.toHaveProperty('lastMembershipRef');
+        expect(write.data).not.toHaveProperty('lastRsvpRef');
+      }
+    }
+  });
+
+  describe.each(t30.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      const tokens = tokensFor(db);
+      await seedDocs(seedOf(scenario, {}));
+      const call = callOf(scenario, {}, tokens);
+
+      await assertSucceeds(run(db, scenario, call));
+
+      for (const write of call.writes) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const tokens = tokensFor(db);
+      const seed = seedOf(scenario, variant);
+      await seedDocs(seed);
+      const call = callOf(scenario, variant, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...call.writes.map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, scenario, call));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test('uçtan uca: onay → 30 sn içinde geri al (kararın GERÇEK sunucu zamanı) → aynı karar yeniden; günlük kaydı varken repository onu yeniden yazmaz', async () => {
+    const approve = scenarioOf('MembershipRepository.approve');
+    const undo = scenarioOf('MembershipRepository.undoDecision · onayı geri al');
+    const db = contextFor('board').firestore();
+    await seedDocs(seedOf(approve, {}));
+
+    await assertSucceeds(run(db, approve, callOf(approve, {}, tokensFor(db))));
+    await assertSucceeds(run(db, undo, callOf(undo, {}, {})));
+    expect(await readDoc('memberships/c01_u_pending')).toMatchObject({ status: 'pending', decidedBy: null });
+    expect(await readDoc('clubs/c01')).toMatchObject({ memberCount: 4 });
+
+    // Günlük kaydı (sabit kimlik) zaten var: ikinci onay günlüksüz geçer, kayıtla birlikte reddedilir (değiştirilemez).
+    const activity = approve.writes.findIndex((write) => write.path.startsWith('activity/'));
+    await assertFails(run(db, approve, callOf(approve, {}, tokensFor(db))));
+    await assertSucceeds(run(db, approve, callOf(approve, { without: [activity] }, tokensFor(db))));
+    expect(await readDoc('clubs/c01')).toMatchObject({ memberCount: 5 });
+  });
+});

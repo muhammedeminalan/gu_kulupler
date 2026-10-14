@@ -162,6 +162,8 @@ Map<String, List<_Case>> _table() => {
     ('11 madde', FieldValidators.conditions(_items(11)), _long),
     ('boş madde', FieldValidators.conditions(['ok', '']), _empty),
     ('121 karakter madde', FieldValidators.conditions([_x(121)]), _long),
+    // T-30: Rules `conditionsOk` maddeyi tek satır sayar.
+    ('satır sonlu madde', FieldValidators.conditions(['a\nb']), _format),
   ],
   'socialEmail': [
     ('serbest alan', FieldValidators.socialEmail('iletisim@kulup.org'), null),

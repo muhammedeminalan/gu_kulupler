@@ -626,15 +626,16 @@ void main() {
           .split('\n')
           .singleWhere((line) => line.startsWith('| M9 |'));
 
-      expect(row, contains('`isPres(c)` `member` ve `board` üyeyi'));
-      expect(row, contains("`isManager(c)` yalnızca `role=='member'`"));
+      // T-30 §4 c: hedef `member` ⇒ yönetim; hedef `board` ⇒ başkan; süper
+      // admin ikisi de.
       expect(
         row,
         contains(
-          '`isSuper()` `member` ve `board` üyeyi (başkan ve danışman '
-          'hariç)',
+          'hedef `member` ⇒ `managesClub(c)` (yönetim kurulu / başkan) ∨ '
+          '`isSuper()`',
         ),
       );
+      expect(row, contains('hedef `board` ⇒ `presidesClub(c)` ∨ `isSuper()`'));
       expect(row, contains("`resource.role in ['member','board']`"));
       // Eski, danışmanı kapsayan koşul geri gelmemeli (sayaç kayması).
       expect(row, isNot(contains("`resource.role != 'president'`")));
@@ -862,10 +863,10 @@ void main() {
         'docs/firestore-rules-spec.md',
       ).split('\n').singleWhere((line) => line.startsWith('| M10 |'));
 
-      expect(row, contains('`isPres(c)` veya `isSuper()`'));
-      expect(row, contains('yeni rol ∈ `member,board`'));
-      expect(row, contains('`president` rolüne **yalnızca devirle**'));
-      expect(row, contains("`resource.role in ['member','board']`"));
+      expect(row, contains('`presidesClub(c)`'));
+      expect(row, contains('veya `isSuper()`; yönetim kurulu rol veremez'));
+      expect(row, contains('mevcut ve yeni rol ∈ `member,board`, farklı'));
+      expect(row, contains('`president` yalnızca devirle (M11)'));
     });
 
     test('danışmanın rolü atamayla değiştirilemez (memberCount dışı üyelik '
@@ -972,8 +973,11 @@ void main() {
         'docs/firestore-rules-spec.md',
       ).split('\n').singleWhere((line) => line.startsWith('| M11 |'));
 
-      expect(row, contains('`isPres(c)` veya `isSuper()`'));
-      expect(row, contains(r'yeni `member\|board→president` (`active`)'));
+      expect(row, contains('`presidesClub(c)`'));
+      expect(row, contains('veya `isSuper()`'));
+      expect(row, contains(r'yeni `active ∧ member\|board → president`'));
+      // W-89 b: devir hedefinin hesabı etkin olmalı.
+      expect(row, contains("`users/{yeni}.status == 'active'`"));
     });
   });
 

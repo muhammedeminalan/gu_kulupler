@@ -160,9 +160,17 @@ abstract final class FirestoreFields {
   /// Danışman nesnesi (`ClubAdvisorModel`, K-A).
   static const String advisor = 'advisor';
 
-  /// Ayrılmış alan: istemci yazmaz (CD-137 — üyelik yolu herkese açık kulüp
-  /// belgesinde durmaz; CD-41'in bu alanı T-15'te kapatıldı).
+  /// Yönetici aktörlü `memberCount` geçişinin işaretçisi:
+  /// `clubs/{clubId}/private/counter` yan belgesinin alanı
+  /// (`memberships/{clubId}_{userId}` — W-64, T-30). Herkese açık kulüp
+  /// belgesinin alanı **değildir** (CD-137 madde 8q).
   static const String lastMembershipRef = 'lastMembershipRef';
+
+  /// Yönetici aktörlü etkinlik sayaç geçişinin (yoklama, terfi) işaretçisi:
+  /// `events/{eventId}/private/counter` yan belgesinin alanı
+  /// (`rsvps/{eventId}_{userId}` — W-64, W-77). Herkese açık etkinlik
+  /// belgesinin alanı **değildir**.
+  static const String lastRsvpRef = 'lastRsvpRef';
 
   /// `social` alt alanı: Instagram kullanıcı adı.
   static const String instagram = 'instagram';

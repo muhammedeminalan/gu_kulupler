@@ -257,8 +257,8 @@ describe('rsvps · yoklama ve terfi (yönetici; rules-spec §3.8 U yönetici; K-
     await seedFixture('base', undefined, seedEdit);
     await expectWrite(commit('board', attend()), expected);
     expect((await readDoc(E_LIVE)).attendedCount).toBe(expected === 'allow' ? 2 : 1);
-    // Geri alma da aynı pencereye bağlıdır.
-    await expectWrite(commit('board', payloads.attendWrites({ club: CLUB, uid: BOARD, userId: BOARD, attended: false })), expected);
+    // Geri alma da aynı pencereye bağlıdır (u_board'un kaydını başkan geri alır — kendi kaydı ret, §3.8).
+    await expectWrite(commit('president', payloads.attendWrites({ club: CLUB, uid: 'u_president', userId: BOARD, attended: false })), expected);
   });
 
   // Satır: [başlık, yazımlar, veri düzenlemesi?].

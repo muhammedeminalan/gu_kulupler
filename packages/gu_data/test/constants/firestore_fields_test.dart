@@ -55,6 +55,7 @@ const Map<String, String> _actual = {
   'pinnedPostId': FirestoreFields.pinnedPostId,
   'advisor': FirestoreFields.advisor,
   'lastMembershipRef': FirestoreFields.lastMembershipRef,
+  'lastRsvpRef': FirestoreFields.lastRsvpRef,
   'instagram': FirestoreFields.instagram,
   'web': FirestoreFields.web,
   'title': FirestoreFields.title,
@@ -182,10 +183,11 @@ const Map<String, String> _actual = {
 /// tekil ad sayısı. PLAN §4.2, §9.1, §9.5 ve §9.11 aynı sayıyı beyan eder
 /// (v1'deki 145 sayım hatasıydı — CD-129); beyan tablodan türeyen sayıyla
 /// karşılaştırılır.
-const int _tableDerivedCount = 143;
+const int _tableDerivedCount = 144;
 
-/// §9.6 alt bölüm sayısı (18 koleksiyon / alt belge tablosu).
-const int _tableCount = 18;
+/// §9.6 alt bölüm sayısı (18 koleksiyon / alt belge tablosu + T-30 yan sayaç
+/// belgesi §9.6.19).
+const int _tableCount = 19;
 
 /// §9.6 tablolarının ortak başlığı.
 const List<String> _tableHeader = [
@@ -214,11 +216,13 @@ const List<String> _embeddedModels = [
 
 /// CD-41 sayaç–belge referans alanları.
 ///
-/// `events.lastRsvpRef` T-22'de kaldırıldı (W-64: herkese açık etkinlik
-/// belgesi kimin katıldığını sızdırırdı); yönetici sayaç işaretçisinin yan
-/// belgesi (`events/{eventId}/private/counter`) ve alan sabiti T-30'dadır.
+/// `lastMembershipRef` ve `lastRsvpRef` herkese açık kulüp / etkinlik
+/// belgesinde değil, yönetici sayaç işaretçisinin yan belgesindedir
+/// (`clubs/{id}/private/counter`, `events/{id}/private/counter` — §9.6.19;
+/// W-64, T-22 / T-30).
 const List<String> _counterRefFields = [
   'lastMembershipRef',
+  'lastRsvpRef',
   'lastCommentRef',
   'lastPostRef',
 ];
@@ -422,13 +426,13 @@ void main() {
   final planDotted = _planDottedPaths(schema);
 
   group('T-08 · FirestoreFields · PLAN §9.6 okuyucu', () {
-    test('18 tablo okunur; BaseFields satırı 14 tabloda', () {
+    test('19 tablo okunur; BaseFields satırı 14 tabloda', () {
       expect({
         for (final f in schema.fields) f.section,
       }, hasLength(_tableCount));
-      // BaseFields taşımayan dört belge (§9.2): votes, activity, settings,
-      // announcementCounters.
-      expect(schema.baseRowCount, _tableCount - 4);
+      // BaseFields taşımayan beş belge (§9.2): votes, activity, settings,
+      // announcementCounters ve yan sayaç belgesi (§9.6.19).
+      expect(schema.baseRowCount, _tableCount - 5);
     });
 
     test('§9.2 ortak alanları: 6 anahtar', () {
@@ -484,7 +488,7 @@ void main() {
     });
 
     test('tablo başına alan sayısı (belge ID ve BaseFields satırları hariç): '
-        'toplam 162, tekil 124', () {
+        'toplam 165, tekil 125', () {
       final perSection = <String, int>{};
       for (final field in schema.fields) {
         perSection.update(field.section, (n) => n + 1, ifAbsent: () => 1);
@@ -493,7 +497,8 @@ void main() {
       expect(perSection, {
         '9.6.1': 11,
         '9.6.2': 5,
-        '9.6.3': 25,
+        // `lastMembershipRef` yan belgeye taşındı (W-64, T-30).
+        '9.6.3': 24,
         // Başvuru notu `note` §9.6.4'ten §9.6.5'e taşındı (CD-137).
         '9.6.4': 12,
         '9.6.5': 3,
@@ -511,9 +516,10 @@ void main() {
         '9.6.16': 4,
         '9.6.17': 6,
         '9.6.18': 5,
+        '9.6.19': 4,
       });
-      expect(schema.fields, hasLength(162));
-      expect({for (final f in schema.fields) f.json}, hasLength(124));
+      expect(schema.fields, hasLength(165));
+      expect({for (final f in schema.fields) f.json}, hasLength(125));
     });
   });
 
@@ -721,8 +727,8 @@ void main() {
   });
 
   group('T-08 · FirestoreFields · adlar ve değerler', () {
-    test('toplam 165 sabit: 143 anahtar + 22 yol', () {
-      expect(_actual, hasLength(165));
+    test('toplam 166 sabit: 144 anahtar + 22 yol', () {
+      expect(_actual, hasLength(166));
       expect(_flat.length + _dotted.length, _actual.length);
     });
 

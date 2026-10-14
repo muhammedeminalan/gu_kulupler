@@ -9,8 +9,8 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { TOOL_DIR } = require('./helpers');
 const {
-  ANONYMIZATION, COLLECTIONS, PATH_OF, SUPPORT_TICKET_NO, convert, convertDeleted, convertSupport, dayShiftMs, expectedCounts,
-  staticTablesDiff, validate, validateDeleted, validateSupport, withExtras,
+  ANONYMIZATION, COLLECTIONS, PATH_OF, SUPPORT_TICKET_NO, convert, convertDeleted, convertManagement, convertSupport, dayShiftMs,
+  expectedCounts, staticTablesDiff, validate, validateDeleted, validateManagement, validateSupport, withExtras,
 } = require('../seed/lib/convert');
 const { GuardError, encodeValue, resolveTarget } = require('../seed/lib/emulator_rest');
 const { placeholderPng } = require('../seed/placeholder_png');
@@ -88,6 +88,8 @@ test('seed · --dry-run ağa çıkmadan sayıları basar; bilinmeyen argüman ku
   assert.match(dry.stdout, /^\s+supportTickets\s+5$/m);
   // T-29: demo-deleted.json'daki silinmiş hesap (6 belge; Auth kimliği kalır — Q-11).
   assert.match(dry.stdout, /^\s+deleted \(T-29\)\s+6$/m);
+  // T-30: demo-management.json'daki yönetici geçmişi (2 karar × 3 belge + rol günlüğü + 2 yan sayaç belgesi).
+  assert.match(dry.stdout, /^\s+management \(T-30\)\s+9$/m);
   assert.match(dry.stdout, /^\s+auth\s+227$/m);
   assert.equal(dry.stdout.includes(raw.meta.demoPassword), false, 'parola çıktıya yazılmamalı');
   assert.equal(run(['--sil'], {}).code, 2);
@@ -137,7 +139,8 @@ test('seed · §9.12 kuralları: kullanıcı, kulüp, üyelik', () => {
   assert.equal(docs.clubs.c01.pinnedPostId, 'p01');
   assert.equal(Object.values(docs.clubs).filter((c) => c.pinnedPostId !== null).length, 8);
   assert.equal(docs.clubs.c01.createdBy, 'u_admin');
-  assert.equal(docs.clubs.c01.lastMembershipRef, null);
+  // Sayaç işaretçisi kulüp belgesinde yok (W-64, T-30): yan belge yalnızca yönetici Tx'inde yazılır.
+  assert.equal('lastMembershipRef' in docs.clubs.c01, false);
 
   const membership = docs.memberships.c01_u_p_c01;
   assert.equal('stale' in membership, false);
@@ -392,5 +395,51 @@ test('seed · T-29 silinmiş hesap: alanlar anonim (Dart Anonymization ile aynı
   at('memberships/c01_u_deleted').status = 'active';
   at('memberships/c01_u_deleted/private/contact').note = 'not';
   const problems = validateDeleted(broken, raw);
+  assert.equal(problems.length, 3, problems.join('\n'));
+});
+
+test('seed · T-30 yönetici geçmişi: ret (retryAfter = karar + 7 gün), geri alınmış onay (pending, günlük kalır), rol '
+  + 'günlüğü ve yan sayaç belgeleri FirestoreIds / Rules biçiminde; memberCount değişmez; validate bozuğu yakalar', () => {
+  const extras = JSON.parse(fs.readFileSync(path.join(TOOL_DIR, 'seed', 'demo-management.json'), 'utf8'));
+  const management = convertManagement(raw, extras, { now: TODAY });
+  assert.deepEqual(validateManagement(management, raw), []);
+  const docs = Object.fromEntries(management.writes);
+  assert.deepEqual(Object.keys(docs), [
+    'memberships/c01_u002',
+    'memberships/c01_u002/private/contact',
+    'activity/c01_u_elif_application_rejected_u002_0',
+    'memberships/c01_u003',
+    'memberships/c01_u003/private/contact',
+    'activity/c01_u_elif_application_approved_u003_0',
+    'activity/c01_u_p_c01_role_changed_u_elif_board_0',
+    'clubs/c01/private/counter',
+    'events/e18/private/counter',
+  ]);
+  const rejected = docs['memberships/c01_u002'];
+  assert.equal(rejected.status, 'rejected');
+  assert.equal(rejected.decidedBy, 'u_elif');
+  assert.equal(rejected.retryAfter.getTime() - rejected.decidedAt.getTime(), 7 * DAY_MS);
+  assert.equal(docs['memberships/c01_u003'].status, 'pending');
+  assert.equal(docs['memberships/c01_u003'].decidedBy, null);
+  assert.deepEqual(docs['clubs/c01/private/counter'].lastMembershipRef, 'memberships/c01_u154');
+  assert.deepEqual(Object.keys(docs['events/e18/private/counter']).sort(), ['clubId', 'lastRsvpRef', 'updatedAt']);
+  // Sayaçlar tutarlı: yeni üyelikler sayılmaz (reddedilen / bekleyen), kulüp belgesi yazılmaz.
+  assert.equal(management.writes.some(([p]) => /^clubs\/[^/]+$/.test(p)), false);
+  assert.equal(atToday.docs.clubs.c01.memberCount, Object.values(atToday.docs.memberships)
+    .filter((m) => m.clubId === 'c01' && m.status === 'active' && m.role !== 'advisor').length);
+  // Kimlik biçimi Dart FirestoreIds ile aynı; süre ve not sınırı Limits ile aynı.
+  const ids = fs.readFileSync(path.join(REPO, 'packages/gu_data/lib/src/constants/firestore_ids.dart'), 'utf8');
+  assert.match(ids, /static String managerActivity\(/);
+  assert.match(ids, /_roleChanged = 'role_changed'/);
+  const limits = fs.readFileSync(path.join(REPO, 'packages/gu_data/lib/src/constants/limits.dart'), 'utf8');
+  assert.match(limits, /reapplyCooldown = Duration\(days: 7\)/);
+  assert.match(limits, /rejectNoteMax = 200;/);
+
+  const broken = structuredClone(management);
+  const at = (docPath) => broken.writes.find(([p]) => p === docPath)[1];
+  at('memberships/c01_u002').decidedBy = 'u_mehmet';
+  at('memberships/c01_u003').decidedBy = 'u_elif';
+  at('clubs/c01/private/counter').lastMembershipRef = 'memberships/c02_u_elif';
+  const problems = validateManagement(broken, raw);
   assert.equal(problems.length, 3, problems.join('\n'));
 });

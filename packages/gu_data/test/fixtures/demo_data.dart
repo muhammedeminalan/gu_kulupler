@@ -307,7 +307,6 @@ final class _Converter {
           'advisor': _advisor(club['advisorId']! as String),
           'status': club['status'],
           'suspendReason': club['suspendReason'],
-          'lastMembershipRef': null,
           'createdBy': DemoDataFixture.superAdminId,
           ..._base(_time(club, 'createdAt')),
         };

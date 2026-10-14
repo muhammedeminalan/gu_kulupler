@@ -189,14 +189,20 @@ abstract final class FieldValidators {
       _text(value, max: Limits.clubAboutMax);
 
   /// `clubs.conditions`: en çok `Limits.conditionsMax` madde; her madde 1 –
-  /// `Limits.conditionTextMax`.
+  /// `Limits.conditionTextMax`, tek satır (satır sonu → `invalidFormat`;
+  /// Rules `conditionsOk` listeyi satır sonuyla birleştirip doğrular — T-30).
   static FieldError? conditions(List<String> items) {
     if (items.length > Limits.conditionsMax) return FieldError.tooLong;
     return _firstError(
       items,
-      (item) => _text(item, min: 1, max: Limits.conditionTextMax),
+      (item) => item.contains(_lineBreak)
+          ? FieldError.invalidFormat
+          : _text(item, min: 1, max: Limits.conditionTextMax),
     );
   }
+
+  /// Koşul maddesinde yasak karakter (Rules `[^\n]`).
+  static const String _lineBreak = '\n';
 
   /// `clubs.social.email`: biçimce geçerli adres (alan adı kısıtı yok).
   static FieldError? socialEmail(String value) =>

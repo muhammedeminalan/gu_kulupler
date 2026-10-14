@@ -417,7 +417,8 @@ void main() {
       expect(club('c01').createdBy, DemoDataFixture.superAdminId);
       expect(club('c01').logoPath, isNull);
       expect(club('c01').coverPath, isNull);
-      expect(club('c01').lastMembershipRef, isNull);
+      // Sayaç işaretçisi kulüp belgesinde yok (W-64, T-30).
+      expect(club('c01').toJson(), isNot(contains('lastMembershipRef')));
       expect(club('c01').social.instagram, '@guk_yazilim');
       expect(club('c14').status, ClubStatus.suspended);
       expect(club('c14').suspendReason, isNotEmpty);

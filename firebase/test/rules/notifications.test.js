@@ -4,7 +4,8 @@
 //  1. Rol × işlem matrisi: `expectations/notifications.json` (okuma / liste yalnızca sahibi; okundu, soft delete,
 //     geri al yalnızca sahibi; `event_new` ve `event_reminder` üreticileri; `system` istemciye kapalı; delete yok).
 //  2. Tür bazlı create — her açık tür için izinli üretici ve reddedilen üreticiler (sıradan üye, danışman, başka
-//     kulübün yöneticisi, süper admin, kendine sahte bildirim, alakasız alıcı, olaysız bildirim).
+//     kulübün yöneticisi, süper admin, kendine sahte bildirim, alakasız alıcı, olaysız bildirim). T-30: yönetici
+//     kararlarının dört türü (olay belgesi = alıcının hedef üyeliği — W-83).
 //  3. Kimlik (W-49): `{type}_{eventKey}_{userId}` biçimi, tekrarlanan olay (yeni anahtar = yeni belge), aynı
 //     olayın ikinci `set`'i (= update → ret), birleşim belirsizliği (okunan belgenin alanları karşılaştırılır).
 //  6. Güvenlik incelemesi (CD-148): tek seferlik olayda kimlik olayın kimliğidir (duyuru / iptal / başvuru —
@@ -188,12 +189,40 @@ describe('notifications · event_reminder (cihaz kendi belgesini yazar — CD-44
   });
 });
 
-describe('notifications · kapalı türler (üreticileri T-30 / T-37; new_report hiç üretilmez — CD-37; system Admin SDK)', () => {
+// T-30 (W-83): kritik yönetici bildirimleri — olay belgesi alıcının hedef üyeliğidir (aynı işlemde doğru geçiş,
+// `decidedBy == uid()`, `decidedAt` / `updatedAt == request.time`); kimlik rastgele olay anahtarı (`keyedIdOk`).
+describe('notifications · yönetici kararları (application_approved / rejected, removed_from_club, role_changed — T-30)', () => {
+  const approve = (uid, extra) => payloads.approveWrites({ club: CLUB, uid, ...extra });
+  const notice = (type, recipient, refs, key = EVENT_KEY) => one(type, recipient, refs, { key });
+  /** Taban işlemin bildirimini değiştirir (alıcı / tür / refs / kimlik). */
+  const swap = (writes, type, recipient, refs, key) => ({ ...drop(writes, 'notification'), ...notice(type, recipient, refs, key) });
+  const drop = (writes, name) => Object.fromEntries(Object.entries(writes).filter(([k]) => k !== name));
+  // Satır: [başlık, aktör, yazımlar, beklenti, veri düzenlemesi?].
   test.each([
-    ['application_approved', 'board', 'u_pending', { clubId: CLUB }],
-    ['application_rejected', 'president', 'u_pending', { clubId: CLUB }],
-    ['removed_from_club', 'president', 'u_member', { clubId: CLUB }],
-    ['role_changed', 'president', 'u_member', { clubId: CLUB, role: 'board' }],
+    ['onay → başvurana application_approved', 'board', () => approve('u_board'), 'allow'],
+    ['red → başvurana application_rejected', 'president', () => payloads.rejectWrites({ club: CLUB, uid: 'u_president' }), 'allow'],
+    ['çıkarma → çıkarılana removed_from_club', 'board', () => payloads.removeWrites({ club: CLUB, uid: 'u_board' }), 'allow'],
+    ['süper adminin çıkarması → removed_from_club', 'super', () => payloads.removeWrites({ club: CLUB, uid: 'u_super' }), 'allow'],
+    ['rol → role_changed (refs.role yeni rol)', 'president', () => payloads.roleWrites({ club: CLUB, uid: 'u_president' }), 'allow'],
+    ['devir → iki role_changed (yeni başkan + eski başkanın kendisi)', 'president', () => payloads.transferWrites({ club: CLUB, uid: 'u_president' }), 'allow'],
+    ['onay bildirimi başka alıcıya (hedef üyelik değil)', 'board', () => swap(approve('u_board'), 'application_approved', 'u_member', { clubId: CLUB }), 'deny'],
+    ['onayda ret bildirimi (yanlış tür)', 'board', () => swap(approve('u_board'), 'application_rejected', 'u_pending', { clubId: CLUB }), 'deny'],
+    ['onay bildirimi kararsız (üyelik yazılmadı)', 'board', () => notice('application_approved', 'u_pending', { clubId: CLUB }), 'deny'],
+    ['onay bildirimi tek seferlik kimlikle (rastgele anahtar değil)', 'board', () => swap(approve('u_board'), 'application_approved', 'u_pending', { clubId: CLUB }, 'u_pending'), 'deny'],
+    ['onay bildirimi refs fazladan alan (role)', 'board', () => swap(approve('u_board'), 'application_approved', 'u_pending', { clubId: CLUB, role: 'member' }), 'deny'],
+    ['onay bildirimi başka kulüp refs ile', 'board', () => swap(approve('u_board'), 'application_approved', 'u_pending', { clubId: OTHER_CLUB }), 'deny'],
+    ['rol bildirimi yanlış rol (refs.role ≠ yeni rol)', 'president', () => swap(payloads.roleWrites({ club: CLUB, uid: 'u_president' }), 'role_changed', 'u_member', { clubId: CLUB, role: 'president' }), 'deny'],
+    ['rol bildirimi rol değişmeden', 'president', () => notice('role_changed', 'u_board', { clubId: CLUB, role: 'board' }), 'deny'],
+    ['danışman karar bildirimi yazamaz (Q-09; seed kararı aynı anda bile)', 'advisor', () => notice('application_approved', 'u_pending', { clubId: CLUB }), 'deny'],
+    ['başka kulübün yöneticisi', 'otherManager', () => notice('removed_from_club', 'u_member', { clubId: CLUB }), 'deny'],
+  ])('%s → %s', async (_title, role, build, expected, edit = NO_EDIT) => {
+    await seedFixture('base', undefined, edit);
+    await expectWrite(commit(role, build()), expected);
+  });
+});
+
+describe('notifications · kapalı türler (üreticileri T-37; new_report hiç üretilmez — CD-37; system Admin SDK)', () => {
+  test.each([
     ['report_resolved', 'super', 'u_member', { reportId: 'u_member_post_p01' }],
     ['new_report', 'member', 'u_super', { reportId: 'u_member_post_p01' }],
     ['system', 'super', 'u_member', { textKey: 'welcome' }],

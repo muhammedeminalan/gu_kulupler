@@ -1,11 +1,11 @@
 'use strict';
 // T-10 — varsayılan ret (rules-spec §1.1): Rules iskeletinde her koleksiyon × her bağlam için
 // get / list / create / update reddedilir. Koleksiyon listesi `expectations/*.json` dosyalarından
-// (PLAN §11.1'in 18 satırı + T-22'nin yan belgesi `events/{id}/private/counter` = 19 yol) gelir ve
+// (PLAN §11.1'in 18 satırı + T-22'nin yan belgesi `events/{id}/private/counter` + T-30'un `clubs/{id}/private/counter` = 20 yol) gelir ve
 // `firestore.rules` `match` bloklarıyla karşılaştırılır.
 // Bir koleksiyon sahibi task'ta açıldığında o satır buradan düşer (aşağıdaki OPENED listesi) ve
 // kendi `rules/<koleksiyon>.test.js` matrisine taşınır; kalanlar kapalı kalmaya devam eder.
-// T-28 ile 19 satırın tamamı açıldı: koleksiyon bazlı ret bloğu boş kalır (yalnızca koleksiyon grubu
+// T-28 ile 19 satırın tamamı açıldı (T-30'un yan belgesi açık doğar): koleksiyon bazlı ret bloğu boş kalır (yalnızca koleksiyon grubu
 // `private` — T-37 — ve tanımsız yollar kapalıdır; aşağıdaki bloklar onları sınar).
 const fs = require('node:fs');
 const os = require('node:os');
@@ -33,7 +33,7 @@ const budget = require('../helpers/budget');
  * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
  * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
  * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`. T-25: `notifications`.
- * T-28: `supportTickets`.
+ * T-28: `supportTickets`. T-30: `clubs/private` (yönetici sayaç işaretçisi — W-64).
  */
 const OPENED = [
   'users', 'users/private', 'settings',
@@ -42,6 +42,7 @@ const OPENED = [
   'events', 'events/private', 'rsvps',
   'notifications',
   'supportTickets',
+  'clubs/private',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -57,8 +58,8 @@ const groupMatches = matches.filter((m) => m.recursive && m.names.length > 0);
 const seedTarget = (exp) => seedDocs({ [exp.docPath]: targetDoc() });
 
 describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
-  test('19 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22)', () => {
-    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 19 }, (_, i) => i + 1));
+  test('20 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22, clubs/private — T-30)', () => {
+    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
     expect(expectations.map((e) => e.match).sort()).toEqual(collectionMatches.map((m) => m.pattern).sort());
   });
 
@@ -83,7 +84,7 @@ describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
 
 const CLOSED = expectations.filter((e) => !OPENED.includes(e.collection));
 
-test('T-28 sonrası kapalı koleksiyon satırı kalmadı (19 / 19 açık)', () => {
+test('T-28 sonrası kapalı koleksiyon satırı kalmadı (20 / 20 açık)', () => {
   expect(CLOSED.map((e) => e.collection)).toEqual([]);
 });
 
@@ -176,7 +177,7 @@ describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge y
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 
-  test('temel veri kümesi 19 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
+  test('temel veri kümesi 20 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
     const docs = baseDocs();
     for (const exp of expectations) expect(Object.keys(docs)).toContain(exp.docPath);
     await seedBase();

@@ -288,37 +288,134 @@ function leaveWrites({ club, uid, priorCount = 0 }) {
   };
 }
 
-/** Yönetici geçişlerinin (T-30'da açılır) hedefleri: bekleyen başvuru ve sıradan üye. */
+/** Yönetici geçişlerinin (T-30) varsayılan hedefleri: bekleyen başvuru ve sıradan üye. */
 const PENDING_TARGET = 'u_pending';
 const MEMBER_TARGET = 'u_member';
 
-/** M5 onay batch'i (T-30): bugün her bağlam için ret. */
-function approveWrites({ club, uid }) {
+// ── T-30 · yönetici geçişleri (sözleşme docs/plans/T-30.md §4 a) ─────────────────────────────────
+// Repository her geçişi tek transaction'da yazar; burada aynı yazımlar tek WriteBatch'tir (Rules için aynı
+// atomiklik). Karar alanları sunucu zamanı (`decidedAt`) + aktör (`decidedBy`); `retryAfter` istemci saatinden
+// `now + 7 gün` (Rules ± `clockSkewTolerance`).
+
+/** Kulübün yönetici sayaç işaretçisi (W-64): `clubs/{clubId}/private/counter`. */
+const clubCounterPath = (club) => `clubs/${requireId(club, 'club')}/private/counter`;
+/** Yan belge — Dart `FirestoreIds.membershipRef` (`memberships/{clubId}_{userId}`, başında `/` yok). */
+const clubCounterData = (club, userId, extra) => ({ clubId: club, lastMembershipRef: membershipPath(club, userId), updatedAt: serverTimestamp(), ...extra });
+
+/** Dart `FirestoreIds.managerActivity`: `activity/{clubId}_{actorId}_{kind}_{userId}_{priorCount}`. */
+const managerActivityPath = (club, actor, kind, userId, priorCount = 0) =>
+  `activity/${requireId(club, 'club')}_${requireId(actor, 'actor')}_${kind}_${requireId(userId, 'userId')}_${priorCount}`;
+/** Dart `FirestoreIds.roleActivity`: `activity/{clubId}_{actorId}_role_changed_{userId}_{role}_{priorCount}`. */
+const roleActivityPath = (club, actor, userId, role, priorCount = 0) =>
+  `activity/${requireId(club, 'club')}_${requireId(actor, 'actor')}_role_changed_${requireId(userId, 'userId')}_${role}_${priorCount}`;
+/** Yönetici günlüğü: `refs` = kararın hedefi (+ rol türünde yeni rol). */
+function managerActivity(club, actor, kind, userId, extra) {
+  return { clubId: club, actorId: actor, kind, refs: { userId }, createdAt: serverTimestamp(), ...extra };
+}
+function roleActivity(club, actor, userId, role, extra) {
+  return { clubId: club, actorId: actor, kind: 'role_changed', refs: { userId, role }, createdAt: serverTimestamp(), ...extra };
+}
+/** Kritik yönetici bildirimi (`NotificationWriter.addToTransaction`, rastgele olay anahtarı). */
+function managerNotice(type, userId, refs, key) {
+  return set(notificationPath(type, key || EVENT_KEY, userId), notificationCreate(type, userId, refs));
+}
+/** Sunucu zamanı + 7 gün (istemci saati; `Limits.reapplyCooldown`). */
+const cooldownFromNow = (skewMs = 0) => Timestamp.fromMillis(Date.now() + REAPPLY_COOLDOWN_MS + skewMs);
+const REJECT_NOTE = 'Kontenjan doldu.';
+const REMOVE_NOTE = 'Kulüp kurallarına uyulmadı.';
+
+/** `MembershipRepository.approve` — M5: üyelik `active` + `memberCount +1` + yan belge + günlük + bildirim. */
+function approveWrites({ club, uid, target = PENDING_TARGET, priorCount = 0, key }) {
   return {
-    membership: update(membershipPath(club, PENDING_TARGET), {
-      status: 'active',
-      role: 'member',
-      decidedAt: serverTimestamp(),
-      decidedBy: uid,
-      ...baseUpdate(),
-    }),
+    membership: update(membershipPath(club, target), { status: 'active', role: 'member', decidedAt: serverTimestamp(), decidedBy: uid, ...baseUpdate() }),
     club: update(`clubs/${club}`, memberCountBump(1)),
+    counter: set(clubCounterPath(club), clubCounterData(club, target)),
+    activity: set(managerActivityPath(club, uid, 'application_approved', target, priorCount), managerActivity(club, uid, 'application_approved', target)),
+    notification: managerNotice('application_approved', target, { clubId: club }, key),
   };
 }
 
-/** M9 çıkarma batch'i (T-30): bugün her bağlam için ret. */
-function removeWrites({ club, uid }) {
+/** `MembershipRepository.reject` — M6: karar alanları + `retryAfter` + neden / not + günlük + bildirim (sayaç yok). */
+function rejectWrites({ club, uid, target = PENDING_TARGET, priorCount = 0, key, reason = 'quota', note = REJECT_NOTE }) {
+  const decision = { status: 'rejected', decidedAt: serverTimestamp(), decidedBy: uid, retryAfter: cooldownFromNow(), rejectReason: reason };
+  if (note !== null) decision.rejectNote = note;
   return {
-    membership: update(membershipPath(club, MEMBER_TARGET), {
+    membership: update(membershipPath(club, target), { ...decision, ...baseUpdate() }),
+    activity: set(managerActivityPath(club, uid, 'application_rejected', target, priorCount), managerActivity(club, uid, 'application_rejected', target)),
+    notification: managerNotice('application_rejected', target, { clubId: club }, key),
+  };
+}
+
+/** `MembershipRepository.undoDecision` — M12a: `pending`'e dönüş, karar alanları null; onay geri alınırsa −1 + yan belge. */
+function undoDecisionWrites({ club, target = PENDING_TARGET, approved = true }) {
+  const writes = { membership: update(membershipPath(club, target), { status: 'pending', ...DECISION_NULLS, ...baseUpdate() }) };
+  if (approved) {
+    writes.club = update(`clubs/${club}`, memberCountBump(-1));
+    writes.counter = set(clubCounterPath(club), clubCounterData(club, target));
+  }
+  return writes;
+}
+
+/** `MembershipRepository.remove` — M9: `removed` + karar alanları + `memberCount −1` + yan belge + günlük + bildirim. */
+function removeWrites({ club, uid, target = MEMBER_TARGET, priorCount = 0, key }) {
+  return {
+    membership: update(membershipPath(club, target), {
       status: 'removed',
       decidedAt: serverTimestamp(),
       decidedBy: uid,
-      retryAfter: Timestamp.fromMillis(Date.now() + REAPPLY_COOLDOWN_MS),
+      retryAfter: cooldownFromNow(),
       rejectReason: 'other',
-      rejectNote: '',
+      rejectNote: REMOVE_NOTE,
       ...baseUpdate(),
     }),
     club: update(`clubs/${club}`, memberCountBump(-1)),
+    counter: set(clubCounterPath(club), clubCounterData(club, target)),
+    activity: set(managerActivityPath(club, uid, 'member_removed', target, priorCount), managerActivity(club, uid, 'member_removed', target)),
+    notification: managerNotice('removed_from_club', target, { clubId: club }, key),
+  };
+}
+
+/** `MembershipRepository.undoRemoval` — M12b: `active`, rol `member`, karar alanları null + `+1` + yan belge. */
+function undoRemovalWrites({ club, target = MEMBER_TARGET, role = 'member' }) {
+  return {
+    membership: update(membershipPath(club, target), { status: 'active', role, ...DECISION_NULLS, ...baseUpdate() }),
+    club: update(`clubs/${club}`, memberCountBump(1)),
+    counter: set(clubCounterPath(club), clubCounterData(club, target)),
+  };
+}
+
+/** `MembershipRepository.changeRole` — M10: yalnızca `role` + günlük + `role_changed` bildirimi. */
+function roleWrites({ club, uid, target = MEMBER_TARGET, role = 'board', priorCount = 0, key }) {
+  return {
+    membership: update(membershipPath(club, target), { role, ...baseUpdate() }),
+    activity: set(roleActivityPath(club, uid, target, role, priorCount), roleActivity(club, uid, target, role)),
+    notification: managerNotice('role_changed', target, { clubId: club, role }, key),
+  };
+}
+
+/**
+ * `MembershipRepository.transferPresidency` — M11, TEK işlem: eski başkan `board`, yenisi `president`,
+ * `clubs.presidentId` + günlük (tek kayıt, hedef yeni başkan) + iki `role_changed` bildirimi (iki olay anahtarı).
+ */
+function transferWrites({ club, uid, from = 'u_president', to = 'u_board', priorCount = 0 }) {
+  return {
+    from: update(membershipPath(club, from), { role: 'board', ...baseUpdate() }),
+    to: update(membershipPath(club, to), { role: 'president', ...baseUpdate() }),
+    club: update(`clubs/${club}`, { presidentId: to, ...baseUpdate() }),
+    activity: set(roleActivityPath(club, uid, to, 'president', priorCount), roleActivity(club, uid, to, 'president')),
+    notifyTo: managerNotice('role_changed', to, { clubId: club, role: 'president' }, EVENT_KEY),
+    notifyFrom: managerNotice('role_changed', from, { clubId: club, role: 'board' }, EVENT_KEY_2),
+  };
+}
+
+/** `ManagementRepository.updateClubSettings` — `ClubSettingsPatch.toJson()` + `updatedAt`. */
+const clubSettingsPatch = (extra) => ({ summary: 'Güncel özet.', applicationsOpen: false, ...baseUpdate(), ...extra });
+/** Otomatik kimlikli `settings_changed` günlüğü (ActivityDraft.id: null). */
+const SETTINGS_ACTIVITY_PATH = 'activity/AutoSettingsLog0000001';
+function settingsWrites({ club, uid }, extra) {
+  return {
+    club: update(`clubs/${club}`, clubSettingsPatch(extra)),
+    activity: set(SETTINGS_ACTIVITY_PATH, { clubId: club, actorId: uid, kind: 'settings_changed', refs: {}, createdAt: serverTimestamp() }),
   };
 }
 
@@ -900,20 +997,14 @@ const variants = new Map([
   ['settingsClubUpdate', (ctx) => settingsClubUpdate(ctx.club)],
   // T-15 · clubs (yazımlar T-30 / T-37'de açılır; sayaç dalı tek başına geçmez)
   ['clubCreate', (ctx) => clubCreate(ctx.uid)],
-  ['clubSettingsUpdate', () => ({ summary: 'Güncel özet.', applicationsOpen: false, ...baseUpdate() })],
+  ['clubSettingsUpdate', () => clubSettingsPatch()],
+  ['clubLockedField', () => clubSettingsPatch({ name: 'Yeni Ad' })],
+  ['clubPresidentAlone', () => ({ presidentId: 'u_board', ...baseUpdate() })],
   ['clubSuspend', () => ({ status: 'suspended', suspendReason: SUSPEND_REASON, ...baseUpdate() })],
   ['clubBumpAlone', () => memberCountBump(1)],
   // T-15 · memberships (tek yazımlı geçişler; çok yazımlılar aşağıda `batches`)
   ['membershipCancel', () => ({ status: 'cancelled', ...baseUpdate() })],
-  ['membershipReject', (ctx) => ({
-    status: 'rejected',
-    decidedAt: serverTimestamp(),
-    decidedBy: ctx.uid,
-    retryAfter: Timestamp.fromMillis(Date.now() + REAPPLY_COOLDOWN_MS),
-    rejectReason: 'quota',
-    rejectNote: '',
-    ...baseUpdate(),
-  })],
+  ['membershipReject', (ctx) => rejectWrites({ club: ctx.club, uid: ctx.uid }).membership.data],
   ['membershipRole', () => ({ role: 'board', ...baseUpdate() })],
   // T-15 · memberships/private/contact
   ['contactCreate', (ctx) => contactCreate(emailOf(ctx.role), APPLICATION_NOTE)],
@@ -931,8 +1022,10 @@ const variants = new Map([
   ['activityMemberJoined', (ctx) => activityOwn(ctx.club, ctx.uid, 'member_joined')],
   ['activityMemberLeft', (ctx) => activityOwn(ctx.club, ctx.uid, 'member_left')],
   ['activityPostCreated', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'post_created', refs: { postId: 'p01' }, createdAt: serverTimestamp() })],
-  ['activityRoleChanged', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'role_changed', refs: { userId: MEMBER_TARGET, role: 'board' }, createdAt: serverTimestamp() })],
+  ['activityRoleChanged', (ctx) => roleActivity(ctx.club, ctx.uid, MEMBER_TARGET, 'board')],
   ['activitySettingsChanged', (ctx) => ({ clubId: ctx.club, actorId: ctx.uid, kind: 'settings_changed', refs: {}, createdAt: serverTimestamp() })],
+  // T-30 · clubs/private/counter (eşlik eden yönetici sayaç geçişi OLMADAN: ret)
+  ['clubCounterAlone', (ctx) => clubCounterData(ctx.club, MEMBER_TARGET)],
   // T-19 · clubs (`pinnedPostId` tek başına: eşlik eden gönderi yazımı yok)
   ['clubPinAlone', () => ({ pinnedPostId: 'p01', ...baseUpdate() })],
   // T-19 · posts (tek yazımlı yollar; çok yazımlılar aşağıda `batches`)
@@ -1004,8 +1097,14 @@ const batches = new Map([
   ['reapplyPendingBatch', (ctx) => reapplyWrites({ club: ctx.club, uid: ctx.uid, status: 'pending' })],
   ['reapplyActiveBatch', (ctx) => reapplyWrites({ club: ctx.club, uid: ctx.uid, status: 'active' })],
   ['leaveBatch', (ctx) => leaveWrites({ club: ctx.club, uid: ctx.uid })],
+  // T-30 (yönetici geçişleri; aktör = bağlam)
   ['approveBatch', (ctx) => approveWrites({ club: ctx.club, uid: ctx.uid })],
+  ['rejectBatch', (ctx) => rejectWrites({ club: ctx.club, uid: ctx.uid })],
   ['removeBatch', (ctx) => removeWrites({ club: ctx.club, uid: ctx.uid })],
+  ['removeBoardBatch', (ctx) => removeWrites({ club: ctx.club, uid: ctx.uid, target: 'u_board' })],
+  ['roleBatch', (ctx) => roleWrites({ club: ctx.club, uid: ctx.uid })],
+  ['transferBatch', (ctx) => transferWrites({ club: ctx.club, uid: ctx.uid })],
+  ['settingsBatch', (ctx) => settingsWrites({ club: ctx.club, uid: ctx.uid })],
   // T-19
   ['postCreateBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid })],
   ['pollCreateBatch', (ctx) => createPostWrites({ club: ctx.club, uid: ctx.uid, type: 'poll' })],
@@ -1090,7 +1189,24 @@ module.exports = {
   reapplyWrites,
   leaveWrites,
   approveWrites,
+  rejectWrites,
+  undoDecisionWrites,
   removeWrites,
+  undoRemovalWrites,
+  roleWrites,
+  transferWrites,
+  clubSettingsPatch,
+  settingsWrites,
+  SETTINGS_ACTIVITY_PATH,
+  clubCounterPath,
+  clubCounterData,
+  managerActivityPath,
+  roleActivityPath,
+  managerActivity,
+  roleActivity,
+  cooldownFromNow,
+  REJECT_NOTE,
+  REMOVE_NOTE,
   reportCreate,
   blockCreate,
   DAY_MS,

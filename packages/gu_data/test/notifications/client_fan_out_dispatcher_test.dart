@@ -11,7 +11,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseException, WriteBatch;
+    show FirebaseException, Transaction, WriteBatch;
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
@@ -33,6 +33,8 @@ final class _RecordingWriter implements NotificationWriter {
   final List<({WriteBatch batch, NotificationDraft draft, String to})> added =
       [];
   final List<({NotificationDraft draft, List<String> ids})> chunks = [];
+  final List<({Transaction tx, NotificationDraft draft, String to})> addedInTx =
+      [];
 
   /// `createMany` çağrısı başına sonuç; `null` → yazılan = parça boyu.
   final List<FirestoreResult<int>?> script = [];
@@ -57,6 +59,15 @@ final class _RecordingWriter implements NotificationWriter {
   }
 
   @override
+  void addToTransaction(
+    Transaction transaction,
+    NotificationDraft draft, {
+    required String recipientId,
+  }) {
+    addedInTx.add((tx: transaction, draft: draft, to: recipientId));
+  }
+
+  @override
   Future<FirestoreResult<int>> createMany(
     NotificationDraft draft,
     List<String> recipientIds,
@@ -70,6 +81,9 @@ final class _RecordingWriter implements NotificationWriter {
   /// Fan-out ile yazılan alıcılar (tüm parçalar, sırayla).
   List<String> get fannedOut => [for (final c in chunks) ...c.ids];
 }
+
+/// Hiçbir üyesi çağrılmayan transaction (yazıcı kaydeder).
+final class _StubTransaction extends Fake implements Transaction {}
 
 /// Yalnızca [managersOf] kullanılan alıcı çözücü.
 final class _FakeResolver extends Fake implements RecipientResolver {
@@ -342,6 +356,85 @@ void main() {
         expect(notes.single.id, startsWith('waitlist_promoted_'));
         expect(notes.single.id, endsWith('_u1'));
       });
+    });
+  });
+
+  group('T-30 · ClientFanOutDispatcher · kritik türler (aynı transaction)', () {
+    test("her …InTransaction üyesi tek belgeyi çağıranın transaction'ına "
+        'ekler (batch karşılığıyla aynı tür / refs; batch ve fan-out yok); '
+        'geçersiz alıcı çağrı anında invalid-argument fırlatır', () async {
+      final tx = _StubTransaction();
+      final results = [
+        await dispatcher.notifyApplicationDecidedInTransaction(
+          clubId: 'c01',
+          applicantId: 'u1',
+          approved: true,
+          transaction: tx,
+        ),
+        await dispatcher.notifyApplicationDecidedInTransaction(
+          clubId: 'c01',
+          applicantId: 'u1',
+          approved: false,
+          transaction: tx,
+        ),
+        await dispatcher.notifyRemovedInTransaction(
+          clubId: 'c01',
+          userId: 'u2',
+          transaction: tx,
+        ),
+        await dispatcher.notifyRoleChangedInTransaction(
+          clubId: 'c01',
+          userId: 'u3',
+          role: ClubRole.board,
+          transaction: tx,
+        ),
+        await dispatcher.notifyWaitlistPromotedInTransaction(
+          eventId: 'e01',
+          clubId: 'c01',
+          userId: 'u4',
+          transaction: tx,
+        ),
+      ];
+
+      expect([
+        for (final r in results) r.dataOrNull,
+      ], List.filled(5, report(1, 1)));
+      expect(writer.added, isEmpty);
+      expect(writer.chunks, isEmpty);
+      expect([for (final a in writer.addedInTx) a.tx], everyElement(same(tx)));
+      expect(
+        [for (final a in writer.addedInTx) (a.draft.type, a.to)],
+        [
+          (NotificationType.applicationApproved, 'u1'),
+          (NotificationType.applicationRejected, 'u1'),
+          (NotificationType.removedFromClub, 'u2'),
+          (NotificationType.roleChanged, 'u3'),
+          (NotificationType.waitlistPromoted, 'u4'),
+        ],
+      );
+      expect(
+        writer.addedInTx[3].draft.refs,
+        const NotificationRefsModel(clubId: 'c01', role: ClubRole.board),
+      );
+      expect(
+        writer.addedInTx[4].draft.refs,
+        const NotificationRefsModel(clubId: 'c01', eventId: 'e01'),
+      );
+      expect({
+        for (final a in writer.addedInTx) a.draft.eventKey,
+      }, hasLength(5));
+
+      expect(
+        _syncErrorCode(
+          () => dispatcher.notifyRemovedInTransaction(
+            clubId: 'c01',
+            userId: '',
+            transaction: tx,
+          ),
+        ),
+        'invalid-argument',
+      );
+      expect(writer.addedInTx, hasLength(5));
     });
   });
 

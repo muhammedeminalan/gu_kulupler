@@ -1,7 +1,7 @@
 'use strict';
 // T-10 — `delete` her koleksiyonda ve her alt koleksiyonda reddedilir, süper admin dahil (D-10,
 // rules-spec §1.2; PLAN §11.1: 18 yol × 12 bağlam = 216 ret vakası; T-22: + `events/{id}/private/counter`
-// yan belgesi = 19 yol × 12 bağlam = 228).
+// yan belgesi = 19 yol; T-30: + `clubs/{id}/private/counter` = 20 yol × 12 bağlam = 240).
 //
 // Koleksiyon adları elle yazılmaz: Dart `FirestoreCollections` sabitleri
 // (packages/gu_data/lib/src/constants/firestore_collections.dart) ile `firestore.rules` `match`
@@ -24,11 +24,10 @@ const matches = parseMatches(rulesText, FIRESTORE_PREFIX);
 const collectionMatches = matches.filter((m) => !m.recursive);
 
 /**
- * `private` alt koleksiyonunun sabit belge adı: users → account, memberships → contact, events → counter
- * (yönetici sayaç işaretçisi — W-64; Dart sabiti `FirestoreCollections.counterDoc` yazan repository ile
- * T-30'da eklenir, o güne kadar ad burada yazılıdır).
+ * `private` alt koleksiyonunun sabit belge adı: users → account, memberships → contact, events ve clubs →
+ * counter (yönetici sayaç işaretçisi — W-64; Dart `FirestoreCollections.counterDoc`, T-30).
  */
-const PRIVATE_DOC = { users: dart.docs.accountDoc, memberships: dart.docs.contactDoc, events: 'counter' };
+const PRIVATE_DOC = { users: dart.docs.accountDoc, memberships: dart.docs.contactDoc, events: dart.docs.counterDoc, clubs: dart.docs.counterDoc };
 
 /** `/users/{uid}/private/{docId}` → `users/d1/private/account` (silinecek somut belge yolu). */
 function concretePath(match) {
@@ -50,10 +49,10 @@ function concretePath(match) {
 const targets = collectionMatches.map((m) => [m.pattern, concretePath(m)]);
 
 describe('delete-denied · FirestoreCollections ↔ firestore.rules match adları', () => {
-  test('Dart sabitleri: 15 kök koleksiyon, 2 alt koleksiyon, 2 sabit belge adı', () => {
+  test('Dart sabitleri: 15 kök koleksiyon, 2 alt koleksiyon, 3 sabit belge adı', () => {
     expect(dart.roots).toHaveLength(15);
     expect(dart.subs.sort()).toEqual(['private', 'votes']);
-    expect(dart.docs).toEqual({ accountDoc: 'account', contactDoc: 'contact' });
+    expect(dart.docs).toEqual({ accountDoc: 'account', contactDoc: 'contact', counterDoc: 'counter' });
   });
 
   test('her kök koleksiyonun Rules\'ta kendi match bloğu vardır ve fazlası yoktur', () => {
@@ -63,7 +62,7 @@ describe('delete-denied · FirestoreCollections ↔ firestore.rules match adlar�
 
   test('alt koleksiyon blokları yalnızca Dart\'taki alt koleksiyon adlarını kullanır', () => {
     const nested = collectionMatches.filter((m) => m.names.length > 1);
-    expect(nested.map((m) => m.names.join('/')).sort()).toEqual(['events/private', 'memberships/private', 'posts/votes', 'users/private']);
+    expect(nested.map((m) => m.names.join('/')).sort()).toEqual(['clubs/private', 'events/private', 'memberships/private', 'posts/votes', 'users/private']);
     for (const m of nested) {
       expect(dart.roots).toContain(m.names[0]);
       expect(dart.subs).toContain(m.names[1]);
@@ -72,10 +71,10 @@ describe('delete-denied · FirestoreCollections ↔ firestore.rules match adlar�
     expect(groups.sort()).toEqual([...dart.subs].sort());
   });
 
-  test('toplam 19 yol (PLAN §11.1 + events/private) ve her blokta açık `allow delete: if false`', () => {
-    expect(targets).toHaveLength(19);
+  test('toplam 20 yol (PLAN §11.1 + events/private + clubs/private) ve her blokta açık `allow delete: if false`', () => {
+    expect(targets).toHaveLength(20);
     const denies = rulesText.match(/^\s*allow delete: if false;\s*$/gm) || [];
-    expect(denies).toHaveLength(19);
+    expect(denies).toHaveLength(20);
   });
 });
 
@@ -90,7 +89,7 @@ describe.each(targets)('delete-denied · %s', (_pattern, path) => {
 describe('delete-denied · süper admin ve alt varyantlar için başka yollardan silme', () => {
   const sample = targets.map(([, path]) => path);
 
-  test('süper admin: tek batch ile 19 yolun hiçbiri silinemez', async () => {
+  test('süper admin: tek batch ile 20 yolun hiçbiri silinemez', async () => {
     await seedDocs(Object.fromEntries(sample.map((p) => [p, targetDoc()])));
     const db = contextFor('super').firestore();
     for (const p of sample) {
@@ -114,7 +113,7 @@ describe('delete-denied · süper admin ve alt varyantlar için başka yollardan
     expect(await readDoc('unknownCollection/x')).not.toBeNull();
   });
 
-  test.each(VARIANTS)('%s · 19 yolun hiçbiri silinemez', async (role) => {
+  test.each(VARIANTS)('%s · 20 yolun hiçbiri silinemez', async (role) => {
     await seedDocs(Object.fromEntries(sample.map((p) => [p, targetDoc()])));
     const db = contextFor(role).firestore();
     for (const p of sample) await assertFails(deleteDoc(doc(db, p)));

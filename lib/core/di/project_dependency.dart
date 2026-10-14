@@ -166,9 +166,13 @@ abstract final class ProjectDependency {
     final notificationRepository = FirebaseNotificationRepository(
       firestoreService,
     );
+    final recipientResolver = FirebaseRecipientResolver(
+      firestoreService,
+      userRepository,
+    );
     final notificationDispatcher = ClientFanOutDispatcher(
       writer: notificationRepository,
-      recipients: FirebaseRecipientResolver(firestoreService, userRepository),
+      recipients: recipientResolver,
       onIssue: _logDispatchIssue,
     );
     // T-15 · kulüp, üyelik, şikayet, engel, günlük. Günlük repository'si
@@ -237,6 +241,26 @@ abstract final class ProjectDependency {
     // T-29 · hesap silme: üyelik, katılım ve etkinlik okumaları kayıtlı
     // repository'lerden; parçalar transaction / batch'tir (yeniden
     // başlatılabilir dizi — `docs/plans/T-29.md` §4).
+    // T-30 · yönetim paneli: kompozisyon (üyelik, etkinlik, gönderi, yorum,
+    // kulüp; ayar yazımı + günlük tek batch) ve fan-out alıcıları; yoklama /
+    // terfi tek transaction (kayıt + sayaç + yan belge + terfi bildirimi).
+    final managementRepository = FirebaseManagementRepository(
+      firestore: firestoreService,
+      memberships: membershipRepository,
+      events: eventRepository,
+      posts: postRepository,
+      comments: commentRepository,
+      clubs: clubRepository,
+      activity: activityRepository,
+      notifications: notificationDispatcher,
+      recipients: recipientResolver,
+    );
+    final attendanceRepository = FirebaseAttendanceRepository(
+      firestoreService,
+      rsvpRepository,
+      notificationDispatcher,
+      appClock,
+    );
     final accountDeletionRepository = FirebaseAccountDeletionRepository(
       firestoreService,
       membershipRepository,
@@ -285,6 +309,9 @@ abstract final class ProjectDependency {
       ..registerSingleton<SupportRepository>(supportRepository)
       // T-29 · hesap silme
       ..registerSingleton<AccountDeletionRepository>(accountDeletionRepository)
+      // T-30 · yönetim ve yoklama
+      ..registerSingleton<ManagementRepository>(managementRepository)
+      ..registerSingleton<AttendanceRepository>(attendanceRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

@@ -741,6 +741,44 @@ void main() {
     });
   });
 
+  group('T-30 · ProjectDependency · yönetim ve yoklama', () {
+    test('iki repository gerçek uygulamalarıyla kaydedilir; mixin '
+        'getter’ları aynı örnekleri döndürür; danışman salt okunur', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(
+        GetIt.I<ManagementRepository>(),
+        isA<FirebaseManagementRepository>(),
+      );
+      expect(
+        GetIt.I<AttendanceRepository>(),
+        isA<FirebaseAttendanceRepository>(),
+      );
+
+      final consumer = _Consumer();
+      expect(
+        consumer.managementRepository,
+        same(GetIt.I<ManagementRepository>()),
+      );
+      expect(
+        consumer.attendanceRepository,
+        same(GetIt.I<AttendanceRepository>()),
+      );
+      expect(
+        consumer.managementRepository.isReadOnly(ClubAccess.advisor),
+        isTrue,
+      );
+      expect(
+        consumer.managementRepository.isReadOnly(ClubAccess.manager),
+        isFalse,
+      );
+    });
+  });
+
   group('T-22 · ProjectDependency · etkinlik ve katılım kayıtları', () {
     test('iki repository gerçek uygulamalarıyla kaydedilir; mixin '
         'getter’ları aynı örnekleri döndürür', () async {

@@ -321,8 +321,11 @@ describe('parite (g) · enum değerleri ↔ Rules değer listeleri (T-15)', () =
     expect(used.role.sort()).toEqual(clubRoles);
     // T-15: kendi üyelik geçişi · T-19: gönderi yayını (`post_created`, `announcement`, `poll`) ·
     // T-22: etkinlik yayını / iptali (`event_published`, `event_cancelled`).
+    // T-30: yönetici türleri (`application_approved`, `application_rejected`, `member_removed`, `role_changed`,
+    // `settings_changed`).
     expect(used.kind.sort()).toEqual([
-      'announcement', 'application_received', 'event_cancelled', 'event_published', 'member_joined', 'member_left', 'poll', 'post_created',
+      'announcement', 'application_approved', 'application_received', 'application_rejected', 'event_cancelled', 'event_published',
+      'member_joined', 'member_left', 'member_removed', 'poll', 'post_created', 'role_changed', 'settings_changed',
     ]);
     expect(used.status).toEqual(expect.arrayContaining([...enumValues('event_status.dart'), ...enumValues('rsvp_status.dart')]));
     for (const value of used.kind) expect([value, enumValues('activity_kind.dart').includes(value)]).toEqual([value, true]);
@@ -384,6 +387,7 @@ describe('parite (g) · enum değerleri, desenler ve alan beyaz listeleri ↔ Ru
     ['events.coverPalette', '// ClubPalette (3)', 'club_palette.dart', 3],
     ['events.coverPattern', '// ClubPattern (4)', 'club_pattern.dart', 4],
     ['rsvps.reminder (CD-34)', '// ReminderOption (4', 'reminder_option.dart', 4],
+    ['memberships.rejectReason (M6, T-30)', '// RejectReason (4)', 'reject_reason.dart', 4],
   ])('%s değer listesi = Dart enum değerleri', (_field, anchor, file, count) => {
     const values = enumValues(file);
     expect(values).toHaveLength(count);
@@ -428,6 +432,19 @@ describe('parite (g) · enum değerleri, desenler ve alan beyaz listeleri ↔ Ru
     expect(firestoreRules.match(/lastRsvpRef/g).length).toBeGreaterThan(0);
     const eventBlock = firestoreRules.slice(firestoreRules.indexOf('match /events/{eventId} {'), firestoreRules.indexOf('match /private/{docId} {', firestoreRules.indexOf('match /events/{eventId} {')));
     expect(eventBlock.replace(/\/\/[^\n]*/g, '')).not.toMatch(/'lastRsvpRef'/);
+  });
+
+  test('kulübün yönetici sayaç işaretçisi yalnızca yan belgededir (W-64, T-30): kulüp beyaz listelerinde yok', () => {
+    const fields = Object.fromEntries([...readDart('constants/firestore_fields.dart').matchAll(/static const String (\w+) = '([^']+)';/g)].map((m) => [m[1], m[2]]));
+    expect(listAfter('function canPointMembership()')).toEqual(['clubId', fields.lastMembershipRef, 'updatedAt']);
+    const start = firestoreRules.indexOf('match /clubs/{clubId} {');
+    const clubBlock = firestoreRules.slice(start, firestoreRules.indexOf('match /private/{docId} {', start));
+    expect(clubBlock.replace(/\/\/[^\n]*/g, '')).not.toMatch(/'lastMembershipRef'/);
+  });
+
+  test('clubs.conditions madde sınırı (birleşik dizgi deseni) = Limits.conditionTextMax (RP01 desen içini okumaz)', () => {
+    const max = dart.readLimits(REPO_ROOT).ints.conditionTextMax;
+    expect(firestoreRules).toContain(`j.matches('[^\\n]{1,${max}}(\\n[^\\n]{1,${max}})*')`);
   });
 });
 

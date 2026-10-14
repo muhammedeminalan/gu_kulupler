@@ -30,8 +30,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const {
-  COLLECTIONS, PATH_OF, convert, convertDeleted, convertSupport, expectedCounts, staticTablesDiff, validate, validateDeleted,
-  validateSupport, withExtras,
+  COLLECTIONS, PATH_OF, convert, convertDeleted, convertManagement, convertSupport, expectedCounts, staticTablesDiff, validate,
+  validateDeleted, validateManagement, validateSupport, withExtras,
 } = require('./lib/convert');
 const rest = require('./lib/emulator_rest');
 const { placeholderPng } = require('./placeholder_png');
@@ -46,6 +46,8 @@ const EXTRA_NOTIFICATIONS_FILE = path.join(__dirname, 'demo-notifications.json')
 const SUPPORT_FILE = path.join(__dirname, 'demo-support.json');
 /** T-29 · demo silinmiş (anonim) hesap — silme dizisinin sonuç belgeleri (README madde 4; sayımı koleksiyonlara eklenir). */
 const DELETED_FILE = path.join(__dirname, 'demo-deleted.json');
+/** T-30 · demo yönetici geçmişi — ret, geri alınmış onay, rol günlüğü, yan sayaç belgeleri (README madde 4; sayımı koleksiyonlara eklenir). */
+const MANAGEMENT_FILE = path.join(__dirname, 'demo-management.json');
 const STATIC_TABLES = path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart');
 
 /** Aynı anda açık Auth / Storage isteği sayısı. */
@@ -176,9 +178,11 @@ async function main(argv) {
   const supportTickets = convertSupport(raw, JSON.parse(fs.readFileSync(SUPPORT_FILE, 'utf8')), { now });
   const deleted = convertDeleted(raw, JSON.parse(fs.readFileSync(DELETED_FILE, 'utf8')), { now });
   authUsers.push(...deleted.authUsers);
-  /** Silinmiş hesap belgelerinin koleksiyon başına sayısı (`--check` beklenenine eklenir). */
+  const management = convertManagement(raw, JSON.parse(fs.readFileSync(MANAGEMENT_FILE, 'utf8')), { now });
+  /** Silinmiş hesap + yönetici geçmişi belgelerinin koleksiyon başına sayısı (`--check` beklenenine eklenir). */
+  const extraWrites = [...deleted.writes, ...management.writes];
   const deletedCounts = Object.fromEntries(
-    COLLECTIONS.map((name) => [name, deleted.writes.filter(([docPath]) => COUNT_QUERIES[name][2].test(docPath)).length]),
+    COLLECTIONS.map((name) => [name, extraWrites.filter(([docPath]) => COUNT_QUERIES[name][2].test(docPath)).length]),
   );
 
   // Yazmadan önce: dönüşüm tutarlı mı, referans listeleri Dart StaticTables ile aynı mı?
@@ -188,6 +192,7 @@ async function main(argv) {
     ...staticTablesDiff(raw, fs.readFileSync(STATIC_TABLES, 'utf8')),
     ...validateSupport(supportTickets, raw.users),
     ...validateDeleted(deleted, raw),
+    ...validateManagement(management, raw),
   ];
   const expected = expectedCounts(raw);
   for (const name of COLLECTIONS) {
@@ -205,6 +210,7 @@ async function main(argv) {
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
       ['supportTickets', String(Object.keys(supportTickets).length)],
       ['deleted (T-29)', String(deleted.writes.length)],
+      ['management (T-30)', String(management.writes.length)],
       ['auth', String(authUsers.length)],
       ['storage', String(images.length)],
     ]);
@@ -223,6 +229,7 @@ async function main(argv) {
     ...COLLECTIONS.flatMap((name) => Object.entries(docs[name]).map(([id, data]) => [PATH_OF[name](id), data])),
     ...Object.entries(supportTickets).map(([id, data]) => [`supportTickets/${id}`, data]),
     ...deleted.writes,
+    ...management.writes,
   ];
   await rest.writeDocuments(target, writes);
 
@@ -245,6 +252,7 @@ async function main(argv) {
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
       ['supportTickets', String(Object.keys(supportTickets).length)],
       ['deleted (T-29)', String(deleted.writes.length)],
+      ['management (T-30)', String(management.writes.length)],
       ['auth', String(authUsers.length)],
       ['storage', target.storage ? String(images.length) : 'atlandı'],
     ]);

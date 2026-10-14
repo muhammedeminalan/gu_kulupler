@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' show WriteBatch;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show Transaction, WriteBatch;
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
 import 'package:gu_data/src/notifications/notification_dispatcher.dart';
@@ -51,6 +52,30 @@ final class NoopNotificationDispatcher implements NotificationDispatcher {
   }) => _skipped(_single);
 
   @override
+  Future<FirestoreResult<DispatchReport>>
+  notifyApplicationDecidedInTransaction({
+    required String clubId,
+    required String applicantId,
+    required bool approved,
+    required Transaction transaction,
+  }) => _skipped(_single);
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRemovedInTransaction({
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  }) => _skipped(_single);
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRoleChangedInTransaction({
+    required String clubId,
+    required String userId,
+    required ClubRole role,
+    required Transaction transaction,
+  }) => _skipped(_single);
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyAnnouncement({
     required String postId,
     required String clubId,
@@ -77,6 +102,14 @@ final class NoopNotificationDispatcher implements NotificationDispatcher {
     required String clubId,
     required String userId,
     required WriteBatch batch,
+  }) => _skipped(_single);
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyWaitlistPromotedInTransaction({
+    required String eventId,
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
   }) => _skipped(_single);
 
   @override

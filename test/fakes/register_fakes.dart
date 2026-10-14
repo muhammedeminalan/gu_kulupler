@@ -24,6 +24,7 @@ import 'fake_activity_repository.dart';
 import 'fake_announcement_counter_repository.dart';
 import 'fake_app_info_service.dart';
 import 'fake_app_preferences_store.dart';
+import 'fake_attendance_repository.dart';
 import 'fake_auth_repository.dart';
 import 'fake_auth_service.dart';
 import 'fake_block_repository.dart';
@@ -37,6 +38,7 @@ import 'fake_file_service.dart';
 import 'fake_firestore_service.dart';
 import 'fake_image_picker_service.dart';
 import 'fake_local_reminder_service.dart';
+import 'fake_management_repository.dart';
 import 'fake_membership_repository.dart';
 import 'fake_notification_dispatcher.dart';
 import 'fake_notification_repository.dart';
@@ -72,6 +74,10 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// T-29: `FakeAccountDeletionRepository` kayıtlı `FakeUserRepository` ve
 /// `FakeMembershipRepository` üzerinde çalışır (profil anonimleştirmesi,
 /// başkanlık ön denetimi, M14).
+/// T-30: `FakeManagementRepository` kayıtlı üyelik / etkinlik / gönderi /
+/// yorum fake'lerine devreder, ayarları kayıtlı `FakeClubRepository`'ye
+/// yazar; `FakeAttendanceRepository` kayıtlı `FakeRsvpRepository` (ve onun
+/// `FakeEventRepository`'si) üzerinde çalışır.
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
@@ -82,6 +88,8 @@ void registerDefaultFakes() {
   final counters = FakeAnnouncementCounterRepository(clock);
   final posts = FakePostRepository(clock, counters: counters);
   final events = FakeEventRepository(clock);
+  final comments = FakeCommentRepository(clock, posts: posts);
+  final rsvps = FakeRsvpRepository(clock, events: events);
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
@@ -111,18 +119,14 @@ void registerDefaultFakes() {
     ..registerSingleton<NotificationDispatcher>(FakeNotificationDispatcher())
     // T-19 · gönderi, yorum, kayıt, duyuru sayacı
     ..registerSingleton<PostRepository>(posts)
-    ..registerSingleton<CommentRepository>(
-      FakeCommentRepository(clock, posts: posts),
-    )
+    ..registerSingleton<CommentRepository>(comments)
     ..registerSingleton<SavedPostRepository>(
       FakeSavedPostRepository(clock, posts: posts),
     )
     ..registerSingleton<AnnouncementCounterRepository>(counters)
     // T-22 · etkinlik ve katılım
     ..registerSingleton<EventRepository>(events)
-    ..registerSingleton<RsvpRepository>(
-      FakeRsvpRepository(clock, events: events),
-    )
+    ..registerSingleton<RsvpRepository>(rsvps)
     // T-25 · uygulama içi bildirimler (gelen kutusu, hatırlatıcı belgesi)
     ..registerSingleton<NotificationRepository>(
       FakeNotificationRepository(clock),
@@ -136,6 +140,19 @@ void registerDefaultFakes() {
         users: users,
         memberships: memberships,
       ),
+    )
+    // T-30 · yönetim paneli (kompozisyon) ve yoklama / terfi
+    ..registerSingleton<ManagementRepository>(
+      FakeManagementRepository(
+        memberships: memberships,
+        events: events,
+        posts: posts,
+        comments: comments,
+        clubs: clubs,
+      ),
+    )
+    ..registerSingleton<AttendanceRepository>(
+      FakeAttendanceRepository(clock, rsvps: rsvps),
     )
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())

@@ -81,6 +81,15 @@ void main() {
         consumer.accountDeletionRepository,
         same(GetIt.I<AccountDeletionRepository>()),
       );
+      // T-30 · yönetim ve yoklama
+      expect(
+        consumer.managementRepository,
+        same(GetIt.I<ManagementRepository>()),
+      );
+      expect(
+        consumer.attendanceRepository,
+        same(GetIt.I<AttendanceRepository>()),
+      );
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

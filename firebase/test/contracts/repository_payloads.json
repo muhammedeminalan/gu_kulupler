@@ -6933,5 +6933,1709 @@
       "AccountDeletionRepository.softDeletePersonalChunk · bildirim + kayıt + engel"
     ],
     "restartAt": 3
+  },
+  "t30": {
+    "_doc": "T-30 — yönetici yazımlarının GERÇEK okuma + yazımları (FirebaseMembershipRepository M5 / M6 / M9–M12, FirebaseManagementRepository.updateClubSettings, FirebaseAttendanceRepository markAttended / promote; ClientFanOutDispatcher + NotificationWriter.addToTransaction ile kritik bildirim AYNI transaction'da; docs/plans/T-30.md §4). Biçim `t22` ile aynıdır; farklar: (1) `tx: true` = okumalar + yazımlar tek transaction (okumalar da kurallardan geçer: henüz olmayan günlük kaydının varlık okuması seesMgmt ile açıktır); `tx` yoksa ön okuma + tek batch (updateClubSettings); (2) `@autoId` = bildirimin olay anahtarı ya da otomatik günlük kimliği (koşu başına tek değer; devrin iki bildirimi aynı anahtarı alıcı ekiyle ayırır); (3) `@serverTimestamp` ön koşulda kararın sunucu zamanıdır (30 sn geri al penceresi içinde); (4) ret varyantında `swap` = yazım yollarında / değerlerinde alt dizgi değişimi (o bağlamın repository'sinin üreteceği aktör kimliği: decidedBy, günlük kimliği ve actorId); `role` yalnızca bağlamı değiştirir. Herkese açık kulüp / etkinlik belgesine sayaç işaretçisi yazılmaz; işaretçi yalnızca yan belgededir (W-64).",
+    "autoId": "@autoId",
+    "increment": "@increment",
+    "daysAhead": "@daysAhead:",
+    "actors": {
+      "student": "u_student",
+      "member": "u_member",
+      "board": "u_board",
+      "president": "u_president",
+      "advisor": "u_advisor",
+      "super": "u_super",
+      "otherManager": "u_mgr2",
+      "pending": "u_pending"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "user": {
+        "name": "Sözleşme Kullanıcısı",
+        "nameLower": "sözleşme kullanıcısı",
+        "avatarSeed": "u",
+        "avatarPath": null,
+        "department": "d01",
+        "year": "1",
+        "interests": [
+          "i01"
+        ],
+        "bio": "",
+        "status": "active",
+        "staff": false,
+        "profileComplete": true,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "member",
+        "applicant": {
+          "name": "Sözleşme Kullanıcısı",
+          "department": "d01",
+          "year": "1",
+          "avatarSeed": "u"
+        },
+        "appliedAt": "@daysAgo:30",
+        "decidedAt": "@daysAgo:29",
+        "decidedBy": "u_president",
+        "retryAfter": null,
+        "rejectReason": null,
+        "rejectNote": null,
+        "priorCount": 0,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "event": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:0",
+        "endsAt": "@daysAgo:-1",
+        "placeId": "pl01",
+        "placeText": null,
+        "capacity": 10,
+        "visibility": "public",
+        "status": "published",
+        "cancelReason": null,
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "coverPath": null,
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 1,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": "@daysAgo:2",
+        "createdAt": "@daysAgo:3",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "rsvp": {
+        "eventId": "e01",
+        "clubId": "c01",
+        "userId": "u_student",
+        "status": "going",
+        "reminder": "1h",
+        "ticketCode": "GU-AAAA-AAAB",
+        "waitlistAt": null,
+        "scannedAt": null,
+        "scannedBy": null,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "MembershipRepository.approve",
+        "role": "board",
+        "note": "M5 tek transaction: üyelik + kulüp + başvuranın kullanıcı belgesi (W-89 a) + günlük varlık okuması; yazımlar üyelik pending → active/member (decidedAt sunucu zamanı), clubs memberCount +1 (yalnızca delta — işaretçi herkese açık belgeye yazılmaz), yan belge clubs/c01/private/counter (işaretçi bu üyeliği gösterir — W-64), günlük application_approved (sabit kimlik managerActivity), application_approved bildirimi (rastgele olay anahtarı — W-83)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_pending": {
+            "$fixture": "membership",
+            "userId": "u_pending",
+            "status": "pending",
+            "decidedAt": null,
+            "decidedBy": null
+          },
+          "users/u_pending": {
+            "$fixture": "user",
+            "avatarSeed": "u_pending"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_pending",
+          "users/u_pending",
+          "activity/c01_u_board_application_approved_u_pending_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_pending",
+            "data": {
+              "status": "active",
+              "role": "member",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_pending",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_application_approved_u_pending_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "application_approved",
+              "refs": {
+                "userId": "u_pending"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/application_approved_@autoId_u_pending",
+            "data": {
+              "userId": "u_pending",
+              "type": "application_approved",
+              "refs": {
+                "clubId": "c01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_pending": {
+            "status": "active",
+            "role": "member",
+            "decidedBy": "u_board"
+          },
+          "clubs/c01": {
+            "memberCount": 5
+          },
+          "clubs/c01/private/counter": {
+            "clubId": "c01",
+            "lastMembershipRef": "memberships/c01_u_pending"
+          }
+        },
+        "denied": [
+          {
+            "name": "üye karar veremez (yönetim değil)",
+            "role": "member",
+            "swap": {
+              "u_board": "u_member"
+            }
+          },
+          {
+            "name": "danışman karar veremez (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "u_board": "u_advisor"
+            }
+          },
+          {
+            "name": "süper admin başvuruya karar vermez (§4 c)",
+            "role": "super",
+            "swap": {
+              "u_board": "u_super"
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "swap": {
+              "u_board": "u_mgr2"
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "başvuranın hesabı silinmiş (W-89 a)",
+            "seed": {
+              "users/u_pending": {
+                "status": "deleted"
+              }
+            }
+          },
+          {
+            "name": "sayaçsız onay",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          },
+          {
+            "name": "yan belge başka üyeliği gösteriyor (tek +1 ile iki üyelik)",
+            "patch": {
+              "2": {
+                "lastMembershipRef": "memberships/c01_u_member"
+              }
+            }
+          },
+          {
+            "name": "karar zamanı istemci saati",
+            "patch": {
+              "0": {
+                "decidedAt": "@daysAhead:-1"
+              }
+            }
+          },
+          {
+            "name": "bildirim başka alıcıya",
+            "swap": {
+              "application_approved_@autoId_u_pending": "application_approved_@autoId_u_member"
+            },
+            "patch": {
+              "4": {
+                "userId": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.reject",
+        "role": "president",
+        "note": "M6 tek transaction (M5 okumaları): pending → rejected + rejectReason / rejectNote + retryAfter (istemci saati + 7 gün; Rules ±5 dk), sayaç yok, günlük application_rejected, application_rejected bildirimi",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_pending": {
+            "$fixture": "membership",
+            "userId": "u_pending",
+            "status": "pending",
+            "decidedAt": null,
+            "decidedBy": null
+          },
+          "users/u_pending": {
+            "$fixture": "user",
+            "avatarSeed": "u_pending"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_pending",
+          "users/u_pending",
+          "activity/c01_u_president_application_rejected_u_pending_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_pending",
+            "data": {
+              "status": "rejected",
+              "rejectReason": "other",
+              "rejectNote": "Kontenjan doldu.",
+              "retryAfter": "@daysAhead:7",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_president",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_application_rejected_u_pending_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "application_rejected",
+              "refs": {
+                "userId": "u_pending"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/application_rejected_@autoId_u_pending",
+            "data": {
+              "userId": "u_pending",
+              "type": "application_rejected",
+              "refs": {
+                "clubId": "c01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_pending": {
+            "status": "rejected",
+            "rejectReason": "other",
+            "decidedBy": "u_president"
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman reddedemez (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "u_president": "u_advisor"
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "swap": {
+              "u_president": "u_mgr2"
+            }
+          },
+          {
+            "name": "başvuranın hesabı silinmiş (W-89 a)",
+            "seed": {
+              "users/u_pending": {
+                "status": "deleted"
+              }
+            }
+          },
+          {
+            "name": "bekleme süresi 7 gün değil",
+            "patch": {
+              "0": {
+                "retryAfter": "@daysAhead:1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.undoDecision · onayı geri al",
+        "role": "board",
+        "note": "M12 (a) tek transaction: aynı yöneticinin 30 sn içindeki onayı (decidedAt sunucu zamanı) → pending, karar alanları null; memberCount −1 + yan belge; günlük / bildirim yok (bildirim geri çekilmez — rules-spec §9)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "memberCount": 5
+          },
+          "memberships/c01_u_pending": {
+            "$fixture": "membership",
+            "userId": "u_pending",
+            "decidedAt": "@serverTimestamp",
+            "decidedBy": "u_board"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_pending"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_pending",
+            "data": {
+              "status": "pending",
+              "decidedAt": null,
+              "decidedBy": null,
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_pending",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_pending": {
+            "status": "pending",
+            "decidedBy": null,
+            "decidedAt": null
+          },
+          "clubs/c01": {
+            "memberCount": 4
+          }
+        },
+        "denied": [
+          {
+            "name": "kararı başka yönetici vermiş (decidedBy)",
+            "role": "president"
+          },
+          {
+            "name": "30 sn penceresi kapandı",
+            "seed": {
+              "memberships/c01_u_pending": {
+                "decidedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "danışman (kendi kararı olsa da)",
+            "role": "advisor",
+            "seed": {
+              "memberships/c01_u_pending": {
+                "decidedBy": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.undoDecision · reddi geri al",
+        "role": "board",
+        "note": "M12 (a): aynı yöneticinin 30 sn içindeki reddi → pending (retryAfter / rejectReason / rejectNote null); sayaç yok",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_pending": {
+            "$fixture": "membership",
+            "userId": "u_pending",
+            "status": "rejected",
+            "decidedAt": "@serverTimestamp",
+            "decidedBy": "u_board",
+            "retryAfter": "@daysAgo:-7",
+            "rejectReason": "other",
+            "rejectNote": ""
+          }
+        },
+        "reads": [
+          "memberships/c01_u_pending"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_pending",
+            "data": {
+              "status": "pending",
+              "decidedAt": null,
+              "decidedBy": null,
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_pending": {
+            "status": "pending",
+            "retryAfter": null
+          }
+        },
+        "denied": [
+          {
+            "name": "30 sn penceresi kapandı",
+            "seed": {
+              "memberships/c01_u_pending": {
+                "decidedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager"
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.remove · yönetim kurulu → üye",
+        "role": "board",
+        "note": "M9 tek transaction: üyelik + günlük okunur (kullanıcı belgesi okunmaz — W-89 c); active → removed + retryAfter + rejectReason other, memberCount −1 + yan belge, günlük member_removed, removed_from_club bildirimi",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "memberCount": 5
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "userId": "u_member"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_member",
+          "activity/c01_u_board_member_removed_u_member_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "status": "removed",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_board",
+              "retryAfter": "@daysAhead:7",
+              "rejectReason": "other",
+              "rejectNote": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_board_member_removed_u_member_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "member_removed",
+              "refs": {
+                "userId": "u_member"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/removed_from_club_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "removed_from_club",
+              "refs": {
+                "clubId": "c01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_member": {
+            "status": "removed",
+            "decidedBy": "u_board"
+          },
+          "clubs/c01": {
+            "memberCount": 4
+          },
+          "clubs/c01/private/counter": {
+            "lastMembershipRef": "memberships/c01_u_member"
+          }
+        },
+        "denied": [
+          {
+            "name": "yönetim kurulu yönetim kurulunu çıkaramaz (hiyerarşi)",
+            "seed": {
+              "memberships/c01_u_member": {
+                "role": "board"
+              }
+            }
+          },
+          {
+            "name": "başkan çıkarılamaz",
+            "seed": {
+              "memberships/c01_u_member": {
+                "role": "president"
+              }
+            }
+          },
+          {
+            "name": "danışman çıkaramaz (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "u_board": "u_advisor"
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "swap": {
+              "u_board": "u_mgr2"
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "sayaçsız çıkarma",
+            "without": [
+              1
+            ]
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.remove · süper admin → yönetim kurulu",
+        "role": "super",
+        "note": "M9 süper admin dalı: yönetim kurulu üyesini çıkarabilir; askıdaki kulüpte de (süper dalı clubLive istemez)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "memberCount": 5,
+            "status": "suspended"
+          },
+          "memberships/c01_u_board": {
+            "$fixture": "membership",
+            "userId": "u_board",
+            "role": "board"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_board",
+          "activity/c01_u_super_member_removed_u_board_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_board",
+            "data": {
+              "status": "removed",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_super",
+              "retryAfter": "@daysAhead:7",
+              "rejectReason": "other",
+              "rejectNote": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_super_member_removed_u_board_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_super",
+              "kind": "member_removed",
+              "refs": {
+                "userId": "u_board"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/removed_from_club_@autoId_u_board",
+            "data": {
+              "userId": "u_board",
+              "type": "removed_from_club",
+              "refs": {
+                "clubId": "c01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_board": {
+            "status": "removed",
+            "decidedBy": "u_super"
+          }
+        },
+        "denied": []
+      },
+      {
+        "call": "MembershipRepository.remove · silinmiş hesabın üyeliği (W-89 c)",
+        "role": "president",
+        "note": "M9: hesabı silinmiş üyenin (yarım kalan temizlik) aktif üyeliği çıkarılabilir — kullanıcı durumu okunmaz",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "memberCount": 5
+          },
+          "memberships/c01_u_deleted": {
+            "$fixture": "membership",
+            "userId": "u_deleted"
+          },
+          "users/u_deleted": {
+            "$fixture": "user",
+            "avatarSeed": "u_deleted",
+            "status": "deleted"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_deleted",
+          "activity/c01_u_president_member_removed_u_deleted_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_deleted",
+            "data": {
+              "status": "removed",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_president",
+              "retryAfter": "@daysAhead:7",
+              "rejectReason": "other",
+              "rejectNote": "",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_deleted",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_member_removed_u_deleted_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "member_removed",
+              "refs": {
+                "userId": "u_deleted"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/removed_from_club_@autoId_u_deleted",
+            "data": {
+              "userId": "u_deleted",
+              "type": "removed_from_club",
+              "refs": {
+                "clubId": "c01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_deleted": {
+            "status": "removed"
+          }
+        },
+        "denied": []
+      },
+      {
+        "call": "MembershipRepository.undoRemoval",
+        "role": "board",
+        "note": "M12 (b) tek transaction: aynı yöneticinin 30 sn içindeki çıkarması → active / member, karar alanları null; memberCount +1 + yan belge",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "userId": "u_member",
+            "status": "removed",
+            "decidedAt": "@serverTimestamp",
+            "decidedBy": "u_board",
+            "retryAfter": "@daysAgo:-7",
+            "rejectReason": "other",
+            "rejectNote": ""
+          }
+        },
+        "reads": [
+          "memberships/c01_u_member"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "status": "active",
+              "role": "member",
+              "decidedAt": null,
+              "decidedBy": null,
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "memberCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_member": {
+            "status": "active",
+            "role": "member",
+            "decidedBy": null
+          },
+          "clubs/c01": {
+            "memberCount": 5
+          }
+        },
+        "denied": [
+          {
+            "name": "çıkarmayı başka yönetici yapmış",
+            "role": "president"
+          },
+          {
+            "name": "30 sn penceresi kapandı",
+            "seed": {
+              "memberships/c01_u_member": {
+                "decidedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.changeRole · üye → yönetim kurulu",
+        "role": "president",
+        "note": "M10 tek transaction: üyelik + günlük okunur; yalnızca role (+ updatedAt), günlük role_changed (kimlik rolü taşır — roleActivity), role_changed bildirimi refs {clubId, role}",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "userId": "u_member"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_member",
+          "activity/c01_u_president_role_changed_u_member_board_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "role": "board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_role_changed_u_member_board_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "role_changed",
+              "refs": {
+                "userId": "u_member",
+                "role": "board"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "board"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_member": {
+            "role": "board",
+            "status": "active"
+          }
+        },
+        "denied": [
+          {
+            "name": "yönetim kurulu rol veremez",
+            "role": "board",
+            "swap": {
+              "c01_u_president_role_changed": "c01_u_board_role_changed"
+            },
+            "patch": {
+              "1": {
+                "actorId": "u_board"
+              }
+            }
+          },
+          {
+            "name": "danışman rol veremez (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "c01_u_president_role_changed": "c01_u_advisor_role_changed"
+            },
+            "patch": {
+              "1": {
+                "actorId": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün başkanı",
+            "role": "otherManager",
+            "swap": {
+              "c01_u_president_role_changed": "c01_u_mgr2_role_changed"
+            },
+            "patch": {
+              "1": {
+                "actorId": "u_mgr2"
+              }
+            }
+          },
+          {
+            "name": "başkanlık rol değişimiyle verilemez (yalnızca devir)",
+            "patch": {
+              "0": {
+                "role": "president"
+              }
+            }
+          },
+          {
+            "name": "bildirimdeki rol yazılan rolle aynı değil",
+            "patch": {
+              "2": {
+                "refs": {
+                  "clubId": "c01",
+                  "role": "member"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "MembershipRepository.transferPresidency",
+        "role": "president",
+        "note": "M11 TEK transaction: eski + yeni başkan üyeliği ve yeni başkanın kullanıcı belgesi (W-89 b) + günlük okunur; eski president → board, yeni member → president, clubs.presidentId, tek günlük (yeni başkan), iki role_changed bildirimi (iki olay — jest koşusunda aynı anahtar, alıcı eki farklı)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_president": {
+            "$fixture": "membership",
+            "userId": "u_president",
+            "role": "president",
+            "decidedBy": "u_super"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "userId": "u_member"
+          },
+          "users/u_member": {
+            "$fixture": "user",
+            "avatarSeed": "u_member"
+          }
+        },
+        "reads": [
+          "memberships/c01_u_president",
+          "memberships/c01_u_member",
+          "users/u_member",
+          "activity/c01_u_president_role_changed_u_member_president_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_president",
+            "data": {
+              "role": "board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "role": "president",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "presidentId": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_president_role_changed_u_member_president_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "role_changed",
+              "refs": {
+                "userId": "u_member",
+                "role": "president"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "president"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_president",
+            "data": {
+              "userId": "u_president",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "board"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_president": {
+            "role": "board"
+          },
+          "memberships/c01_u_member": {
+            "role": "president"
+          },
+          "clubs/c01": {
+            "presidentId": "u_member"
+          }
+        },
+        "denied": [
+          {
+            "name": "yönetim kurulu devredemez",
+            "role": "board",
+            "swap": {
+              "c01_u_president_role_changed": "c01_u_board_role_changed"
+            },
+            "patch": {
+              "3": {
+                "actorId": "u_board"
+              }
+            }
+          },
+          {
+            "name": "danışman devredemez (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "c01_u_president_role_changed": "c01_u_advisor_role_changed"
+            },
+            "patch": {
+              "3": {
+                "actorId": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "yeni başkanın hesabı etkin değil (W-89 b)",
+            "seed": {
+              "users/u_member": {
+                "status": "deleted"
+              }
+            }
+          },
+          {
+            "name": "kulübün presidentId'si değişmeden (eksik parça)",
+            "without": [
+              2
+            ]
+          },
+          {
+            "name": "eski başkan kurula inmeden (iki başkan)",
+            "without": [
+              0
+            ]
+          }
+        ]
+      },
+      {
+        "call": "ManagementRepository.updateClubSettings",
+        "role": "board",
+        "note": "MGT-09: ön okuma (yok / silinmiş → notFound) + TEK batch: kulüpte yalnızca yamanın alanları + updatedAt, settings_changed günlüğü (otomatik kimlik, refs boş — Rules getAfter(clubs/c).updatedAt == request.time)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "summary": "Yazılım ve donanım topluluğu.",
+              "conditions": [
+                "Aktif öğrenci olmak"
+              ],
+              "applicationsOpen": false,
+              "requireNote": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/@autoId",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "settings_changed",
+              "refs": {},
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "summary": "Yazılım ve donanım topluluğu.",
+            "applicationsOpen": false
+          }
+        },
+        "denied": [
+          {
+            "name": "üye ayar değiştiremez",
+            "role": "member",
+            "patch": {
+              "1": {
+                "actorId": "u_member"
+              }
+            }
+          },
+          {
+            "name": "danışman ayar değiştiremez (Q-09)",
+            "role": "advisor",
+            "patch": {
+              "1": {
+                "actorId": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "patch": {
+              "1": {
+                "actorId": "u_mgr2"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "kimlik alanı (ad — T-37 süper admin) yazılamaz",
+            "patch": {
+              "0": {
+                "name": "Yeni ad"
+              }
+            }
+          },
+          {
+            "name": "sayaç ayar yamasında oynatılamaz",
+            "patch": {
+              "0": {
+                "memberCount": 99
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "AttendanceRepository.markAttended · going → attended",
+        "role": "board",
+        "note": "MGT-06 / SHT-24 tek transaction: etkinlik + kayıt okunur (K-G penceresi açık); kayıt attended + scannedAt sunucu zamanı + scannedBy, attendedCount +1, yan belge events/e01/private/counter {clubId, lastRsvpRef, updatedAt} (W-64, W-77)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp"
+          }
+        },
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "attended",
+              "scannedAt": "@serverTimestamp",
+              "scannedBy": "u_board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "attendedCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "events/e01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastRsvpRef": "rsvps/e01_u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_student": {
+            "status": "attended",
+            "scannedBy": "u_board"
+          },
+          "events/e01": {
+            "attendedCount": 1
+          },
+          "events/e01/private/counter": {
+            "lastRsvpRef": "rsvps/e01_u_student"
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman yoklama alamaz (Q-09)",
+            "role": "advisor",
+            "patch": {
+              "0": {
+                "scannedBy": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "süper admin yoklama almaz",
+            "role": "super",
+            "patch": {
+              "0": {
+                "scannedBy": "u_super"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "patch": {
+              "0": {
+                "scannedBy": "u_mgr2"
+              }
+            }
+          },
+          {
+            "name": "yoklama penceresi kapalı (K-G)",
+            "seed": {
+              "events/e01": {
+                "startsAt": "@daysAgo:5",
+                "endsAt": "@daysAgo:4"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          },
+          {
+            "name": "işaretçi başka kaydı gösteriyor",
+            "patch": {
+              "2": {
+                "lastRsvpRef": "rsvps/e01_u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "AttendanceRepository.markAttended · attended → going (geri al)",
+        "role": "board",
+        "note": "TST-31 Geri al: attended → going, scannedAt / scannedBy null, attendedCount −1 + yan belge",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "attendedCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp",
+            "status": "attended",
+            "scannedAt": "@daysAgo:0",
+            "scannedBy": "u_board"
+          }
+        },
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "going",
+              "scannedAt": null,
+              "scannedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "attendedCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "events/e01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastRsvpRef": "rsvps/e01_u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_student": {
+            "status": "going",
+            "scannedBy": null
+          },
+          "events/e01": {
+            "attendedCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman geri alamaz",
+            "role": "advisor"
+          }
+        ]
+      },
+      {
+        "call": "AttendanceRepository.promote",
+        "role": "board",
+        "note": "MGT-06 Kayıtlıya al tek transaction: waitlist → going (yalnızca status), goingCount +1 / waitlistCount −1 + yan belge, waitlist_promoted bildirimi aynı işlemde (W-83: T-25 elle bileşiminin gerçek karşılığı)",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "startsAt": "@daysAgo:-3",
+            "endsAt": "@daysAgo:-4",
+            "goingCount": 1,
+            "waitlistCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp",
+            "status": "waitlist",
+            "waitlistAt": "@daysAgo:1"
+          }
+        },
+        "reads": [
+          "events/e01",
+          "rsvps/e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "going",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "waitlistCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "events/e01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastRsvpRef": "rsvps/e01_u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/waitlist_promoted_@autoId_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "waitlist_promoted",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_student": {
+            "status": "going"
+          },
+          "events/e01": {
+            "goingCount": 2,
+            "waitlistCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman terfi ettiremez (Q-09)",
+            "role": "advisor"
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager"
+          },
+          {
+            "name": "kontenjan dolu",
+            "seed": {
+              "events/e01": {
+                "capacity": 1,
+                "goingCount": 1
+              }
+            }
+          },
+          {
+            "name": "yan belgesiz sayaç (W-64)",
+            "without": [
+              2
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
