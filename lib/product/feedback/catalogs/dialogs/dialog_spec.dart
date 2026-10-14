@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/l10n/cancel_reason_labels.dart';
@@ -42,6 +43,29 @@ abstract final class DialogParamKeys {
   /// İptal nedeni (`events.cancelReason` kimliği; adını katalog çözer —
   /// `CancelReasonLabels`) — DLG-16 gövdesi (`{reason}`).
   static const String reason = 'reason';
+
+  /// Toplu işlem türü ([BulkActionKind]; yoksa onay) — DLG-17 gövdesi ve
+  /// birincil düğmesi (`dialogs.js:33` `p.kind`).
+  static const String kind = 'kind';
+
+  /// Seçili kayıt sayısı (`int`) — DLG-17 gövdesi (`{count}`).
+  static const String count = 'count';
+
+  /// Diğer yöneticinin kararı ([MembershipStatus] `active` / `rejected`;
+  /// yoksa `rejected` — `dialogs.js:34`) — DLG-18 gövdesi (`{result}`).
+  static const String result = 'result';
+}
+
+/// DLG-17 "Toplu işlem onayı" türü (`dialogs.js:33` `p.kind`).
+enum BulkActionKind {
+  /// MGT-02 seçili başvuruları onayla — "Onayla" (`dlg17Approve`).
+  approve,
+
+  /// MGT-02 seçili başvuruları reddet — "Reddet" (danger, `dlg17Reject`).
+  reject,
+
+  /// Tüm kayıtlıları katıldı işaretle — "Onayla" (`dlg17Attendance`).
+  attendance,
 }
 
 /// Standart (başlık + gövde + en çok iki düğme) bir dialogun katalog kaydı —
@@ -57,12 +81,14 @@ final class DialogSpec {
   const DialogSpec({
     required this.title,
     required this.primary,
+    this.primaryFor,
     this.body,
     this.secondary,
     this.secondaryFor,
     this.icon,
     this.destructive = false,
     this.primaryDanger,
+    this.primaryDangerFor,
     this.dismissible = true,
     this.primaryAction = 'confirm',
     this.secondaryAction = 'cancel',
@@ -76,6 +102,16 @@ final class DialogSpec {
 
   /// Birincil düğme metni; dokunuş dialogu `true` ile kapatır.
   final DialogLabelBuilder primary;
+
+  /// Değişkene bağlı birincil düğme metni; verilirse [primary] yerine
+  /// kullanılır (DLG-17: ret türünde "Reddet" — `dialogs.js:33`).
+  final DialogTextBuilder? primaryFor;
+
+  /// [params] ile çizilecek birincil düğmenin metni.
+  String primaryLabel(AppLocalizations l10n, DialogParams params) {
+    final conditional = primaryFor;
+    return conditional != null ? conditional(l10n, params) : primary(l10n);
+  }
 
   /// İkincil (metin) düğme; `null` → yok. Dokunuş `false` ile kapatır.
   final DialogLabelBuilder? secondary;
@@ -110,6 +146,14 @@ final class DialogSpec {
 
   /// Birincil düğme `danger` çizilir mi ([primaryDanger] ?? [destructive]).
   bool get isPrimaryDanger => primaryDanger ?? destructive;
+
+  /// Değişkene bağlı `danger` birincil düğme; verilirse [isPrimaryDanger]
+  /// yerine kullanılır (DLG-17 ret türü — `dialogs.js:33`).
+  final bool Function(DialogParams params)? primaryDangerFor;
+
+  /// [params] ile birincil düğme `danger` çizilir mi.
+  bool isPrimaryDangerFor(DialogParams params) =>
+      primaryDangerFor?.call(params) ?? isPrimaryDanger;
 
   /// `false` → scrim / geri tuşu kapatmaz (DLG-26, DLG-27).
   final bool dismissible;
@@ -344,6 +388,50 @@ abstract final class DialogCatalog {
       secondaryAction: 'similar',
     ),
 
+    /// Design: DLG-17 — Toplu işlem onayı (`dialogs.js:33`): ikon
+    /// `list-checks`; gövde ve birincil düğme türe ([DialogParamKeys.kind] —
+    /// [BulkActionKind]) göre: onay / yoklama "Onayla", ret "Reddet"
+    /// (`danger`); gövde seçili sayıyı taşır ([DialogParamKeys.count]).
+    /// Sonuç `true` → toplu işlem yürütülür (`ManageApplicationsViewModel`
+    /// `approveMany` / `rejectMany`; ardından TST-27 / TST-28 "Geri al").
+    DialogId.dlg17: DialogSpec(
+      title: (l10n, _) => l10n.dlg17Title,
+      body: (l10n, params) {
+        final count = _int(params, DialogParamKeys.count);
+        return switch (_bulkKind(params)) {
+          BulkActionKind.approve => l10n.dlg17Approve(count),
+          BulkActionKind.reject => l10n.dlg17Reject(count),
+          BulkActionKind.attendance => l10n.dlg17Attendance(count),
+        };
+      },
+      primary: (l10n) => l10n.commonConfirm,
+      primaryFor: (l10n, params) => _bulkKind(params) == BulkActionKind.reject
+          ? l10n.applicationsReject
+          : l10n.commonConfirm,
+      primaryDangerFor: (params) => _bulkKind(params) == BulkActionKind.reject,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.listChecks,
+    ),
+
+    /// Design: DLG-18 — Başvuru zaten sonuçlandırıldı (`dialogs.js:34`): iki
+    /// yönetici çakışması — başvuru başka yöneticinin kararıyla artık
+    /// beklemede değil. Gövde o kararı küçük harfle taşır
+    /// ([DialogParamKeys.result] — [MembershipStatus.active] "onaylandı",
+    /// diğer / yok "reddedildi"). Tek düğme "Tamam" → `true` (çağıran listeyi
+    /// yeniler).
+    DialogId.dlg18: DialogSpec(
+      title: (l10n, _) => l10n.dlg18Title,
+      body: (l10n, params) => l10n.dlg18Body(
+        (params[DialogParamKeys.result] == MembershipStatus.active
+                ? l10n.statusApproved
+                : l10n.statusRejected)
+            .trLower(),
+      ),
+      primary: (l10n) => l10n.commonOk,
+      icon: GuIcons.refreshCw,
+      primaryAction: 'ok',
+    ),
+
     /// Design: DLG-24 — Bugünkü duyuru hakkın doldu (`dialogs.js:42`): günün
     /// bildirimli duyuru hakkı dolmuşken FED-03'te bildirimli yayın istenince
     /// (Q-10). "Bildirimsiz yayınla" → `true` (duyuru bildirimsiz yayınlanır),
@@ -383,6 +471,20 @@ abstract final class DialogCatalog {
     final String value => value,
     _ => '',
   };
+
+  /// [params] içindeki [key] tam sayısı; verilmediyse (ya da sayı değilse)
+  /// 0.
+  static int _int(DialogParams params, String key) => switch (params[key]) {
+    final int value => value,
+    _ => 0,
+  };
+
+  /// DLG-17 türü; verilmediyse onay (`dialogs.js:33` `p.kind || 'approve'`).
+  static BulkActionKind _bulkKind(DialogParams params) =>
+      switch (params[DialogParamKeys.kind]) {
+        final BulkActionKind kind => kind,
+        _ => BulkActionKind.approve,
+      };
 
   /// [id] kaydı; yoksa `null`.
   static DialogSpec? of(DialogId id) => _specs[id];

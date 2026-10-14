@@ -27,6 +27,8 @@
 // (SET-04), `SupportRoute` (SET-05).
 // T-31 · `ManageRoute` (`/clubs/:clubId/manage`, MGT-01), `ActivityLogRoute`
 // (`/clubs/:clubId/manage/activity`, MGT-10).
+// T-32 · `ManageApplicationsRoute` (`/clubs/:clubId/manage/applications
+// ?tab=&applicant=`, MGT-02).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -41,7 +43,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31).
+/// T-28 + T-29 + T-31 + T-32).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -71,8 +73,10 @@ const Map<GoRouteData, String> _routes = {
   PostDetailRoute(clubId: _clubId, postId: _postId):
       '/clubs/:clubId/posts/:postId',
   ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
-  // Yönetim (T-31: MGT-01, MGT-10)
+  // Yönetim (T-31: MGT-01, MGT-10; T-32: MGT-02)
   ManageRoute(clubId: _clubId): '/clubs/:clubId/manage',
+  ManageApplicationsRoute(clubId: _clubId):
+      '/clubs/:clubId/manage/applications',
   ActivityLogRoute(clubId: _clubId): '/clubs/:clubId/manage/activity',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
@@ -161,13 +165,44 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 42 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 43 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2)', () {
+        'T-31: +2, T-32: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(42));
+      expect(_routes, hasLength(43));
     });
+
+    test(
+      "T-32 · MGT-02 MGT-01'in altındadır (V); `tab` ve `applicant` sorgu "
+      'parametresidir (sekme adları ekran sırasıyla `ApplicationsTab`)',
+      () {
+        expect(ManageApplicationsRoute.segment, 'applications');
+        expect(ManageApplicationsRoute.applicantQuery, 'applicant');
+        expect(ApplicationsTab.values.map((tab) => tab.name), [
+          'pending',
+          'approved',
+          'rejected',
+        ]);
+        const plain = ManageApplicationsRoute(clubId: _clubId);
+        expect(plain.tab, isNull);
+        expect(plain.applicantId, isNull);
+        expect(plain.location, '/clubs/c01/manage/applications');
+        final deep = Uri.parse(
+          const ManageApplicationsRoute(
+            clubId: _clubId,
+            tab: ApplicationsTab.rejected,
+            applicantId: _userId,
+          ).location,
+        );
+        expect(deep.path, '/clubs/c01/manage/applications');
+        expect(deep.queryParameters, {'tab': 'rejected', 'applicant': 'u01'});
+        final match = RouteAccessTable.match(deep);
+        expect(match.pattern, '/clubs/:clubId/manage/applications');
+        expect(match.access, RouteAccess.managerOrAdvisor);
+        expect(match.clubId, _clubId);
+      },
+    );
 
     test(
       'T-31 · yönetim rotaları: `clubId` yol parametresidir; MGT-10 '

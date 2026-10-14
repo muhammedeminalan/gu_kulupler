@@ -60,8 +60,11 @@ void main() {
   group('T-26 · NotificationTargets.locationFor', () {
     test('her tür → beklenen konum ve sekme', () {
       const expected = <NotificationType, (String?, GuTab?)>{
-        // Geçici: T-32 `ManageApplicationsRoute` (W-28).
-        NotificationType.applicationReceived: ('/clubs/c01', GuTab.clubs),
+        // MGT-02 + SHT-19 (`?applicant=`; W-28).
+        NotificationType.applicationReceived: (
+          '/clubs/c01/manage/applications?applicant=u02',
+          GuTab.clubs,
+        ),
         NotificationType.applicationApproved: ('/clubs/c01', GuTab.clubs),
         NotificationType.roleChanged: ('/clubs/c01', GuTab.clubs),
         NotificationType.applicationRejected: (

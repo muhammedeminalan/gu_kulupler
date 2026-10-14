@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T20:40:52.368Z",
+  "updated": "2026-10-14T21:28:57.328Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -451,11 +451,13 @@
       "notes": ""
     },
     "T-32": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T20:41:15.933Z",
+      "finishedAt": "2026-10-14T21:28:57.327Z",
+      "commits": [
+        "70bb8e7"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-33": {
@@ -841,7 +843,10 @@
       "resolveIn": [
         "T-32"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-32",
+      "closedAt": "2026-10-14T21:15:06.242Z",
+      "closeNote": "T-32: bağlandı"
     },
     {
       "id": "W-29",
@@ -916,7 +921,10 @@
       "resolveIn": [
         "T-32"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-32",
+      "closedAt": "2026-10-14T21:15:06.266Z",
+      "closeNote": "T-32: bağlandı"
     },
     {
       "id": "W-37",
@@ -1504,7 +1512,10 @@
       "resolveIn": [
         "T-32"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-32",
+      "closedAt": "2026-10-14T21:15:06.290Z",
+      "closeNote": "T-32: bağlandı"
     },
     {
       "id": "W-93",
@@ -1531,11 +1542,14 @@
       "resolveIn": [
         "T-32"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "MGT-10.row.*",
         "MGT-01.row.*"
-      ]
+      ],
+      "closedIn": "T-32",
+      "closedAt": "2026-10-14T21:15:06.314Z",
+      "closeNote": "T-32: bağlandı"
     },
     {
       "id": "W-96",
@@ -1560,6 +1574,18 @@
       "status": "open",
       "actions": [
         "MGT-01.quick.announce"
+      ]
+    },
+    {
+      "id": "W-98",
+      "declaredIn": "T-32",
+      "text": "MGT-02 'Reddedilen' sekmesi: MembershipRepository.listByStatus(clubId, rejected, page) (PLAN §10.4, indeks clubId,status,appliedAt↓ mevcut; rules/queries.test.js +MGT-02 rejected) gu_data'ya eklenip ManageApplicationsViewModel._readPage'e bağlanır; o güne dek sekme yalnızca oturumda reddedilenleri gösterir",
+      "resolveIn": [
+        "T-33"
+      ],
+      "status": "open",
+      "actions": [
+        "MGT-02.tab.rejected"
       ]
     }
   ],

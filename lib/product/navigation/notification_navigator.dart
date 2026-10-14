@@ -22,7 +22,7 @@ part 'notification_navigator.g.dart';
 ///
 /// | Tür | Konum | Dal |
 /// |---|---|---|
-/// | `applicationReceived` | `/clubs/{clubId}` (**geçici**; T-32 `ManageApplicationsRoute` — W-28) | clubs |
+/// | `applicationReceived` | `/clubs/{clubId}/manage/applications?applicant={applicantId}` (MGT-02; açılıştan 250 ms sonra SHT-19 — W-28) | clubs |
 /// | `applicationApproved`, `roleChanged` | `/clubs/{clubId}` | clubs |
 /// | `applicationRejected`, `removedFromClub` | `/clubs/{clubId}/application` | clubs |
 /// | `announcement` | `/clubs/{clubId}/posts/{postId}?tab=posts` | clubs |
@@ -49,9 +49,15 @@ abstract final class NotificationTargets {
     final eventId = refs.eventId;
     final postId = refs.postId;
     return switch (type) {
-      // TODO(T-32): `ManageApplicationsRoute(clubId:)` + 250 ms sonra SHT-19
-      // (W-28); o güne kadar kulüp sayfası.
-      NotificationType.applicationReceived => _club(clubId),
+      // MGT-02; `?applicant=` → ekran `postNavigationSheetDelay` sonra o
+      // başvuranın SHT-19'unu açar (W-28). `applicantId` yoksa yalnızca liste.
+      NotificationType.applicationReceived =>
+        clubId == null
+            ? AppPaths.notFound
+            : ManageApplicationsRoute(
+                clubId: clubId,
+                applicantId: refs.applicantId,
+              ).location,
       NotificationType.applicationApproved ||
       NotificationType.roleChanged => _club(clubId),
       NotificationType.applicationRejected ||
@@ -199,8 +205,7 @@ final class NotificationNavigator with ProjectDependencyMixin {
       return;
     }
     go(location);
-    // TODO(T-32): `applicationReceived` → `AppDurations
-    // .postNavigationSheetDelay` sonra SHT-19 (üyelik hâlâ `pending` ise; W-28).
+    // `applicationReceived`: SHT-19'u MGT-02 `?applicant=` ile açar (W-28).
     // TODO(T-40): `newReport` → aynı gecikmeyle SHT-26 (süper admin; W-29).
   }
 

@@ -84,9 +84,8 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
   }
 
   /// "Bekleyen başvuru" (`MGT-01.kpi.pending`) → MGT-02.
-  void openApplications() {
-    // TODO(T-32): `ManageApplicationsRoute(clubId:).go` (MGT-02; W-36).
-  }
+  void openApplications() =>
+      ManageApplicationsRoute(clubId: widget.clubId).go(context);
 
   /// "Yaklaşan etkinlik" (`MGT-01.kpi.events`) / "Tümü"
   /// (`MGT-01.eventsAll`) → MGT-04.

@@ -3,7 +3,7 @@ part of 'shell_route.dart';
 // T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
 // profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
-// panelini ve faaliyet geçmişini kurar; kalan alt rotalar PLAN §13.3.2
+// panelini ve faaliyet geçmişini, T-32 başvuru yönetimini kurar; kalan alt rotalar PLAN §13.3.2
 // tablosundaki task'larda eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
@@ -27,6 +27,9 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
         TypedGoRoute<ManageRoute>(
           path: ManageRoute.segment,
           routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<ManageApplicationsRoute>(
+              path: ManageApplicationsRoute.segment,
+            ),
             TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
           ],
         ),
@@ -233,6 +236,50 @@ final class ManageRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ManageView(clubId: clubId);
+}
+
+/// MGT-02 Başvurular — `/clubs/:clubId/manage/applications?tab=&applicant=`.
+/// MGT-01'in alt rotasıdır (guard `V`: yönetici ya da danışman; danışman
+/// salt okunur görür, yazma eylemleri TST-26 — `RouteAccessTable`). MGT-01
+/// "Başvurular" (W-36), faaliyet satırı (W-95) ve `application_received`
+/// bildirimi (W-28) `go` ile açar, geri panele döner.
+final class ManageApplicationsRoute extends GoRouteData
+    with $ManageApplicationsRoute, PlatformPageMixin {
+  /// [clubId] kulübünün başvuruları; [tab] ilk açılan sekme, [applicantId]
+  /// açılıştan `AppDurations.postNavigationSheetDelay` sonra SHT-19'u açılan
+  /// başvuran.
+  const ManageApplicationsRoute({
+    required this.clubId,
+    this.tab,
+    @TypedQueryParameter<String>(name: applicantQuery) this.applicantId,
+  });
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'applications';
+
+  /// Açılışta SHT-19'u açılan başvuranın sorgu parametresi adı
+  /// (`?applicant=`).
+  static const String applicantQuery = 'applicant';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// İlk açılan sekme (`?tab=pending|approved|rejected`); `null` ya da
+  /// tanınmayan değer → bekleyenler.
+  final ApplicationsTab? tab;
+
+  /// Başvuru detayı (SHT-19) açılacak başvuranın kullanıcı kimliği
+  /// (`?applicant=`, bildirim `refs.applicantId` — W-28); `null` → sheet
+  /// açılmaz.
+  final String? applicantId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ManageApplicationsView(
+        clubId: clubId,
+        tab: tab,
+        applicantId: applicantId,
+      );
 }
 
 /// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt

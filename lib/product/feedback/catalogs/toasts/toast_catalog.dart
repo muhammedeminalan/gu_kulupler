@@ -31,6 +31,7 @@ final class ToastParams extends Equatable {
     this.date = '',
     this.n = 1,
     this.count = 0,
+    this.applicants = 0,
     this.unblocked = false,
     this.saved = false,
     this.off = false,
@@ -66,6 +67,10 @@ final class ToastParams extends Equatable {
   /// Katılımcı sayısı (TST-X8).
   final int count;
 
+  /// Toplu karardaki başvuru sayısı (TST-27 / TST-28, MGT-02 DLG-17);
+  /// `> 0` ise [name] yerine "n başvuru".
+  final int applicants;
+
   /// TST-09: engel kaldırıldı (değilse engellendi).
   final bool unblocked;
 
@@ -95,6 +100,7 @@ final class ToastParams extends Equatable {
     date,
     n,
     count,
+    applicants,
     unblocked,
     saved,
     off,
@@ -204,8 +210,10 @@ abstract final class ToastCatalog {
     ToastId.tst24 => _error((l, _) => l.tst24),
     ToastId.tst25 => _success((l, _) => l.tst25),
     ToastId.tst26 => _info((l, _) => l.tst26),
-    ToastId.tst27 => _success((l, p) => l.tst27(p.name), undo: true),
-    ToastId.tst28 => _info((l, p) => l.tst28(p.name), undo: true),
+    // Toplu karar (MGT-02, `screens-manage.js:49`): `applicants > 0` →
+    // "n başvuru".
+    ToastId.tst27 => _success((l, p) => l.tst27(_subject(l, p)), undo: true),
+    ToastId.tst28 => _info((l, p) => l.tst28(_subject(l, p)), undo: true),
     ToastId.tst29 => _success((l, _) => l.tst29),
     ToastId.tst30 => _success((l, _) => l.tst30, action: (l) => l.commonView),
     ToastId.tst31 => _success((l, p) => l.tst31(p.name), undo: true),
@@ -271,6 +279,11 @@ abstract final class ToastCatalog {
     ToastId.tstX19 => _success((l, _) => l.tstX19),
     ToastId.tstX20 => _info((l, _) => l.tstX20),
   };
+
+  /// TST-27 / TST-28 öznesi: tek karar → kişi adı, toplu karar → "n başvuru"
+  /// (`applications.nApplicants`).
+  static String _subject(AppLocalizations l10n, ToastParams p) =>
+      p.applicants > 0 ? l10n.applicationsNApplicants(p.applicants) : p.name;
 
   static ToastSpec _success(
     ToastTextBuilder text, {
