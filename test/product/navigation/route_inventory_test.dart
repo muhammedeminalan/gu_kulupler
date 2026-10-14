@@ -25,6 +25,8 @@
 // `SettingsNotificationPrefsRoute` (NTF-02 paylaşılan), `BlockedRoute`
 // (SET-02), `BlockedUserProfileRoute` (CLB-07 paylaşılan), `AboutRoute`
 // (SET-04), `SupportRoute` (SET-05).
+// T-31 · `ManageRoute` (`/clubs/:clubId/manage`, MGT-01), `ActivityLogRoute`
+// (`/clubs/:clubId/manage/activity`, MGT-10).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -39,7 +41,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28).
+/// T-28 + T-29 + T-31).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -69,6 +71,9 @@ const Map<GoRouteData, String> _routes = {
   PostDetailRoute(clubId: _clubId, postId: _postId):
       '/clubs/:clubId/posts/:postId',
   ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
+  // Yönetim (T-31: MGT-01, MGT-10)
+  ManageRoute(clubId: _clubId): '/clubs/:clubId/manage',
+  ActivityLogRoute(clubId: _clubId): '/clubs/:clubId/manage/activity',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
   // T-24: EVT-04)
@@ -156,12 +161,40 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 40 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 42 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
-        'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1)', () {
+        'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
+        'T-31: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(40));
+      expect(_routes, hasLength(42));
     });
+
+    test(
+      'T-31 · yönetim rotaları: `clubId` yol parametresidir; MGT-10 '
+      "MGT-01'in altındadır; ikisi de yönetici ya da danışman (V) ister",
+      () {
+        const manage = ManageRoute(clubId: _clubId);
+        const activity = ActivityLogRoute(clubId: _clubId);
+        expect(ManageRoute.segment, 'manage');
+        expect(ActivityLogRoute.segment, 'activity');
+        for (final MapEntry(key: route, value: location) in {
+          manage: '/clubs/c01/manage',
+          activity: '/clubs/c01/manage/activity',
+        }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, RouteAccess.managerOrAdvisor, reason: name);
+          expect(match.clubId, _clubId, reason: name);
+        }
+        // Kimlik yolda kodlanır (ayırıcı içeren değer yolu bölmez).
+        expect(
+          const ManageRoute(clubId: 'a/b').location,
+          '/clubs/a%2Fb/manage',
+        );
+      },
+    );
 
     test(
       'T-28 · T-29 · ayarlar rotaları (SET-03 dahil) `/profile/settings` altındadır; '

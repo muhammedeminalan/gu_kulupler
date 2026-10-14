@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
@@ -7,6 +8,7 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/managed_club_picker_view_model.dart';
 import 'package:gu_kulupler/product/feedback/feedback_keys.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
+import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -35,8 +37,9 @@ typedef ManagedClubSelect = void Function(String clubId);
 ///   scrim / sürükleme / geri → `null`.
 /// * [onSelect] verilirse sayfa kapanırken seçilen kimlikle çağrılır
 ///   (FED-03: `ComposeRoute(clubId: id).go`). Verilmezse varsayılan davranış
-///   seçilen kulübün yönetim paneline gitmektir (MGT-01) — `ManageRoute`
-///   T-31'de gelir (W-26); o zamana kadar sayfa yalnızca kimliği döner.
+///   seçilen kulübün yönetim paneline gitmektir: `ManageRoute(clubId: id)`
+///   `go` (MGT-01, W-26; PRF-01 "Yönetim paneli"). Yönlendirici yoksa
+///   (yalın sheet testi) yalnızca kimlik döner.
 /// * Anahtarlar `SHT-18.select.<clubId>`, `SHT-18.close`, `SHT-18.retry`
 ///   (+ `SHT-18.scrim`, `FeedbackService`).
 ///
@@ -60,7 +63,7 @@ class ManagedClubPickerSheet extends ConsumerWidget {
   final String? selectedClubId;
 
   /// Seçimde, sayfa kapanırken çağrılır; `null` → varsayılan davranış
-  /// (MGT-01 — W-26, T-31).
+  /// (seçilen kulübün MGT-01'i — W-26).
   final ManagedClubSelect? onSelect;
 
   /// Kayıtta olmayan ikon adında amblemin yedeği (`ClubCard` ile aynı).
@@ -79,11 +82,15 @@ class ManagedClubPickerSheet extends ConsumerWidget {
 
   /// Satıra dokunuldu: sayfa [clubId] ile kapanır, sonra [onSelect].
   void _select(BuildContext context, String clubId) {
+    final onSelect = this.onSelect;
+    // Sayfanın bağlamı `pop`'tan sonra ağaçtan çıkar: yönlendirici önce alınır.
+    final router = onSelect == null ? GoRouter.maybeOf(context) : null;
     Navigator.of(context).pop(clubId);
-    // TODO(T-31): `onSelect == null` iken varsayılan davranış —
-    // `ManageRoute(clubId: clubId).go` (MGT-01; bağlama borcu W-26). O zamana
-    // kadar sayfa yalnızca kimliği döner.
-    onSelect?.call(clubId);
+    if (onSelect != null) {
+      onSelect(clubId);
+    } else {
+      router?.go(ManageRoute(clubId: clubId).location);
+    }
   }
 
   /// [membership] satırı: amblem · ad · rol rozeti (+ salt okunur) · ok.

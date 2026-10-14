@@ -1297,6 +1297,15 @@ abstract final class GuSizes {
   /// cards.js:110 `Avatar} user=${author} size=${40}`.
   static const double postAvatar = 40;
 
+  /// screens-manage.js:38 `Avatar} user=${actor} size=${36}` — `ActivityRow`
+  /// (MGT-01 / MGT-10).
+  static const double activityRowAvatar = 36;
+
+  /// screens-manage.js:9 `style="max-width:190px"` — `ManageHeader` kulüp
+  /// değiştirme düğmesindeki kulüp adının en geniş hâli (üst sınır; dar
+  /// ekranda satır daralır).
+  static const double manageHeaderClubMaxWidth = 190;
+
   /// cards.js:176 `width: '44px', height: '44px'` —
   /// K-32, K-46.
   static const double iconButtonTonal = 44;

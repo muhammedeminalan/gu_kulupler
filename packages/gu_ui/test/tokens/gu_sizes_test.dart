@@ -23,8 +23,9 @@ import '../helpers/design_sources.dart';
 /// + K-47 `avatarGroupSizes` 1 + §8.7 ikon 11 = 402. (token-map'teki "aday
 /// 401", `miniChartFillOpacity`'yi hâlâ 353'ün içinde sayar ve 2 K-46 ekini
 /// içermez.) + T-17 `myClubsAllTileWidth` 1 = 403
-/// + T-20 `commentsSheetMinHeight` 1 = 404.
-const int _gusizesCount = 404;
+/// + T-20 `commentsSheetMinHeight` 1 = 404
+/// + T-31 `activityRowAvatar`, `manageHeaderClubMaxWidth` 2 = 406.
+const int _gusizesCount = 406;
 
 /// `GuOpacity`: §8.8 8 + `coverIcon` 1.
 const int _guOpacityCount = 9;
@@ -2853,6 +2854,15 @@ List<_Row> _sizesTable(CssMeasure css, _Js js) => [
   _js('postAvatar', GuSizes.postAvatar, 40, const [
     _JsRef('cards.js', 110, r'Avatar} user=${author} size=${40}'),
   ]),
+  _js('activityRowAvatar', GuSizes.activityRowAvatar, 36, const [
+    _JsRef('screens-manage.js', 38, r'Avatar} user=${actor} size=${36}'),
+  ]),
+  _js(
+    'manageHeaderClubMaxWidth',
+    GuSizes.manageHeaderClubMaxWidth,
+    190,
+    const [_JsRef('screens-manage.js', 9, 'style="max-width:190px"')],
+  ),
   _js('iconButtonTonal', GuSizes.iconButtonTonal, 44, const [
     _JsRef('cards.js', 176, "width: '44px', height: '44px'"),
   ]),
@@ -3531,6 +3541,7 @@ void main() {
         GuSizes.commentAvatar,
         GuSizes.applicationRowAvatar,
         GuSizes.postAvatar,
+        GuSizes.activityRowAvatar,
         GuSizes.skeletonAvatar,
       ]) {
         expect(GuSizes.avatarSizes, contains(size));

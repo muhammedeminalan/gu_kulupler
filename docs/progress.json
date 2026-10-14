@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T19:52:09.781Z",
+  "updated": "2026-10-14T20:28:07.928Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-31",
   "statusValues": [
     "pending",
     "planning",
@@ -441,8 +441,8 @@
       "notes": ""
     },
     "T-31": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T19:52:46.136Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -679,7 +679,10 @@
       "resolveIn": [
         "T-31"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-31",
+      "closedAt": "2026-10-14T20:28:07.878Z",
+      "closeNote": "CLB-03 openManage → ManageRoute.go (T-31)"
     },
     {
       "id": "W-13",
@@ -808,7 +811,10 @@
       "resolveIn": [
         "T-31"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-31",
+      "closedAt": "2026-10-14T20:28:07.903Z",
+      "closeNote": "SHT-18 onSelect yoksa ManageRoute(clubId).go; FED-03 onSelect verir (T-31)"
     },
     {
       "id": "W-27",
@@ -863,7 +869,10 @@
       "resolveIn": [
         "T-31"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-31",
+      "closedAt": "2026-10-14T20:28:07.927Z",
+      "closeNote": "PRF-01 managed.<id> → ManageRoute; managedAll çok kulüpte SHT-18 varsayılanı (T-31)"
     },
     {
       "id": "W-32",
@@ -1512,6 +1521,44 @@
         "T-37"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-95",
+      "declaredIn": "T-31",
+      "text": "MGT-10 / MGT-01 faaliyet satırı: başvuru türleri (application_*) → MGT-02 → T-32",
+      "resolveIn": [
+        "T-32"
+      ],
+      "status": "open",
+      "actions": [
+        "MGT-10.row.*",
+        "MGT-01.row.*"
+      ]
+    },
+    {
+      "id": "W-96",
+      "declaredIn": "T-31",
+      "text": "MGT-10 / MGT-01 faaliyet satırı: settings_changed ve hedefsiz satır → MGT-09 → T-36",
+      "resolveIn": [
+        "T-36"
+      ],
+      "status": "open",
+      "actions": [
+        "MGT-10.row.*",
+        "MGT-01.row.*"
+      ]
+    },
+    {
+      "id": "W-97",
+      "declaredIn": "T-31",
+      "text": "MGT-01 'Duyuru yap' → FED-03 duyuru türü ön seçimi (ComposeRoute tür parametresi yok; şimdilik düz FED-03) → T-36",
+      "resolveIn": [
+        "T-36"
+      ],
+      "status": "open",
+      "actions": [
+        "MGT-01.quick.announce"
+      ]
     }
   ],
   "notImplemented": [
