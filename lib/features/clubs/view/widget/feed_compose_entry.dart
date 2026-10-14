@@ -14,10 +14,19 @@ import 'package:gu_ui/gu_ui.dart';
 /// GuKey.action('FED-01.compose'), …)`.
 class FeedComposeEntry extends StatelessWidget {
   /// [user] kullanıcısının yazı oluşturma girişi.
-  const FeedComposeEntry({required this.user, this.onTap, super.key});
+  const FeedComposeEntry({
+    required this.user,
+    this.onTap,
+    this.avatarImage,
+    super.key,
+  });
 
   /// Oturumdaki kullanıcı (avatar); `null` → `?`.
   final UserModel? user;
+
+  /// Profil fotoğrafı (çağıran `ref.userAvatarImage(user)` ile çözer,
+  /// T-27); `null` → baş harfler.
+  final ImageProvider? avatarImage;
 
   /// Karta dokunma → FED-03.
   final VoidCallback? onTap;
@@ -46,6 +55,7 @@ class FeedComposeEntry extends StatelessWidget {
                 ? _unknown
                 : (user.avatarSeed.isEmpty ? user.uid : user.avatarSeed),
             size: avatarSize,
+            image: avatarImage,
           ),
           Expanded(
             child: Text(

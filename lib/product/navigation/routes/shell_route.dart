@@ -18,10 +18,16 @@ import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/notifications/view/notification_prefs_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notifications_view.dart';
+import 'package:gu_kulupler/features/profile/view/edit_profile_view.dart';
+import 'package:gu_kulupler/features/profile/view/my_clubs_view.dart';
+import 'package:gu_kulupler/features/profile/view/profile_view.dart';
+import 'package:gu_kulupler/features/profile/view/saved_view.dart';
 import 'package:gu_kulupler/features/search/view/search_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/navigation/gu_page_transitions.dart';
+import 'package:gu_kulupler/product/navigation/my_clubs_tab.dart';
+import 'package:gu_kulupler/product/navigation/my_events_tab.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/navigation/route_guards.dart';
 import 'package:gu_kulupler/product/navigation/routes/route_placeholder_view.dart';
@@ -29,6 +35,10 @@ import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
 
 export 'package:gu_kulupler/product/navigation/club_detail_tab.dart'
     show ClubDetailTab;
+export 'package:gu_kulupler/product/navigation/my_clubs_tab.dart'
+    show MyClubsTab;
+export 'package:gu_kulupler/product/navigation/my_events_tab.dart'
+    show MyEventsTab;
 
 // Dal dosyaları bu kütüphanenin parçasıdır: go_router_builder bir rota
 // sınıfının üretilen mixin'ini, ağacını taşıyan bildirimin kütüphanesine

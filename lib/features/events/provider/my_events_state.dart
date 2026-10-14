@@ -1,18 +1,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/product/navigation/my_events_tab.dart';
 
-/// EVT-04 sekmeleri — prototip `Segmented` sırası (`screens-events.js:93`;
-/// `EVT-04.tab.<id>`).
-enum MyEventsTab {
-  /// "Yaklaşan": kayıtlı (`going` / `attended`), bitmemiş, iptal edilmemiş.
-  upcoming,
-
-  /// "Geçmiş": bitmiş (`endsAt < şimdi`) ya da iptal edilmiş etkinlik.
-  past,
-
-  /// "Bekleme listesi": bekleme listesinde, bitmemiş, iptal edilmemiş.
-  waitlist,
-}
+// Sekme türü rota sorgusuyla paylaşılır (ürün katmanı); durumu kullanan
+// dosyalar ayrıca içe aktarmasın diye buradan da dışa aktarılır.
+export 'package:gu_kulupler/product/navigation/my_events_tab.dart'
+    show MyEventsTab;
 
 /// Bir satır: kullanıcının kaydı + etkinliği.
 typedef MyEventEntry = (RsvpModel, EventModel);

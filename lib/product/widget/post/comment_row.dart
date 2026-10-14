@@ -39,6 +39,7 @@ class CommentRow extends ConsumerWidget {
     this.authorKey,
     this.onMenu,
     this.menuKey,
+    this.authorAvatar,
     super.key,
   });
 
@@ -47,6 +48,10 @@ class CommentRow extends ConsumerWidget {
 
   /// Yorum sahibinin güncel belgesi; `null` → "Silinmiş kullanıcı".
   final UserModel? author;
+
+  /// Yorum sahibinin profil fotoğrafı (çağıran `ref.userAvatarImage(author)`
+  /// ile çözer, T-27); `null` → baş harfler.
+  final ImageProvider? authorAvatar;
 
   /// Yorum sahibinin kulüpteki rolü; üye dışındaysa rozet çizilir.
   final ClubRole? role;
@@ -87,6 +92,7 @@ class CommentRow extends ConsumerWidget {
       initials: (author?.name ?? _unknown).initials,
       seed: seed,
       size: GuSizes.commentAvatar,
+      image: author == null ? null : authorAvatar,
     );
 
     return Padding(

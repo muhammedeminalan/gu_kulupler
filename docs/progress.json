@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T10:03:42.072Z",
+  "updated": "2026-10-14T11:00:45.566Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -401,11 +401,13 @@
       "notes": ""
     },
     "T-27": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T10:04:14.830Z",
+      "finishedAt": "2026-10-14T11:00:45.566Z",
+      "commits": [
+        "4e47480"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-28": {
@@ -731,7 +733,10 @@
       "resolveIn": [
         "T-27"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-27",
+      "closedAt": "2026-10-14T10:40:39.871Z",
+      "closeNote": "CLB-01 'Kulüplerim → Tümü' (CLB-01.myClubsAll) → AppNavigator.openInTab(profile, MyClubsRoute().location)"
     },
     {
       "id": "W-19",
@@ -1161,10 +1166,13 @@
       "resolveIn": [
         "T-27"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "CLB-04.myApplications"
-      ]
+      ],
+      "closedIn": "T-27",
+      "closedAt": "2026-10-14T10:40:39.902Z",
+      "closeNote": "CLB-04 'Başvurularım' → openInTab(profile, MyClubsRoute(tab: MyClubsTab.pending).location) = /profile/clubs?tab=pending"
     },
     {
       "id": "W-66",
@@ -1564,6 +1572,11 @@
       "date": "2026-10-13",
       "task": "T-21",
       "text": "K-75 FED-03 / SHT-18 prototipten farklar: önizleme kartı köşesi 20, 'Kaldır' 32 dp, tek tek görsel seçimi, düzenlemede anket sorusu salt okunur (Rules), SHT-18 seçili işaret / iskelet / hata — açık nokta"
+    },
+    {
+      "date": "2026-10-14",
+      "task": "T-27",
+      "text": "K-79 PRF-01..04 prototip farkları: biyografi PRF-01'de yok, PRF-02 fotoğraf Kaydet'e dahil + sayaç %80 eşiği, PRF-03 Geçmiş ayrılınan/iptal de içerir ('Ayrıldı' rozeti), PRF-04 özet kart, ilgi alanı çipi kategori köprüsü + EVT-04 Geçmiş (CD-150)"
     }
   ]
 }

@@ -8,6 +8,7 @@
 // * Durum kipi: ViewModel durumu ezilir (okuma yok), saat `kMyNowUtc`.
 // * Akış kipi: gerçek ViewModel + sahte depolar + yer tutucu rotalar.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -62,7 +63,10 @@ Future<void> _pump(
 }
 
 /// Akış kipi: gerçek ViewModel ve yer tutucu rotalar.
-Future<GoRouter> _pumpRoute(WidgetTester tester) async {
+Future<GoRouter> _pumpRoute(
+  WidgetTester tester, {
+  String location = '/events/mine',
+}) async {
   GoRouter? created;
   await tester.pumpAppRouter(
     routerOf: (_) => created ??= GoRouter(
@@ -73,7 +77,13 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
           path: '/events',
           builder: (_, _) => const _Stub('/events'),
           routes: [
-            GoRoute(path: 'mine', builder: (_, _) => const MyEventsView()),
+            GoRoute(
+              path: 'mine',
+              builder: (_, state) => MyEventsView(
+                tab: MyEventsTab.values
+                    .asNameMap()[state.uri.queryParameters['tab']],
+              ),
+            ),
             GoRoute(
               path: ':eventId',
               builder: (_, state) => _Stub(state.uri.path),
@@ -97,7 +107,7 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
   final router = created!;
   addTearDown(router.dispose);
   seedMyEvents();
-  router.go('/events/mine');
+  router.go(location);
   await tester.pumpAndSettle();
   return router;
 }
@@ -220,6 +230,15 @@ void main() {
       await tester.tap(find.byKey(_k('ticket.e01')));
       await tester.pumpAndSettle();
       expect(_location(router), '/events/e01/ticket');
+    });
+
+    testWidgets('`?tab=past` (PRF-01 "Katıldığım etkinlik") "Geçmiş" ile '
+        'açılır', (tester) async {
+      await _pumpRoute(tester, location: '/events/mine?tab=past');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MyEventsView)),
+      );
+      expect(container.read(myEventsViewModelProvider).tab, MyEventsTab.past);
     });
 
     testWidgets('sekme → bekleme listesi; geri → EVT-01', (tester) async {

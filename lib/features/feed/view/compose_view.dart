@@ -11,6 +11,7 @@ import 'package:gu_kulupler/features/feed/view/widget/compose_form.dart';
 import 'package:gu_kulupler/features/feed/view/widget/compose_parts.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/managed_club_picker_sheet.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/mixin/unsaved_changes_mixin.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -84,6 +85,7 @@ class _ComposeViewState extends ConsumerState<ComposeView>
       PostCard(
         post: post,
         author: session.user,
+        authorAvatar: ref.userAvatarImage(session.user),
         role: session.roleIn(widget.clubId),
         club: state.club,
         hideActions: true,

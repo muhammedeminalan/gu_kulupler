@@ -34,8 +34,12 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Design: EVT-04
 class MyEventsView extends ConsumerStatefulWidget {
-  /// Kullanıcının etkinlikleri.
-  const MyEventsView({super.key});
+  /// Kullanıcının etkinlikleri; [tab] ilk açılan sekmedir (`null` →
+  /// [MyEventsTab.upcoming]).
+  const MyEventsView({this.tab, super.key});
+
+  /// İlk açılan sekme (`?tab=`).
+  final MyEventsTab? tab;
 
   @override
   ConsumerState<MyEventsView> createState() => _MyEventsViewState();

@@ -9,6 +9,7 @@ import 'package:gu_kulupler/features/clubs/view/mixin/club_feed_tab_mixin.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/feed_compose_entry.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/post/image_grid.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -94,6 +95,7 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
       key: ValueKey<String>(post.id),
       post: post,
       author: author == null || author.isAnonymized ? null : author,
+      authorAvatar: ref.userAvatarImage(author),
       role: state.roles[post.authorId],
       club: state.club,
       liked: uid != null && post.likedBy(uid),
@@ -166,6 +168,7 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
               child: FeedComposeEntry(
                 key: GuKey.action('FED-01.compose'),
                 user: me,
+                avatarImage: ref.userAvatarImage(me),
                 onTap: compose,
               ),
             ),

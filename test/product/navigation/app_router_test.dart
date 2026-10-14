@@ -18,6 +18,7 @@ import 'package:gu_kulupler/features/clubs/view/club_list_view.dart';
 import 'package:gu_kulupler/features/events/view/event_list_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notifications_view.dart';
 import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
+import 'package:gu_kulupler/features/profile/view/profile_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/view/error_view.dart';
 import 'package:gu_kulupler/features/system/view/not_found_view.dart';
@@ -179,7 +180,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(app.location, '/profile');
       expect(app.currentTab, GuTab.profile);
-      expect(_placeholderTitle(tester), tr.navProfile);
+      expect(find.byType(ProfileView), findsOneWidget);
     });
 
     testWidgets('askıya alınınca /login', (tester) async {
@@ -474,18 +475,15 @@ void main() {
 
   group('T-11 · AppRouter · sekmeler (gerçek ağaç)', () {
     testWidgets('Kulüpler kökü CLB-01 (T-17), Etkinlikler kökü EVT-01 '
-        '(T-24), Bildirimler kökü NTF-01 (T-26); kalan iki sekme kökü yer '
-        'tutucudur, başlık sekme adıdır', (
+        '(T-24), Bildirimler kökü NTF-01 (T-26), Profil kökü PRF-01 (T-27); '
+        'Yönetim kökü yer tutucudur, başlık sekme adıdır', (
       tester,
     ) async {
       final app = await TestRouter.pump(
         tester,
         session: FakeSessionStates.activeSuper,
       );
-      final titles = {
-        GuTab.admin: tr.navAdmin,
-        GuTab.profile: tr.navProfile,
-      };
+      final titles = {GuTab.admin: tr.navAdmin};
       for (final tab in GuTab.values) {
         await app.tapTab(tab);
         expect(app.location, tab.rootPath, reason: tab.name);
@@ -499,6 +497,10 @@ void main() {
         }
         if (tab == GuTab.notifications) {
           expect(find.byType(NotificationsView), findsOneWidget);
+          continue;
+        }
+        if (tab == GuTab.profile) {
+          expect(find.byType(ProfileView), findsOneWidget);
           continue;
         }
         expect(_placeholderTitle(tester), titles[tab], reason: tab.name);
@@ -530,7 +532,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           sessionViewModelProvider.overrideWithBuild(
-            (ref, notifier) => FakeSessionStates.active,
+            (ref, notifier) => FakeSessionStates.activeSuper,
           ),
         ],
       );
@@ -551,11 +553,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Kulüpler (T-17), Etkinlikler (T-24) ve Bildirimler (T-26) kökleri
-      // gerçek ekrandır; yer tutucu Profil'de.
-      container.read(appRouterProvider).go(AppPaths.profile);
+      // Kulüpler (T-17), Etkinlikler (T-24), Bildirimler (T-26) ve Profil
+      // (T-27) kökleri gerçek ekrandır; yer tutucu Yönetim'de (süper admin).
+      container.read(appRouterProvider).go(AppPaths.admin);
       await tester.pumpAndSettle();
-      expect(_placeholderTitle(tester), en.navProfile);
+      expect(_placeholderTitle(tester), en.navAdmin);
       expect(
         tester.widget<GuBottomNav>(find.byType(GuBottomNav)).semanticLabel,
         en.a11yMainNav,

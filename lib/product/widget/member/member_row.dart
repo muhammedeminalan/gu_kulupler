@@ -50,6 +50,7 @@ class MemberRow extends ConsumerWidget {
     this.actionKey,
     this.inCard = false,
     this.chevron = false,
+    this.avatarImage,
     super.key,
   });
 
@@ -58,6 +59,10 @@ class MemberRow extends ConsumerWidget {
 
   /// Güncel kullanıcı belgesi; `null` → `applicant` anlık görüntüsü.
   final UserModel? user;
+
+  /// Profil fotoğrafı ([user]'ın `avatarPath`'i; çağıran
+  /// `ref.userAvatarImage(user)` ile çözer). `null` → baş harfler.
+  final ImageProvider? avatarImage;
 
   /// "⋮" menüsü; `null` → düğme çizilmez.
   final VoidCallback? onMenu;
@@ -172,6 +177,7 @@ class MemberRow extends ConsumerWidget {
       chevron: chevron,
       onTap: onTap,
       actionKey: actionKey,
+      avatarImage: avatarImage,
     );
   }
 }

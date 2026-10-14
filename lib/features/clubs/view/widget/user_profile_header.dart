@@ -32,6 +32,7 @@ class UserProfileHeader extends StatelessWidget {
     this.showDetails = true,
     this.isSuperAdmin = false,
     this.roles = const [],
+    this.avatarImage,
     super.key,
   });
 
@@ -46,6 +47,10 @@ class UserProfileHeader extends StatelessWidget {
 
   /// Kulüp rolleri (rozetler); boşsa satır çizilmez.
   final List<ClubRole> roles;
+
+  /// Profil fotoğrafı (`users.avatarPath`; çağıran `ref.userAvatarImage`
+  /// ile çözer, T-27). `null` ya da silinmiş kullanıcı → baş harfler.
+  final ImageProvider? avatarImage;
 
   /// `screens-clubs.js:157` `Avatar size=96` — `GuSizes.avatarSizes`
   /// (30 · 32 · 36 · 40 · 44 · 48 · 56 · 96 · 120) içindeki CLB-07 değeri.
@@ -81,6 +86,7 @@ class UserProfileHeader extends StatelessWidget {
             initials: name.initials,
             seed: user.avatarSeed,
             size: avatarSize,
+            image: isDeleted ? null : avatarImage,
           ),
           Semantics(
             header: true,

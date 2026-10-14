@@ -11,7 +11,6 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/features/auth/provider/setup_profile_state.dart';
 import 'package:gu_kulupler/features/auth/provider/setup_profile_view_model.dart';
 import 'package:gu_kulupler/features/auth/view/setup_profile_view.dart';
-import 'package:gu_kulupler/features/auth/view/widget/setup_profile_error_line.dart';
 import 'package:gu_kulupler/features/auth/view/widget/setup_profile_interests_step.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/dialogs/unsaved_changes_dialog.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/department_picker_sheet.dart';
@@ -27,6 +26,7 @@ import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/widget/form/form_error_line.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_app_preferences_store.dart';
@@ -188,7 +188,7 @@ void main() {
           expect(next.loading, isFalse);
           expect(find.byKey(_back), findsNothing);
           expect(find.byKey(_finish), findsNothing);
-          expect(find.byType(SetupProfileErrorLine), findsNothing);
+          expect(find.byType(FormErrorLine), findsNothing);
         },
       );
 
@@ -251,7 +251,7 @@ void main() {
         expect(finish.loading, isFalse);
         expect(_button(tester, _back).disabled, isFalse);
         expect(find.byKey(_next), findsNothing);
-        expect(find.byType(SetupProfileErrorLine), findsNothing);
+        expect(find.byType(FormErrorLine), findsNothing);
       });
     }
 
@@ -510,7 +510,7 @@ void main() {
       expect(_feedback().hasToastAction, isTrue);
       expect(_picker().picks, isEmpty);
       expect(find.byType(GuBadge), findsNothing);
-      expect(find.byType(SetupProfileErrorLine), findsNothing);
+      expect(find.byType(FormErrorLine), findsNothing);
     });
 
     testWidgets('SHT-16 kapatılırsa hiçbir şey olmaz', (tester) async {
@@ -538,7 +538,7 @@ void main() {
       expect(Limits.imageMaxBytes, 5 * 1024 * 1024);
       expect(
         find.descendant(
-          of: find.byType(SetupProfileErrorLine),
+          of: find.byType(FormErrorLine),
           matching: find.text(tester.l10n.imageTooLarge(5)),
         ),
         findsOneWidget,
@@ -556,7 +556,7 @@ void main() {
       await _tap(tester, _photo);
       await tester.pump();
 
-      final line = find.byType(SetupProfileErrorLine);
+      final line = find.byType(FormErrorLine);
       expect(
         find.descendant(
           of: line,
@@ -701,7 +701,7 @@ void main() {
 
       await _tap(tester, _finish);
 
-      final line = find.byType(SetupProfileErrorLine);
+      final line = find.byType(FormErrorLine);
       expect(
         find.descendant(
           of: line,
@@ -756,7 +756,7 @@ void main() {
       // Ekran gezinmez; router yönlendirene kadar form kilitli.
       expect(_button(tester, _finish).loading, isTrue);
       expect(_button(tester, _back).disabled, isTrue);
-      expect(find.byType(SetupProfileErrorLine), findsNothing);
+      expect(find.byType(FormErrorLine), findsNothing);
     });
 
     testWidgets('fotoğraflı gönderim: profil yamasından sonra yüklenir, '
@@ -800,7 +800,7 @@ void main() {
       expect(_feedback().toasts, [ToastId.tst24]);
       expect(_users().callsTo('createProfile'), isEmpty);
       expect(_button(tester, _finish).loading, isFalse);
-      expect(find.byType(SetupProfileErrorLine), findsNothing);
+      expect(find.byType(FormErrorLine), findsNothing);
     });
 
     testWidgets('sunucu hatası: çiplerin altında "Bir şeyler ters gitti"; '
@@ -817,7 +817,7 @@ void main() {
 
       expect(
         find.descendant(
-          of: find.byType(SetupProfileErrorLine),
+          of: find.byType(FormErrorLine),
           matching: find.text(tester.l10n.sysErrorTitle),
         ),
         findsOneWidget,
@@ -827,7 +827,7 @@ void main() {
 
       await _tap(tester, _finish);
       await tester.pump();
-      expect(find.byType(SetupProfileErrorLine), findsNothing);
+      expect(find.byType(FormErrorLine), findsNothing);
       expect(_feedback().toasts, [ToastId.tst05]);
     });
 
@@ -843,7 +843,7 @@ void main() {
       await tester.pump();
 
       expect(_feedback().toasts, [ToastId.tst24]);
-      expect(find.byType(SetupProfileErrorLine), findsNothing);
+      expect(find.byType(FormErrorLine), findsNothing);
       expect(_button(tester, _finish).loading, isFalse);
     });
 

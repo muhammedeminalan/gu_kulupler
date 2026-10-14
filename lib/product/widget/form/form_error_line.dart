@@ -5,12 +5,15 @@ import 'package:gu_ui/gu_ui.dart';
 /// `triangle-alert` 14 + `state.danger` metin, aralık 4; `role="alert"` →
 /// `Semantics(liveRegion)`.
 ///
-/// AUT-05'te ilgi alanı çiplerinin altında (`screens-auth.js:145`) ve
-/// fotoğraf / gönderim hatalarında kullanılır; kutulu alanların hatası
-/// `GuField` içindedir.
-class SetupProfileErrorLine extends StatelessWidget {
+/// Kutusuz form parçalarının (çip grubu, avatar, gönderim) hatası: AUT-05
+/// ilgi alanı çiplerinin altında (`screens-auth.js:145`) ve fotoğraf /
+/// gönderim hatalarında, PRF-02 ilgi alanları / fotoğraf / gönderim
+/// hatalarında (`screens-profile.js:29`). Kutulu alanların hatası `GuField`
+/// içindedir. T-27'de `features/auth`'tan product'a taşındı (eski adı
+/// `SetupProfileErrorLine`).
+class FormErrorLine extends StatelessWidget {
   /// [text] hata metniyle.
-  const SetupProfileErrorLine(this.text, {super.key});
+  const FormErrorLine(this.text, {super.key});
 
   /// Hata metni (çağırandan; ARB).
   final String text;

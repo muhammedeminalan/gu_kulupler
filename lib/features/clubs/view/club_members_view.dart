@@ -7,6 +7,7 @@ import 'package:gu_kulupler/features/clubs/provider/club_members_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_view_model.dart';
 import 'package:gu_kulupler/features/clubs/view/mixin/club_members_view_mixin.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -107,6 +108,7 @@ class _ClubMembersViewState extends ConsumerState<ClubMembersView>
               key: ValueKey<String>(userId),
               membership: membership,
               user: state.users[userId],
+              avatarImage: ref.userAvatarImage(state.users[userId]),
               actionKey: GuKey.action('CLB-06.member.$userId'),
               onTap: () => openProfile(userId),
               menuActionKey: hasMenu

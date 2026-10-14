@@ -103,6 +103,13 @@ final class ClubListViewModel extends _$ClubListViewModel
     );
   }
 
+  /// PRF-01 ilgi alanı çipi (`clubCategoryRequestProvider`): süzgeci tek
+  /// [categoryId] kategorisine çevirir, diğer süzgeçler korunur
+  /// (`screens-profile.js:16`). [setCategory]'den farkı: seçili kategoriye
+  /// yeniden istek seçimi kaldırmaz.
+  void showCategory(String categoryId) =>
+      setFilters(state.filters.copyWith(categoryIds: {categoryId}));
+
   /// SHT-04 "Sonuçları göster": süzgeç ve sıralamayı uygular.
   void setFilters(ClubFilters filters) {
     if (filters == state.filters) return;

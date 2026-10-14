@@ -8,6 +8,7 @@ import 'package:gu_kulupler/features/clubs/provider/user_profile_state.dart';
 import 'package:gu_kulupler/features/clubs/view/mixin/user_profile_view_mixin.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/user_profile_header.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -142,6 +143,7 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
           showDetails: state.showsDetails,
           isSuperAdmin: state.isSuperAdmin,
           roles: state.roles,
+          avatarImage: ref.userAvatarImage(user),
         ),
         if (state.isHiddenByPrivacy)
           _private(l10n)

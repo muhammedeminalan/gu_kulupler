@@ -417,14 +417,16 @@ void main() {
       expect(locationOf(router), '/clubs');
     });
 
-    testWidgets('"Başvurularım" → Profil sekmesi', (tester) async {
+    testWidgets('"Başvurularım" → PRF-03 bekleyenler sekmesi (W-65)', (
+      tester,
+    ) async {
       final router = await pumpClubRoute(
         tester,
         _location,
         membership: kPending,
       );
       await _tap(tester, _myApplications);
-      expect(locationOf(router), '/profile');
+      expect(locationOf(router), '/profile/clubs?tab=pending');
     });
 
     testWidgets('"Aç" → DLG-03 "İzin ver" → TST-19, kart kalkar', (

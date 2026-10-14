@@ -36,6 +36,7 @@ import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/club_category_request.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_kulupler/product/widget/club/my_club_chip.dart';
@@ -129,6 +130,10 @@ Future<GoRouter> _pumpRoute(
       initialLocation: '/start',
       routes: [
         GoRoute(path: '/start', builder: (_, _) => const _Stub('/start')),
+        GoRoute(
+          path: '/profile/clubs',
+          builder: (_, state) => _Stub(state.uri.path),
+        ),
         GoRoute(
           path: _clubsPath,
           builder: (_, _) => const ClubListView(),
@@ -580,6 +585,27 @@ void main() {
         await tester.pumpAndSettle();
         expect(_location(router), path);
       }
+    });
+
+    testWidgets('"Kulüplerim → Tümü" → PRF-03 (Profil sekmesi, W-18)', (
+      tester,
+    ) async {
+      final router = await _pumpRoute(tester, session: kMemberSession);
+      await _tapKey(tester, _myClubsAll);
+      await tester.pumpAndSettle();
+      expect(_location(router), '/profile/clubs');
+    });
+
+    testWidgets('PRF-01 ilgi alanı isteği süzgeci tek kategoriye çevirir ve '
+        'tüketilir', (tester) async {
+      await _pumpRoute(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClubListView)),
+      );
+      container.read(clubCategoryRequestProvider.notifier).request('k04');
+      await tester.pumpAndSettle();
+      expect(_stateOf(tester).filters.categoryIds, {'k04'});
+      expect(container.read(clubCategoryRequestProvider), isNull);
     });
 
     testWidgets('kategori çipi tek kategori seçer; yeniden dokunma ve "Tümü" '
