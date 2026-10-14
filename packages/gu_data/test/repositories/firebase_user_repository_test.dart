@@ -8,6 +8,8 @@
 // (W-57: tamamlanmış profil ya da ilgi alanlarını içeren yama), adım bazlı
 // hata türü (PLAN §10.4, §11.5; D-10).
 //
+// T-25 · listByInterests: `event_new` ilgi-eşleşmeli alıcı sorgusu (CD-38).
+//
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); hata yolları el yazımı SDK
 // çiftleriyle (`test/fakes/sdk_firestore_stubs.dart`).
 import 'dart:math';
@@ -117,18 +119,19 @@ void main() {
   });
 
   group('T-12 · UserRepository · sözleşme', () {
-    test('PLAN §10.4 tablosundaki T-12 üyeleri ve updateAvatar (T-14) '
-        'arayüzde aynı imzayla var; başka üye yok (listByInterests T-25)', () {
+    test('PLAN §10.4 tablosundaki T-12 üyeleri, updateAvatar (T-14) ve '
+        'listByInterests (T-25) arayüzde aynı imzayla var; başka üye yok', () {
       final members = interfaceMembers(_interface, '$UserRepository');
       final plan = readPlanRepositoryMembers('$UserRepository');
-      final later = plan.where((row) => row.note.isNotEmpty);
-      final now = plan.where((row) => row.note.isEmpty);
 
-      expect(later.map((row) => row.member), ['listByInterests']);
-      expect(now, hasLength(7));
-      expect(now.map((row) => row.member), contains('updateAvatar'));
+      expect(
+        plan.where((row) => row.note.isNotEmpty).map((row) => row.member),
+        ['listByInterests'],
+      );
+      expect(plan, hasLength(8));
+      expect(plan.map((row) => row.member), contains('updateAvatar'));
       expect(members.toSet(), {
-        for (final row in now) normalizeDartSource(row.signature),
+        for (final row in plan) normalizeDartSource(row.signature),
       });
     });
 
@@ -1059,6 +1062,65 @@ void main() {
       expect(document, isNot(const MediaDocumentError(FirestoreError.unknown)));
       expect('$upload', 'MediaUploadError(timeout)');
       expect('$document', 'MediaDocumentError(offline)');
+    });
+  });
+
+  group('T-25 · UserRepository · listByInterests (CD-38)', () {
+    Future<void> seedUser(
+      String uid,
+      List<String> interests, {
+      bool isDeleted = false,
+    }) => userRef(uid).set({
+      'name': 'Kullanıcı',
+      'nameLower': 'kullanıcı',
+      'avatarSeed': uid,
+      'interests': interests,
+      'profileComplete': true,
+      ...BaseFieldsPayload.create(),
+      'isDeleted': isDeleted,
+    });
+
+    test('ilgi alanlarından biri eşleşen silinmemiş kullanıcılar, en çok '
+        'limit; boş liste sorgusuz boş; 30 üstü / geçersiz değer / limit ≤ 0 '
+        'invalidArgument', () async {
+      await seedUser('u1', ['i01']);
+      await seedUser('u2', ['i05', 'i02']);
+      await seedUser('u3', ['i01'], isDeleted: true);
+      await seedUser('u4', ['i04']);
+
+      final all = await repository.listByInterests(['i01', 'i02', 'i01']);
+      final limited = await repository.listByInterests([
+        'i01',
+        'i02',
+      ], limit: 1);
+
+      expect(all.dataOrNull?.map((u) => u.uid).toSet(), {'u1', 'u2'});
+      expect(limited.dataOrNull, hasLength(1));
+      expect(
+        (await failing(
+          'permission-denied',
+        ).listByInterests(const [])).dataOrNull,
+        isEmpty,
+      );
+      for (final (ids, limit) in [
+        (
+          [for (var i = 0; i < 31; i++) 'i$i'],
+          Limits.eventNewInterestFanOutMax,
+        ),
+        (['a/b'], Limits.eventNewInterestFanOutMax),
+        (['i01'], 0),
+      ]) {
+        expect(
+          (await repository.listByInterests(ids, limit: limit)).errorOrNull,
+          FirestoreError.invalidArgument,
+        );
+      }
+      expect(
+        (await failing(
+          'permission-denied',
+        ).listByInterests(['i01'])).errorOrNull,
+        FirestoreError.permissionDenied,
+      );
     });
   });
 

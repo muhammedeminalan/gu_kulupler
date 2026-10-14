@@ -4766,5 +4766,864 @@
         "writes": []
       }
     ]
+  },
+  "t25": {
+    "_doc": "T-25 — bildirim yazımlarının GERÇEK yükleri (FirebaseNotificationRepository = NotificationRepository + NotificationWriter, ClientFanOutDispatcher; docs/plans/T-25.md §6). Biçim `t22` ile aynıdır; farklar: (1) `@autoId` = olay anahtarı (NotificationWriter.newEventKey; jest: Firestore otomatik kimliği — 20 karakter [A-Za-z0-9], Rules biçimini doğrular); bir senaryonun tüm bildirimleri aynı anahtarı paylaşır (bir notifyX çağrısı = bir olay); tek seferlik olaylarda anahtar olayın kimliğidir (announcement → postId, event_cancelled → eventId, application_received → {clubId}_{applicantId}_{priorCount} — CD-148); (2) `batches` — yazımların ayrı commit'lere bölünüşü (yazım sıraları; yoksa tümü tek batch): application_received alıcı başına ayrı batch'tir; (3) dağıtıcı senaryolarında alıcı listesi Dart tarafında sabit bir RecipientResolver'dan gelir (sorgu biçimi firebase_recipient_resolver_test + queries.test.js); (4) kritik bildirim (waitlist_promoted) asıl yazımla aynı batch'tedir. Metin / aktör alanı yoktur (CD-147); refs yalnızca türün zorunlularını taşır (W-51 anahtarsız).",
+    "autoId": "@autoId",
+    "increment": "@increment",
+    "daysAhead": "@daysAhead:",
+    "actors": {
+      "student": "u_student",
+      "member": "u_member",
+      "board": "u_board",
+      "president": "u_president",
+      "advisor": "u_advisor",
+      "super": "u_super",
+      "otherManager": "u_mgr2",
+      "susp": "u_susp",
+      "pending": "u_pending"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "event": {
+        "clubId": "c01",
+        "createdBy": "u_board",
+        "title": "Sözleşme etkinliği",
+        "desc": "Sözleşme testi etkinliği.",
+        "type": "egitim",
+        "startsAt": "@daysAgo:-3",
+        "endsAt": "@daysAgo:-4",
+        "placeId": "pl01",
+        "placeText": null,
+        "capacity": null,
+        "visibility": "public",
+        "status": "published",
+        "cancelReason": null,
+        "coverSeed": "event-e01",
+        "coverPalette": "red",
+        "coverPattern": "dots",
+        "coverPath": null,
+        "registrationOpen": true,
+        "autoReminder": true,
+        "goingCount": 0,
+        "waitlistCount": 0,
+        "attendedCount": 0,
+        "publishedAt": "@daysAgo:0",
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "announcement": {
+        "clubId": "c01",
+        "authorId": "u_president",
+        "type": "announcement",
+        "title": "Genel kurul",
+        "text": "Sözleşme duyurusu.",
+        "images": [],
+        "pinned": false,
+        "pushSent": true,
+        "likes": [],
+        "likeCount": 0,
+        "commentCount": 0,
+        "isHidden": false,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "rsvp": {
+        "eventId": "e01",
+        "clubId": "c01",
+        "userId": "u_student",
+        "status": "waitlist",
+        "reminder": "1h",
+        "ticketCode": "GU-AAAA-AAAB",
+        "waitlistAt": "@daysAgo:1",
+        "scannedAt": null,
+        "scannedBy": null,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "notification": {
+        "userId": "u_student",
+        "type": "announcement",
+        "refs": {
+          "clubId": "c01",
+          "postId": "p01"
+        },
+        "read": false,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "NotificationDispatcher.notifyApplicationReceived",
+        "role": "pending",
+        "note": "MembershipRepository.apply kesinleştikten sonra başvuranın cihazında: alıcılar managersOf (board + president; danışman değil — CD-139 okuması queries.test.js), alıcı başına AYRI batch (`batches`: Rules alıcının yönetici üyeliğini okur, parça boyu 1); refs clubId + applicantId, metin / aktör alanı yok (CD-147)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "notifications/application_received_c01_u_pending_0_u_board",
+            "data": {
+              "userId": "u_board",
+              "type": "application_received",
+              "refs": {
+                "clubId": "c01",
+                "applicantId": "u_pending"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/application_received_c01_u_pending_0_u_president",
+            "data": {
+              "userId": "u_president",
+              "type": "application_received",
+              "refs": {
+                "clubId": "c01",
+                "applicantId": "u_pending"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "batches": [
+          [
+            0
+          ],
+          [
+            1
+          ]
+        ],
+        "denied": [
+          {
+            "name": "bekleyen başvurusu olmayan kullanıcı (kendi adına)",
+            "role": "student",
+            "patch": {
+              "0": {
+                "refs": {
+                  "clubId": "c01",
+                  "applicantId": "u_student"
+                }
+              },
+              "1": {
+                "refs": {
+                  "clubId": "c01",
+                  "applicantId": "u_student"
+                }
+              }
+            }
+          },
+          {
+            "name": "başka başvuran adına",
+            "patch": {
+              "0": {
+                "refs": {
+                  "clubId": "c01",
+                  "applicantId": "u_member"
+                }
+              },
+              "1": {
+                "refs": {
+                  "clubId": "c01",
+                  "applicantId": "u_member"
+                }
+              }
+            }
+          },
+          {
+            "name": "okunmuş olarak yazılamaz",
+            "patch": {
+              "0": {
+                "read": true
+              },
+              "1": {
+                "read": true
+              }
+            }
+          },
+          {
+            "name": "metin alanı taşıyamaz (CD-147: metni okuyan üretir)",
+            "patch": {
+              "0": {
+                "title": "Yeni başvuru"
+              },
+              "1": {
+                "title": "Yeni başvuru"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationDispatcher.notifyAnnouncement",
+        "role": "president",
+        "note": "ManagementRepository.publishPost (T-30) sonrası duyuruyu yazan yönetici: tek olay anahtarı, alıcılar membersOf (yazar hariç), tek parça = tek batch; Rules bildirimli (pushSent), silinmemiş ve oturumun yazdığı duyuruyu okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "posts/p01": {
+            "$fixture": "announcement"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "notifications/announcement_p01_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "announcement",
+              "refs": {
+                "clubId": "c01",
+                "postId": "p01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/announcement_p01_u_board",
+            "data": {
+              "userId": "u_board",
+              "type": "announcement",
+              "refs": {
+                "clubId": "c01",
+                "postId": "p01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "duyuruyu yazmayan yönetici",
+            "role": "board"
+          },
+          {
+            "name": "üye duyuru bildirimi yazamaz",
+            "role": "member"
+          },
+          {
+            "name": "bildirimsiz duyuru (pushSent false)",
+            "seed": {
+              "posts/p01": {
+                "pushSent": false
+              }
+            }
+          },
+          {
+            "name": "silinmiş duyuru",
+            "seed": {
+              "posts/p01": {
+                "isDeleted": true,
+                "deletedAt": "@daysAgo:0",
+                "deletedBy": "u_president"
+              }
+            }
+          },
+          {
+            "name": "gizlenmiş duyuru yeniden itilemez (CD-148)",
+            "seed": {
+              "posts/p01": {
+                "isHidden": true,
+                "hiddenBy": "u_super",
+                "hiddenAt": "@daysAgo:0"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp duyuru bildirimi yazamaz (clubLive — CD-148)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationDispatcher.notifyEventNew",
+        "role": "board",
+        "note": "ManagementRepository.publishEvent(notifyMembers: true) (T-30) sonrası: alıcılar eventNew (üyeler ∪ ilgi eşleşmesi, oluşturan hariç), tek batch; Rules etkinliğin bu kulübün yayındaki, silinmemiş etkinliği olduğunu okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "notifications/event_new_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "event_new",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/event_new_@autoId_u_president",
+            "data": {
+              "userId": "u_president",
+              "type": "event_new",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/event_new_@autoId_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "event_new",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "taslak etkinlik",
+            "seed": {
+              "events/e01": {
+                "status": "draft",
+                "publishedAt": null
+              }
+            }
+          },
+          {
+            "name": "eski yayın (publishedAt pencere dışında) yeniden itilemez (CD-148)",
+            "seed": {
+              "events/e01": {
+                "publishedAt": "@daysAgo:1"
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp etkinlik bildirimi yazamaz (clubLive — CD-148)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager"
+          },
+          {
+            "name": "danışman bildirim yazamaz",
+            "role": "advisor"
+          },
+          {
+            "name": "yanlış tür refs (postId)",
+            "patch": {
+              "0": {
+                "refs": {
+                  "clubId": "c01",
+                  "eventId": "e01",
+                  "postId": "p01"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationDispatcher.notifyEventCancelled",
+        "role": "president",
+        "note": "ManagementRepository.cancelEvent (T-30) sonrası: alıcılar rsvpUsersOf(going + waitlist), tek batch; Rules etkinliğin iptal edildiğini okur",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "status": "cancelled",
+            "cancelReason": "Salon tadilatta."
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "notifications/event_cancelled_e01_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "event_cancelled",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/event_cancelled_e01_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "event_cancelled",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "etkinlik iptal edilmemiş",
+            "seed": {
+              "events/e01": {
+                "status": "published",
+                "cancelReason": null
+              }
+            }
+          },
+          {
+            "name": "silinmiş kulüp iptal bildirimi yazamaz (clubLive — CD-148)",
+            "seed": {
+              "clubs/c01": {
+                "isDeleted": true,
+                "deletedAt": "@daysAgo:0",
+                "deletedBy": "u_super"
+              }
+            }
+          },
+          {
+            "name": "üye iptal bildirimi yazamaz",
+            "role": "member"
+          }
+        ]
+      },
+      {
+        "call": "NotificationDispatcher.notifyWaitlistPromoted · AttendanceRepository.promote (T-30) batch'i",
+        "role": "board",
+        "note": "kritik bildirim asıl yazımla AYNI batch'te: ilk üç yazım T-30 AttendanceRepository.promote'un terfi bileşimidir (rsvp waitlist → going, sayaçlar +1 / −1, yan belge işaretçisi — W-64; T-30 kendi senaryosuyla değiştirir), dördüncüsü dağıtıcının addToBatch'i; Rules terfiyi getAfter ile aynı batch'te arar",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "events/e01": {
+            "$fixture": "event",
+            "capacity": 2,
+            "goingCount": 1,
+            "waitlistCount": 1
+          },
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "rsvps/e01_u_student",
+            "data": {
+              "status": "going",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "events/e01",
+            "data": {
+              "goingCount": {
+                "@increment": 1
+              },
+              "waitlistCount": {
+                "@increment": -1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "events/e01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastRsvpRef": "rsvps/e01_u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/waitlist_promoted_@autoId_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "waitlist_promoted",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "rsvps/e01_u_student": {
+            "status": "going"
+          },
+          "events/e01": {
+            "goingCount": 2,
+            "waitlistCount": 0
+          }
+        },
+        "denied": [
+          {
+            "name": "terfi yazımları olmadan tek başına bildirim",
+            "without": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "name": "üye terfi bildirimi yazamaz",
+            "role": "member"
+          },
+          {
+            "name": "bildirim terfi edilmeyene (alıcı alanı yoldan farklı)",
+            "patch": {
+              "3": {
+                "userId": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationRepository.createSelf · ilk dokunma",
+        "role": "student",
+        "note": "yerel hatırlatıcıya dokunma (CD-44): kimlik event_reminder_{eventId}_{uid}; önce tekil okuma (olmayan KENDİ belgesi boş döner), yoksa tek set",
+        "seed": {},
+        "reads": [
+          "notifications/event_reminder_e01_u_student"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "notifications/event_reminder_e01_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "event_reminder",
+              "refs": {
+                "clubId": "c01",
+                "eventId": "e01"
+              },
+              "read": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "başkasının hatırlatıcısı",
+            "role": "member"
+          },
+          {
+            "name": "alıcı alanı kimlikten farklı",
+            "patch": {
+              "0": {
+                "userId": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationRepository.createSelf · belge zaten var (silinmiş)",
+        "role": "student",
+        "note": "ikinci dokunma: belge varsa — kullanıcı silmiş olsa da — yazım yok (aynı kimliğe ikinci set Rules'ta update sayılır)",
+        "seed": {
+          "notifications/event_reminder_e01_u_student": {
+            "$fixture": "notification",
+            "type": "event_reminder",
+            "refs": {
+              "clubId": "c01",
+              "eventId": "e01"
+            },
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_student"
+          }
+        },
+        "reads": [
+          "notifications/event_reminder_e01_u_student"
+        ],
+        "writes": []
+      },
+      {
+        "call": "NotificationRepository.markRead",
+        "role": "student",
+        "note": "tek güncelleme: read true + updatedAt (yalnızca sahibi)",
+        "seed": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "$fixture": "notification"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student",
+            "data": {
+              "read": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "read": true
+          }
+        },
+        "denied": [
+          {
+            "name": "başkasının bildirimi",
+            "role": "member"
+          },
+          {
+            "name": "okunmamışa geri dönüş yok",
+            "patch": {
+              "0": {
+                "read": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationRepository.markAllRead",
+        "role": "student",
+        "note": "TST-18: kimlikler Limits.batchMaxWrites parçalı, her parça tek batch",
+        "seed": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "$fixture": "notification"
+          },
+          "notifications/event_new_ZyXwVuTsRqPoNmLkJi23_u_student": {
+            "$fixture": "notification",
+            "type": "event_new",
+            "refs": {
+              "clubId": "c01",
+              "eventId": "e01"
+            }
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student",
+            "data": {
+              "read": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "notifications/event_new_ZyXwVuTsRqPoNmLkJi23_u_student",
+            "data": {
+              "read": true,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "parçada başkasının bildirimi",
+            "role": "member"
+          }
+        ]
+      },
+      {
+        "call": "NotificationRepository.softDeleteNotification",
+        "role": "student",
+        "note": "TST-16 kaydırarak sil: soft delete (D-10), belge silme yok",
+        "seed": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "$fixture": "notification"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student",
+            "data": {
+              "isDeleted": true,
+              "deletedAt": "@serverTimestamp",
+              "deletedBy": "u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "denied": [
+          {
+            "name": "başkasının bildirimi",
+            "role": "member"
+          },
+          {
+            "name": "silen başkası gösterilemez",
+            "patch": {
+              "0": {
+                "deletedBy": "u_member"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "NotificationRepository.restoreNotification",
+        "role": "student",
+        "note": "TST-16 Geri al: yalnızca silen sahibi",
+        "seed": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "$fixture": "notification",
+            "isDeleted": true,
+            "deletedAt": "@daysAgo:0",
+            "deletedBy": "u_student"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student",
+            "data": {
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "notifications/announcement_AbCdEfGhIjKlMnOpQr01_u_student": {
+            "isDeleted": false
+          }
+        },
+        "denied": [
+          {
+            "name": "başkasının bildirimi",
+            "role": "member"
+          }
+        ]
+      }
+    ]
   }
 }

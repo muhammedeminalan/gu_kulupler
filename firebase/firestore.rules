@@ -15,6 +15,8 @@ rules_version = '2';
 // activity gönderi yayını türleri (`post_created`, `announcement`, `poll`).
 // T-22 → events (+ yan belge events/{id}/private/counter — W-64), rsvps; activity etkinlik türleri
 // (`event_published`, `event_cancelled`).
+// T-25 → notifications (sahibi R / U; tür bazlı C: application_received, announcement, event_new,
+// event_cancelled, waitlist_promoted, event_reminder).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -1393,10 +1395,166 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 11 · notifications/{notificationId} — T-25
+    // 11 · notifications/{notificationId} — T-25 · rules-spec §3.9 · sözleşme docs/plans/T-25.md §6 (a, b, f, g)
+    // Yazma yolları: ClientFanOutDispatcher → NotificationWriter.addToBatch (kritik, asıl yazımla aynı batch) /
+    // createMany (fan-out parçası, tek batch) · NotificationRepository.createSelf (`event_reminder`, C) ·
+    // markRead / markAllRead / softDeleteNotification / restoreNotification (U, sahibi).
+    // Belge şeması (CD-147: Mod F'de sunucu tetikleyicisi aynı alanları yazar): `userId` (alıcı), `type`, `refs`
+    // (7'lik beyaz liste), `read`, ortak alanlar. Metin, aktör / yazar alanı YOKTUR (alıcı dilinde ARB'den üretilir).
+    // Kimlik (W-49): `{type}_{eventKey}_{userId}`; aynı olayın tekrarı aynı belge = ikinci `set` update sayılır ve
+    // yalnızca sahibine açıktır → ret. Anahtar (ClientFanOutDispatcher): tek seferlik olaylarda olayın
+    // kimliği — `announcement` postId, `event_cancelled` eventId, `application_received` `{clubId}_{uid}_{priorCount}`
+    // (tam eşitlik); tekrarlanabilen olaylarda (`event_new`, `waitlist_promoted`) olay başına rastgele 20 karakter
+    // `[A-Za-z0-9]`; `event_reminder`'da `event_reminder_{eventId}_{uid}` (tam eşitlik).
+    // Kimlik erişim çağrısı harcamadan dizgi olarak doğrulanır; yolu kimlikten kurulan her okuma okunan
+    // belgenin alanlarını da karşılaştırır (birleşim belirsizliği — `a_b` + `c` = `a` + `b_c`).
+    // Kapalı türler (dal üreticisiyle aynı commit'te açılır): `application_approved`, `application_rejected`,
+    // `removed_from_club`, `role_changed` (T-30) · `report_resolved` (T-37) · `new_report` (hiç üretilmez —
+    // CD-37) · `system` (yalnızca Admin SDK). Fan-out türlerinde alıcının üyeliği DOĞRULANMAZ (bütçe:
+    // alıcı başına `get` yok) — ETKİN kulübün yöneticisinin taze olay penceresindeki spam'i kabul edilmiş
+    // sınırlamadır (rules-spec §9.3, K-J: kabul — CD-65; kota kuralı yazılmaz). Başvuran (güvenilmeyen öğrenci)
+    // başvuru başına yönetici başına en çok bir belge yazabilir (CD-148).
     match /notifications/{notificationId} {
-      allow read: if false;
-      allow create, update: if false;
+      // Belge kimliği oturumun uid'iyle mi bitiyor (`…_<uid>`)? Yalnızca OLMAYAN belgenin tekil okumasında
+      // kullanılır (createSelf ön okuması); var olan belgede sahiplik `userId` alanından okunur.
+      function ownNotificationId() {
+        let suffix = '_' + uid();
+        return notificationId.size() > suffix.size()
+            && notificationId[notificationId.size() - suffix.size():notificationId.size()] == suffix;
+      }
+
+      // `refs` (NotificationRefsModel): türün zorunluları (`requiredFor`) dolu dizgi; diğerleri anahtarsız
+      // (istemci, include_if_null: false) ya da açık `null` (seed) — W-51.
+      function refOk(r, required, k) {
+        return k in required ? (r.get(k, null) is string && r.get(k, '').size() > 0) : r.get(k, null) == null;
+      }
+      function refsOk(r, required) {
+        return r is map
+            && r.keys().hasOnly(['clubId', 'eventId', 'postId', 'applicantId', 'reportId', 'role', 'textKey'])
+            && refOk(r, required, 'clubId') && refOk(r, required, 'eventId') && refOk(r, required, 'postId')
+            && refOk(r, required, 'applicantId') && refOk(r, required, 'reportId') && refOk(r, required, 'role')
+            && refOk(r, required, 'textKey');
+      }
+
+      // Dağıtıcı kimliği `{type}_{eventKey}_{userId}` (FirestoreIds.notification; NotificationWriter.newEventKey):
+      // tür öneki ve alıcı soneki belgenin alanlarıyla birebir, arada tam 20 karakter `[A-Za-z0-9]` anahtar.
+      function keyedIdOk(d) {
+        let head = d.type + '_';
+        let tail = '_' + d.userId;
+        let n = notificationId.size();
+        return n > head.size() + tail.size()
+            && notificationId[0:head.size()] == head
+            && notificationId[n - tail.size():n] == tail
+            && notificationId[head.size():n - tail.size()].matches('[A-Za-z0-9]{20}');
+      }
+
+      // Başvuranın kendi `pending` üyeliği (yol oturumdan; alanlar karşılaştırılır) ve kimliğin BU başvuruya
+      // bağlanması (T-25 güvenlik incelemesi): `application_received_{clubId}_{uid}_{priorCount}_{alıcı}`
+      // (FirestoreIds.applicationEventKey). Her başvuru (M1 / M3 / M4 `priorCount` +1) yönetici başına TEK belge
+      // üretir; aynı başvuruyla ikinci bildirim var olan belgeye düşer (update → ret) — bekleyen başvuran
+      // yöneticinin gelen kutusunu dolduramaz.
+      function applicantPending(c, d) {
+        let m = get(mPath(c, uid())).data;
+        return m.clubId == c && m.userId == uid() && m.status == 'pending'
+            && notificationId == 'application_received_' + c + '_' + uid() + '_' + string(m.get('priorCount', 0))
+                                 + '_' + d.userId;
+      }
+      // Alıcı kulübün ETKİN yönetim kurulu üyesi / başkanı (danışman alıcı değildir). Yol alıcıya göre
+      // değiştiğinden bu tür alıcı başına ayrı batch'le yazılır (parça boyu 1).
+      function managerRecipient(c, u) {
+        let m = get(mPath(c, u)).data;
+        return m.clubId == c && m.userId == u && m.status == 'active' && m.role in ['board', 'president'];
+      }
+      // Bildirimli duyuru: bu kulübün, oturumun yazdığı, silinmemiş ve gizlenmemiş `announcement && pushSent`
+      // gönderisi (gönderi oluşturma T-19 `announcementCounters` dalında günlük sınırdan geçmiştir; ek kota yok —
+      // K-J). `pushSent` oluşturmadan sonra değişmez → duyuru tek seferliktir.
+      function announced(c, p) {
+        let post = get(postPath(p)).data;
+        return post.clubId == c && post.type == 'announcement' && post.pushSent == true
+            && post.isDeleted == false && post.isHidden == false && post.authorId == uid();
+      }
+      // Etkinlik bu kulübün, silinmemiş ve beklenen durumda (`published` → event_new, `cancelled` → event_cancelled).
+      function eventIs(c, e, status) {
+        let ev = get(eventPath(e)).data;
+        return ev.clubId == c && ev.isDeleted == false && ev.status == status;
+      }
+      // `event_new` yalnızca (yeniden) yayından sonraki pencerede: yayın `publishedAt`'i sunucu zamanıyla yeniler
+      // (yayından çekip yeniden yayın meşru tekrardır); eski yayının bildirimi sonradan yeniden itilemez.
+      function freshlyPublished(e) {
+        return get(eventPath(e)).data.publishedAt + duration.value(10, 'm') > request.time;   // limit: notificationEventNewWindow
+      }
+      // Terfi AYNI batch'te: alıcının kaydı `waitlist → going` (getAfter + get; alanlar karşılaştırılır).
+      function promotedNow(c, e, u) {
+        let now = getAfter(rsvpPath(e, u)).data;
+        return now.eventId == e && now.userId == u && now.clubId == c && now.status == 'going'
+            && get(rsvpPath(e, u)).data.status == 'waitlist';
+      }
+
+      // Tür dalları (docs/plans/T-25.md §6 c, f). Her dal önce ucuz ayırıcıya (`type`) ve dizgi denetimlerine
+      // bakar, erişim çağrıları sonra gelir. Kimlik türe göre (T-25 güvenlik incelemesi — bildirim GERÇEK ve
+      // TEK SEFERLİK bir olaya bağlıdır): tek seferlik olaylarda olay anahtarı olayın kendi kimliğidir
+      // (`announcement_{postId}_…`, `event_cancelled_{eventId}_…` — iptal geri dönmez; başvuruda üyelik
+      // `priorCount`'u), tekrarlanabilen olaylarda (`event_new` yeniden yayın, `waitlist_promoted` terfi) rastgele
+      // 20 karakter (`keyedIdOk`) + olayın tazeliği (yayın penceresi / aynı batch'teki terfi). Yönetici dalları
+      // askıdaki / silinmiş kulüpte kapalıdır (`clubLive`, diğer yönetici yazımlarıyla aynı).
+      // Erişim yolları (tekil): users/{uid} · üyelik · olay belgesi · kulüp = 4; `application_received`:
+      // users/{uid} · kendi üyeliği · alıcının üyeliği = 3. Parçadaki tüm belgeler aynı yolları okur → parça
+      // boyu Limits.notificationFanOutChunkSize (budget/fanout_budget.test.js).
+      function kindOk(d, t, r) {
+        return (t == 'application_received' && refsOk(r, ['clubId', 'applicantId'])
+                && r.applicantId == uid() && d.userId != uid()
+                && applicantPending(r.clubId, d) && managerRecipient(r.clubId, d.userId))
+            || (t == 'announcement' && refsOk(r, ['clubId', 'postId'])
+                && notificationId == 'announcement_' + r.postId + '_' + d.userId
+                && isManager(r.clubId) && announced(r.clubId, r.postId) && clubLive(r.clubId))
+            || (t == 'event_new' && refsOk(r, ['clubId', 'eventId']) && keyedIdOk(d)
+                && isManager(r.clubId) && eventIs(r.clubId, r.eventId, 'published') && freshlyPublished(r.eventId)
+                && clubLive(r.clubId))
+            || (t == 'event_cancelled' && refsOk(r, ['clubId', 'eventId'])
+                && notificationId == 'event_cancelled_' + r.eventId + '_' + d.userId
+                && isManager(r.clubId) && eventIs(r.clubId, r.eventId, 'cancelled') && clubLive(r.clubId))
+            || (t == 'waitlist_promoted' && refsOk(r, ['clubId', 'eventId']) && keyedIdOk(d)
+                && isManager(r.clubId) && promotedNow(r.clubId, r.eventId, d.userId) && clubLive(r.clubId));
+      }
+
+      // C — ortak: alan beyaz listesi, ortak alanlar (sunucu zamanı), `read == false`, alıcı dolu dizgi; aktif
+      // hesap. `event_reminder` (CD-44): cihaz yalnızca KENDİ belgesini yazar, kimlik tam eşittir (başka türün
+      // `event_reminder_…` kimliğini işgal etmesi ve başkasının hatırlatıcısını önceden yazmak engellenir).
+      function canCreateNotification() {
+        let d = request.resource.data;
+        let t = d.type;
+        let r = d.refs;
+        return d.keys().hasOnly(['userId', 'type', 'refs', 'read',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.read == false
+            && d.userId is string && d.userId.size() > 0
+            && t is string
+            && ((t == 'event_reminder' && d.userId == uid() && refsOk(r, ['clubId', 'eventId'])
+                 && notificationId == 'event_reminder_' + r.eventId + '_' + uid())
+                || (t in ['application_received', 'announcement', 'event_new', 'event_cancelled', 'waitlist_promoted']
+                    && kindOk(d, t, r)))
+            && activeUser();
+      }
+
+      // U (sahibi; askıdaki hesap dahil): (1) okundu — yalnızca `read` (+ `updatedAt`), sonuç `true` (zaten
+      // okunmuşa da geçer, okunmamışa dönüş yok; markAllRead parçalı batch); (2) soft delete; (3) geri al —
+      // yalnızca silen (kendisi). Tür, alıcı, `refs` ve `createdAt` hiçbir dalda değişemez.
+      function canUpdateNotification() {
+        return emailOk() && resource.data.userId == uid()
+            && ((touches(['read']) && request.resource.data.read == true)
+                || isSoftDelete([])
+                || (isRestore([]) && resource.data.deletedBy == uid()));
+      }
+
+      // R — yalnızca sahibi (silinmişler dahil — Geri al); süper admin dahil başkası okuyamaz. Olmayan KENDİ
+      // belgesinin tekil okuması boş döner (`resource == null`, kimlik `…_<uid>`; createSelf ön okuması).
+      // Sorgu sözleşmesi (rules-spec §6 NTF-01): `userId == uid`, `isDeleted == false`, `createdAt` ↓, `limit`.
+      allow get: if (resource == null && emailOk() && ownNotificationId())
+                 || (emailOk() && resource.data.userId == uid());
+      allow list: if emailOk() && resource.data.userId == uid();
+      allow create: if canCreateNotification();
+      allow update: if canUpdateNotification();
       allow delete: if false;
     }
 

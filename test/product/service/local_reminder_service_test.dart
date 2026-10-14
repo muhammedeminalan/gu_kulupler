@@ -1,7 +1,8 @@
 // LocalReminderService (Q-07, CD-09; PLAN §10.2, §15.6): saf hesaplar
 // (tetik anı, geçmiş tetik, kimlik, payload) + FlutterLocalReminderService'in
 // eklenti çağrıları (sahte eklenti): Istanbul saat dilimi, inexact kip,
-// kanal, iptal, soğuk açılış yükü, platform hatasının yutulması.
+// kanal, iptal, soğuk açılış yükü, platform hatasının yutulması; T-25
+// rescheduleAll (tercih, autoReminder → reminderTime, iptal / geçmiş).
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -325,6 +326,110 @@ void main() {
           ),
         );
         expect(await service.initialLaunchPayload(), 'event_reminder:e01');
+      },
+    );
+  });
+
+  group('FlutterLocalReminderService · rescheduleAll (T-25)', () {
+    late _FakePlugin plugin;
+    late FlutterLocalReminderService service;
+
+    setUp(() {
+      plugin = _FakePlugin();
+      service = FlutterLocalReminderService(
+        plugin: plugin,
+        clock: FakeAppClock(DateTime.utc(2026, 10, 1, 9)),
+      );
+    });
+
+    EventModel event(
+      String id, {
+      bool autoReminder = false,
+      EventStatus status = EventStatus.published,
+      DateTime? startsAt,
+    }) => _event.copyWith(
+      id: id,
+      autoReminder: autoReminder,
+      status: status,
+      startsAt: startsAt ?? _startsAt,
+      endsAt: (startsAt ?? _startsAt).add(const Duration(hours: 2)),
+    );
+
+    RsvpModel rsvp(
+      String eventId, {
+      ReminderOption reminder = ReminderOption.none,
+      RsvpStatus status = RsvpStatus.going,
+    }) => _rsvp(status: status, reminder: reminder).copyWith(
+      id: '${eventId}_u_mehmet',
+      eventId: eventId,
+    );
+
+    test('cancelAll → yalnızca planlanabilir going kayıtları: kendi seçeneği, '
+        'none + autoReminder → settings.reminderTime; iptal / silinmiş / '
+        'geçmiş / etkinliği yok / going değil atlanır', () async {
+      final events = {
+        'e01': event('e01'),
+        'e02': event('e02', autoReminder: true),
+        'e03': event('e03'),
+        'e04': event('e04', status: EventStatus.cancelled),
+        'e05': event('e05').copyWith(isDeleted: true),
+        'e06': event('e06', startsAt: DateTime.utc(2026, 10, 1, 9, 30)),
+      };
+
+      await service.rescheduleAll(
+        myGoing: [
+          rsvp('e01', reminder: ReminderOption.oneHour),
+          rsvp('e02'),
+          rsvp('e03'),
+          rsvp('e04', reminder: ReminderOption.oneHour),
+          rsvp('e05', reminder: ReminderOption.oneHour),
+          rsvp('e06', reminder: ReminderOption.oneHour),
+          rsvp('e07', reminder: ReminderOption.oneHour),
+          rsvp(
+            'e01',
+            reminder: ReminderOption.oneHour,
+            status: RsvpStatus.waitlist,
+          ).copyWith(id: 'e01_u_other'),
+        ],
+        events: events,
+        settings: const UserSettingsModel(
+          uid: 'u_mehmet',
+          reminderTime: ReminderOption.oneDay,
+        ),
+      );
+
+      expect(plugin.cancelAllCalls, 1);
+      expect(plugin.cancelled, isEmpty);
+      expect(
+        [for (final call in plugin.scheduled) (call.id, call.at.toUtc())],
+        [
+          (
+            LocalReminderService.notificationId('e01_u_mehmet'),
+            DateTime.utc(2026, 10, 8, 17),
+          ),
+          (
+            LocalReminderService.notificationId('e02_u_mehmet'),
+            DateTime.utc(2026, 10, 7, 18),
+          ),
+        ],
+      );
+      expect(plugin.scheduled.last.payload, 'event_reminder:e02');
+    });
+
+    test(
+      'eventReminders kapalı → tüm planlar iptal, hiçbiri kurulmaz',
+      () async {
+        await service.rescheduleAll(
+          myGoing: [rsvp('e01', reminder: ReminderOption.oneHour)],
+          events: {'e01': event('e01', autoReminder: true)},
+          settings: const UserSettingsModel(
+            uid: 'u_mehmet',
+            eventReminders: false,
+          ),
+        );
+
+        expect(plugin.cancelAllCalls, 1);
+        expect(plugin.scheduled, isEmpty);
       },
     );
   });

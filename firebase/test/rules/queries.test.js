@@ -10,7 +10,8 @@
 // MGT-10 · ADM-04 · SET-02. T-19: FED-01 / listFeed · MGT-08 / listForManagement · FED-02 / watchComments ·
 // PRF-04 / listSaved · countVotes. T-22: EVT-01 / listPublicUpcoming · listMembersUpcoming · MGT-04 / CLB-03 /
 // listClubEvents (üç biçim) · EVT-04 / listMine · MGT-06 katılımcılar · waitlistPosition · findByTicket.
-// T-25 (`listByInterests`) kendi satırlarını ekler.
+// T-25: NTF-01 / watchInbox (`notifications`) · CD-38 / listByInterests (`users`, `interests` CONTAINS).
+// Gelen kutusunun rol × liste matrisi `expectations/notifications.json`, sorgu biçimi `notifications.test.js`.
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { collection, doc, documentId, getCountFromServer, getDoc, getDocs, limit, orderBy, query, where } = require('firebase/firestore');
@@ -45,6 +46,8 @@ const QUERIES = Object.freeze({
   listMyRsvps: { collection: 'rsvps', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
   // `waitlistPosition` (`waitlistAt < t` aralığı) ve T-30 `watchParticipants` (`orderBy status, waitlistAt`) aynı indeksi kullanır.
   waitlistPosition: { collection: 'rsvps', equals: ['eventId', 'clubId', 'status'], order: ['waitlistAt', 'asc'] },
+  // T-25 (sözleşme docs/plans/T-25.md §6.g)
+  watchInbox: { collection: 'notifications', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
 });
 
 /**
@@ -71,6 +74,13 @@ const ids = (snapshot) => snapshot.docs.map((d) => d.id).sort();
 describe('indeksler · firestore.indexes.json sorguları karşılar (PLAN §11.4 T-15 / T-19 / T-22 satırları)', () => {
   test.each(Object.entries(QUERIES))('%s', (_name, spec) => {
     expect(hasIndex(spec)).toBe(true);
+  });
+
+  // `arrayContainsAny` + eşitlik: dizi alanı CONTAINS yapılandırmasıyla (hasIndex yalnızca sıralı alanlara bakar).
+  test('listByInterests (T-25, CD-38): users (interests CONTAINS, isDeleted ↑)', () => {
+    const match = indexes.filter((index) => index.collectionGroup === 'users' && index.queryScope === 'COLLECTION'
+      && JSON.stringify(index.fields) === JSON.stringify([{ fieldPath: 'interests', arrayConfig: 'CONTAINS' }, { fieldPath: 'isDeleted', order: 'ASCENDING' }]));
+    expect(match).toHaveLength(1);
   });
 
   test('her bileşik indeks tekildir ve en az iki alan taşır', () => {
@@ -433,5 +443,18 @@ describe('rsvps · sorgu biçimleri (rules-spec §6 EVT-04, MGT-06; PLAN §10.4 
     expect(ids(await assertSucceeds(getDocs(byTicket('board', 'GU-LVME-2345', 'e_public'))))).toEqual([]);
     await assertFails(getDocs(byTicket('member', 'GU-LVME-2345')));
     await assertFails(getDocs(query(rsvps('board'), where('ticketCode', '==', 'GU-LVME-2345'))));
+  });
+});
+
+describe('users · sorgu biçimi (T-25, CD-38; PLAN §10.4 UserRepository.listByInterests)', () => {
+  test('listByInterests: interests arrayContainsAny + isDeleted == false + limit — yöneticinin event_new alıcı çözümü', async () => {
+    await seedFixture('base', undefined, { patch: { 'users/u_student': { interests: ['i02'] }, 'users/u_former': { isDeleted: true, deletedBy: 'u_former' } } });
+    const byInterests = query(collection(dbOf('board'), 'users'), where('interests', 'array-contains-any', ['i02', 'i01']),
+      where('isDeleted', '==', false), limit(200));
+    const found = ids(await assertSucceeds(getDocs(byInterests)));
+    expect(found).toContain('u_student');
+    expect(found).not.toContain('u_former');
+    // Doğrulanmamış oturum kullanıcıları listeleyemez (emailOk).
+    await assertFails(getDocs(query(collection(dbOf('unver'), 'users'), where('interests', 'array-contains-any', ['i01']), where('isDeleted', '==', false))));
   });
 });

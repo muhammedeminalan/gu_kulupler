@@ -1,0 +1,40 @@
+{
+  "_doc": "T-25 — demo-data.json'da örneği olmayan bildirim türleri (README madde 4: demo veri salt okunur, yeni senaryo ayrı dosyada). Biçim demo-data.json#notifications ile aynıdır (createdAt ISO, meta.today'e göre tam gün kaydırılır); tohumlayıcı withExtras ile birleştirir, kimlik ve refs T-25 şemasına dönüşür (docs/plans/T-25.md §6 a–b). Kayıtlar demo verisiyle tutarlıdır: u_elif e02'de kayıtlı (bekleme listesinden alındı), c01'de yönetim kurulu; u_burak c03 başkanı; u154 c01'den çıkarıldı; u064'ün r06 şikayeti çözüldü.",
+  "notifications": {
+    "n101": {
+      "userId": "u_elif",
+      "type": "waitlist_promoted",
+      "refs": { "clubId": "c01", "eventId": "e02" },
+      "createdAt": "2026-10-07T15:30:00.000Z",
+      "read": false
+    },
+    "n102": {
+      "userId": "u_elif",
+      "type": "role_changed",
+      "refs": { "clubId": "c01", "role": "board" },
+      "createdAt": "2026-10-03T09:00:00.000Z",
+      "read": true
+    },
+    "n103": {
+      "userId": "u_burak",
+      "type": "role_changed",
+      "refs": { "clubId": "c03", "role": "president" },
+      "createdAt": "2026-09-30T09:00:00.000Z",
+      "read": true
+    },
+    "n104": {
+      "userId": "u154",
+      "type": "removed_from_club",
+      "refs": { "clubId": "c01" },
+      "createdAt": "2026-10-06T16:08:42.117Z",
+      "read": false
+    },
+    "n105": {
+      "userId": "u064",
+      "type": "report_resolved",
+      "refs": { "reportId": "u064_post_p13" },
+      "createdAt": "2026-10-02T10:08:42.117Z",
+      "read": false
+    }
+  }
+}

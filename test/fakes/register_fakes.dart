@@ -38,6 +38,7 @@ import 'fake_image_picker_service.dart';
 import 'fake_local_reminder_service.dart';
 import 'fake_membership_repository.dart';
 import 'fake_notification_dispatcher.dart';
+import 'fake_notification_repository.dart';
 import 'fake_permission_service.dart';
 import 'fake_post_repository.dart';
 import 'fake_remote_config_service.dart';
@@ -116,6 +117,10 @@ void registerDefaultFakes() {
     ..registerSingleton<EventRepository>(events)
     ..registerSingleton<RsvpRepository>(
       FakeRsvpRepository(clock, events: events),
+    )
+    // T-25 · uygulama içi bildirimler (gelen kutusu, hatırlatıcı belgesi)
+    ..registerSingleton<NotificationRepository>(
+      FakeNotificationRepository(clock),
     )
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:gu_data/src/constants/limits.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/media_update_error.dart';
@@ -113,4 +114,19 @@ abstract interface class UserRepository {
   /// [uid] hesabının `lastLoginAt` alanını sunucu zamanına çeker (+
   /// `updatedAt`); başka alana dokunmaz.
   Future<FirestoreResult<void>> touchLastLogin(String uid);
+
+  /// İlgi alanlarından en az biri [interestIds] içinde olan silinmemiş
+  /// kullanıcılar, en çok [limit] tane (`event_new` ilgi-eşleşmeli alıcılar —
+  /// CD-38, `RecipientResolver.eventNew`).
+  ///
+  /// Sorgu `interests arrayContainsAny interestIds ∧ isDeleted == false`,
+  /// `limit` (indeks `users (interests CONTAINS, isDeleted ASC)`); sıra
+  /// belirsizdir, [limit] üstü kullanıcılar dönmez. Tekrarlar tekilleştirilir;
+  /// boş liste sorgu yapmadan boş döner. Geçersiz kimlik, 30'dan fazla değer
+  /// (Firestore sınırı) ya da pozitif olmayan [limit]
+  /// [FirestoreError.invalidArgument] döner.
+  Future<FirestoreResult<List<UserModel>>> listByInterests(
+    List<String> interestIds, {
+    int limit = Limits.eventNewInterestFanOutMax,
+  });
 }

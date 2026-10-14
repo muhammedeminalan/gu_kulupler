@@ -31,6 +31,7 @@ void main() {
       final received = await fake.notifyApplicationReceived(
         clubId: 'c01',
         applicantId: 'u1',
+        sequence: 0,
       );
       final announced = await fake.notifyAnnouncement(
         postId: 'p01',
@@ -41,7 +42,7 @@ void main() {
       expect(fake.calls, const [
         DispatchCall(
           kind: 'notifyApplicationReceived',
-          args: {'clubId': 'c01', 'applicantId': 'u1'},
+          args: {'clubId': 'c01', 'applicantId': 'u1', 'sequence': 0},
         ),
         DispatchCall(
           kind: 'notifyAnnouncement',

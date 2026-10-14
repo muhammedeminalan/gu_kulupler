@@ -981,4 +981,10 @@ final class _AvatarFailingUsers implements UserRepository {
   @override
   Future<FirestoreResult<void>> touchLastLogin(String uid) =>
       _inner.touchLastLogin(uid);
+
+  @override
+  Future<FirestoreResult<List<UserModel>>> listByInterests(
+    List<String> interestIds, {
+    int limit = Limits.eventNewInterestFanOutMax,
+  }) => _inner.listByInterests(interestIds, limit: limit);
 }

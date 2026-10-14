@@ -118,6 +118,7 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 
 ### 2.9 `notifications/{notificationId}`
 `userId`, `type` (§6), `refs` M{`clubId?`,`eventId?`,`postId?`,`applicantId?`,`reportId?`,`role?`,`textKey?`}, `read` (b), + `BaseFields` (kaydır-sil = soft delete; Geri al = `restore`).
+- **Kimlik (T-25, W-49 — CD-148):** `{type}_{eventKey}_{userId}`; `eventKey` tekrarlanabilen olaylarda olay başına bir kez üretilen 20 karakter `[A-Za-z0-9]` (bir `notifyX` çağrısı = bir olay; olayın tekrarı yeni belge), tek seferlik olaylarda olayın kimliği: `announcement` → `postId`, `event_cancelled` → `eventId`, `application_received` → `{clubId}_{applicantId}_{priorCount}` (CD-148 (9)). `event_reminder`: `event_reminder_{eventId}_{userId}` (cihaz kendisi yazar, ikinci dokunma yazmaz). Rules biçimi dizgi olarak doğrular. Metin ve aktör alanı yoktur: başlık / gövde okuyan istemcide `type` + `refs`'ten, alıcının dilinde üretilir (sunucu tetikleyicisi aynı şemayı yazar — CD-147). `refs` yalnızca türün zorunlularını taşır (`NotificationRefsModel.requiredFor`; W-51).
 
 ### 2.10 `reports/{reporterId}_{targetType}_{targetId}`
 `targetType` (`post·comment·user·club`), `targetId`, `targetClubId?`, `reporterId`, `reason` (`spam·inappropriate·harassment·misinformation·other`), `note` (≤300), `status` (`open·resolved`), `action?` (`removed·dismissed·suspended`), `resolvedAt?`, `resolvedBy?`, + `BaseFields`.

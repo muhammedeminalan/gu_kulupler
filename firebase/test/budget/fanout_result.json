@@ -1,0 +1,43 @@
+{
+  "chunkSize": 225,
+  "maxPassing": 450,
+  "results": [
+    {
+      "n": 10,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 20,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 50,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 100,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 200,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 400,
+      "ok": true,
+      "outcome": "ok"
+    },
+    {
+      "n": 450,
+      "ok": true,
+      "outcome": "ok"
+    }
+  ],
+  "rule": "en büyük geçen N'nin yarısı (10–450)",
+  "type": "event_new"
+}

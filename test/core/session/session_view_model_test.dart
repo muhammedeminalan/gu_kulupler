@@ -5,9 +5,12 @@
 // değişimi ve yarış koruması (PLAN §12.2; architecture §6; CD-52, CD-133).
 // T-15: üyelik akışı (canlı; rol / erişim çözümü, güncelleme, dinleyici
 // ömrü, yarış) ve engellenenler (PLAN §10.6 #1, §12.2).
+// T-25: yerel hatırlatıcı köprüsü — etkinleşmede / dil değişiminde yeniden
+// planlama, çıkışta iptal, soğuk açılış yükü (PLAN §15.6; CD-72).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -21,13 +24,18 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
+import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_block_repository.dart';
+import '../../fakes/fake_event_repository.dart';
 import '../../fakes/fake_feedback_service.dart';
+import '../../fakes/fake_local_reminder_service.dart';
 import '../../fakes/fake_membership_repository.dart';
+import '../../fakes/fake_notification_repository.dart';
+import '../../fakes/fake_rsvp_repository.dart';
 import '../../fakes/fake_url_launcher_service.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
@@ -1399,6 +1407,132 @@ void main() {
       expect(stateOf(container).status, AuthStatus.signedOut);
       await notifierOf(container).showPendingSuspendedNotice();
       expect(feedback().dialogs, [DialogId.dlg01]);
+    });
+  });
+
+  group('T-25 · SessionViewModel · hatırlatıcılar (PLAN §15.6)', () {
+    late FakeLocalReminderService reminders;
+    late FakeRsvpRepository rsvps;
+    late FakeEventRepository events;
+    late FakeNotificationRepository inbox;
+
+    setUp(() {
+      reminders = GetIt.I<LocalReminderService>() as FakeLocalReminderService;
+      rsvps = GetIt.I<RsvpRepository>() as FakeRsvpRepository;
+      events = GetIt.I<EventRepository>() as FakeEventRepository;
+      inbox = GetIt.I<NotificationRepository>() as FakeNotificationRepository;
+    });
+
+    /// [startsIn] sonra başlayan, iki saat süren yayındaki etkinlik.
+    EventModel eventIn(String id, Duration startsIn) {
+      final startsAt = kDefaultFakeNowUtc.add(startsIn);
+      return EventModel(
+        id: id,
+        clubId: 'c01',
+        title: 'Etkinlik $id',
+        type: EventType.training,
+        startsAt: startsAt,
+        endsAt: startsAt.add(const Duration(hours: 2)),
+        coverPalette: ClubPalette.red,
+        coverPattern: ClubPattern.dots,
+        status: EventStatus.published,
+      );
+    }
+
+    void join(EventModel event, {RsvpStatus status = RsvpStatus.going}) {
+      events.put(event);
+      rsvps.put(
+        RsvpModel(
+          eventId: event.id,
+          clubId: event.clubId,
+          userId: 'u1',
+          ticketCode: 'GU-AAAA-AAAB',
+          status: status,
+          reminder: ReminderOption.oneHour,
+        ),
+      );
+    }
+
+    test('oturum etkinleşince kanal kurulur ve yalnızca going kayıtları '
+        'yeniden planlanır; tetiklenmiş ama bitmemiş hatırlatıcının liste '
+        'belgesi yazılır (geçmiş etkinliğinki değil); yenileme yeniden '
+        'planlamaz', () async {
+      join(eventIn('e_future', const Duration(days: 2)));
+      join(eventIn('e_fired', const Duration(minutes: 30)));
+      join(eventIn('e_past', const Duration(days: -1)));
+      join(
+        eventIn('e_wait', const Duration(days: 3)),
+        status: RsvpStatus.waitlist,
+      );
+
+      final container = await resolvedActive();
+      await pumpEventQueue();
+
+      expect(reminders.channelEnsured, isTrue);
+      expect(reminders.callsTo('rescheduleAll').single.args, [3]);
+      expect(inbox.notifications.keys, ['event_reminder_e_fired_u1']);
+
+      await notifierOf(container).refreshUser();
+      await pumpEventQueue();
+      expect(reminders.rescheduleCalls, 1);
+    });
+
+    test('dil değişince yeni dille yeniden kurulur; çıkışta planlar iptal '
+        'edilir', () async {
+      final container = await resolvedActive();
+      await pumpEventQueue();
+      expect(reminders.rescheduleCalls, 1);
+
+      await container
+          .read(appPreferencesViewModelProvider.notifier)
+          .setLocale(const Locale('en'));
+      await pumpEventQueue();
+      expect(reminders.rescheduleCalls, 2);
+      expect(reminders.l10n?.localeName, 'en');
+
+      final cancelled = reminders.cancelAllCalls;
+      await notifierOf(container).signOut();
+      await pumpEventQueue();
+      expect(reminders.cancelAllCalls, cancelled + 1);
+      // Oturum yokken dil değişimi planlamaz.
+      await container
+          .read(appPreferencesViewModelProvider.notifier)
+          .setLocale(const Locale('tr'));
+      await pumpEventQueue();
+      expect(reminders.rescheduleCalls, 2);
+    });
+
+    test('soğuk açılış: hatırlatıcı yükünün etkinliği bir kez döner ve liste '
+        'belgesi yazılır; tanınmayan yük null', () async {
+      events.put(eventIn('e01', const Duration(minutes: 30)));
+      reminders.launchPayload = LocalReminderService.payloadFor('e01');
+      final container = await resolvedActive();
+
+      expect(await notifierOf(container).takeLaunchReminder(), 'e01');
+      expect(
+        inbox.notifications['event_reminder_e01_u1']?.refs.clubId,
+        'c01',
+      );
+      expect(await notifierOf(container).takeLaunchReminder(), isNull);
+      expect(LocalReminderService.eventIdOfPayload('başka:e01'), isNull);
+      expect(LocalReminderService.eventIdOfPayload('event_reminder:'), isNull);
+    });
+
+    test('oturumsuz açılışta yük atılır: sonradan giriş yapılsa da etkinliğe '
+        'gidilmez', () async {
+      reminders.launchPayload = LocalReminderService.payloadFor('e01');
+      final container = await resolved();
+      expect(stateOf(container).status, AuthStatus.signedOut);
+
+      users.putActive('u1');
+      final user = _user();
+      auth
+        ..currentUser = user
+        ..watchAuthStateController.add(user);
+      await pumpEventQueue();
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(await notifierOf(container).takeLaunchReminder(), isNull);
+      expect(reminders.callsTo('initialLaunchPayload'), isEmpty);
     });
   });
 }

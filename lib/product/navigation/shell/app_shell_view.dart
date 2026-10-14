@@ -9,6 +9,7 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/format/count_badge_label.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Uygulama kabuğu: etkin dalın gezgini + alt sekme çubuğu (navigation.md
@@ -28,6 +29,9 @@ import 'package:gu_ui/gu_ui.dart';
 ///   bildirim ön izni (DLG-03) cihazda **bir kez** sorulur (architecture §6;
 ///   prototip `auth.enterApp`). Prototipteki 600 ms gecikme yoktur: soru ilk
 ///   kareden sonra açılır.
+/// * Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa ilk kareden sonra
+///   etkinlik detayı Etkinlikler sekmesinde açılır (CD-72; T-25 köprüsü —
+///   `SessionViewModel.takeLaunchReminder`, uygulama ömründe bir kez).
 class AppShellView extends ConsumerStatefulWidget {
   /// [navigationShell]: `StatefulShellRoute.indexedStack`'in dal kabı.
   const AppShellView({required this.navigationShell, super.key});
@@ -89,7 +93,21 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
             .read(appPreferencesViewModelProvider.notifier)
             .askNotificationPermissionOnce(),
       );
+      unawaited(_openLaunchReminder());
     });
+  }
+
+  /// Soğuk açılışın hatırlatıcı yükü varsa etkinlik detayına gider.
+  Future<void> _openLaunchReminder() async {
+    final eventId = await ref
+        .read(sessionViewModelProvider.notifier)
+        .takeLaunchReminder();
+    if (eventId == null || !mounted) return;
+    AppNavigator.openInTab(
+      context,
+      GuTab.events,
+      EventDetailRoute(eventId: eventId).location,
+    );
   }
 
   @override

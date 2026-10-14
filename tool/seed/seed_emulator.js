@@ -12,7 +12,8 @@
  * Seçenekler:
  *   --project <id>   proje kimliği (`demo-` ile başlamalı; emulators:exec GCLOUD_PROJECT verir)
  *   --check          yazdıktan sonra emülatördeki sayıları demo-data.json ile karşılaştırır (fark = çıkış 1)
- *   --now <ISO>      "şimdi" (varsayılan: çalıştırma anı); her an `ISO + (now − meta.today)` olur
+ *   --now <ISO>      "şimdi" (varsayılan: çalıştırma anı); her an `meta.today` gününden `now`'ın Istanbul
+ *                    gününe TAM gün kaydırılır (saat korunur)
  *   --bucket <ad>    Storage kovası (varsayılan `<proje>.firebasestorage.app`)
  *   --dry-run        yalnızca dönüştürür, doğrular ve sayıları basar; ağa çıkmaz
  *
@@ -28,7 +29,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { COLLECTIONS, PATH_OF, convert, expectedCounts, staticTablesDiff, validate } = require('./lib/convert');
+const { COLLECTIONS, PATH_OF, convert, expectedCounts, staticTablesDiff, validate, withExtras } = require('./lib/convert');
 const rest = require('./lib/emulator_rest');
 const { placeholderPng } = require('./placeholder_png');
 const dart = require('../lib/dart_sources');
@@ -36,6 +37,8 @@ const dart = require('../lib/dart_sources');
 const NAME = 'seed_emulator';
 const REPO = path.resolve(__dirname, '..', '..');
 const DATA_FILE = path.join(__dirname, 'demo-data.json');
+/** T-25 · demo-data.json'da örneği olmayan bildirim türleri (README madde 4). */
+const EXTRA_NOTIFICATIONS_FILE = path.join(__dirname, 'demo-notifications.json');
 const STATIC_TABLES = path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart');
 
 /** Aynı anda açık Auth / Storage isteği sayısı. */
@@ -152,7 +155,10 @@ async function main(argv) {
     return 0;
   }
 
-  const raw = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  const raw = withExtras(
+    JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')),
+    JSON.parse(fs.readFileSync(EXTRA_NOTIFICATIONS_FILE, 'utf8')),
+  );
   const now = args.now || new Date();
   const { docs, authUsers, images } = convert(raw, { now, randomHex: () => crypto.randomBytes(8).toString('hex') });
 

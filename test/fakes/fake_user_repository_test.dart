@@ -88,6 +88,29 @@ void main() {
       expect(result.dataOrNull, [b, a]);
     });
 
+    test('T-25 · listByInterests: ilgi eşleşmesi, silinmiş hariç, sınır; '
+        'boş liste boş, fazla ilgi alanı invalidArgument', () async {
+      final a = fake.putActive('a');
+      final b = fake.putActive('b');
+      fake
+        ..users['c'] = b.copyWith(uid: 'c', interests: const ['i09'])
+        ..users['d'] = a.copyWith(uid: 'd', isDeleted: true);
+
+      expect((await fake.listByInterests(['i01', 'i09'])).dataOrNull, [
+        a,
+        b,
+        fake.users['c'],
+      ]);
+      expect((await fake.listByInterests(['i01'], limit: 1)).dataOrNull, [a]);
+      expect((await fake.listByInterests([])).dataOrNull, isEmpty);
+      expect(
+        (await fake.listByInterests([
+          for (var i = 0; i <= RepositoryHelpers.whereInMax; i++) 'i$i',
+        ])).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+    });
+
     test('updateProfile: yamayı uygular (fotoğrafı kaldırma dahil) ve '
         '`profilePatches`e yazar', () async {
       await create();

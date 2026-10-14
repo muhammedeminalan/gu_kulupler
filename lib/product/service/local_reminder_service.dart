@@ -47,9 +47,14 @@ abstract interface class LocalReminderService {
   /// Tüm planları iptal eder (çıkış, hesap silme, [rescheduleAll] başı).
   Future<void> cancelAll();
 
-  /// T-25: açılışta ve ayar değişiminde [cancelAll] + her `going` rsvp için
-  /// [schedule]; `settings.eventReminders == false` ⇒ hiçbiri planlanmaz;
-  /// `reminder == none ∧ event.autoReminder` ⇒ `settings.reminderTime`.
+  /// Tüm planları baştan kurar (açılış, oturum etkinleşmesi, dil değişimi,
+  /// NTF-02 kaydı — PLAN §15.6): önce [cancelAll], sonra [myGoing]
+  /// kayıtlarının her biri için [effectiveRsvp] seçeneğiyle [schedule].
+  ///
+  /// `settings.eventReminders == false` ⇒ hiçbiri planlanmaz. [events]'te
+  /// olmayan, silinmiş ya da yayında olmayan (iptal, taslak) etkinlik, `going`
+  /// olmayan kayıt ve tetik anı geçmiş plan atlanır. Sessiz saat uygulanmaz
+  /// (CD-43).
   Future<void> rescheduleAll({
     required List<RsvpModel> myGoing,
     required Map<String, EventModel> events,
@@ -65,6 +70,16 @@ abstract interface class LocalReminderService {
 
   /// [payloadFor] öneki.
   static const String payloadPrefix = 'event_reminder:';
+
+  /// [payloadFor]'un tersi: `event_reminder:<eventId>` yükünün etkinlik
+  /// kimliği; yük yoksa, biçimi tanınmıyorsa ya da kimlik geçersizse `null`
+  /// (T-25 soğuk açılış köprüsü; T-26 `NotificationNavigator.parsePayload`
+  /// aynı çözümü kullanır).
+  static String? eventIdOfPayload(String? payload) {
+    if (payload == null || !payload.startsWith(payloadPrefix)) return null;
+    final eventId = payload.substring(payloadPrefix.length);
+    return RepositoryHelpers.isValidId(eventId) ? eventId : null;
+  }
 
   /// [rsvpId] katılımının bildirim kimliği: `fnv1a32(rsvpId) & 0x7fffffff`
   /// (çalıştırmalar arası kararlı, pozitif 31 bit).
@@ -85,6 +100,18 @@ abstract interface class LocalReminderService {
     final lead = leadTimeOf(rsvp.reminder);
     return lead == null ? null : event.startsAt.toUtc().subtract(lead);
   }
+
+  /// [rescheduleAll]'un [rsvp] için kullandığı kayıt: kendi seçeneği
+  /// `none` değilse aynen; `none` ve `event.autoReminder` ise seçenek
+  /// `settings.reminderTime` olur (PLAN §10.2 — aynı kayda tek plan); aksi
+  /// halde `none` kalır (plan yok).
+  static RsvpModel effectiveRsvp({
+    required RsvpModel rsvp,
+    required EventModel event,
+    required UserSettingsModel settings,
+  }) => rsvp.reminder == ReminderOption.none && event.autoReminder
+      ? rsvp.copyWith(reminder: settings.reminderTime)
+      : rsvp;
 
   /// [schedule]'ın kuracağı tetik anı (UTC) ya da plan yoksa `null`: kayıt
   /// `going` değil, seçenek `none` ya da tetik anı [nowUtc]'den sonra değil.
@@ -248,7 +275,33 @@ final class FlutterLocalReminderService implements LocalReminderService {
     required Map<String, EventModel> events,
     required UserSettingsModel settings,
   }) async {
-    // TODO(T-25): settings tercihleri + açılışta yeniden planlama (CD-09).
+    await cancelAll();
+    if (!settings.eventReminders) return;
+    final nowUtc = _clock.nowUtc();
+    for (final rsvp in myGoing) {
+      final event = events[rsvp.eventId];
+      // Silinmiş / iptal edilmiş ya da yayında olmayan etkinlik planlanmaz.
+      if (event == null ||
+          event.isDeleted ||
+          event.status != EventStatus.published) {
+        continue;
+      }
+      final planned = LocalReminderService.effectiveRsvp(
+        rsvp: rsvp,
+        event: event,
+        settings: settings,
+      );
+      // `cancelAll` sonrası plansız kayıt için ayrıca iptal çağrılmaz.
+      if (LocalReminderService.plannedTriggerUtc(
+            rsvp: planned,
+            event: event,
+            nowUtc: nowUtc,
+          ) ==
+          null) {
+        continue;
+      }
+      await schedule(rsvp: planned, event: event);
+    }
   }
 
   @override

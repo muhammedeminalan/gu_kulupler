@@ -107,12 +107,16 @@ final class _RecordingFirestore implements FirebaseFirestore {
   /// `runTransaction` çağrı sayısı.
   int transactions = 0;
 
+  /// Her commit'in (batch, transaction ya da tekil yazım) yazım sayısı,
+  /// sırayla — sözleşmedeki `batches` gruplarıyla karşılaştırılır (T-25).
+  final List<int> commits = [];
+
   @override
   CollectionReference<Json> collection(String collectionPath) =>
       _RecordingCollection(collectionPath, this);
 
   @override
-  WriteBatch batch() => _RecordingBatch(log);
+  WriteBatch batch() => _RecordingBatch(log, commits);
 
   @override
   Future<T> runTransaction<T>(
@@ -125,6 +129,7 @@ final class _RecordingFirestore implements FirebaseFirestore {
     final result = await transactionHandler(transaction);
     // Gövde hata vermeden bittiyse yazımlar tek seferde işlenir.
     log.addAll(transaction.pending);
+    if (transaction.pending.isNotEmpty) commits.add(transaction.pending.length);
     return result;
   }
 
@@ -165,16 +170,21 @@ final class _RecordingReference implements DocumentReference<Json> {
   }
 
   @override
-  Future<void> set(Json data, [SetOptions? options]) async => _db.log.add((
-    op: 'set',
-    path: path,
-    data: data,
-    merge: options?.merge ?? false,
-  ));
+  Future<void> set(Json data, [SetOptions? options]) async {
+    _db.log.add((
+      op: 'set',
+      path: path,
+      data: data,
+      merge: options?.merge ?? false,
+    ));
+    _db.commits.add(1);
+  }
 
   @override
-  Future<void> update(Map<Object, Object?> data) async =>
-      _db.log.add((op: 'update', path: path, data: data, merge: false));
+  Future<void> update(Map<Object, Object?> data) async {
+    _db.log.add((op: 'update', path: path, data: data, merge: false));
+    _db.commits.add(1);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -256,9 +266,10 @@ final class _StoredSnapshot implements DocumentSnapshot<Json> {
 
 /// Yazımlarını commit anında [_log]'a aktaran batch.
 final class _RecordingBatch implements WriteBatch {
-  _RecordingBatch(this._log);
+  _RecordingBatch(this._log, this._commits);
 
   final List<_Write> _log;
+  final List<int> _commits;
   final List<_Write> _pending = [];
 
   @override
@@ -279,7 +290,10 @@ final class _RecordingBatch implements WriteBatch {
   ));
 
   @override
-  Future<void> commit() async => _log.addAll(_pending);
+  Future<void> commit() async {
+    _log.addAll(_pending);
+    if (_pending.isNotEmpty) _commits.add(_pending.length);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -1305,4 +1319,225 @@ void main() {
       _expectWellFormedVariants(scenarios);
     });
   });
+
+  group('T-25 · Rules yük sözleşmesi (bildirimler)', () {
+    final t25 = contract['t25']! as Map<String, Object?>;
+    final fixtures = t25['fixtures']! as Map<String, Object?>;
+    final actors = (t25['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t25['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    const eventId = 'e01';
+    const seeded = 'announcement_AbCdEfGhIjKlMnOpQr01_u_student';
+    const seeded2 = 'event_new_ZyXwVuTsRqPoNmLkJi23_u_student';
+
+    late FirebaseFirestoreService service;
+    late FirebaseNotificationRepository notifications;
+    late ClientFanOutDispatcher dispatcher;
+
+    /// Dağıtımın sözleşme sonucu: eksik yazım başarı sayılmaz.
+    FirestoreResult<DispatchReport> complete(
+      FirestoreResult<DispatchReport> result,
+    ) => switch (result) {
+      FirebaseSuccess(data: final report)
+          when report.failedChunks > 0 || report.written < report.requested =>
+        FirebaseFailure(FirestoreError.unknown, message: '$report'),
+      _ => result,
+    };
+
+    /// T-30 `AttendanceRepository.promote`'un terfi bileşimi (sözleşmenin
+    /// ilk üç yazımı) + dağıtıcının aynı batch'e eklediği bildirim.
+    Future<FirebaseResult<Object?, Object>> promote(String uid) async {
+      late Future<FirestoreResult<DispatchReport>> dispatched;
+      final committed = await service.commitBatch((batch) {
+        batch
+          ..update(service.doc(FirestoreCollections.rsvps, 'e01_u_student'), {
+            FirestoreFields.status: RsvpStatus.going.json,
+            ...BaseFieldsPayload.update(),
+          })
+          ..update(service.doc(FirestoreCollections.events, eventId), {
+            FirestoreFields.goingCount: FieldValue.increment(1),
+            FirestoreFields.waitlistCount: FieldValue.increment(-1),
+            ...BaseFieldsPayload.update(),
+          })
+          ..set(service.doc('events/$eventId/private', 'counter'), {
+            FirestoreFields.clubId: clubId,
+            'lastRsvpRef': 'rsvps/e01_u_student',
+            FirestoreFields.updatedAt: FieldValue.serverTimestamp(),
+          });
+        dispatched = dispatcher.notifyWaitlistPromoted(
+          eventId: eventId,
+          clubId: clubId,
+          userId: 'u_student',
+          batch: batch,
+        );
+      });
+      final report = complete(await dispatched);
+      return committed.isSuccess ? report : committed;
+    }
+
+    /// Sözleşmedeki her senaryonun gerçek karşılığı; argüman senaryonun
+    /// `role` bağlamının uid'idir.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'NotificationDispatcher.notifyApplicationReceived': (uid) async =>
+              complete(
+                await dispatcher.notifyApplicationReceived(
+                  clubId: clubId,
+                  applicantId: uid,
+                  sequence: 0,
+                ),
+              ),
+          'NotificationDispatcher.notifyAnnouncement': (_) async => complete(
+            await dispatcher.notifyAnnouncement(
+              postId: 'p01',
+              clubId: clubId,
+              recipients: const ['u_member', 'u_board'],
+            ),
+          ),
+          'NotificationDispatcher.notifyEventNew': (_) async => complete(
+            await dispatcher.notifyEventNew(
+              eventId: eventId,
+              clubId: clubId,
+              recipients: const ['u_member', 'u_president', 'u_student'],
+            ),
+          ),
+          'NotificationDispatcher.notifyEventCancelled': (_) async => complete(
+            await dispatcher.notifyEventCancelled(
+              eventId: eventId,
+              clubId: clubId,
+              recipients: const ['u_student', 'u_member'],
+            ),
+          ),
+          "NotificationDispatcher.notifyWaitlistPromoted · AttendanceRepository.promote (T-30) batch'i":
+              promote,
+          'NotificationRepository.createSelf · ilk dokunma': (uid) =>
+              notifications.createSelf(
+                userId: uid,
+                eventId: eventId,
+                clubId: clubId,
+              ),
+          'NotificationRepository.createSelf · belge zaten var (silinmiş)':
+              (uid) => notifications.createSelf(
+                userId: uid,
+                eventId: eventId,
+                clubId: clubId,
+              ),
+          'NotificationRepository.markRead': (_) =>
+              notifications.markRead(seeded),
+          'NotificationRepository.markAllRead': (uid) =>
+              notifications.markAllRead(uid, const [seeded, seeded2, seeded]),
+          'NotificationRepository.softDeleteNotification': (uid) =>
+              notifications.softDeleteNotification(seeded, actorId: uid),
+          'NotificationRepository.restoreNotification': (_) =>
+              notifications.restoreNotification(seeded),
+        };
+
+    setUp(() {
+      service = FirebaseFirestoreService(db);
+      notifications = FirebaseNotificationRepository(service);
+      dispatcher = ClientFanOutDispatcher(
+        writer: notifications,
+        recipients: const _FixedRecipients(['u_board', 'u_president']),
+      );
+    });
+
+    test('sözleşmedeki her senaryonun karşılığı var; fazlası yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t25['autoId'], _autoId);
+      expect(t25['increment'], _increment);
+      expect(
+        scenarios.map((scenario) => scenario['role']),
+        everyElement(isIn(actors.keys)),
+      );
+    });
+
+    test('her yazma yolu en az bir senaryoda: NotificationRepository + '
+        "Rules'ta açık dağıtıcı türleri", () {
+      final created = {
+        for (final scenario in scenarios)
+          for (final write in scenario['writes']! as List<Object?>)
+            if ((write! as Map<String, Object?>)['path']! as String
+                case final path when path.startsWith('notifications/'))
+              ((write as Map<String, Object?>)['data']!
+                      as Map<String, Object?>)['type'] ??
+                  '(güncelleme)',
+      };
+      final covered = {
+        for (final scenario in scenarios)
+          if ((scenario['writes']! as List<Object?>).isNotEmpty)
+            (scenario['call']! as String).split(' · ').first,
+      };
+
+      expect(created, {
+        'application_received',
+        'announcement',
+        'event_new',
+        'event_cancelled',
+        'waitlist_promoted',
+        'event_reminder',
+        '(güncelleme)',
+      });
+      expect(covered, {
+        'NotificationDispatcher.notifyApplicationReceived',
+        'NotificationDispatcher.notifyAnnouncement',
+        'NotificationDispatcher.notifyEventNew',
+        'NotificationDispatcher.notifyEventCancelled',
+        'NotificationDispatcher.notifyWaitlistPromoted',
+        'NotificationRepository.createSelf',
+        'NotificationRepository.markRead',
+        'NotificationRepository.markAllRead',
+        'NotificationRepository.softDeleteNotification',
+        'NotificationRepository.restoreNotification',
+      });
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okumalar, yazımlar ve commit grupları sözleşmeyle '
+          'birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+        final uid = actors[scenario['role']]!;
+        final writes = scenario['writes']! as List<Object?>;
+        final batches =
+            (scenario['batches'] as List<Object?>?)
+                ?.map((group) => (group! as List<Object?>).length)
+                .toList() ??
+            [if (writes.isNotEmpty) writes.length];
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(_normalized(db.log), writes);
+        expect(db.commits, batches);
+        expect(db.transactions, 0);
+      });
+    }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
+      _expectWellFormedVariants(scenarios);
+    });
+  });
+}
+
+/// Sabit alıcılı [RecipientResolver] (sözleşme senaryoları): yönetici kümesi
+/// verilir, diğer sorgular bu testte çağrılmaz.
+final class _FixedRecipients implements RecipientResolver {
+  const _FixedRecipients(this._managers);
+
+  final List<String> _managers;
+
+  @override
+  Future<FirestoreResult<List<String>>> managersOf(String clubId) async =>
+      FirebaseSuccess(_managers);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

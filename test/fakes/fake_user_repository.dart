@@ -119,6 +119,31 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
     return FirebaseSuccess([for (final uid in uids.toSet()) ?users[uid]]);
   }
 
+  /// Gerçek sorgu gibi (`interests array-contains-any`, `isDeleted ==
+  /// false`, en çok [limit]; CD-38): uid sırasıyla. Boş liste yazımsız boş
+  /// sonuçtur; `whereInMax`'tan fazla ilgi alanı ya da pozitif olmayan
+  /// [limit] `invalidArgument`'tır.
+  @override
+  Future<FirestoreResult<List<UserModel>>> listByInterests(
+    List<String> interestIds, {
+    int limit = Limits.eventNewInterestFanOutMax,
+  }) async {
+    record('listByInterests', [interestIds, limit]);
+    if (_failure() case final error?) return FirebaseFailure(error);
+    final wanted = interestIds.toSet();
+    if (wanted.isEmpty) return const FirebaseSuccess([]);
+    if (limit < 1 ||
+        wanted.length > RepositoryHelpers.whereInMax ||
+        !wanted.every(RepositoryHelpers.isValidId)) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final matches = [
+      for (final user in users.values)
+        if (!user.isDeleted && user.interests.any(wanted.contains)) user,
+    ]..sort((a, b) => a.uid.compareTo(b.uid));
+    return FirebaseSuccess(matches.take(limit).toList(growable: false));
+  }
+
   @override
   Future<FirestoreResult<void>> createProfile({
     required String uid,

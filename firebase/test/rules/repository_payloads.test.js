@@ -769,3 +769,148 @@ describe('T-22 · etkinlik / katılım — senaryolar (kendi bağlamı, kurallar
     });
   });
 });
+
+// 8. T-25 — `contract.t25.scenarios`: FirebaseNotificationRepository (NotificationRepository + NotificationWriter)
+//    ve ClientFanOutDispatcher'ın GERÇEK yükleri (biçim `t22` ile aynı). `@autoId` olay anahtarıdır (koşu başına
+//    TEK Firestore otomatik kimliği: bir notifyX çağrısının tüm alıcıları aynı anahtarı paylaşır); `batches`
+//    yazımların ayrı commit'lere bölünüşüdür (application_received alıcı başına ayrı batch). Kritik bildirim
+//    (waitlist_promoted) terfi yazımlarıyla AYNI batch'te geçer, tek başına reddedilir.
+describe('T-25 · bildirimler — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t25 = contract.t25;
+  const DAYS_AGO = '@daysAgo:';
+
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Koşunun TEK olay anahtarı (NotificationWriter.newEventKey biçimi). */
+  const tokensFor = (db) => ({ [t25.autoId]: doc(collection(db, 'notifications')).id });
+
+  function fill(value, tokens) {
+    if (typeof value === 'string') {
+      return Object.entries(tokens).reduce((text, [token, actual]) => text.split(token).join(actual), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => fill(inner, tokens));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, fill(inner, tokens)]));
+    }
+    return value;
+  }
+
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function expand(entry) {
+    const { $fixture: name, ...fields } = entry;
+    if (name !== undefined && !t25.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+    return { ...(name === undefined ? {} : t25.fixtures[name]), ...fields };
+  }
+
+  function seedOf(scenario, variant, tokens) {
+    const docs = Object.fromEntries(Object.entries(scenario.seed).map(([path, entry]) => [path, expand(entry)]));
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...patch };
+    }
+    const content = Object.fromEntries(
+      Object.entries(docs).map(([path, data]) => [fill(path, tokens), seedValue(fill(data, tokens))]),
+    );
+    return { ...identityDocs(), ...content };
+  }
+
+  /** Yazımlar commit gruplarıyla: `batches` yoksa tümü tek grup; `without` ile çıkarılan sıralar gruptan düşer. */
+  function groupsOf(scenario, variant, tokens) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    const all = scenario.writes.map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write));
+    const batches = scenario.batches || [all.map((_write, index) => index)];
+    return batches
+      .map((indexes) => indexes.filter((index) => !without.includes(index)).map((index) => fill(all[index], tokens)))
+      .filter((group) => group.length > 0);
+  }
+
+  /** Senaryoyu repository'nin gönderdiği biçimde gönderir: okumalar, sonra her grup ayrı commit (sırayla). */
+  async function run(db, scenario, groups, tokens) {
+    for (const path of fill(scenario.reads, tokens)) await getDoc(doc(db, path));
+    for (const group of groups) await send(db, group);
+  }
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  test('sözleşme: bağlamlar roles.json ile aynı; bildirim yüklerinde metin / aktör alanı yok, refs yalnızca dolu (W-51)', () => {
+    expect(t25.autoId).toBe(contract.t15.autoId);
+    for (const [role, uid] of Object.entries(t25.actors)) expect(definition(role).uid).toBe(uid);
+    const created = t25.scenarios
+      .flatMap((scenario) => scenario.writes)
+      .filter((write) => write.op === 'set' && write.path.startsWith('notifications/'));
+    expect(created.length).toBeGreaterThanOrEqual(10);
+    for (const write of created) {
+      expect(Object.keys(write.data).sort()).toEqual(
+        ['createdAt', 'deletedAt', 'deletedBy', 'isDeleted', 'read', 'refs', 'type', 'updatedAt', 'userId'],
+      );
+      expect(Object.values(write.data.refs).every((value) => typeof value === 'string' && value.length > 0)).toBe(true);
+      expect(write.path.endsWith(`_${write.data.userId}`)).toBe(true);
+    }
+  });
+
+  describe.each(t25.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      const tokens = tokensFor(db);
+      await seedDocs(seedOf(scenario, {}, tokens));
+      const groups = groupsOf(scenario, {}, tokens);
+
+      await assertSucceeds(run(db, scenario, groups, tokens));
+
+      for (const write of groups.flat()) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(fill(path, tokens))).toMatchObject(fill(fields, tokens));
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const tokens = tokensFor(db);
+      const seed = seedOf(scenario, variant, tokens);
+      await seedDocs(seed);
+      const groups = groupsOf(scenario, variant, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...groups.flat().map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, scenario, groups, tokens));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test.each([
+    ['NotificationDispatcher.notifyEventNew', 'tekrarlanabilen olay: yeni anahtar → yeni belge', 'allow'],
+    ['NotificationDispatcher.notifyAnnouncement', 'tek seferlik olay (kimlik = postId): hiçbir anahtarla yeniden itilemez — CD-148', 'deny'],
+  ])('aynı olayın kesinleşmiş parçası yeniden gönderilirse ret (ikinci set = update — W-49) · %s · %s', async (call, _title, again) => {
+    const scenario = t25.scenarios.find((s) => s.call === call);
+    const db = contextFor(scenario.role).firestore();
+    const tokens = tokensFor(db);
+    await seedDocs(seedOf(scenario, {}, tokens));
+    const groups = groupsOf(scenario, {}, tokens);
+
+    await assertSucceeds(run(db, scenario, groups, tokens));
+    await assertFails(run(db, scenario, groups, tokens));
+    const next = tokensFor(db);
+    const repeat = run(db, scenario, groupsOf(scenario, {}, next), next);
+    await (again === 'allow' ? assertSucceeds(repeat) : assertFails(repeat));
+  });
+});

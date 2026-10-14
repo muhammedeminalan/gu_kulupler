@@ -8,6 +8,7 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/connectivity/connectivity_gate.dart';
 import 'package:gu_kulupler/core/env/app_environment.dart';
 import 'package:gu_kulupler/core/env/emulator_services.dart';
+import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
@@ -156,11 +157,23 @@ abstract final class ProjectDependency {
       Random.secure(),
     );
     final settingsRepository = FirebaseSettingsRepository(firestoreService);
-    // T-15 · kulüp, üyelik, şikayet, engel, günlük. Bildirim dağıtıcısı
-    // T-25'e kadar hiçbir belge yazmaz (CD-36): üyelik geçişleri çalışır,
-    // bildirim üretilmez. Günlük repository'si üyelik geçişleriyle paylaşılır
-    // (kayıt asıl yazımla aynı işlemde eklenir).
-    const notificationDispatcher = NoopNotificationDispatcher();
+    // T-25 · bildirimler (Mod C — Q-02, W-62): istemci kendi yazar
+    // (`ClientFanOutDispatcher`). Repository hem gelen kutusu yüzeyi hem
+    // dağıtıcının yazma kapısıdır (`NotificationWriter`). Mod F'de yalnızca
+    // bu satırlar değişir (`ServerSideDispatcher` — CD-147); çağıran
+    // repository'ler arayüzü bilir. Eksik kalan dağıtım günlüğe düşer (PLAN
+    // §10.5), kullanıcıya gösterilmez.
+    final notificationRepository = FirebaseNotificationRepository(
+      firestoreService,
+    );
+    final notificationDispatcher = ClientFanOutDispatcher(
+      writer: notificationRepository,
+      recipients: FirebaseRecipientResolver(firestoreService, userRepository),
+      onIssue: _logDispatchIssue,
+    );
+    // T-15 · kulüp, üyelik, şikayet, engel, günlük. Günlük repository'si
+    // üyelik geçişleriyle paylaşılır (kayıt asıl yazımla aynı işlemde
+    // eklenir).
     final clubRepository = FirebaseClubRepository(firestoreService);
     final activityRepository = FirebaseActivityRepository(firestoreService);
     final membershipRepository = FirebaseMembershipRepository(
@@ -229,8 +242,10 @@ abstract final class ProjectDependency {
       ..registerSingleton<AuthRepository>(authRepository)
       ..registerSingleton<UserRepository>(userRepository)
       ..registerSingleton<SettingsRepository>(settingsRepository)
-      // T-15 · kulüp ve üyelik repository'leri + bildirim dağıtıcısı
+      // T-15 · kulüp ve üyelik repository'leri; T-25 · bildirim dağıtıcısı
+      // ve gelen kutusu
       ..registerSingleton<NotificationDispatcher>(notificationDispatcher)
+      ..registerSingleton<NotificationRepository>(notificationRepository)
       ..registerSingleton<ClubRepository>(clubRepository)
       ..registerSingleton<MembershipRepository>(membershipRepository)
       ..registerSingleton<ReportRepository>(reportRepository)
@@ -290,6 +305,19 @@ abstract final class ProjectDependency {
 
   /// Tüm kayıtları siler (test ve yeniden kurulum).
   static Future<void> reset() => GetIt.I.reset();
+
+  /// Eksik kalan bildirim dağıtımını günlüğe yazar (PLAN §10.5: uyarı;
+  /// kullanıcıya hata gösterilmez). Alıcı kimliği yazılmaz.
+  static void _logDispatchIssue(
+    NotificationType type,
+    FirestoreResult<DispatchReport> result,
+  ) => AppLogger.warn(switch (result) {
+    FirebaseSuccess(data: final report) =>
+      'Bildirim dağıtımı eksik (${type.json}): ${report.written}/'
+          '${report.requested}, başarısız parça ${report.failedChunks}',
+    FirebaseFailure(:final error) =>
+      'Bildirim dağıtılamadı (${type.json}): ${error.name}',
+  });
 
   static Future<ConnectivityService> _startConnectivity() async {
     final service = DeviceConnectivityService();

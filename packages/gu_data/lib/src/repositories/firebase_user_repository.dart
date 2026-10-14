@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
+import 'package:gu_data/src/constants/limits.dart';
 import 'package:gu_data/src/constants/storage_paths.dart';
 import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
@@ -16,6 +17,7 @@ import 'package:gu_data/src/models/user_account_model.dart';
 import 'package:gu_data/src/models/user_model.dart';
 import 'package:gu_data/src/models/user_profile_patch.dart';
 import 'package:gu_data/src/repositories/firebase_settings_repository.dart';
+import 'package:gu_data/src/repositories/query_x.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
 import 'package:gu_data/src/repositories/user_repository.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
@@ -226,6 +228,32 @@ final class FirebaseUserRepository implements UserRepository {
     return _firestore.update(_accountRef(uid), {
       FirestoreFields.lastLoginAt: _firestore.serverTimestamp(),
     });
+  }
+
+  @override
+  Future<FirestoreResult<List<UserModel>>> listByInterests(
+    List<String> interestIds, {
+    int limit = Limits.eventNewInterestFanOutMax,
+  }) async {
+    final unique = interestIds.toSet().toList();
+    if (unique.isEmpty) return const FirebaseSuccess([]);
+    if (unique.length > RepositoryHelpers.whereInMax ||
+        !unique.every(RepositoryHelpers.isValidId) ||
+        limit <= 0) {
+      return RepositoryHelpers.invalidArgument(
+        'listByInterests: geçersiz ilgi listesi ya da sınır',
+      );
+    }
+    return RepositoryHelpers.parseAll(
+      await _firestore.getList(
+        _firestore
+            .collection(FirestoreCollections.users)
+            .where(FirestoreFields.interests, arrayContainsAny: unique)
+            .notDeleted()
+            .limit(limit),
+      ),
+      _userOf,
+    );
   }
 
   /// [updateAvatar] ile birlikte yazılacak [profile] yamasını doğrular:

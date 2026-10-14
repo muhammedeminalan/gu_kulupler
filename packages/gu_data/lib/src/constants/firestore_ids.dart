@@ -42,19 +42,38 @@ abstract final class FirestoreIds {
   static String announcementCounter(String clubId, String dayKey) =>
       '$clubId$_separator$dayKey';
 
-  /// `notifications/{type}_{refId}_{userId}` — deterministik ID; aynı
-  /// bildirimin yeniden yazımı çift kayıt üretmez. [type] enum'un JSON
-  /// değeri, [refId] türün ana referansıdır (PLAN §9.4).
+  /// `notifications/{type}_{eventKey}_{userId}` — [type] enum'un JSON
+  /// değeri, [eventKey] olay anahtarı (`NotificationDraft.eventKey`), [userId]
+  /// alıcı (PLAN §9.4; W-49, CD-129; `docs/plans/T-25.md` §6 b).
   ///
-  /// Saf birleştirmedir: aynı üçlü her zaman aynı kimliği verir. Bu yüzden
-  /// [refId] **olay başına tekil** olmalıdır. Aynı (tür, referans, alıcı)
-  /// ikinci kez oluşabiliyorsa (onayla → geri al → yeniden onayla, rol
-  /// değişimi, yeniden başvuru …) çağıran [refId]'ye olayı ayırt eden bir parça
-  /// ekler: var olan belgeye yazım Security Rules'ta güncelleme sayılır,
-  /// güncelleme yalnızca bildirimin sahibine açıktır ve yazım — içinde olduğu
-  /// batch ile birlikte — `permission-denied` alır.
-  static String notification(String type, String refId, String userId) =>
-      '$type$_separator$refId$_separator$userId';
+  /// Saf birleştirmedir: aynı üçlü her zaman aynı kimliği verir, bu yüzden
+  /// [eventKey] **olay başına tekildir**: olayın yeniden denemesi aynı
+  /// belgeye düşer (çift belge yok; belge kesinleşmişse ikinci yazım
+  /// Rules'ta güncelleme sayılır ve `permissionDenied` döner), olayın tekrarı
+  /// yeni anahtarla yeni belge yazar. Anahtar türe göredir (CD-148): tek
+  /// seferlik olaylarda olayın kendi kimliği (`announcement` → `postId`,
+  /// `event_cancelled` → `eventId`, `application_received` →
+  /// [applicationEventKey]); tekrarlanabilen olaylarda (yeniden yayın, terfi,
+  /// onay / rol / çıkarma kararları) olay başına bir kez üretilen 20
+  /// karakterlik `[A-Za-z0-9]` dizgisi (`NotificationWriter.newEventKey`).
+  /// `event_reminder` türünde anahtar etkinlik kimliğidir (cihaz kendi
+  /// belgesini bir kez yazar — CD-44). Kimlik hiçbir zaman parçalanarak
+  /// okunmaz; Rules aynı dizgiyi belge alanlarından kurup karşılaştırır.
+  static String notification(String type, String eventKey, String userId) =>
+      '$type$_separator$eventKey$_separator$userId';
+
+  /// `application_received` olay anahtarı `{clubId}_{applicantId}_{sequence}`
+  /// — [sequence] başvurudan **sonraki** üyelik belgesinin `priorCount`
+  /// değeridir (M1 `0`, her yeniden başvuru `+1`; [activity] ile aynı).
+  ///
+  /// Bir başvuru (kulüp, başvuran, `priorCount`) tekildir: yönetici başına en
+  /// çok bir bildirim belgesi üretir; Rules kimliği başvuranın kendi
+  /// `pending` üyeliğinden kurar (CD-148).
+  static String applicationEventKey(
+    String clubId,
+    String applicantId,
+    int sequence,
+  ) => '$clubId$_separator$applicantId$_separator$sequence';
 
   /// `activity/{clubId}_{actorId}_{kind}_{sequence}` — kullanıcının **kendi
   /// üyelik geçişinin** günlük kaydı (`application_received`,

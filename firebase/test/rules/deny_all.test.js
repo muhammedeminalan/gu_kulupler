@@ -30,13 +30,14 @@ const budget = require('../helpers/budget');
  * `rules/<koleksiyon>.test.js` dosyasındadır. T-12: `users`, `users/private`, `settings`.
  * T-15: `clubs`, `memberships`, `memberships/private`, `reports`, `blocks`, `activity`.
  * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
- * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`.
+ * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`. T-25: `notifications`.
  */
 const OPENED = [
   'users', 'users/private', 'settings',
   'clubs', 'memberships', 'memberships/private', 'reports', 'blocks', 'activity',
   'posts', 'posts/votes', 'comments', 'savedPosts', 'announcementCounters',
   'events', 'events/private', 'rsvps',
+  'notifications',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -100,12 +101,12 @@ describe.each(expectations.filter((e) => !OPENED.includes(e.collection)).map((e)
 );
 
 describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vakası süzgeçsiz ikiziyle koşar', () => {
-  // Henüz kapalı bir koleksiyon (T-25): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
-  const posts = loadExpectations('notifications.json');
+  // Henüz kapalı bir koleksiyon (T-28): süzgeçli sorgu da süzgeçsiz ikizi de reddedilir.
+  const posts = loadExpectations('support_tickets.json');
   const filtered = { where: [['isDeleted', '==', false]], orderBy: [['createdAt', 'desc']] };
   runCases(
     posts,
-    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'NTF-01' })),
+    ['anon', 'member', 'superadmin'].map((role) => ({ role, op: 'list', query: filtered, expect: 'deny', ref: 'SET-04' })),
     { seed: seedTarget },
   );
 
@@ -142,16 +143,16 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumaları dener: bildirim ve destek talebi.
+  // Her bağlam, kuralları açıldığında izinli olacağı en doğal okumayı dener: destek talebi.
   // Üyelik ve kullanıcı belgeleri yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap / ayar belgesi
   // T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy, kayıt ve duyuru sayacı T-19'da; etkinlik ve
-  // katılım T-22'de açıldı.)
-  test.each(ALL_CONTEXTS)('%s · bildirim ve destek talebi → deny', async (role) => {
+  // katılım T-22'de; bildirim T-25'te açıldı.)
+  test.each(ALL_CONTEXTS)('%s · destek talebi → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();
     const membership = definition(role).membership;
-    for (const p of ['notifications/n01', 'supportTickets/t01']) await assertFails(getDoc(doc(db, p)));
+    await assertFails(getDoc(doc(db, 'supportTickets/t01')));
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 
