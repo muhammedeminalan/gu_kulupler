@@ -49,7 +49,6 @@ final class ClubModel extends Equatable with BaseFields {
     this.advisor,
     this.status = ClubStatus.active,
     this.suspendReason,
-    this.lastMembershipRef,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -165,14 +164,6 @@ final class ClubModel extends Equatable with BaseFields {
   @JsonKey(name: FirestoreFields.suspendReason)
   final String? suspendReason;
 
-  /// Ayrılmış alan — istemci **yazmaz**, değeri hep `null`'dır (CD-137).
-  ///
-  /// CD-41 bu alana `memberCount`'u değiştiren üyeliğin yolunu yazdırıyordu;
-  /// kulüp belgesi doğrulanmış herkese açık olduğundan yol kimin katıldığını
-  /// / ayrıldığını sızdırırdı. Rules bu alanın yazımını reddeder.
-  @JsonKey(name: FirestoreFields.lastMembershipRef)
-  final String? lastMembershipRef;
-
   @override
   @JsonKey(name: FirestoreFields.createdBy)
   final String? createdBy;
@@ -242,8 +233,6 @@ final class ClubModel extends Equatable with BaseFields {
     ClubStatus? status,
     String? suspendReason,
     bool clearSuspendReason = false,
-    String? lastMembershipRef,
-    bool clearLastMembershipRef = false,
     String? createdBy,
     bool clearCreatedBy = false,
     DateTime? createdAt,
@@ -284,9 +273,6 @@ final class ClubModel extends Equatable with BaseFields {
     suspendReason: clearSuspendReason
         ? null
         : (suspendReason ?? this.suspendReason),
-    lastMembershipRef: clearLastMembershipRef
-        ? null
-        : (lastMembershipRef ?? this.lastMembershipRef),
     createdBy: clearCreatedBy ? null : (createdBy ?? this.createdBy),
     createdAt: clearCreatedAt ? null : (createdAt ?? this.createdAt),
     updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
@@ -321,7 +307,6 @@ final class ClubModel extends Equatable with BaseFields {
     advisor,
     status,
     suspendReason,
-    lastMembershipRef,
     createdBy,
     createdAt,
     updatedAt,

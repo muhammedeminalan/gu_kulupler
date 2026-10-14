@@ -50,7 +50,6 @@ final ClubModel _full = ClubModel(
   advisor: _advisor,
   status: ClubStatus.suspended,
   suspendReason: 'İnceleme',
-  lastMembershipRef: 'memberships/c01_u_ayse',
   createdBy: 'u_admin',
   createdAt: _createdAt,
   updatedAt: _updatedAt,
@@ -145,7 +144,6 @@ void main() {
           'advisor': model.advisor,
           'status': model.status,
           'suspendReason': model.suspendReason,
-          'lastMembershipRef': model.lastMembershipRef,
           'createdBy': model.createdBy,
           'createdAt': model.createdAt,
           'updatedAt': model.updatedAt,
@@ -323,12 +321,6 @@ void main() {
           expected: 'Başka gerekçe',
         ),
         (
-          field: 'lastMembershipRef',
-          copy: _full.copyWith(lastMembershipRef: 'memberships/c01_u_can'),
-          read: (m) => m.lastMembershipRef,
-          expected: 'memberships/c01_u_can',
-        ),
-        (
           field: 'createdBy',
           copy: _full.copyWith(createdBy: 'u_admin2'),
           read: (m) => m.createdBy,
@@ -397,12 +389,6 @@ void main() {
           field: 'suspendReason',
           copy: _full.copyWith(clearSuspendReason: true),
           read: (m) => m.suspendReason,
-          expected: null,
-        ),
-        (
-          field: 'lastMembershipRef',
-          copy: _full.copyWith(clearLastMembershipRef: true),
-          read: (m) => m.lastMembershipRef,
           expected: null,
         ),
         (

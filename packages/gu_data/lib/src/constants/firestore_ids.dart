@@ -125,6 +125,44 @@ abstract final class FirestoreIds {
     String eventId,
   ) => '$clubId$_separator$actorId$_separator$kind$_separator$eventId';
 
+  /// `activity/{clubId}_{actorId}_{kind}_{userId}_{sequence}` — yöneticinin
+  /// bir üyelik **kararının** günlük kaydı (`application_approved`,
+  /// `application_rejected`, `member_removed`; T-30). [kind] enum'un JSON
+  /// değeri, [userId] kararın hedefi, [sequence] hedef üyeliğin `priorCount`
+  /// değeridir.
+  ///
+  /// Kimlik sabittir ve Security Rules alanlardan kurup karşılaştırır: bir
+  /// başvuruya (`priorCount`) aynı yöneticinin aynı kararı tek kayıt üretir.
+  /// Karar geri alınıp (M12) aynı yönetici aynı kararı yeniden verirse kayıt
+  /// zaten vardır; repository işlem içinde okur ve ikinci kez yazmaz
+  /// (günlük değiştirilemez — CD-137).
+  static String managerActivity(
+    String clubId,
+    String actorId,
+    String kind,
+    String userId,
+    int sequence,
+  ) =>
+      '$clubId$_separator$actorId$_separator$kind$_separator$userId'
+      '$_separator$sequence';
+
+  /// `activity/{clubId}_{actorId}_role_changed_{userId}_{role}_{sequence}` —
+  /// rol değişiminin (M10) ya da başkanlık devrinin (M11, hedef yeni başkan,
+  /// [role] `president`) günlük kaydı. [role] yeni rolün JSON değeri,
+  /// [sequence] hedef üyeliğin `priorCount` değeridir.
+  ///
+  /// [managerActivity] ile aynı kural: aynı (aktör, hedef, rol, `priorCount`)
+  /// için tek kayıt; varsa repository yazmaz.
+  static String roleActivity(
+    String clubId,
+    String actorId,
+    String userId,
+    String role,
+    int sequence,
+  ) =>
+      '$clubId$_separator$actorId$_separator$_roleChanged$_separator$userId'
+      '$_separator$role$_separator$sequence';
+
   // ── Sayaç işaretçileri (CD-41) ───────────────────────────────────────
 
   /// `posts.lastCommentRef` değeri: `comments/{commentId}` — `commentCount`
@@ -136,6 +174,19 @@ abstract final class FirestoreIds {
   /// artıran duyurunun belge yolu (başında `/` yok).
   static String postRef(String postId) =>
       '${FirestoreCollections.posts}$_pathSeparator$postId';
+
+  /// Kulüp sayaç yan belgesinin `lastMembershipRef` değeri:
+  /// `memberships/{clubId}_{userId}` — `memberCount`'u son değiştiren
+  /// yönetici geçişinin üyelik yolu (başında `/` yok; W-64).
+  static String membershipRef(String clubId, String userId) =>
+      '${FirestoreCollections.memberships}$_pathSeparator'
+      '${membership(clubId, userId)}';
+
+  /// Etkinlik sayaç yan belgesinin `lastRsvpRef` değeri:
+  /// `rsvps/{eventId}_{userId}` — etkinlik sayaçlarını son değiştiren
+  /// yönetici geçişinin (yoklama, terfi) kayıt yolu (başında `/` yok; W-64).
+  static String rsvpRef(String eventId, String userId) =>
+      '${FirestoreCollections.rsvps}$_pathSeparator${rsvp(eventId, userId)}';
 
   // ── Tohumlar ve gömülü ID'ler ────────────────────────────────────────
 
@@ -208,5 +259,8 @@ abstract final class FirestoreIds {
   static const String _qrScheme = 'gu';
   static const String _qrKind = 'ticket';
   static const String _pathSeparator = '/';
+
+  /// `role_changed` günlük türünün JSON değeri ([roleActivity]).
+  static const String _roleChanged = 'role_changed';
   static const int _qrPartCount = 5;
 }

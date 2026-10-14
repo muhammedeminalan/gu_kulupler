@@ -116,8 +116,9 @@ void main() {
   group('T-25 · NotificationRepository · sözleşme', () {
     test(
       'PLAN §10.4 tablosu: okuma / güncelleme üyeleri ve createSelf '
-      'NotificationRepository içinde, addToBatch / createMany (+ newEventKey) '
-      'NotificationWriter içinde aynı imzayla; watchUnreadCount yazılmaz',
+      'NotificationRepository içinde, addToBatch / addToTransaction / '
+      'createMany (+ newEventKey) NotificationWriter içinde aynı imzayla; '
+      'watchUnreadCount yazılmaz',
       () {
         final plan = {
           for (final row in readPlanRepositoryMembers(
@@ -125,7 +126,11 @@ void main() {
           ))
             row.member: normalizeDartSource(row.signature),
         };
-        const writerMembers = {'addToBatch', 'createMany'};
+        const writerMembers = {
+          'addToBatch',
+          'addToTransaction',
+          'createMany',
+        };
 
         expect(plan.keys, [
           'watchInbox',
@@ -135,6 +140,7 @@ void main() {
           'softDeleteNotification',
           'restoreNotification',
           'addToBatch',
+          'addToTransaction',
           'createMany',
           'createSelf',
         ]);

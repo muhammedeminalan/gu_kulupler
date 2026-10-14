@@ -1,6 +1,7 @@
 // T-09 · JSON anahtar paritesi (PLAN §9.5, §9.11): her modelin `toJson()`
 // anahtarları `FirestoreFields` içindedir; 28 modelin anahtar birleşimi
-// `FirestoreFields`'in noktasız 144 adına eşittir (fazla / eksik = kırmızı) ve
+// `FirestoreFields`'in noktasız 144 adına eşittir (yan sayaç belgesinin iki
+// işaretçisi hariç — §9.6.19; fazla / eksik = kırmızı) ve
 // her noktalı yol gerçek bir gömülü anahtarı gösterir. Model listesi
 // `lib/src/models/` kaynak dosyalarından doğrulanır: yeni model buraya
 // eklenmeden geçmez.
@@ -12,6 +13,13 @@ import 'package:gu_data/gu_data.dart';
 import '../helpers/repo_sources.dart';
 
 final DateTime _at = DateTime.utc(2026, 10, 8, 12);
+
+/// Yalnızca yan sayaç belgesinde (`clubs/{id}/private/counter`,
+/// `events/{id}/private/counter`) yaşayan anahtarlar (PLAN §9.6.19; T-30).
+const Set<String> _sideCounterOnly = {
+  FirestoreFields.lastMembershipRef,
+  FirestoreFields.lastRsvpRef,
+};
 
 const ClubSocialModel _social = ClubSocialModel(
   email: 'yazilim@gumushane.edu.tr',
@@ -102,7 +110,6 @@ final Map<String, Map<String, Object?>> _fullJson = {
     advisor: _advisor,
     status: ClubStatus.suspended,
     suspendReason: 'Neden',
-    lastMembershipRef: 'memberships/c01_u_ayse',
     createdBy: 'u_admin',
     createdAt: _at,
     updatedAt: _at,
@@ -379,9 +386,9 @@ void main() {
       expect(_fullJson.keys.toList()..sort(), declared);
     });
 
-    test('FirestoreFields: 143 noktasız ad + 22 noktalı yol', () {
+    test('FirestoreFields: 144 noktasız ad + 22 noktalı yol', () {
       expect(_fieldValues.toSet(), hasLength(_fieldValues.length));
-      expect(_plainNames, hasLength(143));
+      expect(_plainNames, hasLength(144));
       expect(_dottedPaths, hasLength(22));
     });
 
@@ -394,10 +401,24 @@ void main() {
 
     test('tüm modellerin anahtar birleşimi = FirestoreFields noktasız adları '
         '(fazla / eksik yok)', () {
-      final union = {for (final json in _fullJson.values) ...json.keys};
+      final union = {
+        for (final json in _fullJson.values) ...json.keys,
+        // Yan sayaç belgesinin işaretçileri (§9.6.19, W-64): modeli yoktur —
+        // repository yazar, istemci okumaz.
+        ..._sideCounterOnly,
+      };
 
       expect(_plainNames.difference(union), isEmpty, reason: 'kullanılmayan');
       expect(union.difference(_plainNames), isEmpty, reason: 'tanımsız');
+      // İşaretçi hiçbir modelin (özellikle herkese açık kulüp / etkinlik
+      // belgesinin) alanı değildir — CD-137 madde 8q.
+      expect(
+        [
+          for (final MapEntry(key: model, value: json) in _fullJson.entries)
+            if (json.keys.any(_sideCounterOnly.contains)) model,
+        ],
+        isEmpty,
+      );
     });
 
     test('her noktalı yol bir modelin gömülü map anahtarını gösterir; '

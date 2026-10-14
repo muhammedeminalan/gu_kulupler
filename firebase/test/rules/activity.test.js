@@ -2,7 +2,7 @@
 // T-15 — `activity/{id}` (rules-spec §3.11; PLAN §11.1 satır 13). Değiştirilemez günlük.
 //
 //  1. Rol × işlem matrisi: `expectations/activity.json` (okuma yalnızca kulüp yönetimi / danışman /
-//     süper admin; eşlik eden yazım olmadan create ret; yönetici türleri T-30'a kadar kapalı;
+//     süper admin; eşlik eden yazım olmadan create ret; yönetici türleri (T-30) memberships_manager.test.js;
 //     update / soft delete herkese ret).
 //  2. T-15 türleri — oturumun KENDİ üyelik geçişi, aynı batch'teki üyelik yazımıyla doğrulanır:
 //     `application_received` (M1 / M3 / M4) · `member_joined` (M2 / M3) · `member_left` (M8).

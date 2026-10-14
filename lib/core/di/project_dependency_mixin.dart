@@ -92,6 +92,18 @@ mixin ProjectDependencyMixin {
   AccountDeletionRepository get accountDeletionRepository =>
       GetIt.I<AccountDeletionRepository>();
 
+  /// Kulüp yönetim paneli (MGT-*): üyelik kararları (tekil / toplu, 30 sn
+  /// geri al), çıkarma, rol, devir, kulüp ayarları, etkinlik / gönderi yayını
+  /// ve moderasyon + fan-out bildirimleri (T-30). Danışman salt okunur
+  /// (`isReadOnly` — Q-09).
+  ManagementRepository get managementRepository =>
+      GetIt.I<ManagementRepository>();
+
+  /// Yoklama (bilet okutma, elle / toplu yoklama) ve bekleme listesinden
+  /// terfi (MGT-06, MGT-07; T-30).
+  AttendanceRepository get attendanceRepository =>
+      GetIt.I<AttendanceRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

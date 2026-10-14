@@ -133,7 +133,6 @@ function clubDoc(clubId, presidentId, memberCount) {
     advisor: null,
     status: 'active',
     suspendReason: null,
-    lastMembershipRef: null,
     createdBy: 'u_super',
   });
 }
@@ -216,7 +215,8 @@ function memberCount(docs, clubId) {
 }
 
 /**
- * Temel veri kümesi: bağlamların kullanıcı/üyelik belgeleri, iki kulüp (`c01`, `c02`), iki gönderi
+ * Temel veri kümesi: bağlamların kullanıcı/üyelik belgeleri, iki kulüp (`c01`, `c02`; `c01` yönetici sayaç
+ * işaretçisiyle — T-30), iki gönderi
  * (`p01` anketli, seed biçimi + oy + yorum; `p02` düz, istemci biçimi + yorum), dört etkinlik (public,
  * members, draft, süren) + katılım kayıtları + yönetici sayaç işaretçisi, bildirim, şikayet, faaliyet, engel,
  * kayıt, destek talebi ve duyuru sayacı. Koleksiyon task'ları genişletir.
@@ -230,6 +230,9 @@ function baseDocs(options = {}) {
 
   docs[`clubs/${CLUB}`] = clubDoc(CLUB, 'u_president', memberCount(docs, CLUB));
   docs[`clubs/${OTHER_CLUB}`] = clubDoc(OTHER_CLUB, 'u_mgr2', memberCount(docs, OTHER_CLUB));
+  // Kulübün yönetici sayaç işaretçisi (W-64, T-30): `lastMembershipRef` kulüp belgesinde DEĞİL, yalnızca
+  // `seesMgmt`'e açık yan belgededir. Son yönetici geçişi `u_member`'ın onayıydı.
+  docs[`clubs/${CLUB}/private/counter`] = { clubId: CLUB, lastMembershipRef: `memberships/${CLUB}_u_member`, updatedAt: serverTimestamp() };
 
   docs['posts/p01'] = base({
     clubId: CLUB,

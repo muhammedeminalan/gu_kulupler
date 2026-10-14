@@ -89,16 +89,23 @@ const Map<String, int> _requested = {
   'notifySystem': 4,
 };
 
+/// Kritik üyelerin transaction karşılıkları (T-30): karar, çıkarma, rol,
+/// terfi. Davranışları `client_fan_out_dispatcher_test` sınar.
+const int _transactionMembers = 4;
+
 void main() {
   group('T-15 · NotificationDispatcher · sözleşme', () {
-    test('arayüz PLAN §10.5 tanımındaki 11 üyeyi aynı adlandırılmış '
-        'parametrelerle taşır; hepsi DispatchReport döner', () {
+    test('arayüz PLAN §10.5 tanımındaki 15 üyeyi (11 + T-30 `…InTransaction` '
+        'karşılıkları) aynı adlandırılmış parametrelerle taşır; hepsi '
+        'DispatchReport döner', () {
       final plan = RegExp(
         r'^\s+(notify\w+)\(\{(.*?)\}\);',
         multiLine: true,
       ).allMatches(readRepoFile('docs/PLAN.md').split('### 10.5').last);
       final expected = {
-        for (final match in plan.take(_requested.length))
+        for (final match in plan.take(
+          _requested.length + _transactionMembers,
+        ))
           normalizeDartSource(
             'Future<FirestoreResult<DispatchReport>> '
             '${match.group(1)}({${match.group(2)}})',
@@ -111,7 +118,11 @@ void main() {
         source.indexOf('}finalclassDispatchReport'),
       );
 
-      expect(expected, hasLength(_requested.length));
+      expect(expected, hasLength(_requested.length + _transactionMembers));
+      expect(
+        expected.where((member) => member.contains('InTransaction(')),
+        hasLength(_transactionMembers),
+      );
       expect(body.split(';').where((member) => member.isNotEmpty).toSet(), {
         ...expected,
       });

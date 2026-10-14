@@ -243,7 +243,6 @@ function convert(raw, { now, randomHex }) {
       advisor: advisor(club.advisorId),
       status: orNull(club.status),
       suspendReason: orNull(club.suspendReason),
-      lastMembershipRef: null,
       createdBy: SUPER_ADMIN_ID,
       ...base(time(club, 'createdAt')),
     };
@@ -929,6 +928,156 @@ function validateDeleted(deleted, raw) {
   return problems;
 }
 
+// ── T-30 · demo yönetici geçmişi (demo-management.json) ─────────────────────────────────────────
+
+/** `Limits.reapplyCooldown` (7 gün) ve `Limits.rejectNoteMax` (200) — Dart sabitleriyle aynı (öz-test karşılaştırır). */
+const REAPPLY_COOLDOWN_MS = 7 * DAY_MS;
+const REJECT_NOTE_MAX = 200;
+const REJECT_REASONS = Object.freeze(['quota', 'criteria', 'missing', 'other']);
+
+/** `FirestoreIds.managerActivity` — `{clubId}_{actorId}_{kind}_{userId}_{priorCount}`. */
+const managerActivityId = (clubId, actorId, kind, userId, priorCount) => `${clubId}_${actorId}_${kind}_${userId}_${priorCount}`;
+
+/** `FirestoreIds.roleActivity` — `{clubId}_{actorId}_role_changed_{userId}_{role}_{priorCount}`. */
+const roleActivityId = (clubId, actorId, userId, role, priorCount) =>
+  `${clubId}_${actorId}_role_changed_${userId}_${role}_${priorCount}`;
+
+/**
+ * Yönetici geçişlerinin SONUÇ belgeleri (docs/plans/T-30.md §4): `decisions` (ret; 30 sn içinde geri alınmış onay),
+ * `roleChanges` (günlük) ve `counters` (yan sayaç belgeleri — W-64). Döner: `{ writes: [[yol, veri], …] }`.
+ */
+function convertManagement(raw, extras, { now }) {
+  const shift = dayShiftMs(new Date(raw.meta.today), now);
+  const at = (iso) => new Date(new Date(iso).getTime() + shift);
+  const base = (createdAt, updatedAt) => ({ createdAt, updatedAt, isDeleted: false, deletedAt: null, deletedBy: null });
+  const writes = [];
+  for (const decision of extras.decisions || []) {
+    const { clubId, userId, actorId } = decision;
+    const user = raw.users[userId];
+    const id = `${clubId}_${userId}`;
+    const appliedAt = at(decision.appliedAt);
+    const decidedAt = at(decision.decidedAt);
+    const rejected = decision.kind === 'rejected';
+    writes.push([
+      PATH_OF.memberships(id),
+      {
+        clubId,
+        userId,
+        // Geri alınmış onay (M12 a): başvuru yeniden bekliyor, karar alanları boş.
+        status: rejected ? 'rejected' : 'pending',
+        role: 'member',
+        applicant: {
+          name: user.name,
+          department: orNull(user.department),
+          year: orNull(user.year),
+          avatarSeed: orNull(user.avatarSeed),
+        },
+        appliedAt,
+        decidedAt: rejected ? decidedAt : null,
+        decidedBy: rejected ? actorId : null,
+        retryAfter: rejected ? new Date(decidedAt.getTime() + REAPPLY_COOLDOWN_MS) : null,
+        rejectReason: rejected ? decision.rejectReason : null,
+        rejectNote: rejected ? decision.rejectNote : null,
+        priorCount: 0,
+        ...base(appliedAt, rejected ? decidedAt : appliedAt),
+      },
+    ]);
+    writes.push([
+      PATH_OF.contact(id),
+      { email: user.email, emailLower: user.email.toLowerCase(), note: decision.note, ...base(appliedAt, appliedAt) },
+    ]);
+    // Günlük kaydı kalır: geri alınan onayın kaydı da (değiştirilemez günlük — kabul edilen sınırlama).
+    const kind = rejected ? 'application_rejected' : 'application_approved';
+    writes.push([
+      PATH_OF.activity(managerActivityId(clubId, actorId, kind, userId, 0)),
+      { clubId, actorId, kind, refs: { userId }, createdAt: decidedAt },
+    ]);
+  }
+  for (const change of extras.roleChanges || []) {
+    const membership = raw.memberships[`${change.clubId}_${change.userId}`];
+    const priorCount = membership ? membership.priorCount || 0 : 0;
+    writes.push([
+      PATH_OF.activity(roleActivityId(change.clubId, change.actorId, change.userId, change.role, priorCount)),
+      {
+        clubId: change.clubId,
+        actorId: change.actorId,
+        kind: 'role_changed',
+        refs: { userId: change.userId, role: change.role },
+        createdAt: at(change.at),
+      },
+    ]);
+  }
+  for (const [owner, counter] of Object.entries(extras.counters || {})) {
+    const [collection, id] = owner.split('/');
+    const clubId = collection === 'clubs' ? id : raw.events[id] && raw.events[id].clubId;
+    const field = collection === 'clubs' ? 'lastMembershipRef' : 'lastRsvpRef';
+    writes.push([`${owner}/private/counter`, { clubId, [field]: counter.ref, updatedAt: at(counter.at) }]);
+  }
+  return { writes };
+}
+
+/** Yönetici geçmişinin tutarlılığı (Rules ile aynı değişmezler); sorun listesi döner, boş = tutarlı. */
+function validateManagement(management, raw) {
+  const problems = [];
+  const docs = Object.fromEntries(management.writes);
+  const activeRole = (clubId, uid) => {
+    const m = raw.memberships[`${clubId}_${uid}`];
+    return m && m.status === 'active' ? m.role : null;
+  };
+  for (const [docPath, data] of management.writes) {
+    const parts = docPath.split('/');
+    if (parts[0] === 'memberships' && parts.length === 2) {
+      if (raw.memberships[parts[1]]) problems.push(`${docPath}: demo-data.json'da zaten var`);
+      if (!raw.clubs[data.clubId] || !raw.users[data.userId]) problems.push(`${docPath}: kulüp / kullanıcı yok`);
+      if (!docs[PATH_OF.contact(parts[1])]) problems.push(`${docPath}: private/contact yok`);
+      if (data.status === 'rejected') {
+        if (!['board', 'president'].includes(activeRole(data.clubId, data.decidedBy))) {
+          problems.push(`${docPath}: kararı veren ${data.decidedBy} kulübün etkin yöneticisi değil`);
+        }
+        if (data.retryAfter.getTime() - data.decidedAt.getTime() !== REAPPLY_COOLDOWN_MS) problems.push(`${docPath}: retryAfter ≠ karar + 7 gün`);
+        if (!REJECT_REASONS.includes(data.rejectReason)) problems.push(`${docPath}: rejectReason ${data.rejectReason}`);
+        if (typeof data.rejectNote !== 'string' || data.rejectNote.length > REJECT_NOTE_MAX) problems.push(`${docPath}: rejectNote`);
+      } else if (data.status !== 'pending' || data.decidedAt !== null || data.decidedBy !== null || data.retryAfter !== null) {
+        problems.push(`${docPath}: geri alınmış karar pending + boş karar alanı olmalı`);
+      }
+    }
+    if (parts[0] === 'activity') {
+      if (raw.activity.some((entry) => entry.id === parts[1])) problems.push(`${docPath}: demo-data.json'da zaten var`);
+      const target = data.refs.userId;
+      const expectedId =
+        data.kind === 'role_changed'
+          ? roleActivityId(data.clubId, data.actorId, target, data.refs.role, (raw.memberships[`${data.clubId}_${target}`] || {}).priorCount || 0)
+          : managerActivityId(data.clubId, data.actorId, data.kind, target, 0);
+      if (parts[1] !== expectedId) problems.push(`${docPath}: kimlik FirestoreIds biçiminde değil (${expectedId})`);
+      if (data.kind === 'role_changed') {
+        if (raw.clubs[data.clubId].presidentId !== data.actorId) problems.push(`${docPath}: rolü başkan değiştirir`);
+        if (activeRole(data.clubId, target) !== data.refs.role) problems.push(`${docPath}: üyelik hedef rolde değil`);
+      } else if (!['board', 'president'].includes(activeRole(data.clubId, data.actorId))) {
+        problems.push(`${docPath}: aktör ${data.actorId} kulübün etkin yöneticisi değil`);
+      }
+    }
+    if (parts[2] === 'private' && parts[3] === 'counter') {
+      const keys = Object.keys(data).sort();
+      const ref = data.lastMembershipRef || data.lastRsvpRef || '';
+      const [refCollection, refId] = ref.split('/');
+      if (parts[0] === 'clubs') {
+        const m = raw.memberships[refId];
+        if (keys.join() !== 'clubId,lastMembershipRef,updatedAt' || refCollection !== 'memberships' || !m || m.clubId !== parts[1]) {
+          problems.push(`${docPath}: işaretçi bu kulübün üyeliğini göstermiyor`);
+        }
+      } else {
+        const r = raw.rsvps[refId];
+        const event = raw.events[parts[1]];
+        if (keys.join() !== 'clubId,lastRsvpRef,updatedAt' || refCollection !== 'rsvps' || !r || r.eventId !== parts[1]
+          || !event || data.clubId !== event.clubId) {
+          problems.push(`${docPath}: işaretçi bu etkinliğin kaydını göstermiyor`);
+        }
+      }
+    }
+  }
+  return problems;
+}
+
 module.exports = {
   SEED_SUSPEND_REASON,
   SEED_TITLES,
@@ -947,6 +1096,8 @@ module.exports = {
   ANONYMIZATION,
   convertDeleted,
   validateDeleted,
+  convertManagement,
+  validateManagement,
   fileStamp,
   convert,
   expectedCounts,

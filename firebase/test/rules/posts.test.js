@@ -195,7 +195,7 @@ describe('posts · update — düzenleme (rules-spec §3.5 U yazar)', () => {
 
 describe('posts · sabitleme — `pinned` ↔ `clubs.pinnedPostId` (sözleşme §6.a 9–11)', () => {
   const PINNED = { patch: { 'posts/p01': { pinned: true }, [CLUB_PATH]: { pinnedPostId: 'p01' } } };
-  const CLIENT_CLUB = { unset: { [CLUB_PATH]: ['pinnedPostId', 'logoPath', 'coverPath', 'advisor', 'suspendReason', 'lastMembershipRef'] } };
+  const CLIENT_CLUB = { unset: { [CLUB_PATH]: ['pinnedPostId', 'logoPath', 'coverPath', 'advisor', 'suspendReason'] } };
   const pin = (extra) => payloads.pinWrites({ club: CLUB, postId: 'p02', ...extra });
   const clubWrite = (pinnedPostId, club = CLUB) => ({ op: 'update', path: `clubs/${club}`, data: { pinnedPostId, ...payloads.baseUpdate() } });
   const pinState = async () => [(await readDoc(CLUB_PATH)).pinnedPostId ?? null, (await readDoc('posts/p01')).pinned, (await readDoc('posts/p02')).pinned];

@@ -12,11 +12,13 @@
 //  2. ±1 dışı delta, ters yön, çift yazım, mutlak değer → ret.
 //  3. Eşlik yok: sayaçsız üyelik geçişi ve üyelik geçişi olmayan sayaç yazımı → ret.
 //  4. Sızıntı: kulüp belgesi (doğrulanmış herkese açık) kimin katıldığını / ayrıldığını taşımaz;
-//     `lastMembershipRef` yazan sayaç yükü reddedilir.
-//  5. Sayaç dalı başka alan taşıyamaz; yönetici ve süper admin aktörü T-30 / T-37'ye kadar kapalıdır.
+//     `lastMembershipRef` yazan sayaç yükü reddedilir (alan kulüp belgesinde YOKTUR — W-64, T-30).
+//  5. Sayaç dalı başka alan taşıyamaz; tek başına yazılan yönetici sayacı reddedilir.
+//  7. T-30 yönetici dalı (W-64): işaretçi `clubs/{id}/private/counter` yan belgesindedir; tek +1 ile iki üyelik,
+//     başka kulübün / kimliği kaydırılmış üyelik, yan belgesiz ya da sayaçsız yan belge reddedilir.
 //  6. Null alanın iki biçimi (W-51): null alanlarının anahtarı olmayan kulüp belgesi.
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { arrayUnion, doc, getDoc, increment, serverTimestamp, updateDoc } = require('firebase/firestore');
+const { Timestamp, arrayUnion, doc, getDoc, increment, serverTimestamp, updateDoc } = require('firebase/firestore');
 const budget = require('../helpers/budget');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
 const { readDoc, seedDocs, seedFixture } = require('../helpers/fixtures');
@@ -52,7 +54,7 @@ describe('memberCount · meşru batch\'ler (±1; eşlik eden üyelik oturumdan t
   });
 
   test('istemci biçimli kulüp belgesi (null alanların anahtarı yok — W-51) sayacı kabul eder', async () => {
-    await seedFixture('base', undefined, { ...INSTANT, unset: { [CLUB_PATH]: ['lastMembershipRef', 'logoPath', 'coverPath', 'pinnedPostId', 'advisor', 'suspendReason'] } });
+    await seedFixture('base', undefined, { ...INSTANT, unset: { [CLUB_PATH]: ['logoPath', 'coverPath', 'pinnedPostId', 'advisor', 'suspendReason'] } });
     await assertSucceeds(commit('student', join()));
     const club = await readDoc(CLUB_PATH);
     expect(club.memberCount).toBe(BASE_COUNT + 1);
@@ -72,7 +74,7 @@ describe('memberCount · meşru batch\'ler (±1; eşlik eden üyelik oturumdan t
 
     // Kulüp belgesini doğrulanmış herkes okur — burada c01'de üyeliği olmayan başka kulüp yöneticisi.
     const club = (await assertSucceeds(getDoc(doc(contextFor('otherManager').firestore(), CLUB_PATH)))).data();
-    expect(club.lastMembershipRef).toBeNull();
+    expect(club).not.toHaveProperty('lastMembershipRef');
     const serialized = JSON.stringify(club);
     for (const uid of [STUDENT, MEMBER]) expect(serialized).not.toContain(uid);
     // Aynı bağlam o üyeliklerin kendisini de okuyamaz (üye listesi üye olmayana kapalı).
@@ -94,7 +96,7 @@ describe('memberCount · meşru batch\'ler (±1; eşlik eden üyelik oturumdan t
     await assertSucceeds(commit('student', payloads.applyWrites({ club: CLUB, uid: STUDENT, email: payloads.emailOf('student') })));
     await assertSucceeds(commit('student', { m: { op: 'update', path: M_STUDENT, data: { status: 'cancelled', ...payloads.baseUpdate() } } }));
     await assertSucceeds(commit('student', payloads.reapplyWrites({ club: CLUB, uid: STUDENT, status: 'pending' })));
-    expect(await readDoc(CLUB_PATH)).toMatchObject({ memberCount: BASE_COUNT, lastMembershipRef: null });
+    expect(await readDoc(CLUB_PATH)).toMatchObject({ memberCount: BASE_COUNT });
   });
 });
 
@@ -146,20 +148,83 @@ describe('memberCount · üyelik geçişi olmayan sayaç yazımı (tek başına 
     ['eski üye (left) geçmiş ayrılığını yeniden sayarak −1', 'former', -1],
     ['bekleyen başvuran +1', 'pending', 1],
     ['üyeliği olmayan öğrenci +1', 'student', 1, INSTANT],
-    ['yönetici +1 (M5 — T-30)', 'board', 1],
-    ['başkan −1 (M9 — T-30)', 'president', -1],
-    ['süper admin +1 (T-37)', 'super', 1],
+    ['yönetici +1 (yan belge ve üyelik geçişi yok — T-30)', 'board', 1],
+    ['başkan −1 (yan belge ve üyelik geçişi yok — T-30)', 'president', -1],
+    ['süper admin +1 (yan belge ve üyelik geçişi yok)', 'super', 1],
     ['başka kulübün yöneticisi −1', 'otherManager', -1],
   ])('%s → deny', async (_title, role, delta, edit = NO_EDIT) => {
     await seedFixture('base', undefined, edit);
     await assertFails(commit(role, { club: clubWrite(bump(delta)) }));
-    expect(await readDoc(CLUB_PATH)).toMatchObject({ memberCount: BASE_COUNT, lastMembershipRef: null });
+    expect(await readDoc(CLUB_PATH)).toMatchObject({ memberCount: BASE_COUNT });
   });
 
   test('sayaç sıfırın altına inemez (bozuk sayaçta bile)', async () => {
     await seedFixture('base', undefined, { patch: { [CLUB_PATH]: { memberCount: 0 } } });
     await assertFails(commit('member', leave()));
     expect((await readDoc(CLUB_PATH)).memberCount).toBe(0);
+  });
+});
+
+// ── T-30 · memberCount yönetici dalı (W-64: işaretçi `clubs/{id}/private/counter` yan belgesinde) ─────
+// Aktör üyeliğin sahibi değildir: kulüp dalı yan belgenin işaretçisinden üyeliği okur, üyelik dalı yan belgenin
+// KENDİSİNİ gösterdiğini ister. Taban: başkanın `u_pending` onayı (M5) ve `u_member` çıkarması (M9).
+describe('memberCount · yönetici dalı — yan belge işaretçisi (W-64)', () => {
+  const COUNTER = payloads.clubCounterPath(CLUB);
+  const approve = (extra) => payloads.approveWrites({ club: CLUB, uid: 'u_president', ...extra });
+  const remove = () => payloads.removeWrites({ club: CLUB, uid: 'u_president' });
+  const pointTo = (writes, userId, club = CLUB) => ({ ...writes, counter: { ...writes.counter, data: payloads.clubCounterData(club, userId) } });
+
+  test('onay +1 ve çıkarma −1: sayaç, yan belge ve üyelik aynı işlemde; kulüp belgesi kimlik taşımaz', async () => {
+    await seedFixture('base');
+    await assertSucceeds(commit('president', approve()));
+    expect((await readDoc(CLUB_PATH)).memberCount).toBe(BASE_COUNT + 1);
+    expect(await readDoc(COUNTER)).toMatchObject({ clubId: CLUB, lastMembershipRef: payloads.membershipPath(CLUB, 'u_pending') });
+    await assertSucceeds(commit('president', remove()));
+    const club = await readDoc(CLUB_PATH);
+    expect(club.memberCount).toBe(BASE_COUNT);
+    expect(JSON.stringify(club)).not.toMatch(/u_pending|u_member/);
+  });
+
+  // Satır: [başlık, taban, yazımları değiştiren işlev, veri düzenlemesi?].
+  test.each([
+    ['yan belge yazılmadı (işaretçisiz sayaç)', approve, (w) => drop(w, 'counter')],
+    ['sayaç yazılmadı (sayaçsız yan belge + onay)', approve, (w) => drop(w, 'club')],
+    ['işaretçi başka üyeliği gösteriyor (tek +1 ile u_pending onayı + u_member)', approve, (w) => pointTo(w, MEMBER)],
+    ['işaretçi başka kulübün üyeliğini gösteriyor', approve, (w) => ({ ...w, counter: { ...w.counter, data: { ...w.counter.data, lastMembershipRef: 'memberships/c02_u_mgr2' } } })],
+    ['işaretçi kimliği kaydırılmış (birleşim belirsizliği: c01_u + pending)', approve, (w) => ({ ...w, counter: { ...w.counter, data: { ...w.counter.data, lastMembershipRef: 'memberships/c01_u' } } })],
+    ['yan belgenin clubId alanı başka kulüp', approve, (w) => ({ ...w, counter: { ...w.counter, data: { ...w.counter.data, clubId: OTHER_CLUB } } })],
+    ['yan belge beyaz liste dışı alan', approve, (w) => ({ ...w, counter: { ...w.counter, data: { ...w.counter.data, note: 'x' } } })],
+    ['onayda −1 (ters yön)', approve, (w) => ({ ...w, club: clubWrite(bump(-1)) })],
+    ['onayda +2', approve, (w) => ({ ...w, club: clubWrite(bump(2)) })],
+    ['çıkarmada +1 (ters yön)', remove, (w) => ({ ...w, club: clubWrite(bump(1)) })],
+    ['çıkarmada yan belge yok', remove, (w) => drop(w, 'counter')],
+    ['iki onay tek +1 (ikinci üyelik aynı batch\'te)', approve, (w) => ({ ...w, second: payloads.approveWrites({ club: CLUB, uid: 'u_president', target: 'u_former' }).membership }), { patch: { 'memberships/c01_u_former': { status: 'pending' } } }],
+  ])('%s → deny', async (_title, base, mutate, edit = NO_EDIT) => {
+    await seedFixture('base', undefined, edit);
+    await assertFails(commit('president', mutate(base())));
+    expect((await readDoc(CLUB_PATH)).memberCount).toBe(BASE_COUNT);
+  });
+
+  // Güvenlik incelemesi (T-30): kendi dalı (M8) ile yönetici dalı (M9 / M12a) aynı −1'i ister ve `isManager`
+  // yazım-öncesi durumu okur — tek sayaç oynamasıyla iki üyelik geçişi yazılamaz: aktörün kendi üyeliği işlemde
+  // durum değiştiriyorsa yan belge yazılamaz (`ownMembershipUnmoved`), yönetici dalı da yan belgesiz geçmez.
+  const ownLeave = () => payloads.leaveWrites({ club: CLUB, uid: 'u_board' }).membership;
+  test.each([
+    ['kendi ayrılması (M8) + üye çıkarma (M9), tek −1', () => ({ ...payloads.removeWrites({ club: CLUB, uid: 'u_board' }), own: ownLeave() }), NO_EDIT],
+    ['kendi ayrılması (M8) + onayı geri alma (M12a), tek −1', () => ({ ...payloads.undoDecisionWrites({ club: CLUB }), own: ownLeave() }),
+      { patch: { [payloads.membershipPath(CLUB, 'u_pending')]: { status: 'active', role: 'member', decidedBy: 'u_board', decidedAt: Timestamp.fromMillis(Date.now() - 5000) } } }],
+  ])('yönetim kurulu: %s → deny', async (_title, build, edit) => {
+    await seedFixture('base', undefined, edit);
+    await assertFails(commit('board', build()));
+    expect((await readDoc(CLUB_PATH)).memberCount).toBe(BASE_COUNT);
+    expect((await readDoc(payloads.membershipPath(CLUB, 'u_board'))).status).toBe('active');
+  });
+
+  test('danışman danışmanın üyeliğini sayaca katamaz; danışman yan belgeyi yazamaz (Q-09)', async () => {
+    await seedFixture('base');
+    await assertFails(commit('advisor', payloads.approveWrites({ club: CLUB, uid: 'u_advisor' })));
+    await assertFails(commit('advisor', { counter: { op: 'set', path: COUNTER, data: payloads.clubCounterData(CLUB, MEMBER) }, club: clubWrite(bump(1)) }));
+    expect((await readDoc(CLUB_PATH)).memberCount).toBe(BASE_COUNT);
   });
 });
 
@@ -472,8 +537,10 @@ describe('attendedCount / terfi · yönetici dalı (işaretçi yan belgede — W
     ['yoklamada mutlak değer', 'board', () => ({ ...attendOne(), event: { op: 'update', path: E, data: { attendedCount: 2, goingCount: 40, ...payloads.baseUpdate() } } })],
     ['yoklama sayacıyla birlikte başka alan (capacity)', 'board', () => ({ ...attendOne(), event: bumps({ attended: 1 }, { capacity: 100 }) })],
     ['attendedCount goingCount\'u aşar (bozuk sayaç 1 / 1)', 'board', () => attendOne(), { patch: { [E]: { goingCount: 1 } } }],
-    ['geri almada attendedCount sıfırın altına iner (bozuk sayaç)', 'board', () => attendOne({ userId: 'u_board', attended: false }), { patch: { [E]: { attendedCount: 0 } } }],
-    ['geri alma yönünde +1', 'board', () => ({ ...attendOne({ userId: 'u_board', attended: false }), event: bumps({ attended: 1 }) })],
+    ['geri almada attendedCount sıfırın altına iner (bozuk sayaç)', 'president', () => attendOne({ userId: 'u_board', attended: false }), { patch: { [E]: { attendedCount: 0 } } }],
+    ['geri alma yönünde +1', 'president', () => ({ ...attendOne({ userId: 'u_board', attended: false }), event: bumps({ attended: 1 }) })],
+    // rules-spec §3.8 (güvenlik incelemesi T-30): katılımcının kendisi yoklama alamaz / geri alamaz — yönetici de.
+    ['yönetici kendi kaydının yoklamasını geri alır', 'board', () => attendOne({ userId: 'u_board', attended: false })],
     ['terfi (+1, 0, 0) ile: waitlistCount düşmez', 'board', () => ({ ...promote(), event: bumps({ going: 1 }) })],
     ['terfi (0, −1, 0) ile: goingCount artmaz', 'board', () => ({ ...promote(), event: bumps({ waitlist: -1 }) })],
     // Aynı belgeye iki yazım tek yazım gibi değerlendirilir; (+1) + (−1, −1) toplamı işlemin tamamında (+1, −2, 0)'dır.
@@ -494,6 +561,25 @@ describe('attendedCount / terfi · yönetici dalı (işaretçi yan belgede — W
     expect((await readDoc(R_BOARD)).status).toBe('attended');
     expect((await readDoc(R_STUDENT)).status).toBe(seeded[R_STUDENT].status);
     expect(await readDoc('events/e_live/private/other')).toBeNull();
+  });
+
+  // rules-spec §3.8 (güvenlik incelemesi T-30): bekleme listesindeki yönetici kendini terfi ettiremez
+  // (öndekilerin önüne geçemez) ve kendi yoklamasını alamaz; aynı kaydı başka yönetici terfi ettirir.
+  test('yönetici kendi kaydını terfi ettiremez / yoklamasını alamaz; başka yönetici alır', async () => {
+    const waiting = {
+      patch: {
+        [R_BOARD]: { status: 'waitlist', scannedAt: null, scannedBy: null, waitlistAt: Timestamp.fromMillis(Date.now() - 3 * 60 * 60 * 1000) },
+        [E]: { goingCount: 1, waitlistCount: 2, attendedCount: 0 },
+      },
+    };
+    await seedFixture('base', undefined, waiting);
+    await assertFails(commit('board', promote({ userId: 'u_board' })));
+    expect(await counts()).toEqual([1, 2, 0]);
+    await assertSucceeds(commit('president', promote({ userId: 'u_board' })));
+    expect(await counts()).toEqual([2, 1, 0]);
+    await assertFails(commit('board', attendOne({ userId: 'u_board' })));
+    await assertSucceeds(commit('president', payloads.attendWrites({ club: CLUB, uid: 'u_president', userId: 'u_board' })));
+    expect(await counts()).toEqual([2, 1, 1]);
   });
 
   // Kimlik birleşimi belirsizdir: `e_live` + `u_member` = `e_live_u` + `member`. Kural işaretçideki belgenin

@@ -1,7 +1,9 @@
 // `MembershipRepository` fake'i (PLAN §16.3): üyelikleri ve iletişim
 // belgelerini bellekte tutar; üyelik durum makinesinin başvuran / üye
-// satırlarını (M1–M4, M7, M8) ve bekleyen başvurunun not düzenlemesini
-// (T-16) gerçek repository ile aynı sonuçlarla uygular.
+// satırlarını (M1–M4, M7, M8), bekleyen başvurunun not düzenlemesini
+// (T-16), hesap silmeyi (M14, T-29) ve yönetici geçişlerini (M5, M6,
+// M9–M12; T-30 — `managerEvents`, `userStatuses`) gerçek repository ile aynı
+// sonuçlarla uygular.
 //
 //   final clubs = FakeClubRepository()..put('c01');
 //   final memberships = FakeMembershipRepository(clock, clubs: clubs);
@@ -43,6 +45,16 @@ typedef FakeApplication = ({
 /// Başarılı `updateApplicationNote` çağrısı.
 typedef FakeNoteUpdate = ({String clubId, String userId, String note});
 
+/// Başarılı yönetici geçişi (T-30): günlük türü, hedef, aktör, (rol / devir)
+/// yeni rol.
+typedef FakeManagerEvent = ({
+  ActivityKind kind,
+  String clubId,
+  String userId,
+  String actorId,
+  ClubRole? role,
+});
+
 /// Akış olayı: kullanıcının üyelikleri ya da okuma hatası.
 typedef FakeMembershipEvent = FirestoreResult<List<MembershipModel>>;
 
@@ -71,6 +83,16 @@ final class FakeMembershipRepository extends FakeBase
 
   /// Başarılı `updateApplicationNote` çağrıları, sırasıyla.
   final List<FakeNoteUpdate> noteUpdates = <FakeNoteUpdate>[];
+
+  /// Başarılı yönetici geçişleri (T-30), sırasıyla: gerçek repository'nin
+  /// aynı işlemde yazdığı günlük kaydı + bildirim yerine. Geri al
+  /// (M12) kayıt üretmez.
+  final List<FakeManagerEvent> managerEvents = <FakeManagerEvent>[];
+
+  /// Kullanıcı hesap durumları (W-89): `deleted` başvurana karar verilmez,
+  /// `active` olmayan üyeye başkanlık devredilmez. Kaydı olmayan kullanıcı
+  /// etkin sayılır (gerçek repository kullanıcı belgesini okur).
+  final Map<String, UserStatus> userStatuses = <String, UserStatus>{};
 
   /// Açık `watchMyMemberships` dinleyicisi sayısı.
   int activeListeners = 0;
@@ -297,6 +319,214 @@ final class FakeMembershipRepository extends FakeBase
     return const FirebaseSuccess(null);
   }
 
+  // ── Yönetici geçişleri (T-30; sözleşme docs/plans/T-30.md §4) ─────────
+  // Denetim sırası ve sonuçlar `FirebaseMembershipRepository` ile aynıdır
+  // (`fake_membership_repository_test.dart` karşılaştırır). Rules'un tek
+  // başına verdiği retler (danışman / başka kulübün yöneticisi / askıdaki
+  // kulüp) burada bilinmez: test `failNext(FirestoreError.permissionDenied)`
+  // ile kurar. Başarılı her geçiş [managerEvents]'e düşer (günlük + bildirim
+  // yerine).
+
+  @override
+  Future<FirestoreResult<void>> approve({
+    required String clubId,
+    required String userId,
+    required String actorId,
+  }) async {
+    record('approve', [clubId, userId, actorId]);
+    return _decide(clubId, userId, actorId);
+  }
+
+  @override
+  Future<FirestoreResult<void>> reject({
+    required String clubId,
+    required String userId,
+    required String actorId,
+    required RejectReason reason,
+    String rejectNote = '',
+  }) async {
+    record('reject', [clubId, userId, actorId, reason, rejectNote]);
+    if (_rejected<void>([clubId, userId, actorId]) case final failure?) {
+      return failure;
+    }
+    if (FieldValidators.rejectNote(rejectNote) != null) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    return _decide(
+      clubId,
+      userId,
+      actorId,
+      reason: reason,
+      rejectNote: rejectNote,
+      checked: true,
+    );
+  }
+
+  @override
+  Future<FirestoreResult<void>> undoDecision({
+    required String clubId,
+    required String userId,
+    required String actorId,
+  }) async {
+    record('undoDecision', [clubId, userId, actorId]);
+    return _undo(clubId, userId, actorId, const {
+      MembershipStatus.active,
+      MembershipStatus.rejected,
+    });
+  }
+
+  @override
+  Future<FirestoreResult<void>> undoRemoval({
+    required String clubId,
+    required String userId,
+    required String actorId,
+  }) async {
+    record('undoRemoval', [clubId, userId, actorId]);
+    return _undo(clubId, userId, actorId, const {MembershipStatus.removed});
+  }
+
+  @override
+  Future<FirestoreResult<void>> remove({
+    required String clubId,
+    required String userId,
+    required String actorId,
+    required ClubRole actorRole,
+    bool actorIsSuper = false,
+    String rejectNote = '',
+  }) async {
+    record('remove', [clubId, userId, actorId, actorRole, actorIsSuper]);
+    if (_rejected<void>([clubId, userId, actorId]) case final failure?) {
+      return failure;
+    }
+    if (FieldValidators.rejectNote(rejectNote) != null || userId == actorId) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    if (!actorIsSuper && actorRole == ClubRole.advisor) {
+      return _violation(FirestoreRuleCode.notMember);
+    }
+    if (!RolePolicy.can(
+      ClubPermission.removeMember,
+      actorRole,
+      isSuper: actorIsSuper,
+    )) {
+      return const FirebaseFailure(FirestoreError.permissionDenied);
+    }
+    final current = memberships[_key(clubId, userId)];
+    if (current == null || current.status != MembershipStatus.active) {
+      return _conflict();
+    }
+    switch (current.role) {
+      case ClubRole.president:
+        return _violation(FirestoreRuleCode.presidentCannotBeRemoved);
+      case ClubRole.advisor:
+        return _violation(FirestoreRuleCode.notMember);
+      case ClubRole.member || ClubRole.board:
+        break;
+    }
+    if (!RolePolicy.canRemove(actorRole, current.role, isSuper: actorIsSuper)) {
+      return const FirebaseFailure(FirestoreError.permissionDenied);
+    }
+    if (!clubRepository.clubs.containsKey(clubId)) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    final now = _clock.nowUtc();
+    _write(
+      current.copyWith(
+        status: MembershipStatus.removed,
+        decidedAt: now,
+        decidedBy: actorId,
+        retryAfter: now.add(Limits.reapplyCooldown),
+        rejectReason: RejectReason.other,
+        rejectNote: rejectNote,
+      ),
+    );
+    _bumpMemberCount(clubId, -1);
+    _logManager(ActivityKind.memberRemoved, clubId, userId, actorId);
+    return const FirebaseSuccess(null);
+  }
+
+  @override
+  Future<FirestoreResult<void>> changeRole({
+    required String clubId,
+    required String userId,
+    required ClubRole role,
+    required String actorId,
+  }) async {
+    record('changeRole', [clubId, userId, role, actorId]);
+    if (_rejected<void>([clubId, userId, actorId]) case final failure?) {
+      return failure;
+    }
+    if (!_assignable.contains(role)) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final current = memberships[_key(clubId, userId)];
+    if (current == null || current.status != MembershipStatus.active) {
+      return _conflict();
+    }
+    switch (current.role) {
+      case ClubRole.president:
+        return _violation(FirestoreRuleCode.presidentCannotBeRemoved);
+      case ClubRole.advisor:
+        return _violation(FirestoreRuleCode.notMember);
+      case ClubRole.member || ClubRole.board:
+        break;
+    }
+    if (current.role == role) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    _write(current.copyWith(role: role));
+    _logManager(ActivityKind.roleChanged, clubId, userId, actorId, role: role);
+    return const FirebaseSuccess(null);
+  }
+
+  @override
+  Future<FirestoreResult<void>> transferPresidency({
+    required String clubId,
+    required String fromUserId,
+    required String toUserId,
+    required String actorId,
+  }) async {
+    record('transferPresidency', [clubId, fromUserId, toUserId, actorId]);
+    if (_rejected<void>([clubId, fromUserId, toUserId, actorId])
+        case final failure?) {
+      return failure;
+    }
+    if (fromUserId == toUserId) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final from = memberships[_key(clubId, fromUserId)];
+    if (from == null ||
+        from.status != MembershipStatus.active ||
+        from.role != ClubRole.president) {
+      return _conflict();
+    }
+    final to = memberships[_key(clubId, toUserId)];
+    if (to == null ||
+        to.status != MembershipStatus.active ||
+        !_assignable.contains(to.role)) {
+      return _conflict();
+    }
+    // W-89 (b): yeni başkanın hesabı etkin olmalı.
+    if (userStatuses[toUserId] case final status?
+        when status != UserStatus.active) {
+      return _conflict();
+    }
+    final club = clubRepository.clubs[clubId];
+    if (club == null) return const FirebaseFailure(FirestoreError.notFound);
+    // Tek "işlem": kulüp hiçbir an başkansız ya da iki başkanlı kalmaz.
+    _write(from.copyWith(role: ClubRole.board));
+    _write(to.copyWith(role: ClubRole.president));
+    clubRepository.clubs[clubId] = club.copyWith(presidentId: toUserId);
+    _logManager(
+      ActivityKind.roleChanged,
+      clubId,
+      toUserId,
+      actorId,
+      role: ClubRole.president,
+    );
+    return const FirebaseSuccess(null);
+  }
+
   @override
   Future<FirestoreResult<PageResult<MembershipModel>>> listActiveMembers(
     String clubId,
@@ -467,6 +697,128 @@ final class FakeMembershipRepository extends FakeBase
     return FirebaseSuccess(membership);
   }
 
+  /// M5 / M6 ortak gövdesi ([reason] `null` → onay). [checked] ise kimlik
+  /// denetimi ve hata enjeksiyonu çağıranda yapılmıştır.
+  FirestoreResult<void> _decide(
+    String clubId,
+    String userId,
+    String actorId, {
+    RejectReason? reason,
+    String rejectNote = '',
+    bool checked = false,
+  }) {
+    if (!checked) {
+      if (_rejected<void>([clubId, userId, actorId]) case final failure?) {
+        return failure;
+      }
+    }
+    // Başvuran kendi başvurusuna karar veremez (rules-spec §3.4 M5).
+    if (userId == actorId) {
+      return const FirebaseFailure(FirestoreError.permissionDenied);
+    }
+    final current = memberships[_key(clubId, userId)];
+    if (current == null || current.status != MembershipStatus.pending) {
+      return _conflict();
+    }
+    // W-89 (a): hesabı silinmiş başvurana karar verilmez.
+    if (userStatuses[userId] == UserStatus.deleted) return _conflict();
+    final approved = reason == null;
+    if (approved && !clubRepository.clubs.containsKey(clubId)) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    final now = _clock.nowUtc();
+    _write(
+      approved
+          ? current.copyWith(
+              status: MembershipStatus.active,
+              role: ClubRole.member,
+              decidedAt: now,
+              decidedBy: actorId,
+            )
+          : current.copyWith(
+              status: MembershipStatus.rejected,
+              decidedAt: now,
+              decidedBy: actorId,
+              rejectReason: reason,
+              rejectNote: rejectNote,
+              retryAfter: now.add(Limits.reapplyCooldown),
+            ),
+    );
+    if (approved) _bumpMemberCount(clubId, 1);
+    _logManager(
+      approved
+          ? ActivityKind.applicationApproved
+          : ActivityKind.applicationRejected,
+      clubId,
+      userId,
+      actorId,
+    );
+    return const FirebaseSuccess(null);
+  }
+
+  /// M12 (a / b): önceki durum [from] içinde değilse `conflict`; kararı
+  /// [actorId] vermemişse ya da `Limits.managerUndoWindow` geçmişse kodsuz
+  /// `ruleViolation`; pencere içinde rolü değişmiş üyenin onayı geri
+  /// alınmaz (`conflict`).
+  FirestoreResult<void> _undo(
+    String clubId,
+    String userId,
+    String actorId,
+    Set<MembershipStatus> from,
+  ) {
+    if (_rejected<void>([clubId, userId, actorId]) case final failure?) {
+      return failure;
+    }
+    final current = memberships[_key(clubId, userId)];
+    if (current == null || !from.contains(current.status)) return _conflict();
+    final decidedAt = current.decidedAt;
+    if (current.decidedBy != actorId ||
+        decidedAt == null ||
+        !_clock.nowUtc().isBefore(decidedAt.add(Limits.managerUndoWindow))) {
+      return const FirebaseFailure(FirestoreError.ruleViolation);
+    }
+    if (current.status == MembershipStatus.active &&
+        current.role != ClubRole.member) {
+      return _conflict();
+    }
+    final restore = current.status == MembershipStatus.removed;
+    final counted = restore || current.status == MembershipStatus.active;
+    if (counted && !clubRepository.clubs.containsKey(clubId)) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    _write(
+      current.copyWith(
+        status: restore ? MembershipStatus.active : MembershipStatus.pending,
+        role: restore ? ClubRole.member : null,
+        clearDecidedAt: true,
+        clearDecidedBy: true,
+        clearRetryAfter: true,
+        clearRejectReason: true,
+        clearRejectNote: true,
+      ),
+    );
+    if (restore) {
+      _bumpMemberCount(clubId, 1);
+    } else if (current.status == MembershipStatus.active) {
+      _bumpMemberCount(clubId, -1);
+    }
+    return const FirebaseSuccess(null);
+  }
+
+  void _logManager(
+    ActivityKind kind,
+    String clubId,
+    String userId,
+    String actorId, {
+    ClubRole? role,
+  }) => managerEvents.add((
+    kind: kind,
+    clubId: clubId,
+    userId: userId,
+    actorId: actorId,
+    role: role,
+  ));
+
   /// [membership] belgesini `updatedAt` ile yazar ve akışı günceller.
   void _write(MembershipModel membership) {
     memberships[membership.id] = membership.copyWith(
@@ -506,6 +858,9 @@ final class FakeMembershipRepository extends FakeBase
         }
         return right.compareTo(left);
       });
+
+  /// Rol değişimi ve devirde hedef olabilen / atanabilen roller.
+  static const Set<ClubRole> _assignable = {ClubRole.member, ClubRole.board};
 
   static String _key(String clubId, String userId) =>
       FirestoreIds.membership(clubId, userId);

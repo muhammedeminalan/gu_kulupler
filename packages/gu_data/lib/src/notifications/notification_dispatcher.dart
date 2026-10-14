@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' show WriteBatch;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show Transaction, WriteBatch;
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
@@ -23,6 +24,13 @@ import 'package:gu_data/src/models/enums/club_role.dart';
 ///   `FirestoreError.invalidArgument`'a çevirir ve batch'in hiçbir yazımı
 ///   uygulanmaz (asıl yazım bildirimsiz kesinleşmez — T-25 güvenlik
 ///   incelemesi).
+/// - **`…InTransaction` üyeler** (T-30) — `batch` alan kritik üyelerin
+///   transaction karşılığı: beklenen önceki durumu okuyan geçişler (üyelik
+///   kararı, çıkarma, rol, devir, terfi) bildirimi aynı transaction'a ekler.
+///   Sözleşme `batch` üyeleriyle aynıdır (eşzamanlı, commit yok, geçersiz
+///   girdide `invalid-argument` fırlatır → transaction düşer). Gövde birden
+///   çok kez koşabilir (çakışmada SDK yeniden dener): her koşu yeni olay
+///   anahtarı üretir, yalnızca kesinleşen koşunun belgesi yazılır.
 /// - **`batch` almayan üyeler** — çok alıcılı (fan-out) bildirim: asıl yazım
 ///   kesinleştikten **sonra**, alıcılar tekilleştirilip
 ///   `Limits.notificationFanOutChunkSize` boyutlu parçalara bölünür; her
@@ -92,6 +100,32 @@ abstract interface class NotificationDispatcher {
     required WriteBatch batch,
   });
 
+  /// [notifyApplicationDecided]'in transaction karşılığı: karar
+  /// transaction'ına ([transaction]) tek belge ekler (M5 / M6, T-30).
+  Future<FirestoreResult<DispatchReport>>
+  notifyApplicationDecidedInTransaction({
+    required String clubId,
+    required String applicantId,
+    required bool approved,
+    required Transaction transaction,
+  });
+
+  /// [notifyRemoved]'ın transaction karşılığı (M9, T-30).
+  Future<FirestoreResult<DispatchReport>> notifyRemovedInTransaction({
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  });
+
+  /// [notifyRoleChanged]'in transaction karşılığı (M10; M11 devirde iki
+  /// çağrı, iki ayrı olay anahtarı — T-30).
+  Future<FirestoreResult<DispatchReport>> notifyRoleChangedInTransaction({
+    required String clubId,
+    required String userId,
+    required ClubRole role,
+    required Transaction transaction,
+  });
+
   /// `announcement` — bildirimli (`posts.pushSent`) [postId] duyurusu
   /// [recipients] alıcılarına (fan-out; çağıran
   /// `RecipientResolver.membersOf(clubId, excludeUserId: yazar)` verir).
@@ -129,6 +163,15 @@ abstract interface class NotificationDispatcher {
     required String clubId,
     required String userId,
     required WriteBatch batch,
+  });
+
+  /// [notifyWaitlistPromoted]'in transaction karşılığı
+  /// (`AttendanceRepository.promote`, T-30).
+  Future<FirestoreResult<DispatchReport>> notifyWaitlistPromotedInTransaction({
+    required String eventId,
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
   });
 
   /// `report_resolved` — [reportGroupKey] grubunun [reporterIds]

@@ -1,7 +1,8 @@
 // T-15 · FakeMembershipRepository sözleşmesi (PLAN §16.3): `memberships`,
 // `contacts`, `applied`, `watchMyMembershipsController(uid)`,
 // `activeListeners`; listeler ve sayfalama. T-16: `noteUpdates`
-// (`updateApplicationNote`).
+// (`updateApplicationNote`). T-30: yönetici geçişleri (`managerEvents`,
+// `userStatuses`) — karşılaştırmalı tablo + W-89 / devir vakaları.
 //
 // Fake durum makinesini (M1–M4, M7, M8) kendi içinde uygular; kuralların
 // gerçek `FirebaseMembershipRepository` ile **aynı** olduğu karşılaştırmalı
@@ -135,6 +136,99 @@ _operations = {
         clubId: _clubId,
         userId: _uid,
         note: 'a' * (Limits.applicationNoteMax + 1),
+      ),
+};
+
+/// Yönetici geçişlerinin (T-30) aktörü.
+const String _manager = 'u_board';
+
+/// [_manager]'ın [ago] önce verdiği karar (M12 geri al penceresi).
+MembershipModel _decided(MembershipStatus status, Duration ago) =>
+    _membership(status: status).copyWith(
+      decidedAt: _now.subtract(ago),
+      decidedBy: _manager,
+    );
+
+/// T-30 önceki durumları: T-15 kümesi + geri alınabilir / pencere dışı
+/// kararlar.
+final Map<String, MembershipModel?> _managerPriors = {
+  ..._priors,
+  'active (10 sn önce onay)': _decided(
+    MembershipStatus.active,
+    const Duration(seconds: 10),
+  ),
+  'active (40 sn önce onay)': _decided(
+    MembershipStatus.active,
+    const Duration(seconds: 40),
+  ),
+  'active/board (10 sn önce onay)': _decided(
+    MembershipStatus.active,
+    const Duration(seconds: 10),
+  ).copyWith(role: ClubRole.board),
+  'rejected (10 sn önce)': _decided(
+    MembershipStatus.rejected,
+    const Duration(seconds: 10),
+  ),
+  'removed (10 sn önce)': _decided(
+    MembershipStatus.removed,
+    const Duration(seconds: 10),
+  ),
+};
+
+/// T-30 yönetici çağrıları (hedef [_uid]).
+final Map<
+  String,
+  Future<FirestoreResult<Object?>> Function(MembershipRepository)
+>
+_managerOperations = {
+  'approve': (repository) =>
+      repository.approve(clubId: _clubId, userId: _uid, actorId: _manager),
+  'reject': (repository) => repository.reject(
+    clubId: _clubId,
+    userId: _uid,
+    actorId: _manager,
+    reason: RejectReason.other,
+  ),
+  'undoDecision': (repository) =>
+      repository.undoDecision(clubId: _clubId, userId: _uid, actorId: _manager),
+  'undoRemoval': (repository) =>
+      repository.undoRemoval(clubId: _clubId, userId: _uid, actorId: _manager),
+  'remove (yönetim kurulu)': (repository) => repository.remove(
+    clubId: _clubId,
+    userId: _uid,
+    actorId: _manager,
+    actorRole: ClubRole.board,
+  ),
+  'remove (başkan)': (repository) => repository.remove(
+    clubId: _clubId,
+    userId: _uid,
+    actorId: 'u_president',
+    actorRole: ClubRole.president,
+  ),
+  'remove (danışman)': (repository) => repository.remove(
+    clubId: _clubId,
+    userId: _uid,
+    actorId: 'u_advisor',
+    actorRole: ClubRole.advisor,
+  ),
+  'changeRole → board': (repository) => repository.changeRole(
+    clubId: _clubId,
+    userId: _uid,
+    role: ClubRole.board,
+    actorId: 'u_president',
+  ),
+  'changeRole → president': (repository) => repository.changeRole(
+    clubId: _clubId,
+    userId: _uid,
+    role: ClubRole.president,
+    actorId: 'u_president',
+  ),
+  'transferPresidency (hedef yok)': (repository) =>
+      repository.transferPresidency(
+        clubId: _clubId,
+        fromUserId: _uid,
+        toUserId: 'u_other',
+        actorId: _uid,
       ),
 };
 
@@ -532,6 +626,106 @@ void main() {
     );
   });
 
+  group('T-30 · FakeMembershipRepository · yönetici geçişleri', () {
+    test('onay sayacı +1 ve managerEvents; 30 sn içinde geri al −1, kayıt '
+        'yok; hesabı silinmiş başvurana karar verilmez (W-89 a)', () async {
+      clubs.put(_clubId, memberCount: _memberCount);
+      fake
+        ..put(_membership(status: MembershipStatus.pending))
+        ..put(_membership(uid: 'u_gone', status: MembershipStatus.pending))
+        ..userStatuses['u_gone'] = UserStatus.deleted;
+
+      final approved = await fake.approve(
+        clubId: _clubId,
+        userId: _uid,
+        actorId: _manager,
+      );
+      final undone = await fake.undoDecision(
+        clubId: _clubId,
+        userId: _uid,
+        actorId: _manager,
+      );
+      final ghost = await fake.approve(
+        clubId: _clubId,
+        userId: 'u_gone',
+        actorId: _manager,
+      );
+
+      expect(approved.isSuccess, isTrue);
+      expect(undone.isSuccess, isTrue);
+      expect(ghost.errorOrNull, FirestoreError.conflict);
+      expect(
+        fake.memberships['${_clubId}_$_uid']?.status,
+        MembershipStatus.pending,
+      );
+      expect(fake.memberships['${_clubId}_$_uid']?.decidedBy, isNull);
+      expect(clubs.clubs[_clubId]?.memberCount, _memberCount);
+      expect(fake.managerEvents, [
+        (
+          kind: ActivityKind.applicationApproved,
+          clubId: _clubId,
+          userId: _uid,
+          actorId: _manager,
+          role: null,
+        ),
+      ]);
+    });
+
+    test('devir: eski başkan board, yeni başkan president, clubs.presidentId '
+        'tek adımda; etkin olmayan hedefe devir yok (W-89 b)', () async {
+      clubs.put(_clubId, memberCount: _memberCount);
+      fake
+        ..put(_membership(uid: 'u_pres', role: ClubRole.president))
+        ..put(_membership())
+        ..put(_membership(uid: 'u_susp'))
+        ..userStatuses['u_susp'] = UserStatus.suspended;
+
+      final blocked = await fake.transferPresidency(
+        clubId: _clubId,
+        fromUserId: 'u_pres',
+        toUserId: 'u_susp',
+        actorId: 'u_pres',
+      );
+      final moved = await fake.transferPresidency(
+        clubId: _clubId,
+        fromUserId: 'u_pres',
+        toUserId: _uid,
+        actorId: 'u_pres',
+      );
+
+      expect(blocked.errorOrNull, FirestoreError.conflict);
+      expect(moved.isSuccess, isTrue);
+      expect(fake.memberships['${_clubId}_u_pres']?.role, ClubRole.board);
+      expect(fake.memberships['${_clubId}_$_uid']?.role, ClubRole.president);
+      expect(clubs.clubs[_clubId]?.presidentId, _uid);
+      expect(fake.managerEvents.single.role, ClubRole.president);
+    });
+
+    test(
+      'failNext bir sonraki yönetici çağrısını düşürür; durum değişmez',
+      () async {
+        clubs.put(_clubId, memberCount: _memberCount);
+        fake
+          ..put(_membership())
+          ..failNext(FirestoreError.permissionDenied);
+
+        final removed = await fake.remove(
+          clubId: _clubId,
+          userId: _uid,
+          actorId: _manager,
+          actorRole: ClubRole.board,
+        );
+
+        expect(removed.errorOrNull, FirestoreError.permissionDenied);
+        expect(
+          fake.memberships['${_clubId}_$_uid']?.status,
+          MembershipStatus.active,
+        );
+        expect(clubs.clubs[_clubId]?.memberCount, _memberCount);
+      },
+    );
+  });
+
   group('T-15 · FakeMembershipRepository ↔ FirebaseMembershipRepository', () {
     /// Gerçek repository'yi bellekteki veritabanında aynı ön koşulla koşar.
     Future<_Outcome> runReal(
@@ -646,6 +840,43 @@ void main() {
           FirestoreError.conflict,
           FirestoreError.ruleViolation,
           FirestoreError.notFound,
+          FirestoreError.invalidArgument,
+        ]),
+      );
+    });
+
+    test('T-30 yönetici geçişleri (M5, M6, M9–M12) · önceki durum × çağrı: '
+        'iki taraf aynı sonucu ve aynı son durumu üretir', () async {
+      var successes = 0;
+      final errors = <FirestoreError>{};
+      ClubModel? seedClub(FakeClubRepository clubs) =>
+          clubs.put(_clubId, memberCount: _memberCount);
+      for (final MapEntry(key: priorName, value: prior)
+          in _managerPriors.entries) {
+        for (final MapEntry(key: name, value: operation)
+            in _managerOperations.entries) {
+          final real = await runReal(
+            seedClub(FakeClubRepository()),
+            prior,
+            operation,
+          );
+          final fake = await runFake(seedClub, prior, operation);
+
+          expect(fake, real, reason: '$name · önce $priorName');
+          if (real.error case final error?) {
+            errors.add(error);
+          } else {
+            successes++;
+          }
+        }
+      }
+      expect(successes, greaterThanOrEqualTo(10));
+      expect(
+        errors,
+        containsAll([
+          FirestoreError.conflict,
+          FirestoreError.ruleViolation,
+          FirestoreError.permissionDenied,
           FirestoreError.invalidArgument,
         ]),
       );

@@ -66,8 +66,9 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 | `advisor?` | M{`name`,`title`,`userId?`} | Bkz. G-1 |
 | `status` | s | `active` · `suspended` |
 | `suspendReason?` | s | Süper admin zorunlu girer |
-| `lastMembershipRef?` | s | **Ayrılmış alan — istemci yazmaz, değeri `null`** (CD-137 madde 8q). CD-41 bu alana sayacı değiştiren üyeliğin yolunu yazdırıyordu; belge doğrulanmış herkese açık olduğundan yol kimin katıldığını / ayrıldığını üye olmayana sızdırıyordu (§3 `viewInside`). Rules eşlik eden üyeliği oturumdan türetir (`memberships/{clubId}_{uid}`); yönetici aktörlü geçişlerin işaretçisi T-30'da herkese açık olmayan bir belgede tasarlanır (W-64) |
 | + `BaseFields`, `createdBy` | | |
+
+Sayaç işaretçisi bu belgede **yoktur** (CD-137 madde 8q, W-64): belge doğrulanmış herkese açıktır, üyelik yolu kimin katıldığını / ayrıldığını sızdırırdı. Kendi üyelik geçişlerinde Rules yolu oturumdan türetir; yönetici / süper admin aktörlü `memberCount` geçişlerinin işaretçisi yalnızca yönetimin okuduğu `clubs/{clubId}/private/counter` yan belgesindedir (`{clubId, lastMembershipRef, updatedAt}`, aynı işlem — T-30, CD-153; etkinlik için `events/{eventId}/private/counter`, `lastRsvpRef`).
 
 ### 2.4 `memberships/{clubId}_{userId}`
 | Alan | Tür | Not |

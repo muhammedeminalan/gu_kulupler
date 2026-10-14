@@ -65,7 +65,8 @@ describe('events · create — biçim, sınırlar ve beyaz liste (rules-spec §3
     ['başlık sınırın üstünde (81)', { title: 'a'.repeat(81) }, 'deny'],
     ['açıklama sınırın üstünde (1001)', { desc: 'a'.repeat(1001) }, 'deny'],
     ['bilinmeyen tür', { type: 'workshop' }, 'deny'],
-    ['bitiş başlangıca eşit', { startsAt: at(DAY_MS), endsAt: at(DAY_MS) }, 'deny'],
+    // Tek zaman damgası (iki `at()` çağrısı arasında saat ilerleyebilir — kararsız vaka).
+    ['bitiş başlangıca eşit', ((t) => ({ startsAt: t, endsAt: t }))(at(DAY_MS)), 'deny'],
     ['bitiş başlangıçtan önce', { endsAt: at(HOUR_MS) }, 'deny'],
     ['başlangıç zaman damgası değil (dizgi)', { startsAt: '2026-10-20T10:00:00Z' }, 'deny'],
     ['mekân kimliği tablo biçiminde değil', { placeId: 'salon' }, 'deny'],

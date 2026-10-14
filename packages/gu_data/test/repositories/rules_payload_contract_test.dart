@@ -48,12 +48,20 @@
 // saatinden tam gün). Yeni etkinliğin kimliği `@autoId`'dir (`newId`); bilet
 // kodu sıralı `FakeTicketCodeGenerator`'dan gelir.
 //
+// T-30: `t30.scenarios` — yönetici geçişleri (`FirebaseMembershipRepository`
+// M5 / M6 / M9–M12), `FirebaseManagementRepository.updateClubSettings`,
+// `FirebaseAttendanceRepository` (yoklama, terfi). Gerçek
+// `ClientFanOutDispatcher` + `FirebaseNotificationRepository`: kritik
+// bildirim geçişle aynı transaction'dadır (W-83). Sayaç işaretçisi yalnızca
+// yan belgededir (`clubs|events/{id}/private/counter` — W-64).
+//
 // T-28: `t28.scenarios` — `FirebaseSupportRepository.createTicket` (eksiz /
 // ekli). Belge kimliği talep numarasıdır; ek yüklemesi (`upload`) yazımdan
 // öncedir.
 //
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -622,6 +630,315 @@ void main() {
         'SettingsRepository.getSettings · belge yok': () =>
             settings.getSettings(uid),
       };
+
+  group('T-30 · Rules yük sözleşmesi (yönetim: üyelik kararları, ayar, '
+      'yoklama)', () {
+    final t30 = contract['t30']! as Map<String, Object?>;
+    final fixtures = t30['fixtures']! as Map<String, Object?>;
+    final actors = (t30['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t30['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+    const eventId = 'e01';
+
+    late FirebaseMembershipRepository memberships;
+    late FirebaseManagementRepository management;
+    late FirebaseAttendanceRepository attendance;
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı; argüman
+    /// senaryonun `role` bağlamının uid'idir.
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'MembershipRepository.approve': (uid) => memberships.approve(
+            clubId: clubId,
+            userId: 'u_pending',
+            actorId: uid,
+          ),
+          'MembershipRepository.reject': (uid) => memberships.reject(
+            clubId: clubId,
+            userId: 'u_pending',
+            actorId: uid,
+            reason: RejectReason.other,
+            rejectNote: 'Kontenjan doldu.',
+          ),
+          'MembershipRepository.undoDecision · onayı geri al': (uid) =>
+              memberships.undoDecision(
+                clubId: clubId,
+                userId: 'u_pending',
+                actorId: uid,
+              ),
+          'MembershipRepository.undoDecision · reddi geri al': (uid) =>
+              memberships.undoDecision(
+                clubId: clubId,
+                userId: 'u_pending',
+                actorId: uid,
+              ),
+          'MembershipRepository.remove · yönetim kurulu → üye': (uid) =>
+              memberships.remove(
+                clubId: clubId,
+                userId: 'u_member',
+                actorId: uid,
+                actorRole: ClubRole.board,
+              ),
+          'MembershipRepository.remove · süper admin → yönetim kurulu': (uid) =>
+              memberships.remove(
+                clubId: clubId,
+                userId: 'u_board',
+                actorId: uid,
+                actorRole: ClubRole.member,
+                actorIsSuper: true,
+              ),
+          'MembershipRepository.remove · silinmiş hesabın üyeliği (W-89 c)':
+              (uid) => memberships.remove(
+                clubId: clubId,
+                userId: 'u_deleted',
+                actorId: uid,
+                actorRole: ClubRole.president,
+              ),
+          'MembershipRepository.undoRemoval': (uid) => memberships.undoRemoval(
+            clubId: clubId,
+            userId: 'u_member',
+            actorId: uid,
+          ),
+          'MembershipRepository.changeRole · üye → yönetim kurulu': (uid) =>
+              memberships.changeRole(
+                clubId: clubId,
+                userId: 'u_member',
+                role: ClubRole.board,
+                actorId: uid,
+              ),
+          'MembershipRepository.transferPresidency': (uid) =>
+              memberships.transferPresidency(
+                clubId: clubId,
+                fromUserId: uid,
+                toUserId: 'u_member',
+                actorId: uid,
+              ),
+          'ManagementRepository.updateClubSettings': (uid) =>
+              management.updateClubSettings(
+                clubId,
+                const ClubSettingsPatch(
+                  summary: 'Yazılım ve donanım topluluğu.',
+                  conditions: ['Aktif öğrenci olmak'],
+                  applicationsOpen: false,
+                  requireNote: true,
+                ),
+                actorId: uid,
+              ),
+          'AttendanceRepository.markAttended · going → attended': (uid) =>
+              attendance.markAttended(
+                eventId: eventId,
+                userId: 'u_student',
+                actorId: uid,
+                attended: true,
+              ),
+          'AttendanceRepository.markAttended · attended → going (geri al)':
+              (uid) => attendance.markAttended(
+                eventId: eventId,
+                userId: 'u_student',
+                actorId: uid,
+                attended: false,
+              ),
+          'AttendanceRepository.promote': (uid) => attendance.promote(
+            eventId: eventId,
+            userId: 'u_student',
+            actorId: uid,
+          ),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      final activity = FirebaseActivityRepository(service);
+      // Gerçek dağıtıcı + yazıcı: kritik bildirimler aynı transaction'a
+      // eklenir (W-83). Alıcı sorgusu bu senaryolarda çağrılmaz.
+      final dispatcher = ClientFanOutDispatcher(
+        writer: FirebaseNotificationRepository(service),
+        recipients: const _FixedRecipients([]),
+      );
+      final events = FirebaseEventRepository(
+        service,
+        storage,
+        activity,
+        clock,
+        SequenceRandom(_randomBytes),
+      );
+      final rsvps = FirebaseRsvpRepository(
+        service,
+        FakeTicketCodeGenerator(),
+        clock,
+      );
+      memberships = FirebaseMembershipRepository(
+        service,
+        activity,
+        dispatcher,
+        clock,
+      );
+      management = FirebaseManagementRepository(
+        firestore: service,
+        memberships: memberships,
+        events: events,
+        posts: FirebasePostRepository(
+          service,
+          storage,
+          activity,
+          FirebaseAnnouncementCounterRepository(service, clock),
+          clock,
+          SequenceRandom(_randomBytes),
+        ),
+        comments: FirebaseCommentRepository(service, clock),
+        clubs: FirebaseClubRepository(service),
+        activity: activity,
+        notifications: dispatcher,
+        recipients: const _FixedRecipients([]),
+      );
+      attendance = FirebaseAttendanceRepository(
+        service,
+        rsvps,
+        dispatcher,
+        clock,
+      );
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t30['autoId'], _autoId);
+      expect(t30['increment'], _increment);
+      expect(t30['daysAhead'], _daysAhead);
+      expect(
+        [
+          for (final scenario in scenarios) ...[
+            scenario['role'],
+            for (final variant
+                in (scenario['denied']! as List<Object?>)
+                    .cast<Map<String, Object?>>())
+              ?variant['role'],
+          ],
+        ],
+        everyElement(isIn(actors.keys)),
+      );
+    });
+
+    test('her yönetici yazma yolu en az bir senaryoda: PLAN §10.4 T-30 '
+        "yüzeyi (yoklama okutması markAttended Tx'ini kullanır)", () {
+      final covered = {
+        for (final scenario in scenarios)
+          (scenario['call']! as String).split(' · ').first,
+      };
+
+      expect(covered, {
+        'MembershipRepository.approve',
+        'MembershipRepository.reject',
+        'MembershipRepository.undoDecision',
+        'MembershipRepository.undoRemoval',
+        'MembershipRepository.remove',
+        'MembershipRepository.changeRole',
+        'MembershipRepository.transferPresidency',
+        'ManagementRepository.updateClubSettings',
+        'AttendanceRepository.markAttended',
+        'AttendanceRepository.promote',
+      });
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okumalar, yazımlar ve işlem biçimi sözleşmeyle '
+          'birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+        final uid = actors[scenario['role']]!;
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(_normalized(db.log), scenario['writes']);
+        // Yönetici geçişleri tek transaction; ayar yazımı ön okuma + batch.
+        expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+        expect(db.commits, [(scenario['writes']! as List<Object?>).length]);
+      });
+    }
+
+    test('herkese açık kulüp / etkinlik belgesine sayaç işaretçisi yazılmaz; '
+        'işaretçi yalnızca yan belgede ve kendi yazımını gösterir (W-64)', () {
+      final writes = [
+        for (final scenario in scenarios)
+          for (final write in scenario['writes']! as List<Object?>)
+            write! as Map<String, Object?>,
+      ];
+      final side = writes.where(
+        (write) => (write['path']! as String).endsWith(
+          '/${FirestoreCollections.privateSub}/'
+          '${FirestoreCollections.counterDoc}',
+        ),
+      );
+
+      for (final write in writes) {
+        final path = write['path']! as String;
+        final data = write['data']! as Map<String, Object?>;
+        if (RegExp(r'^(clubs|events)/[^/]+$').hasMatch(path)) {
+          expect(data.keys, isNot(contains(FirestoreFields.lastMembershipRef)));
+          expect(data.keys, isNot(contains(FirestoreFields.lastRsvpRef)));
+        }
+      }
+      expect(side, isNotEmpty);
+      for (final write in side) {
+        final data = write['data']! as Map<String, Object?>;
+        expect(write['op'], 'set');
+        expect(data[FirestoreFields.clubId], clubId);
+        expect(data[FirestoreFields.updatedAt], _serverTimestamp);
+        expect(data, hasLength(3));
+      }
+    });
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur; '
+        '`swap` yalnızca dizgi → dizgi', () {
+      for (final scenario in scenarios) {
+        final writes = scenario['writes']! as List<Object?>;
+        for (final variant
+            in (scenario['denied']! as List<Object?>)
+                .cast<Map<String, Object?>>()) {
+          final reason = '${scenario['call']} · ${variant['name']}';
+          final indexes = [
+            ...(variant['without'] as List<Object?>? ?? const []).cast<int>(),
+            ...(variant['patch'] as Map<String, Object?>? ?? const {}).keys.map(
+              int.parse,
+            ),
+          ];
+          expect(
+            indexes,
+            everyElement(lessThan(writes.length)),
+            reason: reason,
+          );
+          expect(
+            variant.keys.toSet().difference({
+              'name',
+              'without',
+              'patch',
+              'seed',
+              'role',
+              'swap',
+            }),
+            isEmpty,
+            reason: reason,
+          );
+          expect(variant.length, greaterThan(1), reason: reason);
+          for (final MapEntry(:key, :value)
+              in (variant['swap'] as Map<String, Object?>? ?? const {})
+                  .entries) {
+            expect(value, isA<String>(), reason: reason);
+            expect(jsonEncode(writes), contains(key), reason: reason);
+          }
+        }
+      }
+    });
+  });
 
   setUp(() {
     db = _RecordingFirestore();
@@ -1349,8 +1666,11 @@ void main() {
       _ => result,
     };
 
-    /// T-30 `AttendanceRepository.promote`'un terfi bileşimi (sözleşmenin
-    /// ilk üç yazımı) + dağıtıcının aynı batch'e eklediği bildirim.
+    /// Dağıtıcının batch üyesi (`notifyWaitlistPromoted`): terfi bileşimi
+    /// (sözleşmenin ilk üç yazımı) + aynı batch'e eklenen bildirim. Gerçek
+    /// `AttendanceRepository.promote` transaction'dır ve
+    /// `notifyWaitlistPromotedInTransaction` kullanır — yükü `t30`
+    /// senaryosundadır (W-83).
     Future<FirebaseResult<Object?, Object>> promote(String uid) async {
       late Future<FirestoreResult<DispatchReport>> dispatched;
       final committed = await service.commitBatch((batch) {

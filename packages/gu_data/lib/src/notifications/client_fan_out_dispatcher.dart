@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseException, WriteBatch;
+    show FirebaseException, Transaction, WriteBatch;
 import 'package:gu_data/src/constants/firestore_ids.dart';
 import 'package:gu_data/src/constants/limits.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
@@ -205,6 +205,50 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
   );
 
   @override
+  Future<FirestoreResult<DispatchReport>>
+  notifyApplicationDecidedInTransaction({
+    required String clubId,
+    required String applicantId,
+    required bool approved,
+    required Transaction transaction,
+  }) => _inTransaction(
+    transaction,
+    approved
+        ? NotificationType.applicationApproved
+        : NotificationType.applicationRejected,
+    NotificationRefsModel(clubId: clubId),
+    refIds: {'clubId': clubId},
+    recipientIds: [applicantId],
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRemovedInTransaction({
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  }) => _inTransaction(
+    transaction,
+    NotificationType.removedFromClub,
+    NotificationRefsModel(clubId: clubId),
+    refIds: {'clubId': clubId},
+    recipientIds: [userId],
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRoleChangedInTransaction({
+    required String clubId,
+    required String userId,
+    required ClubRole role,
+    required Transaction transaction,
+  }) => _inTransaction(
+    transaction,
+    NotificationType.roleChanged,
+    NotificationRefsModel(clubId: clubId, role: role),
+    refIds: {'clubId': clubId},
+    recipientIds: [userId],
+  );
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyAnnouncement({
     required String postId,
     required String clubId,
@@ -250,6 +294,20 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
     required WriteBatch batch,
   }) => _inBatch(
     batch,
+    NotificationType.waitlistPromoted,
+    NotificationRefsModel(clubId: clubId, eventId: eventId),
+    refIds: {'clubId': clubId, 'eventId': eventId},
+    recipientIds: [userId],
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyWaitlistPromotedInTransaction({
+    required String eventId,
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  }) => _inTransaction(
+    transaction,
     NotificationType.waitlistPromoted,
     NotificationRefsModel(clubId: clubId, eventId: eventId),
     refIds: {'clubId': clubId, 'eventId': eventId},
@@ -308,6 +366,42 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
     NotificationRefsModel refs, {
     required Map<String, String> refIds,
     required List<String> recipientIds,
+  }) => _critical(
+    (draft, recipientId) =>
+        _writer.addToBatch(batch, draft, recipientId: recipientId),
+    type,
+    refs,
+    refIds: refIds,
+    recipientIds: recipientIds,
+  );
+
+  /// [_inBatch]'in transaction karşılığı: belgeler [transaction]'a eklenir.
+  Future<FirestoreResult<DispatchReport>> _inTransaction(
+    Transaction transaction,
+    NotificationType type,
+    NotificationRefsModel refs, {
+    required Map<String, String> refIds,
+    required List<String> recipientIds,
+  }) => _critical(
+    (draft, recipientId) => _writer.addToTransaction(
+      transaction,
+      draft,
+      recipientId: recipientId,
+    ),
+    type,
+    refs,
+    refIds: refIds,
+    recipientIds: recipientIds,
+  );
+
+  /// Kritik üyelerin ortak gövdesi: doğrulama, tek olay anahtarı ve her
+  /// alıcı için [add] (batch ya da transaction'a ekleme).
+  Future<FirestoreResult<DispatchReport>> _critical(
+    void Function(NotificationDraft draft, String recipientId) add,
+    NotificationType type,
+    NotificationRefsModel refs, {
+    required Map<String, String> refIds,
+    required List<String> recipientIds,
   }) {
     final unique = recipientIds.toSet().toList();
     final rejected =
@@ -325,7 +419,7 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
       }
       final draft = _draft(type, refs);
       for (final recipientId in unique) {
-        _writer.addToBatch(batch, draft, recipientId: recipientId);
+        add(draft, recipientId);
       }
     } on FirebaseException catch (error) {
       _onIssue?.call(

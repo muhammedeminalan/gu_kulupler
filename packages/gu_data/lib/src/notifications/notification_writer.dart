@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' show WriteBatch;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show Transaction, WriteBatch;
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/models/notification_draft.dart';
@@ -35,6 +36,20 @@ abstract interface class NotificationWriter {
   /// günlükle aynı batch'te yazılır (biri reddedilirse hepsi düşer).
   void addToBatch(
     WriteBatch batch,
+    NotificationDraft draft, {
+    required String recipientId,
+  });
+
+  /// [draft] bildirimini [recipientId] alıcısı için [transaction]'a ekler
+  /// ([addToBatch]'in transaction karşılığı; `set`, commit çağırmaz — T-30).
+  ///
+  /// Beklenen önceki durumu okuyan kritik geçişler (üyelik kararları, rol,
+  /// devir, terfi) transaction kullanır; bildirim aynı işlemde yazılır.
+  /// Geçersiz taslak / alıcı [addToBatch] gibi `invalid-argument` kodlu
+  /// `FirebaseException` fırlatır (transaction gövdesi düşer, hiçbir yazım
+  /// uygulanmaz).
+  void addToTransaction(
+    Transaction transaction,
     NotificationDraft draft, {
     required String recipientId,
   });

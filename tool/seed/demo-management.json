@@ -1,0 +1,38 @@
+{
+  "_doc": "T-30 — demo yönetici geçmişi (MGT-02 / MGT-03 / MGT-06 / MGT-10; docs/plans/T-30.md §4). demo-data.json salt okunurdur (README madde 4); yönetici geçişlerinin T-30 biçimi ayrı dosyada. Dönüşüm geçişlerin SONUCUNU yazar: (1) `decisions` — `rejected`: üyelik `rejected` + rejectReason / rejectNote + retryAfter (= decidedAt + 7 gün) + iletişim belgesi (başvuru notu) + günlük `application_rejected` (kimlik FirestoreIds.managerActivity); `undone`: onayı 30 sn içinde geri alınmış başvuru — üyelik yeniden `pending` (karar alanları null), günlük `application_approved` KALIR (kabul edilen sınırlama, rules-spec §9). (2) `roleChanges` — günlük `role_changed` (kimlik FirestoreIds.roleActivity; üyelik zaten hedef rolde). (3) `counters` — yönetici sayaç işaretçisi yan belgeleri (`clubs/{id}/private/counter`, `events/{id}/private/counter`; W-64): son yönetici aktörlü sayaç geçişinin üyelik / kayıt yolu. Sayaçlar değişmez: reddedilen ve bekleyen başvuru memberCount'a girmez. Zamanlar ISO; meta.today'e göre tam gün kaydırılır.",
+  "decisions": [
+    {
+      "kind": "rejected",
+      "clubId": "c01",
+      "userId": "u002",
+      "actorId": "u_elif",
+      "appliedAt": "2026-10-05T09:30:00.000Z",
+      "decidedAt": "2026-10-06T11:15:00.000Z",
+      "note": "Mobil uygulama geliştirmeye ilgim var.",
+      "rejectReason": "quota",
+      "rejectNote": "Bu dönemin kontenjanı doldu, bahar döneminde yeniden başvurabilirsin."
+    },
+    {
+      "kind": "undone",
+      "clubId": "c01",
+      "userId": "u003",
+      "actorId": "u_elif",
+      "appliedAt": "2026-10-06T14:00:00.000Z",
+      "decidedAt": "2026-10-07T10:00:00.000Z",
+      "note": ""
+    }
+  ],
+  "roleChanges": [
+    {
+      "clubId": "c01",
+      "userId": "u_elif",
+      "actorId": "u_p_c01",
+      "role": "board",
+      "at": "2025-09-10T12:00:00.000Z"
+    }
+  ],
+  "counters": {
+    "clubs/c01": { "ref": "memberships/c01_u154", "at": "2026-10-06T16:08:42.117Z" },
+    "events/e18": { "ref": "rsvps/e18_u_mehmet", "at": "2026-10-02T15:10:00.000Z" }
+  }
+}

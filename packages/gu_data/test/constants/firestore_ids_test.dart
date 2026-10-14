@@ -306,6 +306,43 @@ void main() {
     });
   });
 
+  group('T-30 · FirestoreIds · yönetici günlük kimlikleri ve işaretçiler', () {
+    test('managerActivity = clubId_actorId_kind_userId_priorCount', () {
+      expect(
+        FirestoreIds.managerActivity(
+          'c01',
+          'u_board',
+          'application_approved',
+          'u_p_c01',
+          2,
+        ),
+        'c01_u_board_application_approved_u_p_c01_2',
+      );
+    });
+
+    test(
+      'roleActivity = clubId_actorId_role_changed_userId_role_priorCount',
+      () {
+        expect(
+          FirestoreIds.roleActivity('c01', 'u_president', 'u_ayse', 'board', 0),
+          'c01_u_president_role_changed_u_ayse_board_0',
+        );
+        expect(
+          FirestoreIds.roleActivity('c01', 'u_x', 'u_y', 'president', 1),
+          endsWith('_${ActivityKind.roleChanged.json}_u_y_president_1'),
+        );
+      },
+    );
+
+    test('yan belge işaretçileri başında / olmayan belge yoludur (W-64)', () {
+      expect(
+        FirestoreIds.membershipRef('c01', 'u_ayse'),
+        'memberships/c01_u_ayse',
+      );
+      expect(FirestoreIds.rsvpRef('e01', 'u_ayse'), 'rsvps/e01_u_ayse');
+    });
+  });
+
   group('T-08 · FirestoreIds · PLAN §9.4 tablo paritesi', () {
     test('tablo başlığı', () {
       expect(_idTable.header, ['Belge', 'ID biçimi', 'Üretici / sabit', 'Not']);
@@ -366,6 +403,10 @@ void main() {
       expect(mentioned, {
         'membership',
         'activity',
+        'managerActivity',
+        'roleActivity',
+        'membershipRef',
+        'rsvpRef',
         'vote',
         'rsvp',
         'notification',
@@ -416,7 +457,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 22 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 26 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -444,8 +485,13 @@ void main() {
         'postActivity',
         // T-22 · etkinlik yayın / iptal günlüğü kimliği
         'eventActivity',
+        // T-30 · yönetici günlük kimlikleri ve yan belge işaretçileri (W-64)
+        'managerActivity',
+        'roleActivity',
         'commentRef',
         'postRef',
+        'membershipRef',
+        'rsvpRef',
         'clubCoverSeed',
         'eventCoverSeed',
         'pollOption',

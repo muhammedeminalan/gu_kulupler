@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart' show WriteBatch;
+import 'package:cloud_firestore/cloud_firestore.dart'
+    show Transaction, WriteBatch;
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
 
@@ -39,6 +40,10 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
   /// `batch` alan çağrılara verilen batch'ler, çağrı sırasıyla (batch'e
   /// hiçbir şey eklenmez).
   final List<WriteBatch> batches = [];
+
+  /// `…InTransaction` çağrılarına verilen transaction'lar, çağrı sırasıyla
+  /// (transaction'a hiçbir şey eklenmez).
+  final List<Transaction> transactions = [];
 
   /// Doluysa bir sonraki fan-out (`batch` almayan) çağrısı bu hatayla biter
   /// ve alan yeniden `null` olur.
@@ -94,6 +99,45 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
   );
 
   @override
+  Future<FirestoreResult<DispatchReport>>
+  notifyApplicationDecidedInTransaction({
+    required String clubId,
+    required String applicantId,
+    required bool approved,
+    required Transaction transaction,
+  }) => _inTransaction(
+    'notifyApplicationDecidedInTransaction',
+    {'clubId': clubId, 'applicantId': applicantId, 'approved': approved},
+    [applicantId],
+    transaction,
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRemovedInTransaction({
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  }) => _inTransaction(
+    'notifyRemovedInTransaction',
+    {'clubId': clubId, 'userId': userId},
+    [userId],
+    transaction,
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyRoleChangedInTransaction({
+    required String clubId,
+    required String userId,
+    required ClubRole role,
+    required Transaction transaction,
+  }) => _inTransaction(
+    'notifyRoleChangedInTransaction',
+    {'clubId': clubId, 'userId': userId, 'role': role},
+    [userId],
+    transaction,
+  );
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyAnnouncement({
     required String postId,
     required String clubId,
@@ -137,6 +181,19 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
   );
 
   @override
+  Future<FirestoreResult<DispatchReport>> notifyWaitlistPromotedInTransaction({
+    required String eventId,
+    required String clubId,
+    required String userId,
+    required Transaction transaction,
+  }) => _inTransaction(
+    'notifyWaitlistPromotedInTransaction',
+    {'eventId': eventId, 'clubId': clubId, 'userId': userId},
+    [userId],
+    transaction,
+  );
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyReportResolved({
     required String reportGroupKey,
     required List<String> reporterIds,
@@ -166,6 +223,16 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
     WriteBatch batch,
   ) {
     batches.add(batch);
+    return _record(kind, args, recipients);
+  }
+
+  Future<FirestoreResult<DispatchReport>> _inTransaction(
+    String kind,
+    Map<String, Object?> args,
+    List<String> recipients,
+    Transaction transaction,
+  ) {
+    transactions.add(transaction);
     return _record(kind, args, recipients);
   }
 

@@ -14,6 +14,7 @@ const Map<String, String> _actual = {
   'clubs': FirestoreCollections.clubs,
   'memberships': FirestoreCollections.memberships,
   'contactDoc': FirestoreCollections.contactDoc,
+  'counterDoc': FirestoreCollections.counterDoc,
   'posts': FirestoreCollections.posts,
   'votesSub': FirestoreCollections.votesSub,
   'comments': FirestoreCollections.comments,
@@ -80,8 +81,8 @@ Map<String, String> _readSourceMembers() {
 
 void main() {
   group('T-08 · FirestoreCollections · PLAN §9.5 paritesi', () {
-    test('PLAN listesi okunur: 19 ad', () {
-      expect(_readPlanCollections(), hasLength(19));
+    test('PLAN listesi okunur: 20 ad', () {
+      expect(_readPlanCollections(), hasLength(20));
     });
 
     test('adlar ve değerler PLAN §9.5 ile birebir (sıra dahil)', () {
@@ -109,17 +110,17 @@ void main() {
           .split('\n')
           .where((line) => RegExp('^ {2}[A-Za-z_@]').hasMatch(line));
 
-      expect(memberLines, hasLength(19));
+      expect(memberLines, hasLength(20));
       expect(memberLines, everyElement(startsWith('  static const String ')));
     });
   });
 
   group('T-08 · FirestoreCollections · adlar', () {
-    test('19 değerin tamamı tekildir', () {
-      expect(_actual.values.toSet(), hasLength(19));
+    test('20 değerin tamamı tekildir', () {
+      expect(_actual.values.toSet(), hasLength(20));
     });
 
-    test('15 kök koleksiyon + 2 alt koleksiyon + 2 sabit belge adı', () {
+    test('15 kök koleksiyon + 2 alt koleksiyon + 3 sabit belge adı', () {
       final subs = _actual.keys.where((name) => name.endsWith('Sub'));
       final docs = _actual.keys.where((name) => name.endsWith('Doc'));
       final roots = _actual.keys.where(
@@ -128,7 +129,7 @@ void main() {
 
       expect(roots, _rootNames);
       expect(subs, ['privateSub', 'votesSub']);
-      expect(docs, ['accountDoc', 'contactDoc']);
+      expect(docs, ['accountDoc', 'contactDoc', 'counterDoc']);
     });
 
     test('kök koleksiyonda Dart adı = Firestore adı', () {
@@ -142,6 +143,7 @@ void main() {
       expect(FirestoreCollections.votesSub, 'votes');
       expect(FirestoreCollections.accountDoc, 'account');
       expect(FirestoreCollections.contactDoc, 'contact');
+      expect(FirestoreCollections.counterDoc, 'counter');
     });
 
     test('her değer geçerli bir Firestore yol parçasıdır', () {

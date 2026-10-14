@@ -1,8 +1,8 @@
 /// Firestore koleksiyon, alt koleksiyon ve sabit belge adları (PLAN §9.5,
 /// D-25).
 ///
-/// 15 kök koleksiyon + 2 alt koleksiyon ([privateSub], [votesSub]) + 2 sabit
-/// belge adı ([accountDoc], [contactDoc]). Yol parçaları kodda elle yazılmaz;
+/// 15 kök koleksiyon + 2 alt koleksiyon ([privateSub], [votesSub]) + 3 sabit
+/// belge adı ([accountDoc], [contactDoc], [counterDoc]). Yol parçaları kodda elle yazılmaz;
 /// `FirestoreService.doc/collection` yalnızca bu sabitlerle çağrılır (D-15).
 abstract final class FirestoreCollections {
   /// `users/{uid}` — kullanıcı profili (e-posta taşımaz, D-29).
@@ -23,6 +23,11 @@ abstract final class FirestoreCollections {
 
   /// `memberships/{id}/private/contact` — tek belge (başvuran e-postası).
   static const String contactDoc = 'contact';
+
+  /// `clubs/{clubId}/private/counter` ve `events/{eventId}/private/counter` —
+  /// yönetici aktörlü sayaç geçişinin işaretçi yan belgesi (W-64; yalnızca
+  /// `seesMgmt` okur, sayaç yazımıyla aynı işlemde yazılır).
+  static const String counterDoc = 'counter';
 
   /// `posts/{postId}` — gönderi, duyuru ve anketler.
   static const String posts = 'posts';
