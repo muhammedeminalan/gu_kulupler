@@ -66,6 +66,18 @@ abstract final class AppConstants {
     ReminderOption.oneDay: Duration(days: 1),
   };
 
+  /// Bir takvim günü (Istanbul günü aralıkları; UTC+3 sabit, DST yok —
+  /// domain-model §1.5).
+  static const Duration calendarDay = Duration(days: 1);
+
+  /// SHT-11 / EVT-01 "Bu hafta": bugünden itibaren 7 gün (prototip
+  /// `t0 + 7 * DAY`, `screens-events.js:10`).
+  static const Duration eventWeekSpan = Duration(days: 7);
+
+  /// SHT-11 "Bu ay": bugünden itibaren 30 gün (prototip `t0 + 30 * DAY`,
+  /// `screens-events.js:10`).
+  static const Duration eventMonthSpan = Duration(days: 30);
+
   static const String _mailScheme = 'mailto';
   static const String _appStoreHost = 'apps.apple.com';
   static const String _playStoreHost = 'play.google.com';

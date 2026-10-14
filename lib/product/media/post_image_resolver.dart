@@ -46,6 +46,43 @@ StorageImageFactory storageImageFactory(Ref ref) => _cachedNetworkImage;
 ImageProvider _cachedNetworkImage(String url, String path) =>
     BoundedImage(CachedNetworkImageProvider(url, cacheKey: path));
 
+/// Storage yolu → çizilecek görsel (`null` yol ya da adresi henüz bilinmeyen
+/// görsel → `null`, çağıran yer tutucu / şablon kapak çizer).
+typedef StorageImageResolver = ImageProvider? Function(String? path);
+
+/// Genel Storage görseli çözücüsü — herhangi bir Storage yolunu
+/// (`events/{eventId}/{file}` etkinlik kapağı, `EventModel.coverPath`)
+/// çizilecek görsele çevirir; [postImageResolver] ile aynı önbellek ve aynı
+/// davranış (eşzamanlı; adres gelince yeni çözücü yayılır, izleyen widget
+/// yeniden çizilir):
+///
+/// ```dart
+/// EventCard(
+///   event: event,
+///   coverImage: ref.watch(storageImageResolverProvider)(event.coverPath),
+///   …
+/// )
+/// ```
+///
+/// Okuma yetkisi Storage Rules'tadır (`events/` ve `posts/` — doğrulanmış
+/// kullanıcı, tek dosya `get`).
+@Riverpod(keepAlive: true)
+StorageImageResolver storageImageResolver(Ref ref) {
+  final cache = ref.watch(imageUrlCacheProvider);
+  final imageOf = ref.watch(storageImageFactoryProvider);
+  // Yeni adres → yeni çözücü (izleyen widget'lar yeniden çizilir).
+  cache.addListener(ref.invalidateSelf);
+  ref.onDispose(() => cache.removeListener(ref.invalidateSelf));
+  return (path) {
+    if (path == null) return null;
+    // Süresi dolan adres kullanılırken arka planda yenilenir; sonuç
+    // dinleyiciyle gelir (hata yer tutucuda kalır).
+    unawaited(cache.request(path));
+    final url = cache.peek(path);
+    return url == null ? null : imageOf(url, path);
+  };
+}
+
 /// Gönderi görseli çözücüsü — Storage yolunu (`PostImageModel.path`,
 /// `posts/{postId}/{file}`) çizilecek görsele çevirir. `PostCard.imageOf`,
 /// `ImageGrid.imageOf`, `ImageViewerSheet.imageOf` ve FED-03 düzenleme
@@ -64,19 +101,11 @@ ImageProvider _cachedNetworkImage(String url, String path) =>
 ///
 /// Okuma yetkisi Storage Rules'tadır (`posts/` — doğrulanmış kullanıcı, tek
 /// dosya); çözücü yalnızca `posts.images[].path` yollarını çözer.
+///
+/// Mekanizma [storageImageResolver]'dır (aynı önbellek; o yeni çözücü
+/// yaydığında bu da yayar).
 @Riverpod(keepAlive: true)
 PostImageResolver postImageResolver(Ref ref) {
-  final cache = ref.watch(imageUrlCacheProvider);
-  final imageOf = ref.watch(storageImageFactoryProvider);
-  // Yeni adres → yeni çözücü (izleyen widget'lar yeniden çizilir).
-  cache.addListener(ref.invalidateSelf);
-  ref.onDispose(() => cache.removeListener(ref.invalidateSelf));
-  return (image) {
-    final path = image.path;
-    // Süresi dolan adres kullanılırken arka planda yenilenir; sonuç
-    // dinleyiciyle gelir (hata yer tutucuda kalır).
-    unawaited(cache.request(path));
-    final url = cache.peek(path);
-    return url == null ? null : imageOf(url, path);
-  };
+  final resolve = ref.watch(storageImageResolverProvider);
+  return (image) => resolve(image.path);
 }

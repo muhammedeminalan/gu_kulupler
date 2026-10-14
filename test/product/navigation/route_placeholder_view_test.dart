@@ -54,7 +54,8 @@ void main() {
         'lib/product/navigation/routes/auth_routes.dart': 0,
         // T-17: Kulüpler sekme kökü gerçek view'a bağlandı (CLB-01).
         'lib/product/navigation/routes/clubs_routes.dart': 0,
-        'lib/product/navigation/routes/events_routes.dart': 1,
+        // T-24: Etkinlikler sekme kökü gerçek view'a bağlandı (EVT-01).
+        'lib/product/navigation/routes/events_routes.dart': 0,
         'lib/product/navigation/routes/notifications_routes.dart': 1,
         'lib/product/navigation/routes/admin_routes.dart': 1,
         'lib/product/navigation/routes/profile_routes.dart': 1,

@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T06:11:40.541Z",
+  "updated": "2026-10-14T06:43:45.813Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-24",
   "statusValues": [
     "pending",
     "planning",
@@ -371,8 +371,8 @@
       "notes": ""
     },
     "T-24": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T06:12:19.513Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1325,7 +1325,10 @@
         "T-23",
         "T-24"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-24",
+      "closedAt": "2026-10-14T06:43:45.807Z",
+      "closeNote": "T-23: EVT-02/EVT-03 (a)+(b). T-24: EVT-01 kart kararı EventCardStatus.of → joinsWaitlist (a); EVT-04 'Vazgeç'/'Ayrıl' yalnız going/waitlist ve endsAt > şimdi (b), bittiyse TST-X6"
     },
     {
       "id": "W-82",

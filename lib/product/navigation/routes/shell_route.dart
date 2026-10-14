@@ -9,6 +9,8 @@ import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/join_application_sheet.dart';
 import 'package:gu_kulupler/features/events/view/event_detail_view.dart';
 import 'package:gu_kulupler/features/events/view/event_join_flow.dart';
+import 'package:gu_kulupler/features/events/view/event_list_view.dart';
+import 'package:gu_kulupler/features/events/view/my_events_view.dart';
 import 'package:gu_kulupler/features/events/view/ticket_view.dart';
 import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
