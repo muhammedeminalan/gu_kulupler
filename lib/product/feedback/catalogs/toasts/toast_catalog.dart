@@ -49,7 +49,9 @@ final class ToastParams extends Equatable {
   /// Silinen şeyin adı (TST-45: gönderi / yorum / taslak).
   final String what;
 
-  /// Yeni rolün adı (TST-46).
+  /// Yeni rol (TST-46): `ClubRole.json` kimliği (`member` / `board` /
+  /// `president` / `advisor` — katalog yerelleştirir; ViewModel'in
+  /// `BuildContext`'i yoktur) ya da hazır ad (olduğu gibi yazılır).
   final String role;
 
   /// Bildirim başlığı (TST-55).
@@ -237,7 +239,7 @@ abstract final class ToastCatalog {
     ToastId.tst43 => _success((l, p) => l.tst43(p.n)),
     ToastId.tst44 => _success((l, _) => l.tst44),
     ToastId.tst45 => _info((l, p) => l.tst45(p.what), undo: true),
-    ToastId.tst46 => _success((l, p) => l.tst46(p.name, p.role)),
+    ToastId.tst46 => _success((l, p) => l.tst46(p.name, _roleName(l, p.role))),
     ToastId.tst47 => _info((l, p) => l.tst47(p.name), undo: true),
     ToastId.tst48 => _info((l, _) => l.tst48),
     ToastId.tst49 => _success((l, p) => l.tst49(p.name)),
@@ -278,6 +280,16 @@ abstract final class ToastCatalog {
     ToastId.tstX18 => _info((l, _) => l.tstX18),
     ToastId.tstX19 => _success((l, _) => l.tstX19),
     ToastId.tstX20 => _info((l, _) => l.tstX20),
+  };
+
+  /// TST-46 rol adı: `ClubRole.json` kimliği yerelleştirilir; başka metin
+  /// olduğu gibi kalır.
+  static String _roleName(AppLocalizations l10n, String role) => switch (role) {
+    'member' => l10n.roleMember,
+    'board' => l10n.roleBoard,
+    'president' => l10n.rolePresident,
+    'advisor' => l10n.roleAdvisor,
+    _ => role,
   };
 
   /// TST-27 / TST-28 öznesi: tek karar → kişi adı, toplu karar → "n başvuru"

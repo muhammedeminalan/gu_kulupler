@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/profile/provider/my_clubs_state.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/membership_dialogs_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:gu_kulupler/product/navigation/my_clubs_tab.dart';
@@ -52,11 +54,16 @@ enum MyClubLeaveOutcome {
 /// | [cancelApplication] | DLG-07 → çevrimdışı TST-24 | iyimser `cancelled` → `cancelApplication` | TST-40 · hata → geri + TST-24 / TST-X18 |
 /// | [leave] | başkan DLG-09 · DLG-08 → çevrimdışı TST-24 | iyimser `left` → `leave` | TST-39 · hata → geri + toast / DLG-09 |
 /// | [reapply] | bekleme süresi → TST-X4 | — (başvuru CLB-05'te) | — |
+/// | [transferPresidencyForLeave] (W-14) | DLG-09 "Başkanlığı devret" → SHT-25 → DLG-21 | M11 (`ManageMemberActionsMixin`) | TST-49; üyelikler yenilenir |
 ///
 /// Design: PRF-03, DLG-07, DLG-08, DLG-09
 @riverpod
 final class MyClubsViewModel extends _$MyClubsViewModel
-    with ProjectDependencyMixin, WriteGuardMixin, MembershipDialogsMixin {
+    with
+        ProjectDependencyMixin,
+        WriteGuardMixin,
+        MembershipDialogsMixin,
+        ManageMemberActionsMixin {
   bool _isLoading = false;
 
   /// Onay dialogu açık mı? Beklerken gelen ikinci istek yok sayılır.
@@ -336,6 +343,24 @@ final class MyClubsViewModel extends _$MyClubsViewModel
       memberships: {...state.memberships, previous.clubId: previous},
       pendingIds: {...state.pendingIds}..remove(previous.clubId),
     );
+  }
+
+  @override
+  SessionState? get memberSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  /// DLG-09 "Başkanlığı devret" (W-14): [clubId] için SHT-25 → DLG-21 → M11
+  /// → TST-49. Devredildiyse `true`.
+  Future<bool> transferPresidencyForLeave(String clubId) =>
+      transferPresidency(clubId);
+
+  @override
+  void onPresidencyTransferred(
+    String clubId, {
+    required String fromUserId,
+    required String toUserId,
+  }) {
+    if (ref.mounted) unawaited(refresh());
   }
 
   Future<MyClubLeaveOutcome> _solePresident() async =>

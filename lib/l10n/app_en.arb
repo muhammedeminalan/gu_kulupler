@@ -2229,6 +2229,10 @@
   "@dlg21Title": {
     "description": "Key dlg.21.title"
   },
+  "dlg21Word": "DEVRET",
+  "@dlg21Word": {
+    "description": "Key dlg.21.word"
+  },
   "dlg22Back": "Back to editing",
   "@dlg22Back": {
     "description": "Key dlg.22.back"
@@ -3558,6 +3562,10 @@
   "mgtMembersSortRate": "By attendance",
   "@mgtMembersSortRate": {
     "description": "Key mgtMembers.sort.rate"
+  },
+  "mgtMembersSortRole": "By role",
+  "@mgtMembersSortRole": {
+    "description": "Key mgtMembers.sort.role"
   },
   "mgtMembersTitle": "Member management",
   "@mgtMembersTitle": {

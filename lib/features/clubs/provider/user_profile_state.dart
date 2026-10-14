@@ -15,6 +15,9 @@ final class UserProfileState extends Equatable {
     this.sharedClubs = const [],
     this.roles = const [],
     this.contextMembership,
+    this.contextClubName,
+    this.contactEmail,
+    this.canAssignRoles = false,
     this.isSelf = false,
     this.isSuperAdmin = false,
     this.isHiddenByPrivacy = false,
@@ -48,6 +51,19 @@ final class UserProfileState extends Equatable {
   /// bakan o kulübün yöneticisi ya da süper adminse okunur (prototip
   /// `managerCtx`). Her durumda olabilir (bekleyen başvuru dahil).
   final MembershipModel? contextMembership;
+
+  /// Açılış kulübünün adı (yönetici kartı "{kulüp} içindeki rolü"); kart
+  /// yoksa ya da okunamadıysa `null`.
+  final String? contextClubName;
+
+  /// Kullanıcının açılış kulübü üyeliğindeki e-postası
+  /// (`memberships/{id}/private/contact` — D-29; yalnızca yönetim okur);
+  /// okunmadıysa / yoksa `null` (W-69).
+  final String? contactEmail;
+
+  /// Bakan açılış kulübünde rol atayabilir mi (başkan / süper admin —
+  /// `RolePolicy.canAssignRole`): yönetici kartında "Rolü değiştir".
+  final bool canAssignRoles;
 
   /// Profil oturumdaki kullanıcının kendisi mi (menü çizilmez, engellenemez).
   final bool isSelf;
@@ -90,6 +106,21 @@ final class UserProfileState extends Equatable {
   /// Bölüm / sınıf, biyografi ve ortak kulüpler çizilir mi.
   bool get showsDetails => !isHiddenByPrivacy && !isDeletedUser;
 
+  /// Yönetici bağlamı kartı (e-posta, kulüpteki rol, üyelik tarihi) çizilir
+  /// mi: bakan açılış kulübünün yöneticisi / süper admini ve kullanıcı o
+  /// kulübün **aktif** üyesi (prototip `managerCtx`, `screens-clubs.js:160`).
+  bool get showsManagerCard =>
+      contextMembership?.status == MembershipStatus.active && !isDeletedUser;
+
+  /// Kartın altındaki "Rolü değiştir" / "Kulüpten çıkar": hedef başkan ya da
+  /// danışman değilse (`screens-clubs.js:161`).
+  bool get showsManagerActions =>
+      showsManagerCard &&
+      switch (contextMembership?.role) {
+        ClubRole.member || ClubRole.board => true,
+        _ => false,
+      };
+
   @override
   List<Object?> get props => [
     user,
@@ -97,6 +128,9 @@ final class UserProfileState extends Equatable {
     sharedClubs,
     roles,
     contextMembership,
+    contextClubName,
+    contactEmail,
+    canAssignRoles,
     isSelf,
     isSuperAdmin,
     isHiddenByPrivacy,
@@ -108,7 +142,8 @@ final class UserProfileState extends Equatable {
   ];
 
   /// Verilen alanları değiştirilmiş kopya. [clearContextMembership]
-  /// [contextMembership]'i `null` yapar ve aynı adlı parametreden önce gelir.
+  /// [contextMembership]'i (ve ona bağlı [contextClubName], [contactEmail]
+  /// alanlarını) `null` yapar ve aynı adlı parametrelerden önce gelir.
   UserProfileState copyWith({
     UserModel? user,
     List<String>? sharedClubIds,
@@ -116,6 +151,9 @@ final class UserProfileState extends Equatable {
     List<ClubRole>? roles,
     MembershipModel? contextMembership,
     bool clearContextMembership = false,
+    String? contextClubName,
+    String? contactEmail,
+    bool? canAssignRoles,
     bool? isSelf,
     bool? isSuperAdmin,
     bool? isHiddenByPrivacy,
@@ -132,6 +170,13 @@ final class UserProfileState extends Equatable {
     contextMembership: clearContextMembership
         ? null
         : contextMembership ?? this.contextMembership,
+    contextClubName: clearContextMembership
+        ? null
+        : contextClubName ?? this.contextClubName,
+    contactEmail: clearContextMembership
+        ? null
+        : contactEmail ?? this.contactEmail,
+    canAssignRoles: canAssignRoles ?? this.canAssignRoles,
     isSelf: isSelf ?? this.isSelf,
     isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
     isHiddenByPrivacy: isHiddenByPrivacy ?? this.isHiddenByPrivacy,

@@ -5,6 +5,7 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_detail_state.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
@@ -12,6 +13,7 @@ import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/club_join_mixin.dart';
 import 'package:gu_kulupler/product/mixin/external_link_mixin.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/membership_dialogs_mixin.dart';
 import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
@@ -43,7 +45,8 @@ part 'club_detail_view_model.g.dart';
 /// | [joinInstant] | katıldı | TST-34 ("Kulübe git") |
 /// | | kapalı · bekleme · inceleme gerekli | TST-X1 · TST-X4 · view → SHT-05 |
 /// | [leave] | onay → ayrıldı | DLG-08 → TST-39 |
-/// | | başkan | DLG-09 |
+/// | | başkan | DLG-09 → "Başkanlığı devret" → [transferPresidencyForLeave] |
+/// | [transferPresidencyForLeave] (W-14) | SHT-25 → DLG-21 → devredildi | TST-49; kulüp yenilenir (artık ayrılabilir) |
 /// | [share] | kopyala · WhatsApp / e-posta · diğer | TST-35 · DLG-32 · sistem paylaşımı |
 /// | [openEmail] · [openInstagram] · [openWeb] | onay → açıldı | DLG-32 |
 /// | | e-posta açılamadı | adres kopyalanır, TST-08 |
@@ -61,7 +64,8 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
         ClubJoinMixin,
         ExternalLinkMixin,
         MembershipDialogsMixin,
-        ReportReceivedMixin {
+        ReportReceivedMixin,
+        ManageMemberActionsMixin {
   /// Kulübün olmadığını söyleyen okuma hataları (→ SYS-04).
   static const Set<FirestoreError> _missingErrors = {
     FirestoreError.notFound,
@@ -478,6 +482,25 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
         );
         state = state.copyWith(isEventsFetching: false, isEventsError: true);
     }
+  }
+
+  @override
+  SessionState? get memberSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  /// DLG-09 "Başkanlığı devret" (W-14): SHT-25 (kulübün aktif üyeleri) →
+  /// DLG-21 ("DEVRET") → M11 → TST-49 (`ManageMemberActionsMixin`).
+  /// Devredildiyse `true`; kullanıcı artık yönetim kurulu üyesidir ve
+  /// kulüpten ayrılabilir.
+  Future<bool> transferPresidencyForLeave() => transferPresidency(clubId);
+
+  @override
+  void onPresidencyTransferred(
+    String clubId, {
+    required String fromUserId,
+    required String toUserId,
+  }) {
+    if (ref.mounted) unawaited(refresh());
   }
 
   /// DLG-09 "Ayrılamazsın".

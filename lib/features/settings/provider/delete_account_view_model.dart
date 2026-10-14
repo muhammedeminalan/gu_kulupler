@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/settings/provider/delete_account_state.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -18,6 +20,11 @@ part 'delete_account_view_model.g.dart';
 /// **Adımlar:** 1 uyarı + başkanlık engeli ([load] → `precheck`; başkansa
 /// [next] TST-X10 ile ilerlemez) · 2 ayrılma nedeni (isteğe bağlı,
 /// saklanmaz) · 3 şifre + "SİL" ([confirm]).
+///
+/// **Başkanlık devri (W-34):** 1. adımdaki her kulübün "Devret"i
+/// ([transfer]) SHT-25 (kulübün aktif üyeleri) → DLG-21 ("DEVRET") → M11 →
+/// TST-49 akışını bu ekranda açar (`ManageMemberActionsMixin`); devirden
+/// sonra ön denetim yeniden koşar, engel kalmadıysa "Devam" ilerler.
 ///
 /// **[confirm] dizisi (§4 f):** doğrulama (eksikse TST-X11) → çevrimdışı
 /// kapısı (TST-24) → `AuthRepository.reauthenticate` (yanlış şifre → alan
@@ -33,7 +40,7 @@ part 'delete_account_view_model.g.dart';
 /// Design: SET-03
 @riverpod
 final class DeleteAccountViewModel extends _$DeleteAccountViewModel
-    with ProjectDependencyMixin, WriteGuardMixin {
+    with ProjectDependencyMixin, WriteGuardMixin, ManageMemberActionsMixin {
   @override
   DeleteAccountState build() {
     unawaited(Future<void>.microtask(load));
@@ -84,6 +91,27 @@ final class DeleteAccountViewModel extends _$DeleteAccountViewModel
           club.id: club.name,
       },
     );
+  }
+
+  @override
+  SessionState? get memberSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  /// "Devret" (`SET-03.transfer.<clubId>`, W-34): SHT-25 → DLG-21 → M11 →
+  /// TST-49. Devredildiyse `true`; başkanlık engeli yeniden denetlenir.
+  /// Gönderim sürerken etkisizdir.
+  Future<bool> transfer(String clubId) async {
+    if (state.isSubmitting) return false;
+    return transferPresidency(clubId);
+  }
+
+  @override
+  void onPresidencyTransferred(
+    String clubId, {
+    required String fromUserId,
+    required String toUserId,
+  }) {
+    if (ref.mounted) unawaited(load());
   }
 
   /// "Devam" (`SET-03.next`): sonraki adıma geçer ve `true` döner. 1. adımda

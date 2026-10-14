@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/user_profile_state.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
 import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -38,7 +40,15 @@ part 'user_profile_view_model.g.dart';
 /// | [toggleBlock] | engelle: onay → yazıldı | DLG-13 → TST-09 ("Geri al") |
 /// | | engeli kaldır: yazıldı | TST-09 ("Geri al") |
 /// | [submitReport] → [showReportReceived] | yazıldı / zaten bildirilmiş | DLG-12 (→ DLG-13) |
+/// | [copyEmail] (yönetici kartı, W-69) | panoya kopyalandı | TST-08 |
+/// | [changeRole] | SHT-22 → DLG-20 → yazıldı | rol iyimser; TST-46 |
+/// | [remove] | DLG-19 → yazıldı | TST-47 "Geri al"; view önceki sayfaya döner |
 /// | yazan her işlem | çevrimdışı / ağ · yetki yok | TST-24 · TST-X18 |
+///
+/// Yönetici kartı yalnızca açılış kulübünün yöneticisi / süper admini için
+/// okunur: e-posta `readContact` (D-29), kulüp adı ortak kulüplerden ya da
+/// `getClub`. Rol ve çıkarma `ManageMemberActionsMixin`'dedir (hiyerarşi
+/// tek yerde).
 ///
 /// Design: CLB-07
 @riverpod
@@ -47,7 +57,8 @@ final class UserProfileViewModel extends _$UserProfileViewModel
         ProjectDependencyMixin,
         WriteGuardMixin,
         BlockUserMixin,
-        ReportReceivedMixin {
+        ReportReceivedMixin,
+        ManageMemberActionsMixin {
   bool _isLoading = false;
 
   /// Oturum; TST-09 "Geri al" ekran kapandıktan sonra da gelebildiği için
@@ -145,6 +156,64 @@ final class UserProfileViewModel extends _$UserProfileViewModel
     );
     if (wantsBlock && ref.mounted) await toggleBlock();
   }
+
+  // ─────────────────────── yönetici bağlamı kartı (W-69) ───────────────────────
+
+  @override
+  SessionState? get memberSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  /// "Kopyala" (`CLB-07.copyEmail`): üyelik e-postası panoya → TST-08.
+  Future<void> copyEmail() async {
+    final email = state.contactEmail;
+    if (email != null) await copyMemberEmail(email);
+  }
+
+  /// "Rolü değiştir" (`CLB-07.changeRole`): SHT-22 → DLG-20 → TST-46.
+  Future<void> changeRole() async {
+    final (membership, clubId, name) = _managerTarget();
+    if (membership == null || clubId == null) return;
+    await changeMemberRole(clubId, membership, name: name);
+  }
+
+  /// "Kulüpten çıkar" (`CLB-07.remove`): DLG-19 → TST-47 "Geri al".
+  /// Çıkarıldıysa `true` (view önceki sayfaya döner — `dialogs.js:35`).
+  Future<bool> remove() async {
+    final (membership, clubId, name) = _managerTarget();
+    if (membership == null || clubId == null) return false;
+    return removeMember(clubId, membership, name: name);
+  }
+
+  @override
+  void onMemberRoleChanged(MembershipModel membership) {
+    if (!ref.mounted || membership.userId != userId) return;
+    state = state.copyWith(contextMembership: membership);
+  }
+
+  @override
+  void onMemberRemoved(MembershipModel membership) {
+    if (!ref.mounted || membership.userId != userId) return;
+    state = state.copyWith(
+      contextMembership: membership.copyWith(status: MembershipStatus.removed),
+    );
+  }
+
+  @override
+  void onMemberRestored(MembershipModel membership) {
+    if (!ref.mounted || membership.userId != userId) return;
+    state = state.copyWith(contextMembership: membership);
+  }
+
+  @override
+  void onMemberListStale(String clubId) {
+    if (ref.mounted) unawaited(fetch());
+  }
+
+  (MembershipModel?, String?, String) _managerTarget() => (
+    state.showsManagerActions ? state.contextMembership : null,
+    clubId,
+    state.user?.name ?? '',
+  );
 
   static bool _isNetwork(FirestoreError error) =>
       WriteGuardMixin.networkErrors.contains(error);
@@ -272,6 +341,12 @@ final class UserProfileViewModel extends _$UserProfileViewModel
       }
     }
 
+    // Yönetici kartı (W-69): aktif üyenin e-postası ve kulüp adı.
+    final card = contextMembership?.status == MembershipStatus.active
+        ? await _loadManagerCard(contextClubId!, sharedClubs)
+        : null;
+    if (!ref.mounted) return;
+
     state = state.copyWith(
       user: user,
       sharedClubIds: sharedClubIds,
@@ -282,11 +357,46 @@ final class UserProfileViewModel extends _$UserProfileViewModel
       ],
       contextMembership: contextMembership,
       clearContextMembership: contextMembership == null,
+      contextClubName: card?.clubName,
+      contactEmail: card?.email,
+      canAssignRoles:
+          contextMembership != null &&
+          RolePolicy.can(
+            ClubPermission.assignRoles,
+            session.roleIn(contextClubId!),
+            isSuper: session.isSuperAdmin,
+          ),
       isSelf: isSelf,
       isSuperAdmin: isSelf && session.isSuperAdmin,
       isHiddenByPrivacy: isHidden,
       isFetching: false,
       isError: false,
+    );
+  }
+
+  /// Yönetici kartının e-postası (`readContact`) ve [clubId] kulübünün adı
+  /// (ortak kulüplerde yoksa `getClub`). Okunamayan alan boş kalır.
+  Future<({String? email, String? clubName})> _loadManagerCard(
+    String clubId,
+    List<ClubModel> sharedClubs,
+  ) async {
+    final known = [
+      for (final club in sharedClubs)
+        if (club.id == clubId) club.name,
+    ].firstOrNull;
+    final (contact, club) = await (
+      membershipRepository.readContact(clubId, userId),
+      known != null
+          ? Future<FirestoreResult<ClubModel>?>.value()
+          : clubRepository.getClub(clubId),
+    ).wait;
+    if (contact case FirebaseFailure(:final error)) {
+      AppLogger.warn('Üyelik e-postası okunamadı: ${error.name}');
+    }
+    final email = contact.dataOrNull?.email.trim();
+    return (
+      email: email == null || email.isEmpty ? null : email,
+      clubName: known ?? club?.dataOrNull?.name,
     );
   }
 }

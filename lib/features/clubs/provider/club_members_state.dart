@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
-import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
 import 'package:gu_ui/gu_ui.dart' show TurkishCaseX;
 
 /// CLB-06 rol süzgeci — çip başına bir değer (`CLB-06.filter.<id>`; prototip
@@ -51,7 +50,6 @@ final class ClubMembersState extends Equatable {
     this.roleFilter = MemberRoleFilter.all,
     this.query = '',
     this.cursor,
-    this.pendingUndo,
     this.isFetching = false,
     this.isLoadingMore = false,
     this.isRefreshing = false,
@@ -83,8 +81,7 @@ final class ClubMembersState extends Equatable {
   /// olmayan üyenin satırı `applicant` anlık görüntüsüyle çizilir.
   final Map<String, UserModel> users;
 
-  /// Oturumdaki kullanıcının engelledikleri (oturum + bu ekranda yapılan
-  /// iyimser değişiklikler); listeden süzülürler.
+  /// Oturumdaki kullanıcının engelledikleri; listeden süzülürler.
   final Set<String> blockedUserIds;
 
   /// Seçili rol çipi.
@@ -95,9 +92,6 @@ final class ClubMembersState extends Equatable {
 
   /// Sıradan üyelerin sonraki sayfasının imleci; liste bittiyse `null`.
   final PageCursor? cursor;
-
-  /// TST-09 "Geri al" ile geri alınabilecek son engel; yoksa `null`.
-  final BlockUndo? pendingUndo;
 
   /// İlk yükleme / "Yeniden dene" sürüyor (iskelet).
   final bool isFetching;
@@ -181,16 +175,14 @@ final class ClubMembersState extends Equatable {
     roleFilter,
     query,
     cursor,
-    pendingUndo,
     isFetching,
     isLoadingMore,
     isRefreshing,
     isError,
   ];
 
-  /// Verilen alanları değiştirilmiş kopya. [clearCursor] ve
-  /// [clearPendingUndo] ilgili alanı `null` yapar ve aynı adlı parametreden
-  /// önce gelir.
+  /// Verilen alanları değiştirilmiş kopya. [clearCursor] imleci `null`
+  /// yapar ve [cursor]'dan önce gelir.
   ClubMembersState copyWith({
     ClubModel? club,
     List<MembershipModel>? managers,
@@ -202,8 +194,6 @@ final class ClubMembersState extends Equatable {
     String? query,
     PageCursor? cursor,
     bool clearCursor = false,
-    BlockUndo? pendingUndo,
-    bool clearPendingUndo = false,
     bool? isFetching,
     bool? isLoadingMore,
     bool? isRefreshing,
@@ -218,7 +208,6 @@ final class ClubMembersState extends Equatable {
     roleFilter: roleFilter ?? this.roleFilter,
     query: query ?? this.query,
     cursor: clearCursor ? null : cursor ?? this.cursor,
-    pendingUndo: clearPendingUndo ? null : pendingUndo ?? this.pendingUndo,
     isFetching: isFetching ?? this.isFetching,
     isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     isRefreshing: isRefreshing ?? this.isRefreshing,

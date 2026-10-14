@@ -1,7 +1,7 @@
 // CLB-06 · ClubMembersViewModel: ilk okuma (hata + yeniden dene), sayfalama
 // (20 + imleç), çek-yenile, rol süzgeci, arama (Türkçe küçük harf), oturumda
-// engellenenlerin süzülmesi, engelle (DLG-13 → TST-09 → Geri al), kullanıcı
-// şikayeti (SHT-10 yazımı → DLG-12) — PLAN §12.6.
+// engellenenlerin süzülmesi, yönetici menüsü (SHT-21 → profil /
+// SHT-22 → DLG-20 / DLG-19 → TST-47 → Geri al; W-20) — PLAN §12.6.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -10,19 +10,17 @@ import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_view_model.dart';
-import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
+import 'package:gu_kulupler/product/feedback/catalogs/sheets/member_actions_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
-import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
-import 'package:gu_kulupler/product/service/connectivity_service.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_ui/gu_ui.dart' show TurkishCaseX;
 
-import '../../../fakes/fake_block_repository.dart';
-import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../fakes/fake_management_repository.dart';
 import '../../../fakes/fake_membership_repository.dart';
-import '../../../fakes/fake_report_repository.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/register_fakes.dart';
 import '../../../helpers/test_container.dart';
@@ -31,10 +29,7 @@ import '../club_members_test_support.dart';
 void main() {
   late FakeMembershipRepository memberships;
   late FakeUserRepository users;
-  late FakeBlockRepository blocks;
-  late FakeReportRepository reports;
   late FakeFeedbackService feedback;
-  late FakeConnectivityService connectivity;
 
   final provider = clubMembersViewModelProvider(kMembersClubId);
 
@@ -44,10 +39,7 @@ void main() {
     addTearDown(GetIt.I.reset);
     memberships = GetIt.I<MembershipRepository>() as FakeMembershipRepository;
     users = GetIt.I<UserRepository>() as FakeUserRepository;
-    blocks = GetIt.I<BlockRepository>() as FakeBlockRepository;
-    reports = GetIt.I<ReportRepository>() as FakeReportRepository;
     feedback = GetIt.I<FeedbackService>() as FakeFeedbackService;
-    connectivity = GetIt.I<ConnectivityService>() as FakeConnectivityService;
     seedMembers();
   });
 
@@ -251,7 +243,7 @@ void main() {
     );
   });
 
-  group('CLB-06 · ClubMembersViewModel · engelleme', () {
+  group('CLB-06 · ClubMembersViewModel · engellenenler', () {
     final blockedId = kOtherMember.userId;
 
     test('oturumda engellenen kullanıcı listeden süzülür; oturum değişince '
@@ -272,108 +264,113 @@ void main() {
         hasLength(kClubMemberships.length),
       );
     });
+  });
 
-    test('engelle: DLG-13 onayı → satır kaybolur, engel yazılır, TST-09; '
-        '"Geri al" → satır geri gelir (soft delete)', () async {
-      final container = await loaded();
-      await loadAll(container);
-      feedback.dialogResults[DialogId.dlg13] = true;
+  group('CLB-06 · ClubMembersViewModel · yönetici menüsü (SHT-21, W-20)', () {
+    FakeManagementRepository management() =>
+        GetIt.I<ManagementRepository>() as FakeManagementRepository;
 
-      await vmOf(container).block(blockedId);
-      await pumpEventQueue();
-      var state = stateOf(container);
-      expect(feedback.dialogs, [DialogId.dlg13]);
-      expect(blocks.callsTo('block').single.args, [kMembersUid, blockedId]);
-      expect(state.blockedUserIds, contains(blockedId));
-      expect(state.visible.map((m) => m.userId), isNot(contains(blockedId)));
-      expect(
-        state.pendingUndo,
-        BlockUndo(userId: blockedId, name: kClubUsers[blockedId]!.name),
+    bool listed(ProviderContainer container, String userId) => stateOf(
+      container,
+    ).visible.any((m) => m.userId == userId);
+
+    test('"Profili gör" view\'a döner; yazım yok', () async {
+      final container = await loaded(
+        session: membersSession(role: ClubRole.board),
       );
-      expect(feedback.toasts, [ToastId.tst09]);
-      // Oturumdaki engel kümesi sunucudan yeniden okunur.
+      feedback.nextSheetResult = MemberAction.viewProfile;
+      final outcome = await vmOf(container).openMemberMenu(kOtherMember);
+      expect(outcome, MemberMenuOutcome.viewProfile);
+      expect(feedback.sheets, [SheetId.sht21]);
+      expect(management().calls, isEmpty);
+    });
+
+    test('yönetim kurulu üyeyi çıkarır: DLG-19 → satır iyimser düşer → '
+        'TST-47; "Geri al" satırı geri getirir', () async {
+      final container = await loaded(
+        session: membersSession(role: ClubRole.board),
+      );
+      final userId = kOtherMember.userId;
+      feedback
+        ..nextSheetResult = MemberAction.remove
+        ..dialogResults[DialogId.dlg19] = '';
+      final outcome = await vmOf(container).openMemberMenu(kOtherMember);
+      expect(outcome, MemberMenuOutcome.removed);
+      expect(feedback.dialogs, [DialogId.dlg19]);
+      expect(feedback.toasts, [ToastId.tst47]);
+      expect(listed(container, userId), isFalse);
       expect(
-        container.read(sessionViewModelProvider).blockedUserIds,
-        contains(blockedId),
+        memberships
+            .memberships[FirestoreIds.membership(kMembersClubId, userId)]
+            ?.status,
+        MembershipStatus.removed,
       );
 
       feedback.tapToastAction();
       await pumpEventQueue();
-      state = stateOf(container);
-      expect(blocks.callsTo('softDeleteBlock'), hasLength(1));
-      expect(state.blockedUserIds, isNot(contains(blockedId)));
-      expect(state.visible.map((m) => m.userId), contains(blockedId));
-      expect(state.pendingUndo, isNull);
-      expect(
-        container.read(sessionViewModelProvider).blockedUserIds,
-        isNot(contains(blockedId)),
-      );
+      expect(management().callsTo('undoRemoval'), hasLength(1));
+      expect(listed(container, userId), isTrue);
     });
 
-    test('vazgeçilirse yazılmaz; yazılamazsa satır geri gelir + TST-24; '
-        'çevrimdışıyken yazılmaz', () async {
-      final container = await loaded();
-      await vmOf(container).block(blockedId);
-      expect(blocks.callsTo('block'), isEmpty);
-      expect(stateOf(container).blockedUserIds, isEmpty);
-
-      feedback.dialogResults[DialogId.dlg13] = true;
-      blocks.failNext(FirestoreError.unavailable);
-      await vmOf(container).block(blockedId);
-      expect(stateOf(container).blockedUserIds, isEmpty);
-      expect(stateOf(container).pendingUndo, isNull);
+    test('yazılamazsa satır geri gelir + TST-24', () async {
+      final container = await loaded(
+        session: membersSession(role: ClubRole.board),
+      );
+      management().failNext(FirestoreError.unavailable);
+      feedback.dialogResults[DialogId.dlg19] = '';
+      final removed = await vmOf(container).removeMember(
+        kMembersClubId,
+        kOtherMember,
+        name: 'Üye',
+      );
+      expect(removed, isFalse);
       expect(feedback.toasts, [ToastId.tst24]);
-
-      blocks.calls.clear();
-      connectivity.isOffline = true;
-      await vmOf(container).block(blockedId);
-      expect(blocks.callsTo('block'), isEmpty);
-      expect(feedback.toasts, [ToastId.tst24, ToastId.tst24]);
-    });
-  });
-
-  group('CLB-06 · ClubMembersViewModel · şikayet', () {
-    final target = kOtherMember.userId;
-
-    test('kullanıcı şikayeti yazılır (kulüpsüz hedef); DLG-12 "… engelle" '
-        '→ DLG-13', () async {
-      final container = await loaded();
-      final vm = vmOf(container);
-      final report = ReportReasonResult(
-        target: vm.reportTargetOf(target),
-        reason: ReportReason.spam,
-      );
-      expect(report.target, (
-        type: ReportTargetType.user,
-        id: target,
-        clubId: null,
-      ));
-      expect(await vm.submitReport(report), isTrue);
-      expect(reports.reports, hasLength(1));
-      // Aynı kullanıcı yeniden bildirilirse de sheet kapanır.
-      expect(await vm.submitReport(report), isTrue);
-
-      // DLG-12: "Tamam" → true, "… engelle" → false.
-      feedback.dialogResults[DialogId.dlg12] = false;
-      await vm.showReportReceived(target);
-      expect(feedback.dialogs, [DialogId.dlg12, DialogId.dlg13]);
-      expect(blocks.callsTo('block'), isEmpty);
+      expect(listed(container, kOtherMember.userId), isTrue);
     });
 
-    test('yazılamazsa sheet açık kalır: çevrimdışı / ağ → TST-24, yetki yok '
-        '→ TST-X18', () async {
-      final container = await loaded();
-      final vm = vmOf(container);
-      final report = ReportReasonResult(
-        target: vm.reportTargetOf(target),
-        reason: ReportReason.spam,
+    test('yönetim kurulu, yönetim kurulu üyesini çıkaramaz ve rol '
+        'değiştiremez → TST-X18 (dialog yok)', () async {
+      final container = await loaded(
+        session: membersSession(role: ClubRole.board),
       );
-      reports.failNext(FirestoreError.permissionDenied);
-      expect(await vm.submitReport(report), isFalse);
-      connectivity.isOffline = true;
-      expect(await vm.submitReport(report), isFalse);
-      expect(feedback.toasts, [ToastId.tstX18, ToastId.tst24]);
-      expect(reports.reports, isEmpty);
+      final vm = vmOf(container);
+      expect(
+        await vm.removeMember(kMembersClubId, kBoardMember, name: 'Y'),
+        isFalse,
+      );
+      expect(
+        await vm.changeMemberRole(kMembersClubId, kOtherMember, name: 'Ü'),
+        isFalse,
+      );
+      expect(feedback.dialogs, isEmpty);
+      expect(feedback.sheets, isEmpty);
+      expect(feedback.toasts, [ToastId.tstX18, ToastId.tstX18]);
+      expect(management().calls, isEmpty);
+    });
+
+    test('başkan rol değiştirir: SHT-22 → DLG-20 → üye yönetim kurulu '
+        'grubuna geçer → TST-46', () async {
+      final container = await loaded(
+        session: membersSession(role: ClubRole.president),
+      );
+      feedback
+        ..nextSheetResult = ClubRole.board
+        ..dialogResults[DialogId.dlg20] = true;
+      final changed = await vmOf(
+        container,
+      ).changeMemberRole(kMembersClubId, kOtherMember, name: 'Ü');
+      expect(changed, isTrue);
+      expect(feedback.sheets, [SheetId.sht22]);
+      expect(feedback.toasts, [ToastId.tst46]);
+      final state = stateOf(container);
+      expect(
+        state.managers.any((m) => m.userId == kOtherMember.userId),
+        isTrue,
+      );
+      expect(
+        state.members.any((m) => m.userId == kOtherMember.userId),
+        isFalse,
+      );
     });
   });
 }

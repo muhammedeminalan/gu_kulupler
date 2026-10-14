@@ -116,6 +116,26 @@ void main() {
     });
   });
 
+  group('MGT-02 · Reddedilen sekmesi (W-98)', () {
+    test('sekme seçilince sunucudan `listByStatus(rejected)` okunur', () async {
+      final container = await loaded();
+      container.read(provider.notifier).setTab(ApplicationsTab.rejected);
+      await pumpEventQueue();
+      final state = container.read(provider);
+      final expected = {
+        for (final m in clubMemberships())
+          if (m.status == MembershipStatus.rejected) m.userId,
+      };
+      expect(expected, isNotEmpty);
+      expect(state.visible.map((m) => m.userId).toSet(), expected);
+      expect(memberships.callsTo('listByStatus').single.args, [
+        kManageClubId,
+        MembershipStatus.rejected,
+        const PageRequest(),
+      ]);
+    });
+  });
+
   group('MGT-02 · onay / ret / geri al', () {
     test('onay: satır anında kalkar → TST-27 (Geri al); üyelik aktif, '
         'memberCount +1', () async {

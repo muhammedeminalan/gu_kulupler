@@ -49,13 +49,16 @@ void main() {
 
     test('`props` tüm alanları taşır; her alan eşitliği bozar', () {
       const base = UserProfileState();
-      expect(base.props, hasLength(13));
+      expect(base.props, hasLength(16));
       final variants = [
         UserProfileState(user: kUser),
         const UserProfileState(sharedClubIds: [kSharedClubId]),
         UserProfileState(sharedClubs: [kSharedClub]),
         const UserProfileState(roles: [ClubRole.board]),
         UserProfileState(contextMembership: kUserInShared),
+        const UserProfileState(contextClubName: 'Kulüp'),
+        const UserProfileState(contactEmail: 'a@ogr.gumushane.edu.tr'),
+        const UserProfileState(canAssignRoles: true),
         const UserProfileState(isSelf: true),
         const UserProfileState(isSuperAdmin: true),
         const UserProfileState(isHiddenByPrivacy: true),
@@ -80,6 +83,9 @@ void main() {
         sharedClubs: [kSharedClub],
         roles: const [ClubRole.president],
         contextMembership: kUserInShared,
+        contextClubName: 'Kulüp',
+        contactEmail: 'a@ogr.gumushane.edu.tr',
+        canAssignRoles: true,
         isSelf: true,
         isSuperAdmin: true,
         isHiddenByPrivacy: true,
@@ -97,6 +103,9 @@ void main() {
           sharedClubs: [kSharedClub],
           roles: const [ClubRole.president],
           contextMembership: kUserInShared,
+          contextClubName: 'Kulüp',
+          contactEmail: 'a@ogr.gumushane.edu.tr',
+          canAssignRoles: true,
           isSelf: true,
           isSuperAdmin: true,
           isHiddenByPrivacy: true,
@@ -108,10 +117,33 @@ void main() {
         ),
       );
       expect(full.copyWith(), full);
-      expect(
-        full.copyWith(clearContextMembership: true).contextMembership,
-        isNull,
+      final cleared = full.copyWith(clearContextMembership: true);
+      expect(cleared.contextMembership, isNull);
+      expect(cleared.contextClubName, isNull);
+      expect(cleared.contactEmail, isNull);
+    });
+
+    test('yönetici kartı yalnızca aktif bağlam üyeliğinde; düğmeler başkan '
+        've danışman hedefinde çizilmez', () {
+      final active = kUserInShared.copyWith(
+        status: MembershipStatus.active,
+        role: ClubRole.member,
       );
+      final state = UserProfileState(user: kUser, contextMembership: active);
+      expect(state.showsManagerCard, isTrue);
+      expect(state.showsManagerActions, isTrue);
+      final pending = state.copyWith(
+        contextMembership: active.copyWith(status: MembershipStatus.pending),
+      );
+      expect(pending.showsManagerCard, isFalse);
+      for (final role in [ClubRole.president, ClubRole.advisor]) {
+        final target = state.copyWith(
+          contextMembership: active.copyWith(role: role),
+        );
+        expect(target.showsManagerCard, isTrue);
+        expect(target.showsManagerActions, isFalse);
+      }
+      expect(const UserProfileState().showsManagerCard, isFalse);
     });
   });
 }

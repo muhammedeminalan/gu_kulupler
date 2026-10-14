@@ -20,8 +20,9 @@ import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 ///   kurulur; denetleyiciler bu durumda yaşar, değer kaybolmaz.
 /// * Silme bitince burada gezinme **yapılmaz**: oturum kapanır, router giriş
 ///   ekranına (AUT-01) taşır; TST-22 ViewModel'dedir.
-/// * "Devret" (`SET-03.transfer.<clubId>`) → MGT-03 / SHT-25 başkanlık devri
-///   T-33'tedir (W-34).
+/// * "Devret" (`SET-03.transfer.<clubId>`) → SHT-25 → DLG-21 başkanlık devri
+///   bu ekranda açılır (W-34; ViewModel); devirden sonra engel yeniden
+///   denetlenir ve akış kaldığı adımdan sürer.
 mixin DeleteAccountViewMixin on ConsumerState<DeleteAccountView> {
   /// Ekranın ViewModel'i.
   DeleteAccountViewModel get viewModel =>
@@ -59,10 +60,8 @@ mixin DeleteAccountViewMixin on ConsumerState<DeleteAccountView> {
   /// "Devam" (`SET-03.next`); başkanlık engeli ve TST-X10 ViewModel'dedir.
   void next() => viewModel.next();
 
-  /// "Devret" (`SET-03.transfer.<clubId>`).
-  void transfer(String clubId) {
-    // TODO(T-33): başkanlık devri — MGT-03 / SHT-25 (W-34).
-  }
+  /// "Devret" (`SET-03.transfer.<clubId>`) → SHT-25 → DLG-21 (W-34).
+  void transfer(String clubId) => unawaited(viewModel.transfer(clubId));
 
   /// "Hesabımı kalıcı olarak sil" (`SET-03.confirm`).
   void confirm() => unawaited(viewModel.confirm(context.l10n.set03ConfirmWord));

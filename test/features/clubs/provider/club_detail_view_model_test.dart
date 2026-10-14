@@ -20,6 +20,7 @@ import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/external_link_mixin.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
@@ -793,6 +794,42 @@ void main() {
 
       expect(await vmOf(container).leave(), LeaveOutcome.transferRequested);
       expect(feedback.dialogs, [DialogId.dlg09]);
+    });
+
+    test('W-14: DLG-09 "Başkanlığı devret" → SHT-25 → DLG-21 → devredilir '
+        '(TST-49), kulüp yenilenir', () async {
+      final container = await asMember(role: ClubRole.president);
+      final heir = membershipOf(status: MembershipStatus.active).copyWith(
+        id: FirestoreIds.membership(kClubId, 'u_heir'),
+        userId: 'u_heir',
+      );
+      memberships.put(heir);
+      clubs.calls.clear();
+      feedback
+        ..nextSheetResult = 'u_heir'
+        ..dialogResults[DialogId.dlg21] = true;
+
+      expect(await vmOf(container).transferPresidencyForLeave(), isTrue);
+      expect(feedback.sheets, [SheetId.sht25]);
+      expect(feedback.dialogs, [DialogId.dlg21]);
+      expect(feedback.toasts, [ToastId.tst49]);
+      expect(
+        memberships.memberships[heir.id]?.role,
+        ClubRole.president,
+      );
+      expect(
+        memberships.memberships[FirestoreIds.membership(kClubId, kUid)]?.role,
+        ClubRole.board,
+      );
+      await pumpEventQueue();
+      expect(clubs.callsTo('getClub'), hasLength(1));
+    });
+
+    test('W-14: SHT-25 kapatılırsa devir yok', () async {
+      final container = await asMember(role: ClubRole.president);
+      expect(await vmOf(container).transferPresidencyForLeave(), isFalse);
+      expect(feedback.sheets, [SheetId.sht25]);
+      expect(memberships.callsTo('transferPresidency'), isEmpty);
     });
 
     test('sunucu "başkan ayrılamaz" derse (oturum eski) DLG-09', () async {

@@ -3,6 +3,7 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/l10n/cancel_reason_labels.dart';
+import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Dialog metinlerinin değişkenleri: ARB yer tutucu adı → değer
@@ -27,8 +28,17 @@ abstract final class DialogParamKeys {
   /// Kulüp adı — DLG-07, DLG-08 gövdesi (`{club}`).
   static const String club = 'club';
 
-  /// Kullanıcı adı — DLG-12 "… kullanıcısını da engelle" (`{name}`).
+  /// Kullanıcı adı — DLG-12 "… kullanıcısını da engelle", DLG-13 başlığı,
+  /// DLG-20 gövdesi (`{name}`).
   static const String name = 'name';
+
+  /// Üyenin şimdiki rolü ([ClubRole]; yoksa `member` — `dialogs.js:36`
+  /// `m.role || 'member'`) — DLG-20 gövdesi (`{oldRole}`).
+  static const String oldRole = 'oldRole';
+
+  /// Üyenin yeni rolü ([ClubRole]; yoksa `member`) — DLG-20 gövdesi
+  /// (`{newRole}`).
+  static const String newRole = 'newRole';
 
   /// Bekleme listesinden çıkış mı (`bool`) — DLG-14 gövdesi
   /// (`dlg14BodyWaitlist`; `dialogs.js:30` `p.waitlist`).
@@ -432,6 +442,23 @@ abstract final class DialogCatalog {
       primaryAction: 'ok',
     ),
 
+    /// Design: DLG-20 — Rol değişsin mi? (`dialogs.js:36`): ikon `user-cog`;
+    /// gövde üyenin adını ([DialogParamKeys.name]), eski
+    /// ([DialogParamKeys.oldRole]) ve yeni ([DialogParamKeys.newRole]) rolünü
+    /// taşır. Sonuç `true` → rol yazılır (SHT-22 → DLG-20 →
+    /// `ManageMemberActionsMixin.changeMemberRole`; ardından TST-46).
+    DialogId.dlg20: DialogSpec(
+      title: (l10n, _) => l10n.dlg20Title,
+      body: (l10n, params) => l10n.dlg20Body(
+        _text(params, DialogParamKeys.name),
+        _roleName(l10n, params, DialogParamKeys.oldRole),
+        _roleName(l10n, params, DialogParamKeys.newRole),
+      ),
+      primary: (l10n) => l10n.commonConfirm,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.userCog,
+    ),
+
     /// Design: DLG-24 — Bugünkü duyuru hakkın doldu (`dialogs.js:42`): günün
     /// bildirimli duyuru hakkı dolmuşken FED-03'te bildirimli yayın istenince
     /// (Q-10). "Bildirimsiz yayınla" → `true` (duyuru bildirimsiz yayınlanır),
@@ -478,6 +505,17 @@ abstract final class DialogCatalog {
     final int value => value,
     _ => 0,
   };
+
+  /// [params] içindeki [key] rolünün adı; verilmediyse "Üye"
+  /// (`t('role.' + (m.role || 'member'))`).
+  static String _roleName(
+    AppLocalizations l10n,
+    DialogParams params,
+    String key,
+  ) => MemberRow.roleBadge(l10n, switch (params[key]) {
+    final ClubRole role => role,
+    _ => ClubRole.member,
+  }).label;
 
   /// DLG-17 türü; verilmediyse onay (`dialogs.js:33` `p.kind || 'approve'`).
   static BulkActionKind _bulkKind(DialogParams params) =>

@@ -3,6 +3,20 @@ import 'dart:ui' show Locale;
 /// Bir ya da daha çok boşluk karakteri (JS `/\s+/`, core.js:422).
 final RegExp _whitespace = RegExp(r'\s+');
 
+/// Türkçe küçük harf alfabesi (sıralama ağırlığı = konum).
+const String _trAlphabet = 'abcçdefgğhıijklmnoöpqrsştuüvwxyz';
+
+/// `TurkishCaseX.trCompareTo` için tek karakterin ağırlığı: alfabedeki harfler `a`'dan
+/// başlayarak sırayla; alfabe dışında `a`'dan küçük kod birimleri olduğu
+/// gibi, büyükleri alfabeden sonra.
+int _trWeight(String char) {
+  const base = 0x61;
+  final index = _trAlphabet.indexOf(char);
+  if (index >= 0) return base + index;
+  final code = char.codeUnitAt(0);
+  return code < base ? code : code + _trAlphabet.length;
+}
+
 /// Türkçe büyük/küçük harf dönüşümleri (CD-11; PLAN §7.0, §7.10).
 ///
 /// Dart'ın `toUpperCase()` / `toLowerCase()` çağrıları yerelden bağımsızdır:
@@ -19,6 +33,22 @@ extension TurkishCaseX on String {
   ///
   /// `'ISPARTA'.trLower() == 'ısparta'`, `'İSTANBUL'.trLower() == 'istanbul'`.
   String trLower() => replaceAll('I', 'ı').replaceAll('İ', 'i').toLowerCase();
+
+  /// Türkçe alfabe sırasıyla karşılaştırma (JS `localeCompare(b, 'tr')`
+  /// yaklaşığı; büyük/küçük harf duyarsız): `a b c ç d e f g ğ h ı i j k l m
+  /// n o ö p q r s ş t u ü v w x y z`. Alfabe dışı karakterler kod birimine
+  /// göre — harften küçük olanlar (boşluk, rakam) önce gelir. Eşit önekte
+  /// kısa olan önce. `['Ömer', 'Zeynep', 'Ilgaz']` → `Ilgaz, Ömer, Zeynep`.
+  int trCompareTo(String other) {
+    final a = trLower();
+    final b = other.trLower();
+    final n = a.length < b.length ? a.length : b.length;
+    for (var i = 0; i < n; i++) {
+      final diff = _trWeight(a[i]) - _trWeight(b[i]);
+      if (diff != 0) return diff.sign;
+    }
+    return (a.length - b.length).sign;
+  }
 
   /// Yerele göre büyük harf (CSS `text-transform: uppercase` karşılığı:
   /// `overline`, `dateBadgeMonth`). `languageCode == 'tr'` → [trUpper],

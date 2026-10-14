@@ -17,6 +17,7 @@ import 'package:gu_kulupler/features/settings/provider/delete_account_view_model
 import 'package:gu_kulupler/features/settings/view/delete_account_view.dart';
 import 'package:gu_kulupler/features/settings/view/widget/delete_account_steps.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/widget/form/form_error_line.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -320,11 +321,36 @@ void main() {
       );
     });
 
-    testWidgets('SET-03.transfer.<id>: başkanlık devri T-33 (W-34) — '
-        'dokunma ekranı değiştirmez', (tester) async {
-      await _pump(tester, state: _president);
+    testWidgets('SET-03.transfer.<id> → bu ekranda SHT-25 (başkanlık devri, '
+        'W-34); kapatılınca yazım yok', (tester) async {
+      await tester.pumpApp(
+        const DeleteAccountView(),
+        overrides: [
+          sessionViewModelProvider.overrideWithBuild(
+            (ref, notifier) => FakeSessionStates.active.copyWith(
+              memberships: {
+                'c03': const MembershipModel(
+                  clubId: 'c03',
+                  userId: FakeSessionStates.uid,
+                  applicant: MembershipApplicantModel(
+                    name: 'Burak',
+                    avatarSeed: 'b',
+                  ),
+                  role: ClubRole.president,
+                  status: MembershipStatus.active,
+                ),
+              },
+            ),
+          ),
+          deleteAccountViewModelProvider.overrideWithBuild(
+            (ref, notifier) => _president,
+          ),
+        ],
+      );
       await _tap(tester, DeleteAccountWarningStep.transferKey('c03'));
+      await tester.pump();
       expect(find.byType(DeleteAccountView), findsOneWidget);
+      expect(_feedback().sheets, [SheetId.sht25]);
       expect(_feedback().toasts, isEmpty);
     });
   });

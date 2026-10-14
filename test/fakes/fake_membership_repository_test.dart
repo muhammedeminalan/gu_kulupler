@@ -399,7 +399,7 @@ void main() {
     });
 
     test('listeler: aktif üyeler en yeni üstte ve sayfalı; rol süzgeci; '
-        'yöneticiler; bekleyenler; kendi üyeliklerim', () async {
+        'yöneticiler; bekleyenler; reddedilenler; kendi üyeliklerim', () async {
       for (var i = 0; i < 5; i++) {
         fake.put(
           _membership(
@@ -413,6 +413,7 @@ void main() {
       }
       fake
         ..put(_membership(uid: 'u_p', status: MembershipStatus.pending))
+        ..put(_membership(uid: 'u_r', status: MembershipStatus.rejected))
         ..put(_membership(clubId: 'c02', uid: 'u0'))
         ..put(
           _membership(clubId: 'c03', uid: 'u0', status: MembershipStatus.left),
@@ -436,6 +437,11 @@ void main() {
         _clubId,
         const PageRequest(),
       )).dataOrNull!;
+      final rejected = (await fake.listByStatus(
+        _clubId,
+        MembershipStatus.rejected,
+        const PageRequest(),
+      )).dataOrNull!;
       final mine = (await fake.listMine('u0')).dataOrNull!;
       final mineActive = (await fake.listMine(
         'u0',
@@ -448,6 +454,7 @@ void main() {
       expect([for (final item in board.items) item.userId], ['u1']);
       expect({for (final item in managers) item.userId}, {'u0', 'u1'});
       expect([for (final item in pending.items) item.userId], ['u_p']);
+      expect([for (final item in rejected.items) item.userId], ['u_r']);
       expect({for (final item in mine) item.clubId}, {_clubId, 'c02', 'c03'});
       expect({for (final item in mineActive) item.clubId}, {_clubId, 'c02'});
     });

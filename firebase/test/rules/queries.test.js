@@ -25,6 +25,8 @@ const QUERIES = Object.freeze({
   listMineByStatus: { collection: 'memberships', equals: ['userId'], inField: 'status' },
   listActiveMembers: { collection: 'memberships', equals: ['clubId', 'status'], order: ['appliedAt', 'desc'] },
   listPending: { collection: 'memberships', equals: ['clubId', 'status'], order: ['appliedAt', 'desc'] },
+  // T-33 (W-98): `listByStatus` — MGT-02 "Reddedilen"; `listPending` ile aynı indeks.
+  listByStatus: { collection: 'memberships', equals: ['clubId', 'status'], order: ['appliedAt', 'desc'] },
   listActiveMembersByRole: { collection: 'memberships', equals: ['clubId', 'status', 'role'] },
   listManagers: { collection: 'memberships', equals: ['clubId', 'status'], inField: 'role' },
   listActivity: { collection: 'activity', equals: ['clubId'], order: ['createdAt', 'desc'] },
@@ -217,6 +219,20 @@ describe('memberships · sorgu biçimleri (rules-spec §6; PLAN §10.4 Membershi
     await assertFails(getDocs(pendingOf('otherManager', CLUB)));
     // Yönetici kendi kulübü dışına taşan sorgu kuramaz.
     await assertFails(getDocs(query(memberships('board'), where('clubId', 'in', [CLUB, OTHER_CLUB]), where('status', '==', 'pending'))));
+  });
+
+  test('listByStatus (MGT-02 "Reddedilen", T-33): yönetim, danışman ve süper admin okur; üye, reddedilenin kendisi, üye olmayan ve başka kulübün yöneticisi okuyamaz', async () => {
+    await seedFixture('base', { formerStatus: 'rejected' });
+    const rejectedOf = (role, club = CLUB) => query(memberships(role), where('clubId', '==', club), where('status', '==', 'rejected'), orderBy('appliedAt', 'desc'));
+    for (const role of ['board', 'president', 'advisor', 'super']) {
+      const snapshot = await assertSucceeds(getDocs(rejectedOf(role)));
+      expect(ids(snapshot)).toEqual(['c01_u_former']);
+      for (const d of snapshot.docs) for (const key of ['email', 'emailLower', 'note']) expect(d.data()).not.toHaveProperty(key);
+    }
+    expect(ids(await assertSucceeds(getDocs(rejectedOf('otherManager', OTHER_CLUB))))).toEqual([]);
+    for (const role of ['member', 'former', 'student', 'pending', 'otherManager', 'susp', 'anon']) {
+      await assertFails(getDocs(rejectedOf(role)));
+    }
   });
 });
 
