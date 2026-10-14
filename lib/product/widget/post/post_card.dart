@@ -143,6 +143,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.onVote,
     this.onImage,
     this.imageOf,
+    this.authorAvatar,
     super.key,
   });
 
@@ -178,6 +179,10 @@ class PostCard extends ConsumerStatefulWidget {
 
   /// Yazarın güncel belgesi; `null` → "Silinmiş kullanıcı".
   final UserModel? author;
+
+  /// Yazarın profil fotoğrafı (çağıran `ref.userAvatarImage(author)` ile
+  /// çözer, T-27); `null` → baş harfler.
+  final ImageProvider? authorAvatar;
 
   /// Yazarın kulüpteki rolü (rol rozeti); `null` → rozet yok.
   final ClubRole? role;
@@ -406,6 +411,7 @@ class _PostCardState extends ConsumerState<PostCard>
                     // Token açık kalsın (varsayılanla aynı değer).
                     // ignore: avoid_redundant_argument_values
                     size: GuSizes.postAvatar,
+                    image: author == null ? null : widget.authorAvatar,
                   ),
                   const SizedBox(width: PostCard._headerGap),
                   Expanded(

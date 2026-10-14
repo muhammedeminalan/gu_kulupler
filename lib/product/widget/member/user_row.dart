@@ -25,6 +25,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   (`<ID>.<aksiyon>.<userId>`).
 /// * Erişilebilirlik: dokunulabilir satır ad + rozet + alt satırla okunan
 ///   tek düğmedir; avatar okunmaz.
+/// * Profil fotoğrafı [avatarImage]'dır (çağıran `ref.userAvatarImage`
+///   ile çözer; `null` → baş harfler).
 /// * Prototipteki sabit `max-width:200px` yazılmaz (K-29).
 ///
 /// ```dart
@@ -49,6 +51,7 @@ class UserRow extends StatelessWidget {
     this.onTap,
     this.actionKey,
     this.sub2,
+    this.avatarImage,
     super.key,
   }) : _name = null,
        _avatarSeed = null;
@@ -66,6 +69,7 @@ class UserRow extends StatelessWidget {
     this.onTap,
     this.actionKey,
     this.sub2,
+    this.avatarImage,
     super.key,
   }) : user = null;
 
@@ -102,6 +106,10 @@ class UserRow extends StatelessWidget {
   /// Alt satırın altındaki üçüncü satır (`Tile.sub2`; `caption`) — `MemberRow`
   /// katılım oranı çubuğu.
   final Widget? sub2;
+
+  /// Profil fotoğrafı (`users.avatarPath`); çağıran çözer
+  /// (`ref.userAvatarImage(user)`, T-27). `null` → baş harfler.
+  final ImageProvider? avatarImage;
 
   /// Silinmiş kullanıcının avatar metni ve renk tohumu (`art.js:44`).
   static const String _unknown = '?';
@@ -141,6 +149,7 @@ class UserRow extends StatelessWidget {
         initials: (name ?? _unknown).initials,
         seed: avatarSeed,
         size: size,
+        image: avatarImage,
       ),
       trailing: trailing,
       chevron: chevron,

@@ -33,19 +33,24 @@ final class EventsRoute extends GoRouteData
       const EventListView();
 }
 
-/// EVT-04 Etkinliklerim — `/events/mine` (guard `A`). EVT-01 "Biletlerim"
-/// düğmesi (`EVT-01.tickets`) `go` ile açar, geri EVT-01'e döner.
+/// EVT-04 Etkinliklerim — `/events/mine?tab=upcoming|past|waitlist` (guard
+/// `A`). EVT-01 "Biletlerim" düğmesi (`EVT-01.tickets`) `go` ile açar, geri
+/// EVT-01'e döner. PRF-01 "Biletlerim" ve "Katıldığım etkinlik" kartı
+/// (`tab: MyEventsTab.past`) da açar (T-27).
 final class MyEventsRoute extends GoRouteData
     with $MyEventsRoute, PlatformPageMixin {
-  /// Kullanıcının katılım kayıtları.
-  const MyEventsRoute();
+  /// Kullanıcının katılım kayıtları; [tab] ilk açılan sekmedir.
+  const MyEventsRoute({this.tab});
 
   /// `/events` altındaki yol parçası (sabit; `:eventId`'den önce).
   static const String segment = 'mine';
 
+  /// İlk açılan sekme (`?tab=`); `null` ya da tanınmayan değer → yaklaşan.
+  final MyEventsTab? tab;
+
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      const MyEventsView();
+      MyEventsView(tab: tab);
 }
 
 /// CLB-02 Arama (paylaşılan yaprak, PLAN §13.9) — `/events/search` (guard

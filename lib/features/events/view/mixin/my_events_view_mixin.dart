@@ -46,6 +46,23 @@ mixin MyEventsViewMixin on ConsumerState<MyEventsView> {
         (_) => _loadMoreIfNearEnd(),
       );
     });
+    _applyRouteTab();
+  }
+
+  @override
+  void didUpdateWidget(MyEventsView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tab != oldWidget.tab) _applyRouteTab();
+  }
+
+  /// Rotadaki `?tab=` sekmesini ilk kareden sonra uygular (yapım sırasında
+  /// sağlayıcı değiştirilmez).
+  void _applyRouteTab() {
+    final tab = widget.tab;
+    if (tab == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) viewModel.setTab(tab);
+    });
   }
 
   @override

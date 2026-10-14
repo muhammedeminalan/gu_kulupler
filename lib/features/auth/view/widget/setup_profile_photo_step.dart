@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
-import 'package:gu_kulupler/features/auth/view/widget/setup_profile_error_line.dart';
+import 'package:gu_kulupler/product/widget/form/form_error_line.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// AUT-05 · 1. adım "Bir fotoğraf ekle" (`screens-auth.js:143`).
@@ -87,7 +87,7 @@ class SetupProfilePhotoStep extends StatelessWidget {
                 variant: GuButtonVariant.text,
                 onPressed: onSkip,
               ),
-              if (error != null) SetupProfileErrorLine(error),
+              if (error != null) FormErrorLine(error),
             ],
           ),
         ),

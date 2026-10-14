@@ -7,6 +7,7 @@ import 'package:gu_kulupler/features/feed/provider/post_detail_state.dart';
 import 'package:gu_kulupler/features/feed/view/mixin/post_detail_view_mixin.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comment_composer.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/post/comment_row.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -124,6 +125,7 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
             key: ValueKey<String>(comment.id),
             comment: comment,
             author: state.authorOf(comment.authorId),
+            authorAvatar: ref.userAvatarImage(state.authorOf(comment.authorId)),
             role: state.roles[comment.authorId],
             authorKey: GuKey.action('FED-02.author.${comment.id}'),
             // Silinmiş kullanıcının profili yoktur: avatar düz kalır.
@@ -156,6 +158,7 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
           PostCard(
             post: post,
             author: author,
+            authorAvatar: ref.userAvatarImage(author),
             role: state.roles[post.authorId],
             club: state.club,
             liked: uid != null && post.likedBy(uid),
@@ -233,6 +236,7 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
               initials: name.initials,
               seed: me?.avatarSeed ?? name,
               size: _composerAvatarSize,
+              image: ref.userAvatarImage(me),
             ),
             onSent: onCommentSent,
           ),

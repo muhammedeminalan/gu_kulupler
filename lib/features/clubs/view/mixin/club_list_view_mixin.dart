@@ -17,6 +17,7 @@ import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/mixin/club_join_mixin.dart'
     show JoinOutcome;
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/club_category_request.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -29,8 +30,7 @@ import 'package:gu_ui/gu_ui.dart';
 ///   ViewModel gösterir.
 /// * "Katıl": ViewModel hangi yolun gerektiğini söyler — SHT-05 (başvuru)
 ///   → CLB-04, bekleme → CLB-05, onaysız kulüp → doğrudan katılım (TST-34).
-/// * "Tümü" (PRF-03) anahtarıyla yerindedir; hedef ekranın task'ında
-///   bağlanır (bağlama borcu W-18, T-27).
+/// * "Kulüplerim → Tümü" PRF-03'ü Profil sekmesinde açar (W-18, T-27).
 mixin ClubListViewMixin on ConsumerState<ClubListView> {
   /// Sayfanın kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -39,6 +39,8 @@ mixin ClubListViewMixin on ConsumerState<ClubListView> {
   final GlobalKey listAnchorKey = GlobalKey();
 
   ProviderSubscription<int>? _scrollTopSubscription;
+
+  ProviderSubscription<String?>? _categoryRequestSubscription;
 
   /// Ekranın ViewModel'i.
   ClubListViewModel get viewModel =>
@@ -56,10 +58,32 @@ mixin ClubListViewMixin on ConsumerState<ClubListView> {
       scrollTopRequestProvider(GuTab.clubs),
       (_, _) => scrollToTop(),
     );
+    // PRF-01 ilgi alanı çipi (`PRF-01.interest.<id>`): istek bir sonraki
+    // karede uygulanır (yapım ya da bildirim sırasında sağlayıcı
+    // değiştirilmez). Ekran istekle birlikte açılıyorsa da geçerlidir.
+    _categoryRequestSubscription = ref.listenManual(
+      clubCategoryRequestProvider,
+      (_, next) {
+        if (next == null) return;
+        WidgetsBinding.instance
+          ..addPostFrameCallback((_) => _applyCategoryRequest())
+          ..ensureVisualUpdate();
+      },
+      fireImmediately: true,
+    );
+  }
+
+  void _applyCategoryRequest() {
+    if (!mounted) return;
+    final categoryId = ref.read(clubCategoryRequestProvider);
+    if (categoryId == null) return;
+    ref.read(clubCategoryRequestProvider.notifier).consume();
+    viewModel.showCategory(categoryId);
   }
 
   @override
   void dispose() {
+    _categoryRequestSubscription?.close();
     _scrollTopSubscription?.close();
     scrollController.dispose();
     super.dispose();
@@ -122,10 +146,13 @@ mixin ClubListViewMixin on ConsumerState<ClubListView> {
     );
   }
 
-  /// "Kulüplerim → Tümü" (`CLB-01.myClubsAll`) → PRF-03.
-  void openMyClubsAll() {
-    // TODO(T-27): `MyClubsRoute()` (PRF-03; W-18).
-  }
+  /// "Kulüplerim → Tümü" (`CLB-01.myClubsAll`) → PRF-03 (Profil sekmesi;
+  /// Q-20: sekmeler arası bağlantı `AppNavigator.openInTab`, W-18).
+  void openMyClubsAll() => AppNavigator.openInTab(
+    context,
+    GuTab.profile,
+    const MyClubsRoute().location,
+  );
 
   /// Kart, "Aç" ve "Kulüplerim" kartı (`CLB-01.card.<clubId>`,
   /// `.open.<clubId>`, `.myClub.<clubId>`) → CLB-03.

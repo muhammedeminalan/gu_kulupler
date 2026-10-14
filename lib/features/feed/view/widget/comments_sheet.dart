@@ -9,6 +9,7 @@ import 'package:gu_kulupler/features/feed/provider/post_detail_view_model.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comment_composer.dart';
 import 'package:gu_kulupler/product/feedback/feedback_keys.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/post/comment_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -72,6 +73,7 @@ class CommentsSheet extends ConsumerWidget {
   /// Gövde (sıra: hata → iskelet → boş → satırlar).
   Widget _body(
     BuildContext context,
+    WidgetRef ref,
     PostDetailState state,
     List<CommentModel> comments, {
     required Future<void> Function() onRetry,
@@ -113,6 +115,7 @@ class CommentsSheet extends ConsumerWidget {
             key: ValueKey<String>(comment.id),
             comment: comment,
             author: state.authorOf(comment.authorId),
+            authorAvatar: ref.userAvatarImage(state.authorOf(comment.authorId)),
           ),
       ],
     );
@@ -173,6 +176,7 @@ class CommentsSheet extends ConsumerWidget {
         ),
         child: _body(
           context,
+          ref,
           state,
           comments,
           onRetry: () => ref.read(provider.notifier).fetch(),

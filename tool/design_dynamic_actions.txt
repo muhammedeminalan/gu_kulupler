@@ -93,3 +93,16 @@ NTF-02.retry              # lib/features/notifications/view/notification_prefs_v
 NTF-01.retry           # lib/features/notifications/view/notifications_view.dart — yalnızca gelen kutusu okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
 NTF-01.menu.*          # design/prototype/app/cards.js:155–158 — bildirim satırının uzun basma menüsü (`PopMenu id="NTF-01"`: `read` yalnızca okunmamışta, `delete`, `mute` yalnızca tercihi olan türde) yalnızca menü açıkken; yakalama kapalı menü
 NTF-01.scrim           # design/prototype/app/ui.js:191 + cards.js:155 — uzun basma menüsünün saydam scrim'i (`PopMenu id="NTF-01"`) yalnızca menü açıkken
+PRF-01.managed.*       # design/prototype/app/screens-profile.js:13 — "Yönettiğim kulüpler" kartının satırı yalnızca yönetim kurulu / başkan / danışman üyeliği olan kullanıcıda (`managed.length`); yakalama sıradan üye (u_mehmet)
+PRF-01.managedAll      # design/prototype/app/screens-profile.js:13 — "Yönetim paneli" düğmesi yalnızca yönetilen kulüp kartında (`managed.length`); yakalama sıradan üye (u_mehmet)
+PRF-01.discover        # design/prototype/app/screens-profile.js:14 — "Etkinlikleri keşfet" yalnızca aktif üyeliği olmayan kullanıcının boş "Kulüplerim" kartında (`clubs.length === 0`); yakalama iki kulüplü kullanıcı
+PRF-01.retry           # lib/features/profile/view/profile_view.dart — yalnızca kulüpler / katılım kayıtları okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+PRF-02.retry           # lib/features/profile/view/edit_profile_view.dart — yalnızca oturumda profil belgesi yokken (`isError`; kabuk rotasında beklenmez) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+PRF-03.retry           # lib/features/profile/view/my_clubs_view.dart — yalnızca kulüpler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+PRF-03.discover        # design/prototype/app/screens-profile.js:45 — "Etkinlikleri keşfet" yalnızca seçili sekme boşken (`EmptyState`, `ctaAction: 'PRF-03.discover'`); yakalama dolu "Üyeliklerim" sekmesi (u_mehmet → c01, c07)
+PRF-03.scrim           # design/prototype/app/ui.js:191 + screens-profile.js:46 — satır menüsünün saydam scrim'i (`PopMenu id="PRF-03"`) yalnızca menü açıkken
+PRF-03.menu.*.open     # design/prototype/app/screens-profile.js:46 — satır menüsünün "Aç" öğesi yalnızca menü açıkken; yakalama kapalı menü
+PRF-03.menu.*.leave    # design/prototype/app/screens-profile.js:47 — "Kulüpten ayrıl" yalnızca menü açıkken ve aktif üyelikte (danışman hariç — üye sayılmaz); yakalama kapalı menü
+PRF-03.menu.*.cancel   # design/prototype/app/screens-profile.js:48 — "İsteği iptal et" yalnızca menü açıkken ve bekleyen başvuruda; yakalama kapalı menü
+PRF-03.menu.*.reapply  # design/prototype/app/screens-profile.js:49 — "Tekrar başvur" yalnızca menü açıkken ve reddedilen / çıkarılan üyelikte; yakalama kapalı menü
+PRF-04.retry           # lib/features/profile/view/saved_view.dart — yalnızca kayıtlar / gönderiler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

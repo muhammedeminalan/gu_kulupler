@@ -18,6 +18,9 @@
 // (`/events/mine`).
 // T-26 · `NotificationsRoute` kökü gerçek view (NTF-01),
 // `NotificationPrefsRoute` (`/notifications/preferences`, NTF-02).
+// T-27 · `ProfileRoute` kökü gerçek view (PRF-01), `EditProfileRoute`
+// (`/profile/edit`), `MyClubsRoute` (`/profile/clubs?tab=`), `SavedRoute`
+// (`/profile/saved`).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -31,7 +34,7 @@ import '../../helpers/design_files.dart';
 import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
-/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24).
+/// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -73,6 +76,10 @@ const Map<GoRouteData, String> _routes = {
   NotificationPrefsRoute(): '/notifications/preferences',
   AdminRoute(): '/admin',
   ProfileRoute(): '/profile',
+  // Profil dalı (T-27: PRF-02, PRF-03, PRF-04)
+  EditProfileRoute(): '/profile/edit',
+  MyClubsRoute(): '/profile/clubs',
+  SavedRoute(): '/profile/saved',
 };
 
 /// Parametreli kulüp rotalarının örnek kimliği.
@@ -135,11 +142,42 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 30 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 33 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
-        'T-23: +2, T-24: +1, T-26: +1)', () {
+        'T-23: +2, T-24: +1, T-26: +1, T-27: +3)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(30));
+      expect(_routes, hasLength(33));
+    });
+
+    test('T-27 · profil rotaları: sabit parçalar; MyClubsRoute `tab` sorgu '
+        'parametresidir (ekrandaki sekme sırasıyla `MyClubsTab` adları); '
+        'hepsi aktif oturum (A) ister', () {
+      expect(const EditProfileRoute().location, '/profile/edit');
+      expect(const SavedRoute().location, '/profile/saved');
+      expect(const MyClubsRoute().location, '/profile/clubs');
+      expect(const MyClubsRoute().tab, isNull);
+      expect(MyClubsTab.values.map((tab) => tab.name), [
+        'active',
+        'pending',
+        'past',
+      ]);
+      final locations = <String>[
+        const EditProfileRoute().location,
+        const SavedRoute().location,
+        const MyClubsRoute().location,
+        for (final tab in MyClubsTab.values) MyClubsRoute(tab: tab).location,
+      ];
+      expect(
+        const MyClubsRoute(tab: MyClubsTab.pending).location,
+        '/profile/clubs?tab=pending',
+      );
+      for (final location in locations) {
+        final match = RouteAccessTable.match(Uri.parse(location));
+        // Sorgu yolu ve guard'ı değiştirmez.
+        expect(match.pattern, Uri.parse(location).path, reason: location);
+        expect(match.access, RouteAccess.active, reason: location);
+        expect(match.clubId, isNull, reason: location);
+      }
     });
 
     test('T-24 · MyEventsRoute: sabit `mine` parçası `:eventId` kalıbına '

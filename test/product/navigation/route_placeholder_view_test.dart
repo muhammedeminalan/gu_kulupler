@@ -59,7 +59,8 @@ void main() {
         // T-26: Bildirimler sekme kökü gerçek view'a bağlandı (NTF-01).
         'lib/product/navigation/routes/notifications_routes.dart': 0,
         'lib/product/navigation/routes/admin_routes.dart': 1,
-        'lib/product/navigation/routes/profile_routes.dart': 1,
+        // T-27: Profil sekme kökü gerçek view'a bağlandı (PRF-01).
+        'lib/product/navigation/routes/profile_routes.dart': 0,
       };
       final usage = RegExp(
         r'// TODO\(T-\d\d\): [^\n]*\n\s*RoutePlaceholderView\(',

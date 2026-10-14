@@ -12,6 +12,7 @@ import 'package:gu_kulupler/features/feed/view/widget/poll_editor.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/form/form_field_error.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/post/announcement_quota_bar.dart';
 import 'package:gu_kulupler/product/widget/post/image_grid.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -204,6 +205,7 @@ class _ComposeFormState extends ConsumerState<ComposeForm> {
           initials: name.initials,
           seed: me?.avatarSeed ?? name,
           size: _avatarSize,
+          image: ref.userAvatarImage(me),
         ),
         Expanded(
           child: Column(

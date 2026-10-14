@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
-import 'package:gu_kulupler/features/auth/view/widget/setup_profile_error_line.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
+import 'package:gu_kulupler/product/widget/form/form_error_line.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// AUT-05 · 3. adım "İlgi alanların" (`screens-auth.js:145`).
@@ -87,8 +87,8 @@ class SetupProfileInterestsStep extends StatelessWidget {
               ),
           ],
         ),
-        if (error != null) SetupProfileErrorLine(error),
-        if (submitError != null) SetupProfileErrorLine(submitError),
+        if (error != null) FormErrorLine(error),
+        if (submitError != null) FormErrorLine(submitError),
       ],
     );
   }

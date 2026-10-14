@@ -14,8 +14,9 @@ import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
 /// * Kapat (`CLB-04.close`) kulüp sayfasına döner (`popTo('CLB-03')`).
 /// * "Diğer kulüplere göz at" (`CLB-04.browse`) Kulüpler sekmesinin köküne
 ///   iner (`resetTo('CLB-01')`).
-/// * "Başvurularım" (`CLB-04.myApplications`) Profil sekmesine geçer
-///   (Q-20: sekmeler arası bağlantı `AppNavigator.openInTab`).
+/// * "Başvurularım" (`CLB-04.myApplications`) Profil sekmesinde PRF-03
+///   bekleyenler sekmesini açar (Q-20: sekmeler arası bağlantı
+///   `AppNavigator.openInTab`).
 /// * "Aç" (`CLB-04.enableNotifications`) DLG-03 ön açıklamasını açar; izin
 ///   ve TST-19 ViewModel'dedir.
 /// * Kulüp yok / silinmişse SYS-04'e gidilir.
@@ -49,13 +50,13 @@ mixin ClubAppliedViewMixin on ConsumerState<ClubAppliedView> {
   /// "Diğer kulüplere göz at" (`CLB-04.browse`) → CLB-01.
   void browse() => const ClubsRoute().go(context);
 
-  /// "Başvurularım" (`CLB-04.myApplications`) → Profil sekmesi.
-  void openMyApplications() {
-    // TODO(T-27): hedef PRF-03 "Kulüplerim"in bekleyenler sekmesidir —
-    // `MyClubsRoute(tab: MyClubsTab.pending)` (`/profile/clubs?tab=pending`).
-    // Rota T-27'de doğar; o zamana kadar Profil sekmesinin köküne gidilir.
-    AppNavigator.openInTab(context, GuTab.profile, AppPaths.profile);
-  }
+  /// "Başvurularım" (`CLB-04.myApplications`) → PRF-03 "Kulüplerim"in
+  /// bekleyenler sekmesi (`/profile/clubs?tab=pending`; W-65).
+  void openMyApplications() => AppNavigator.openInTab(
+    context,
+    GuTab.profile,
+    const MyClubsRoute(tab: MyClubsTab.pending).location,
+  );
 
   /// "Aç" (`CLB-04.enableNotifications`) → DLG-03.
   void enableNotifications() => unawaited(viewModel.enableNotifications());

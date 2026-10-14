@@ -4977,6 +4977,10 @@
   "@statusGoing": {
     "description": "Key status.going"
   },
+  "statusLeft": "Ayrıldı",
+  "@statusLeft": {
+    "description": "Key status.left"
+  },
   "statusMembers": "Üyelere özel",
   "@statusMembers": {
     "description": "Key status.members"
