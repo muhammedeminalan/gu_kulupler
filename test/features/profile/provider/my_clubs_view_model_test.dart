@@ -13,6 +13,7 @@ import 'package:gu_kulupler/features/profile/provider/my_clubs_state.dart';
 import 'package:gu_kulupler/features/profile/provider/my_clubs_view_model.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/navigation/my_clubs_tab.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
@@ -195,6 +196,26 @@ void main() {
         expect(memberships.callsTo('leave'), isEmpty);
       },
     );
+
+    test('W-14: "Başkanlığı devret" → SHT-25 → DLG-21 → devredilir '
+        '(TST-49)', () async {
+      final president = kC01Active.copyWith(role: ClubRole.president);
+      seedMyClubs([president]);
+      final heir = president.copyWith(
+        id: FirestoreIds.membership('c01', 'u_heir'),
+        userId: 'u_heir',
+        role: ClubRole.member,
+      );
+      memberships.put(heir);
+      final c = await loaded(myClubsSession([president]));
+      feedback
+        ..nextSheetResult = 'u_heir'
+        ..dialogResults[DialogId.dlg21] = true;
+      expect(await vmOf(c).transferPresidencyForLeave('c01'), isTrue);
+      expect(feedback.sheets, [SheetId.sht25]);
+      expect(feedback.toasts, [ToastId.tst49]);
+      expect(memberships.memberships[heir.id]?.role, ClubRole.president);
+    });
 
     test('sunucu başkanlık kuralı → satır döner + DLG-09', () async {
       final president = kC01Active.copyWith(role: ClubRole.president);

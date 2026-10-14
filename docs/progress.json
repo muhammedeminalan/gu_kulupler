@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T21:28:57.328Z",
+  "updated": "2026-10-14T22:10:44.731Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-33",
   "statusValues": [
     "pending",
     "planning",
@@ -461,8 +461,8 @@
       "notes": ""
     },
     "T-33": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T21:29:29.564Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -704,7 +704,10 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.611Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     },
     {
       "id": "W-15",
@@ -770,7 +773,10 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.636Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     },
     {
       "id": "W-21",
@@ -912,7 +918,10 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.660Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     },
     {
       "id": "W-36",
@@ -933,7 +942,10 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.684Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     },
     {
       "id": "W-38",
@@ -1257,12 +1269,15 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "CLB-07.copyEmail",
         "CLB-07.changeRole",
         "CLB-07.remove"
-      ]
+      ],
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.708Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     },
     {
       "id": "W-70",
@@ -1583,10 +1598,13 @@
       "resolveIn": [
         "T-33"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "MGT-02.tab.rejected"
-      ]
+      ],
+      "closedIn": "T-33",
+      "closedAt": "2026-10-14T22:10:44.731Z",
+      "closeNote": "T-33: bağlandı (CD-156)"
     }
   ],
   "notImplemented": [

@@ -582,6 +582,21 @@ final class FakeMembershipRepository extends FakeBase
   }
 
   @override
+  Future<FirestoreResult<PageResult<MembershipModel>>> listByStatus(
+    String clubId,
+    MembershipStatus status,
+    PageRequest page,
+  ) async {
+    record('listByStatus', [clubId, status, page]);
+    if (_rejected<PageResult<MembershipModel>>([clubId]) case final failure?) {
+      return failure;
+    }
+    return FirebaseSuccess(
+      _pager.slice(_newestFirst(_inClub(clubId, status)), page),
+    );
+  }
+
+  @override
   Future<FirestoreResult<List<MembershipModel>>> listMine(
     String uid, {
     Set<MembershipStatus>? statuses,

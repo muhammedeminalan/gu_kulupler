@@ -41,6 +41,9 @@ CLB-06.menu.*   # design/prototype/app/cards.js:168, screens-clubs.js:147 — ü
 CLB-06.retry    # lib/features/clubs/view/club_members_view.dart — yalnızca üyeler okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
 CLB-07.unblock  # design/prototype/app/screens-clubs.js:156 — "Engeli kaldır" yalnızca kullanıcı engelliyken çizilen uyarı bandında (`blocked`); yakalama engellenmemiş kullanıcı (u_burak → u001)
 CLB-07.retry    # lib/features/clubs/view/user_profile_view.dart — yalnızca kullanıcı okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+CLB-07.copyEmail   # design/prototype/app/screens-clubs.js:160 — yönetici kartının e-posta "Kopyala"sı yalnızca açılış kulübünün yöneticisi / süper admini bakarken (`managerCtx || isSuper`); yakalama u_burak → u001, c03 bağlamında üyelik yok (W-69)
+CLB-07.changeRole  # design/prototype/app/screens-clubs.js:161 — "Rolü değiştir" yalnızca başkan / süper admin bakışında ve hedef başkan / danışman değilken; yakalamada yönetici kartı yok (W-69)
+CLB-07.remove      # design/prototype/app/screens-clubs.js:161 — "Üyelikten çıkar" yalnızca yönetici bakışında ve hedef başkan / danışman değilken; yakalamada yönetici kartı yok (W-69)
 FED-01.compose  # design/prototype/app/screens-clubs.js:66,69,70 — "Kulübüne bir şey yaz…" girişi ve boş durumdaki "İlk gönderini yaz" yalnızca yöneticide (`manager`); yakalama sıradan üye (u_mehmet → c01)
 FED-01.more.*   # design/prototype/app/cards.js:118 — "Devamı" yalnızca metni 280 karakteri aşan gönderide (`long && !more`); yakalamadaki yedi gönderi kısa
 FED-01.retry    # lib/features/clubs/view/widget/club_feed_tab.dart — yalnızca akış okunamadığında (`isError`) liste yerine çizilen hata durumunun "Yeniden dene" düğmesi; prototipte anahtar verilmemiş (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)
@@ -129,3 +132,8 @@ MGT-02.selectAll       # design/prototype/app/screens-manage.js:50 — seçim ç
 MGT-02.bulkApprove     # design/prototype/app/screens-manage.js:50 — seçim çubuğunun toplu onay düğmesi (→ DLG-17) yalnızca çoklu seçim kipinde; yakalama olağan kip
 MGT-02.bulkReject      # design/prototype/app/screens-manage.js:50 — seçim çubuğunun toplu ret düğmesi (→ DLG-17) yalnızca çoklu seçim kipinde; yakalama olağan kip
 MGT-02.select.*        # design/prototype/app/cards.js:173 — `ApplicationRow` onay kutusu (başvuran başına) yalnızca çoklu seçim kipinde; yakalama olağan kip
+MGT-03.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-03.retry           # lib/features/management/view/manage_members_view.dart — yalnızca üyeler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-03.scrim           # design/prototype/app/ui.js:191 + screens-manage.js:73–74 — "⋮" ve sıralama menülerinin (`PopMenu id="MGT-03"`) saydam scrim'i; yalnızca menü açıkken
+MGT-03.export          # design/prototype/app/screens-manage.js:73 — "Üye listesini dışa aktar (CSV)" yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-03.sort.*          # design/prototype/app/screens-manage.js:74 — sıralama menüsü satırları (`name`, `joined`; `rate` yerine `role` — T-33, üye başına katılım oranı verisi yok) yalnızca menü açıkken; yakalama kapalı menü

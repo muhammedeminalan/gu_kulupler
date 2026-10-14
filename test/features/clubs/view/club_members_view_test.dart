@@ -1,7 +1,7 @@
 // CLB-06 · Üyeler — içerik (üye / yönetici bakışı), durumlar (yükleniyor,
 // hata, boş, sonraki sayfa, çevrimdışı), aksiyon envanteri (84 anahtar), her
 // aksiyonun sonucu (CLB-03 / CLB-07 gezinmesi, süzgeç, arama, sayfalama,
-// çek-yenile, SHT-27 → DLG-13 → TST-09 → Geri al, SHT-10), engellenenlerin
+// çek-yenile, SHT-21 → DLG-19 → TST-47 → Geri al, SHT-21 → CLB-07), engellenenlerin
 // süzülmesi, cihaz matrisi, açık + koyu golden.
 // Referans: design/reference-shots/screens/CLB-06__*.webp,
 // design/prototype/app/screens-clubs.js:141–148.
@@ -23,7 +23,7 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_view_model.dart';
 import 'package:gu_kulupler/features/clubs/view/club_members_view.dart';
-import 'package:gu_kulupler/product/feedback/catalogs/sheets/user_menu_sheet.dart';
+import 'package:gu_kulupler/product/feedback/catalogs/sheets/member_actions_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
@@ -32,7 +32,6 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-import '../../../fakes/fake_block_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
@@ -67,9 +66,6 @@ FakeFeedbackService _feedback() =>
 
 FakeMembershipRepository _memberships() =>
     GetIt.I<MembershipRepository>() as FakeMembershipRepository;
-
-FakeBlockRepository _blocks() =>
-    GetIt.I<BlockRepository>() as FakeBlockRepository;
 
 FakeConnectivityService _connectivity() =>
     GetIt.I<ConnectivityService>() as FakeConnectivityService;
@@ -352,17 +348,17 @@ void main() {
       expect(_rowIds(tester), hasLength(kClubMemberships.length));
     });
 
-    testWidgets('çevrimdışı: liste ekranda kalır; engelle TST-24 verir, '
+    testWidgets('çevrimdışı: liste ekranda kalır; çıkarma TST-24 verir, '
         'yazılmaz', (tester) async {
       await _pumpRoute(tester, session: membersSession(role: ClubRole.board));
       _connectivity().isOffline = true;
       _feedback()
-        ..nextSheetResult = UserMenuAction.block
-        ..dialogResults[DialogId.dlg13] = true;
+        ..nextSheetResult = MemberAction.remove
+        ..dialogResults[DialogId.dlg19] = '';
       await _tapKey(tester, _menu(kOtherMember.userId));
       await tester.pumpAndSettle();
       expect(_feedback().toasts, [ToastId.tst24]);
-      expect(_blocks().callsTo('block'), isEmpty);
+      expect(_memberships().callsTo('remove'), isEmpty);
       expect(_rowIds(tester), hasLength(kClubMemberships.length));
     });
   });
@@ -477,42 +473,39 @@ void main() {
       expect(_stateOf(tester).isRefreshing, isFalse);
     });
 
-    testWidgets('"⋮" → SHT-27; "Engelle" → DLG-13 → satır kaybolur + TST-09; '
-        '"Geri al" → satır geri gelir', (tester) async {
+    testWidgets('"⋮" → SHT-21; "Üyelikten çıkar" → DLG-19 → satır kaybolur + '
+        'TST-47; "Geri al" → satır geri gelir (W-20)', (tester) async {
       await _pumpRoute(tester, session: membersSession(role: ClubRole.board));
       final userId = kOtherMember.userId;
       _feedback()
-        ..nextSheetResult = UserMenuAction.block
-        ..dialogResults[DialogId.dlg13] = true;
+        ..nextSheetResult = MemberAction.remove
+        ..dialogResults[DialogId.dlg19] = '';
       await _tapKey(tester, _menu(userId));
       await tester.pumpAndSettle();
-      expect(_feedback().sheets, [SheetId.sht27]);
-      expect(_feedback().dialogs, [DialogId.dlg13]);
-      expect(_feedback().toasts, [ToastId.tst09]);
-      expect(_blocks().callsTo('block'), hasLength(1));
+      expect(_feedback().sheets, [SheetId.sht21]);
+      expect(_feedback().dialogs, [DialogId.dlg19]);
+      expect(_feedback().toasts, [ToastId.tst47]);
+      expect(_memberships().callsTo('remove'), hasLength(1));
       expect(find.byKey(_member(userId)), findsNothing);
 
       _feedback().tapToastAction();
       await tester.pumpAndSettle();
-      expect(_blocks().callsTo('softDeleteBlock'), hasLength(1));
+      expect(_memberships().callsTo('undoRemoval'), hasLength(1));
       expect(find.byKey(_member(userId)), findsOneWidget);
     });
 
-    testWidgets('SHT-27 "Profili gör" → CLB-07; "Kullanıcıyı şikayet et" → '
-        'SHT-10', (tester) async {
+    testWidgets('SHT-21 "Profili gör" → CLB-07 (kulüp bağlamıyla)', (
+      tester,
+    ) async {
       final router = await _pumpRoute(
         tester,
         session: membersSession(role: ClubRole.board),
       );
       final userId = kOtherMember.userId;
-      _feedback().nextSheetResult = UserMenuAction.report;
+      _feedback().nextSheetResult = MemberAction.viewProfile;
       await _tapKey(tester, _menu(userId));
       await tester.pumpAndSettle();
-      expect(_feedback().sheets, [SheetId.sht27, SheetId.sht10]);
-
-      _feedback().nextSheetResult = UserMenuAction.viewProfile;
-      await _tapKey(tester, _menu(userId));
-      await tester.pumpAndSettle();
+      expect(_feedback().sheets, [SheetId.sht21]);
       expect(_location(router), '/clubs/user/$userId?clubId=$kMembersClubId');
     });
   });

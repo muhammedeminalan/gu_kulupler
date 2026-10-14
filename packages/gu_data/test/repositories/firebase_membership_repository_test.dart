@@ -336,10 +336,10 @@ void main() {
   });
 
   group('T-15 · MembershipRepository · sözleşme', () {
-    test('PLAN §10.4 tablosunun T-15, T-16, T-29 ve T-30 üyeleri arayüzde '
-        'aynı imzayla var; sonraki task üyeleri yok', () {
+    test('PLAN §10.4 tablosunun T-15, T-16, T-29, T-30 ve T-32 üyeleri '
+        'arayüzde aynı imzayla var; sonraki task üyeleri yok', () {
       final plan = readPlanRepositoryMembers('$MembershipRepository');
-      const tasks = {'(T-15)', '(T-16)', '(T-29)', '(T-30)'};
+      const tasks = {'(T-15)', '(T-16)', '(T-29)', '(T-30)', '(T-32)'};
       final now = plan.where((row) => tasks.contains(row.note)).toList();
       // `reapply` ayrı bir üye değildir: `apply` ile aynı metottur.
       final reapply = now.singleWhere((row) => row.member == 'reapply');
@@ -354,6 +354,7 @@ void main() {
         'cancelApplication',
         'leave',
         'listActiveMembers',
+        'listByStatus',
         'updateApplicationNote',
         'listManagers',
         'listPending',
@@ -1165,6 +1166,71 @@ void main() {
       expect(page.dataOrNull!.hasMore, isFalse);
     });
 
+    test('listByStatus: yalnızca istenen durum ve kulüp, en yeni üstte; '
+        'sayfalanır', () async {
+      await seedMembership(
+        MembershipStatus.rejected,
+        userId: 'u1',
+        appliedAt: DateTime.utc(2026, 9),
+      );
+      await seedMembership(
+        MembershipStatus.rejected,
+        userId: 'u2',
+        appliedAt: DateTime.utc(2026, 9, 3),
+      );
+      await seedMembership(
+        MembershipStatus.rejected,
+        userId: 'u3',
+        appliedAt: DateTime.utc(2026, 9, 2),
+      );
+      await seedMembership(MembershipStatus.pending, userId: 'u4');
+      await seedMembership(MembershipStatus.removed, userId: 'u5');
+      await seedMembership(
+        MembershipStatus.rejected,
+        clubId: 'c02',
+        userId: 'u6',
+      );
+
+      final first = await repository.listByStatus(
+        _clubId,
+        MembershipStatus.rejected,
+        const PageRequest(limit: 2),
+      );
+      expect(
+        [for (final item in first.dataOrNull!.items) item.userId],
+        [
+          'u2',
+          'u3',
+        ],
+      );
+      expect(first.dataOrNull!.hasMore, isTrue);
+
+      final second = await repository.listByStatus(
+        _clubId,
+        MembershipStatus.rejected,
+        PageRequest(limit: 2, after: first.dataOrNull!.next),
+      );
+      expect(
+        [for (final item in second.dataOrNull!.items) item.userId],
+        [
+          'u1',
+        ],
+      );
+      expect(second.dataOrNull!.hasMore, isFalse);
+
+      final removed = await repository.listByStatus(
+        _clubId,
+        MembershipStatus.removed,
+        const PageRequest(),
+      );
+      expect(
+        [for (final item in removed.dataOrNull!.items) item.userId],
+        [
+          'u5',
+        ],
+      );
+    });
+
     test('listManagers: aktif board ve president; üye, danışman ve '
         'ayrılmış yönetici gelmez', () async {
       await seedMembership(
@@ -1234,6 +1300,11 @@ void main() {
           await repository.listActiveMembers(id, const PageRequest()),
           await repository.listManagers(id),
           await repository.listPending(id, const PageRequest()),
+          await repository.listByStatus(
+            id,
+            MembershipStatus.rejected,
+            const PageRequest(),
+          ),
           await repository.listMine(id),
           await repository.readContact(id, _uid),
           await repository.readContact(_clubId, id),

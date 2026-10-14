@@ -18,6 +18,7 @@ import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/management/view/activity_log_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_applications_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_members_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notification_prefs_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notifications_view.dart';

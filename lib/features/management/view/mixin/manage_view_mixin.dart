@@ -79,9 +79,7 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
 
   /// "Toplam üye" (`MGT-01.kpi.members`) / "Üyeler"
   /// (`MGT-01.quick.members`) → MGT-03.
-  void openMembers() {
-    // TODO(T-33): `ManageMembersRoute(clubId:).go` (MGT-03; W-37).
-  }
+  void openMembers() => ManageMembersRoute(clubId: widget.clubId).go(context);
 
   /// "Bekleyen başvuru" (`MGT-01.kpi.pending`) → MGT-02.
   void openApplications() =>

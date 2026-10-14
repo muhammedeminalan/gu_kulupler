@@ -105,7 +105,8 @@ mixin MyClubsViewMixin on ConsumerState<MyClubsView> {
         if (!mounted || outcome != MyClubLeaveOutcome.transferRequested) {
           return;
         }
-      // TODO(T-33): başkanlık devri — SHT-25 → DLG-21 (W-14).
+        // DLG-09 "Başkanlığı devret" → SHT-25 → DLG-21 (W-14).
+        await viewModel.transferPresidencyForLeave(clubId);
       case MyClubMenuAction.cancel:
         unawaited(viewModel.cancelApplication(clubId));
       case MyClubMenuAction.reapply:

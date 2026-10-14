@@ -10,8 +10,7 @@ import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 
-/// TST-09 "Geri al" ile geri alınabilecek son engel değişikliği
-/// (`ClubMembersState.pendingUndo`).
+/// TST-09 "Geri al" ile geri alınabilecek son engel değişikliği.
 final class BlockUndo extends Equatable {
   /// [userId] için yapılan değişiklik; [unblocked] `true` → engel kaldırıldı
   /// (geri al = `restoreBlock`), `false` → engellendi (geri al =
@@ -38,7 +37,7 @@ final class BlockUndo extends Equatable {
 /// Bir ekranda yapılan, oturuma henüz yansımamış engel değişiklikleri
 /// (kimlik → engelli mi). Engellenenler oturumdan gelir
 /// (`SessionState.blockedUserIds`); ekran iyimser değişikliği burada tutar ve
-/// listesini [applyTo] ile süzer (CLB-06, FED-01, FED-02).
+/// listesini [applyTo] ile süzer (FED-01, FED-02).
 ///
 /// ```dart
 /// void onBlockChanged(String userId, {required bool isBlocked}) {

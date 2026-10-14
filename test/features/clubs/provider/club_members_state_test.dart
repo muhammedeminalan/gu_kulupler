@@ -3,7 +3,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_state.dart';
-import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
 
 import '../club_members_test_support.dart';
 
@@ -19,15 +18,13 @@ void main() {
       expect(state.query, isEmpty);
       expect(state.hasMore, isFalse);
       expect(state.wantsMore, isFalse);
-      expect(state.pendingUndo, isNull);
       expect(state.isFetching || state.isLoadingMore, isFalse);
       expect(state.isRefreshing || state.isError, isFalse);
     });
 
-    test('copyWith her alanı değiştirir; clearCursor / clearPendingUndo '
-        'alanı boşaltır; props değer eşitliği taşır', () {
+    test('copyWith her alanı değiştirir; clearCursor imleci boşaltır; '
+        'props değer eşitliği taşır', () {
       final cursor = PageCursor.fake();
-      const undo = BlockUndo(userId: 'u1', name: 'Ad');
       final full = const ClubMembersState().copyWith(
         club: kMembersClub,
         managers: kClubManagers,
@@ -38,7 +35,6 @@ void main() {
         roleFilter: MemberRoleFilter.member,
         query: 'a',
         cursor: cursor,
-        pendingUndo: undo,
         isFetching: true,
         isLoadingMore: true,
         isRefreshing: true,
@@ -54,7 +50,6 @@ void main() {
         MemberRoleFilter.member,
         'a',
         cursor,
-        undo,
         true,
         true,
         true,
@@ -64,9 +59,8 @@ void main() {
       expect(full.hasMore, isTrue);
       expect(full, isNot(full.copyWith(query: 'b')));
 
-      final cleared = full.copyWith(clearCursor: true, clearPendingUndo: true);
+      final cleared = full.copyWith(clearCursor: true);
       expect(cleared.cursor, isNull);
-      expect(cleared.pendingUndo, isNull);
       expect(cleared.hasMore, isFalse);
     });
 

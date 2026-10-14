@@ -2229,6 +2229,10 @@
   "@dlg21Title": {
     "description": "Key dlg.21.title"
   },
+  "dlg21Word": "DEVRET",
+  "@dlg21Word": {
+    "description": "Key dlg.21.word"
+  },
   "dlg22Back": "Düzenlemeye dön",
   "@dlg22Back": {
     "description": "Key dlg.22.back"
@@ -3558,6 +3562,10 @@
   "mgtMembersSortRate": "Katılım oranına göre",
   "@mgtMembersSortRate": {
     "description": "Key mgtMembers.sort.rate"
+  },
+  "mgtMembersSortRole": "Role göre",
+  "@mgtMembersSortRole": {
+    "description": "Key mgtMembers.sort.role"
   },
   "mgtMembersTitle": "Üye yönetimi",
   "@mgtMembersTitle": {

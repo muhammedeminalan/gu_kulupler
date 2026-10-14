@@ -23,7 +23,7 @@ part 'manage_applications_view_model.g.dart';
 /// |---|---|
 /// | Bekleyen | `membershipRepository.listPending` (20 + imleç) + sayfadaki her başvurunun `readContact` belgesi (not ön izlemesi, CD-137) |
 /// | Onaylanan | `listActiveMembers` (20 + imleç), yalnızca karar verilmiş (`decidedAt`) üyeler |
-/// | Reddedilen | `listByStatus(rejected)` gu_data'da yok → yalnızca bu oturumda reddedilenler (W-98) |
+/// | Reddedilen | `membershipRepository.listByStatus(rejected)` (20 + imleç; W-98) |
 ///
 /// Sekme ilk seçildiğinde okunur. Kararlar iyimserdir: satır anında sekme
 /// değiştirir, yazılamazsa geri gelir.
@@ -645,12 +645,10 @@ final class ManageApplicationsViewModel extends _$ManageApplicationsViewModel
       clubId,
       page,
     ),
-    // TODO(T-33): `MembershipRepository.listByStatus(clubId, rejected, page)`
-    // (PLAN §10.4; indeks `clubId, status, appliedAt↓` mevcut) gu_data'da
-    // yok (W-98). O zamana dek sekme yalnızca bu oturumda reddedilenleri
-    // gösterir.
-    ApplicationsTab.rejected => Future.value(
-      const FirebaseSuccess(PageResult<MembershipModel>(items: [])),
+    ApplicationsTab.rejected => membershipRepository.listByStatus(
+      clubId,
+      MembershipStatus.rejected,
+      page,
     ),
   };
 

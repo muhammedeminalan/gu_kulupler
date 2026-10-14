@@ -360,6 +360,92 @@ void main() {
     });
   });
 
+  group('CLB-07 · Profil · yönetici kartı (W-69)', () {
+    final manager = kVisibleState.copyWith(
+      contextMembership: kUserInShared.copyWith(
+        id: 'c03_$kUserId',
+        clubId: kClubId,
+        role: ClubRole.member,
+        status: MembershipStatus.active,
+      ),
+      contextClubName: 'Doğa Sporları',
+      contactEmail: 'yigit@ogr.gumushane.edu.tr',
+      canAssignRoles: true,
+    );
+    final copy = GuKey.action('CLB-07.copyEmail');
+    final changeRole = GuKey.action('CLB-07.changeRole');
+    final remove = GuKey.action('CLB-07.remove');
+
+    testWidgets('başkan bakışı: e-posta + "Kopyala", rol, üyelik tarihi; '
+        '"Rolü değiştir" + "Üyelikten çıkar"; envanter', (tester) async {
+      await _pump(tester, manager);
+      final l10n = tester.l10n;
+      expect(find.text('yigit@ogr.gumushane.edu.tr'), findsOneWidget);
+      expect(
+        find.text(l10n.userprofileRoleIn('Doğa Sporları')),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.userprofileMemberSince), findsOneWidget);
+      for (final key in [copy, changeRole, remove]) {
+        expect(find.byKey(key), findsOneWidget);
+      }
+      expectActionInventory(tester, 'CLB-07');
+    });
+
+    testWidgets('yönetim kurulu bakışı "Rolü değiştir" çizmez; başkan hedefte '
+        'düğme yok; bekleyen başvuruda kart yok', (tester) async {
+      await _pump(tester, manager.copyWith(canAssignRoles: false));
+      expect(find.byKey(changeRole), findsNothing);
+      expect(find.byKey(remove), findsOneWidget);
+
+      await _pump(
+        tester,
+        manager.copyWith(
+          contextMembership: manager.contextMembership!.copyWith(
+            role: ClubRole.president,
+          ),
+        ),
+      );
+      expect(find.byKey(copy), findsOneWidget);
+      expect(find.byKey(remove), findsNothing);
+
+      await _pump(
+        tester,
+        manager.copyWith(
+          contextMembership: manager.contextMembership!.copyWith(
+            status: MembershipStatus.pending,
+          ),
+        ),
+      );
+      expect(find.byKey(copy), findsNothing);
+    });
+
+    testWidgets('"Kopyala" → TST-08', (tester) async {
+      await _pump(tester, manager);
+      await tester.ensureVisible(find.byKey(copy));
+      await _tap(tester, copy);
+      expect(feedbackFake().toasts, [ToastId.tst08]);
+    });
+
+    testWidgets('cihaz matrisi: yönetici kartı taşmaz', (tester) async {
+      await DeviceMatrix.run(
+        tester,
+        (_) => _view,
+        overrides: stateOverride(manager),
+        safeAreas: true,
+      );
+    });
+
+    testWidgets('golden: yönetici kartı — açık + koyu (TR)', (tester) async {
+      await goldenForThemes(
+        tester,
+        'CLB-07__manager',
+        _view,
+        overrides: stateOverride(manager),
+      );
+    });
+  });
+
   group('CLB-07 · Profil · golden', () {
     testWidgets('golden: görünür profil — açık + koyu (TR)', (tester) async {
       await goldenForThemes(

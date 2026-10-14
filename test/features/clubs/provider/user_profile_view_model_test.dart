@@ -17,7 +17,10 @@ import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet
 import 'package:gu_kulupler/product/feedback/catalogs/toasts/toast_catalog.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/service/share_service.dart';
 
+import '../../../fakes/fake_management_repository.dart';
+import '../../../fakes/fake_share_service.dart';
 import '../../../fakes/register_fakes.dart';
 import '../../../fixtures/membership_model_fixtures.dart';
 import '../../../helpers/test_container.dart';
@@ -463,6 +466,114 @@ void main() {
 
       expect(feedbackFake().dialogs, [DialogId.dlg12]);
       expect(_blockWrites(), isEmpty);
+    });
+  });
+
+  group('CLB-07 · UserProfileViewModel · yönetici kartı (W-69)', () {
+    /// Kullanıcının açılış kulübündeki (`c03`) aktif üyeliği.
+    MembershipModel inContext({ClubRole role = ClubRole.member}) =>
+        kUserInShared.copyWith(
+          id: FirestoreIds.membership(kClubId, kUserId),
+          clubId: kClubId,
+          role: role,
+          status: MembershipStatus.active,
+        );
+
+    void seedContext({ClubRole role = ClubRole.member}) {
+      seedProfile();
+      final membership = inContext(role: role);
+      membershipsFake()
+        ..put(membership)
+        ..contacts[membership.id] = MembershipContactModel(
+          email: 'yigit@ogr.gumushane.edu.tr',
+          emailLower: 'yigit@ogr.gumushane.edu.tr',
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+        );
+    }
+
+    FakeManagementRepository management() =>
+        GetIt.I<ManagementRepository>() as FakeManagementRepository;
+
+    test('başkan bakışı: aktif üyelik, e-posta, kulüp adı, rol atama yetkisi; '
+        '"Kopyala" → TST-08', () async {
+      seedContext();
+      final container = await _container();
+      final state = _state(container);
+      expect(state.showsManagerCard, isTrue);
+      expect(state.showsManagerActions, isTrue);
+      expect(state.contactEmail, 'yigit@ogr.gumushane.edu.tr');
+      expect(state.contextClubName, clubsFake().clubs[kClubId]!.name);
+      expect(state.canAssignRoles, isTrue);
+
+      await _viewModel(container).copyEmail();
+      final share = GetIt.I<ShareService>() as FakeShareService;
+      expect(share.copied, ['yigit@ogr.gumushane.edu.tr']);
+      expect(feedbackFake().toasts, [ToastId.tst08]);
+    });
+
+    test(
+      '"Rolü değiştir": SHT-22 → DLG-20 → yazılır, rol iyimser → TST-46',
+      () async {
+        seedContext();
+        final container = await _container();
+        feedbackFake()
+          ..nextSheetResult = ClubRole.board
+          ..dialogResults[DialogId.dlg20] = true;
+        await _viewModel(container).changeRole();
+        expect(management().callsTo('changeRole'), hasLength(1));
+        expect(_state(container).contextMembership?.role, ClubRole.board);
+        expect(feedbackFake().toasts, [ToastId.tst46]);
+        expect(feedbackFake().toastParams.single.role, ClubRole.board.json);
+      },
+    );
+
+    test('"Üyelikten çıkar": DLG-19 → yazılır → TST-47; "Geri al" üyeliği '
+        'geri getirir', () async {
+      seedContext();
+      final container = await _container();
+      feedbackFake().dialogResults[DialogId.dlg19] = 'Kural ihlali';
+      expect(await _viewModel(container).remove(), isTrue);
+      final id = FirestoreIds.membership(kClubId, kUserId);
+      expect(
+        membershipsFake().memberships[id]?.status,
+        MembershipStatus.removed,
+      );
+      expect(feedbackFake().toasts, [ToastId.tst47]);
+
+      feedbackFake().tapToastAction();
+      await pumpEventQueue();
+      expect(management().callsTo('undoRemoval'), hasLength(1));
+      expect(
+        membershipsFake().memberships[id]?.status,
+        MembershipStatus.active,
+      );
+    });
+
+    test('yönetim kurulu bakışı: rol atayamaz; yönetim kurulu üyesini '
+        'çıkaramaz → TST-X18, dialog açılmaz', () async {
+      seedContext(role: ClubRole.board);
+      final board = kViewerInContext.copyWith(role: ClubRole.board);
+      membershipsFake().put(board);
+      final container = await _container(
+        session: viewerSession(memberships: [kViewerInShared, board]),
+      );
+      expect(_state(container).canAssignRoles, isFalse);
+      expect(await _viewModel(container).remove(), isFalse);
+      expect(feedbackFake().dialogs, isEmpty);
+      expect(feedbackFake().toasts, [ToastId.tstX18]);
+      expect(management().callsTo('removeMember'), isEmpty);
+    });
+
+    test('bekleyen başvuru: kart çizilmez, e-posta okunmaz', () async {
+      seedProfile();
+      membershipsFake().put(
+        inContext().copyWith(status: MembershipStatus.pending),
+      );
+      final container = await _container();
+      expect(_state(container).showsManagerCard, isFalse);
+      expect(_state(container).contactEmail, isNull);
+      expect(membershipsFake().callsTo('readContact'), isEmpty);
     });
   });
 }

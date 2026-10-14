@@ -996,7 +996,7 @@ lib/features/
 │   │   ├── mixin/ manage_applications_view_mixin.dart ← T-32 · manage_members_view_mixin.dart ← T-33 · event_form_view_mixin.dart ← T-34 · attendance_view_mixin.dart · scan_view_mixin.dart ← T-35 · club_settings_view_mixin.dart ← T-36
 │   │   └── widget/ mgt_kpi_grid.dart (MgtKpiGrid) ← T-31 (ManageHeader, ActivityRow product/widget/manage'dedir)
 │   │              application_detail_sheet.dart (SHT-19) · reject_reason_sheet.dart (SHT-20) ← T-32 (ApplicationRow product/widget/member'dadır)
-│   │              role_picker_sheet.dart (SHT-22) ← T-33 (SHT-21 MemberActionsSheet product'tadır — W-20)
+│   │              (SHT-22 RolePickerSheet, SHT-21 MemberActionsSheet, SHT-25 product'tadır — CLB-07 / CLB-06 da açar; T-33)
 │   │              event_form.dart (EventForm) · event_menu_sheet.dart (SHT-23) · place_picker_sheet.dart (SHT-30) · cover_picker_sheet.dart (SHT-31; CoverPickerContent — K-C; +7 ARB anahtarı CD-35) ← T-34
 │   │              attendee_row.dart (AttendeeRow) · scan_overlay.dart (ScanOverlay: mobile_scanner üstü, GuMotion.scan — CD-25) · scan_result_sheet.dart (SHT-24) ← T-35
 └── admin/                                                        ← T-38–T-41
@@ -1064,7 +1064,7 @@ Kural: bir sheet **birden fazla feature'dan** açılıyorsa içerik widget'ı `l
 | SHT-17 Tema · SHT-32 Şifre değiştir | SET-01 | settings | `theme_sheet.dart` ThemeSheet · `change_password_sheet.dart` ChangePasswordSheet (ChangePasswordViewModel) | T-28 |
 | SHT-19 Başvuru detayı · SHT-20 Red nedeni | MGT-02 | management | `application_detail_sheet.dart` ApplicationDetailSheet (private/contact e-postası + başvuru notu ManageApplicationsViewModel.loadContact — CD-137) · `reject_reason_sheet.dart` RejectReasonSheet | T-32 |
 | SHT-21 Üye işlemleri | MGT-03, CLB-06 yönetici menüsü (W-20) | product | `member_actions_sheet.dart` MemberActionsSheet (doğrudan product'ta açılır; taşıma yok) | T-33 |
-| SHT-22 Rol seç | MGT-03 | management | `role_picker_sheet.dart` RolePickerSheet | T-33 |
+| SHT-22 Rol seç | MGT-03, CLB-07 | product | `lib/product/feedback/catalogs/sheets/role_picker_sheet.dart` RolePickerSheet (T-33: CLB-07 yönetici kartı da açar) | T-33 |
 | SHT-25 Başkan ata | MGT-03, DLG-09 (clubs), SET-03 (settings) | product | `president_picker_sheet.dart` PresidentPickerSheet | T-33 |
 | SHT-23 Etkinlik menüsü · SHT-30 Mekân seç · SHT-31 Kapak seç | MGT-04/MGT-05 · MGT-05 · MGT-05, MGT-09 | management | `event_menu_sheet.dart` EventMenuSheet · `place_picker_sheet.dart` PlacePickerSheet · `cover_picker_sheet.dart` CoverPickerContent (CD-35 ARB anahtarları) | T-34 |
 | SHT-24 Tarama sonucu | MGT-07 | management | `scan_result_sheet.dart` ScanResultSheet (ScanViewModel) | T-35 |

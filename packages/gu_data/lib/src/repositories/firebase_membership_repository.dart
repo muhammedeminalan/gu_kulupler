@@ -719,6 +719,13 @@ final class FirebaseMembershipRepository implements MembershipRepository {
   Future<FirestoreResult<PageResult<MembershipModel>>> listPending(
     String clubId,
     PageRequest page,
+  ) => listByStatus(clubId, MembershipStatus.pending, page);
+
+  @override
+  Future<FirestoreResult<PageResult<MembershipModel>>> listByStatus(
+    String clubId,
+    MembershipStatus status,
+    PageRequest page,
   ) async {
     if (RepositoryHelpers.rejectInvalidIds<PageResult<MembershipModel>>({
           'clubId': clubId,
@@ -730,7 +737,7 @@ final class FirebaseMembershipRepository implements MembershipRepository {
       await _firestore.getPage(
         _inClub(
           clubId,
-          MembershipStatus.pending,
+          status,
         ).orderBy(FirestoreFields.appliedAt, descending: true),
         page,
       ),

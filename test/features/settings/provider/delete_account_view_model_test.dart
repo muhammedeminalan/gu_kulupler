@@ -13,7 +13,9 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/settings/provider/delete_account_state.dart';
 import 'package:gu_kulupler/features/settings/provider/delete_account_view_model.dart';
+import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
@@ -170,6 +172,48 @@ void main() {
         expect(feedback.toasts, [ToastId.tstX10]);
       },
     );
+
+    test('W-34: "Devret" → SHT-25 → DLG-21 → devredilir (TST-49); engel '
+        'kalkar, Devam ilerler', () async {
+      final president = _membership('c03', role: ClubRole.president);
+      memberships
+        ..put(president)
+        ..put(
+          const MembershipModel(
+            clubId: 'c03',
+            userId: 'u_heir',
+            applicant: MembershipApplicantModel(
+              name: 'Varis',
+              avatarSeed: 'v',
+            ),
+            role: ClubRole.board,
+            status: MembershipStatus.active,
+          ),
+        );
+      final c = createContainer(
+        overrides: [
+          sessionViewModelProvider.overrideWithBuild(
+            (ref, notifier) => FakeSessionStates.active.copyWith(
+              memberships: {'c03': president},
+            ),
+          ),
+        ],
+      );
+      addTearDown(c.listen(deleteAccountViewModelProvider, (_, _) {}).close);
+      await pumpEventQueue();
+      expect(stateOf(c).isPresident, isTrue);
+
+      feedback
+        ..nextSheetResult = 'u_heir'
+        ..dialogResults[DialogId.dlg21] = true;
+      expect(await vmOf(c).transfer('c03'), isTrue);
+      expect(feedback.sheets, [SheetId.sht25]);
+      expect(feedback.toasts, [ToastId.tst49]);
+      await pumpEventQueue();
+      expect(stateOf(c).isPresident, isFalse);
+      expect(vmOf(c).next(), isTrue);
+      expect(stateOf(c).step, DeleteStep.reason);
+    });
 
     test('ön denetim okunamazsa hata; Devam yeniden dener', () async {
       deletion.failNext(FirestoreError.unavailable);

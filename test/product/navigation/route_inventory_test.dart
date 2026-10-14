@@ -29,6 +29,8 @@
 // (`/clubs/:clubId/manage/activity`, MGT-10).
 // T-32 · `ManageApplicationsRoute` (`/clubs/:clubId/manage/applications
 // ?tab=&applicant=`, MGT-02).
+// T-33 · `ManageMembersRoute` (`/clubs/:clubId/manage/members?transfer=`,
+// MGT-03).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -73,10 +75,11 @@ const Map<GoRouteData, String> _routes = {
   PostDetailRoute(clubId: _clubId, postId: _postId):
       '/clubs/:clubId/posts/:postId',
   ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
-  // Yönetim (T-31: MGT-01, MGT-10; T-32: MGT-02)
+  // Yönetim (T-31: MGT-01, MGT-10; T-32: MGT-02; T-33: MGT-03)
   ManageRoute(clubId: _clubId): '/clubs/:clubId/manage',
   ManageApplicationsRoute(clubId: _clubId):
       '/clubs/:clubId/manage/applications',
+  ManageMembersRoute(clubId: _clubId): '/clubs/:clubId/manage/members',
   ActivityLogRoute(clubId: _clubId): '/clubs/:clubId/manage/activity',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
@@ -165,13 +168,33 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 43 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2, T-32: +1)', () {
+        'T-31: +2, T-32: +1, T-33: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(43));
+      expect(_routes, hasLength(44));
     });
+
+    test(
+      "T-33 · MGT-03 MGT-01'in altındadır (V); `transfer` sorgu "
+      'parametresidir (varsayılan `false` yola yazılmaz)',
+      () {
+        expect(ManageMembersRoute.segment, 'members');
+        const plain = ManageMembersRoute(clubId: _clubId);
+        expect(plain.transfer, isFalse);
+        expect(plain.location, '/clubs/c01/manage/members');
+        final deep = Uri.parse(
+          const ManageMembersRoute(clubId: _clubId, transfer: true).location,
+        );
+        expect(deep.path, '/clubs/c01/manage/members');
+        expect(deep.queryParameters, {'transfer': 'true'});
+        final match = RouteAccessTable.match(deep);
+        expect(match.pattern, '/clubs/:clubId/manage/members');
+        expect(match.access, RouteAccess.managerOrAdvisor);
+        expect(match.clubId, _clubId);
+      },
+    );
 
     test(
       "T-32 · MGT-02 MGT-01'in altındadır (V); `tab` ve `applicant` sorgu "

@@ -253,11 +253,12 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
     await viewModel.showReportReceived();
   }
 
-  /// "Kulüpten ayrıl" (SHT-06): DLG-08 / DLG-09 ViewModel'dedir.
+  /// "Kulüpten ayrıl" (SHT-06): DLG-08 / DLG-09 ViewModel'dedir. DLG-09
+  /// "Başkanlığı devret" → SHT-25 → DLG-21 (W-14; `dialogs.js:25`).
   Future<void> leave() async {
     final outcome = await viewModel.leave();
     if (!mounted || outcome != LeaveOutcome.transferRequested) return;
-    // TODO(T-33): başkanlık devri — SHT-25 → DLG-21 (W-14).
+    await viewModel.transferPresidencyForLeave();
   }
 
   /// E-posta satırı (`CLB-03.about.link.email`).

@@ -3,7 +3,8 @@ part of 'shell_route.dart';
 // T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
 // profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
-// panelini ve faaliyet geçmişini, T-32 başvuru yönetimini kurar; kalan alt rotalar PLAN §13.3.2
+// panelini ve faaliyet geçmişini, T-32 başvuru yönetimini, T-33 üye
+// yönetimini kurar; kalan alt rotalar PLAN §13.3.2
 // tablosundaki task'larda eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
@@ -29,6 +30,9 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
           routes: <TypedRoute<RouteData>>[
             TypedGoRoute<ManageApplicationsRoute>(
               path: ManageApplicationsRoute.segment,
+            ),
+            TypedGoRoute<ManageMembersRoute>(
+              path: ManageMembersRoute.segment,
             ),
             TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
           ],
@@ -280,6 +284,32 @@ final class ManageApplicationsRoute extends GoRouteData
         tab: tab,
         applicantId: applicantId,
       );
+}
+
+/// MGT-03 Üye yönetimi — `/clubs/:clubId/manage/members?transfer=`. MGT-01'in
+/// alt rotasıdır (guard `V`: yönetici ya da danışman; danışman salt okunur
+/// görür, yazma eylemleri TST-26 — `RouteAccessTable`). MGT-01 "Üyeler"
+/// (W-37) `go` ile açar, geri panele döner. Başkanlık devri girişleri —
+/// DLG-09 "Başkanlığı devret" (W-14) ve SET-03 başkan engeli (W-34) —
+/// [transfer] ile açar: ekran açılınca SHT-25 (devir) açılır.
+final class ManageMembersRoute extends GoRouteData
+    with $ManageMembersRoute, PlatformPageMixin {
+  /// [clubId] kulübünün üyeleri; [transfer] `true` ise açılışta SHT-25.
+  const ManageMembersRoute({required this.clubId, this.transfer = false});
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'members';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Açılışta başkanlık devri sayfası (SHT-25) açılsın mı (`?transfer=true`;
+  /// W-14, W-34). Varsayılan `false` yola yazılmaz.
+  final bool transfer;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ManageMembersView(clubId: clubId, openTransfer: transfer);
 }
 
 /// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt

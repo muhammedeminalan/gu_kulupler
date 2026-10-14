@@ -10,6 +10,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/user_profile_header.dart'
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
+import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Kullanıcı profili — paylaşılan yaprak ekran (PLAN §13.9): üç rota aynı
@@ -29,8 +30,11 @@ import 'package:gu_ui/gu_ui.dart';
 ///   biyografi de çizilmez.
 /// * **Ortak kulüpler** (profil görünürken ve varsa): başlık + kulüp çipleri
 ///   (→ CLB-03).
-/// * Yönetici bağlamı kartı (e-posta, kulüpteki rol, üyelik tarihi, rol
-///   değiştir / çıkar) üye yönetimiyle gelir (T-33, bağlama borcu W-69).
+/// * **Yönetici bağlamı kartı** (açılış kulübünün yöneticisi / süper admini
+///   ve kullanıcı o kulübün aktif üyesiyken; W-69, `screens-clubs.js:160–161`):
+///   e-posta + "Kopyala" (TST-08), kulüpteki rol, üyelik tarihi; altında
+///   "Rolü değiştir" (yalnızca başkan / süper admin → SHT-22) ve "Üyelikten
+///   çıkar" (DLG-19) — hedef başkan ya da danışmansa düğme yok.
 ///
 /// [clubId] yalnızca kulüp bağlamından açılışta doludur (üyelik bağlamı).
 /// Durumlar: okunamadı → hata + "Yeniden dene"; okunuyor → iskelet; kullanıcı
@@ -149,13 +153,95 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
           _private(l10n)
         else if (state.showsDetails && state.sharedClubs.isNotEmpty)
           _commonClubs(state.sharedClubs, l10n),
-        // TODO(T-33): yönetici bağlamı kartı — e-posta + "Kopyala", kulüpteki
-        // rol, üyelik tarihi, "Rolü değiştir" (SHT-22), "Kulüpten çıkar"
-        // (DLG-19); `state.contextMembership` hazır (W-69,
-        // `screens-clubs.js:160–161`).
+        if (state.showsManagerCard) ...[
+          // `.col.gap20`: ortak kulüplerden sonra 20.
+          if (state.showsDetails && state.sharedClubs.isNotEmpty) GuGap.v20,
+          _managerCard(state, l10n),
+        ],
       ],
     ),
   );
+
+  /// Yönetici bağlamı kartı (`screens-clubs.js:160–161`): e-posta, rol ve
+  /// üyelik tarihi satırları; altında rol / çıkarma düğmeleri.
+  Widget _managerCard(UserProfileState state, AppLocalizations l10n) {
+    final gu = context.gu;
+    final membership = state.contextMembership!;
+    final email = state.contactEmail;
+    final decidedAt = membership.decidedAt;
+    Widget icon(GuIcons name) =>
+        GuIcon(name, size: GuSizes.icon20, color: gu.colors.textMuted);
+    return Padding(
+      padding: GuInsets.h16,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: GuSpacing.s20,
+        children: [
+          GuCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (email != null) ...[
+                  GuTile(
+                    title: email,
+                    subtitle: l10n.authEmail,
+                    padding: GuTilePadding.inCard,
+                    leading: icon(GuIcons.mail),
+                    trailing: GuButton(
+                      key: GuKey.action('CLB-07.copyEmail'),
+                      label: l10n.commonCopy,
+                      icon: GuIcons.copy,
+                      size: GuButtonSize.sm,
+                      variant: GuButtonVariant.text,
+                      onPressed: copyEmail,
+                    ),
+                  ),
+                  const GuDivider(),
+                ],
+                GuTile(
+                  title: MemberRow.roleBadge(l10n, membership.role).label,
+                  subtitle: l10n.userprofileRoleIn(state.contextClubName ?? ''),
+                  padding: GuTilePadding.inCard,
+                  leading: icon(GuIcons.shieldCheck),
+                ),
+                const GuDivider(),
+                GuTile(
+                  title: decidedAt == null ? '—' : formatDate(decidedAt),
+                  subtitle: l10n.userprofileMemberSince,
+                  padding: GuTilePadding.inCard,
+                  leading: icon(GuIcons.calendarCheck),
+                ),
+              ],
+            ),
+          ),
+          if (state.showsManagerActions)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: GuSpacing.s8,
+              children: [
+                if (state.canAssignRoles)
+                  GuButton(
+                    key: GuKey.action('CLB-07.changeRole'),
+                    label: l10n.userprofileChangeRole,
+                    icon: GuIcons.userCog,
+                    variant: GuButtonVariant.outline,
+                    onPressed: changeRole,
+                  ),
+                GuButton(
+                  key: GuKey.action('CLB-07.remove'),
+                  label: l10n.userprofileRemove,
+                  icon: GuIcons.userX,
+                  variant: GuButtonVariant.dangerOutline,
+                  onPressed: remove,
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
 
   /// Okunuyor: başlığın iskeleti (avatar 96 + iki satır, ortalı).
   Widget _skeleton(AppLocalizations l10n) => Semantics(

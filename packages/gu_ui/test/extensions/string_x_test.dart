@@ -88,4 +88,26 @@ void main() {
       expect('çağla\tşen'.initials, 'ÇŞ');
     });
   });
+
+  group('T-33 · TurkishCaseX trCompareTo (localeCompare tr)', () {
+    test('Türkçe alfabe sırası, büyük/küçük harf duyarsız', () {
+      final names = ['Zeynep', 'ömer', 'Ilgaz', 'İpek', 'Çağla', 'can', 'Şule']
+        ..sort((a, b) => a.trCompareTo(b));
+      expect(names, [
+        'can',
+        'Çağla',
+        'Ilgaz',
+        'İpek',
+        'ömer',
+        'Şule',
+        'Zeynep',
+      ]);
+    });
+
+    test('eşit önekte kısa olan önce; eşit → 0', () {
+      expect('Ali'.trCompareTo('Ali Can'), -1);
+      expect('ALİ'.trCompareTo('ali'), 0);
+      expect('a b'.trCompareTo('ab'), -1);
+    });
+  });
 }

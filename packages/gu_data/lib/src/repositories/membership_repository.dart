@@ -321,6 +321,19 @@ abstract interface class MembershipRepository {
     PageRequest page,
   );
 
+  /// [clubId] kulübünün [status] durumundaki üyeliklerinden bir sayfa, en
+  /// yeni başvuru üstte (`appliedAt` azalan; MGT-02 "Reddedilen" sekmesi).
+  /// [listPending] bunun `pending` kısayoludur; indeks (`clubId`, `status`,
+  /// `appliedAt↓`) ortaktır.
+  ///
+  /// Yalnızca kulüp yöneticisi / danışmanı ve süper admin okuyabilir;
+  /// başkası için [FirestoreError.permissionDenied].
+  Future<FirestoreResult<PageResult<MembershipModel>>> listByStatus(
+    String clubId,
+    MembershipStatus status,
+    PageRequest page,
+  );
+
   /// [uid] kullanıcısının üyelik belgeleri (PRF-03: aktif / bekleyen /
   /// geçmiş). [statuses] verilirse yalnızca o durumlar; boş küme sorgu
   /// yapmadan boş liste döner.

@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_members_state.dart';
-import 'package:gu_kulupler/product/feedback/catalogs/sheets/report_reason_sheet.dart';
-import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
-import 'package:gu_kulupler/product/mixin/report_received_mixin.dart';
+import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -31,49 +30,30 @@ typedef _Loaded = ({
 ///   (`userRepository.getUsers`); okunamazsa satırlar üyelik belgesindeki
 ///   anlık görüntüyle çizilir (D-29).
 /// * Rol süzgeci, arama ve engellenenlerin süzülmesi istemcidedir
-///   (`ClubMembersState.groups`). Engellenenler oturumdan gelir; bu ekranda
-///   yapılan engelleme oturuma yansıyana dek yerelde tutulur.
+///   (`ClubMembersState.groups`). Engellenenler oturumdan gelir.
 /// * Sheet açma ve gezinme view'dadır.
 ///
 /// | İşlem | Sonuç | Geri bildirim |
 /// |---|---|---|
 /// | [fetch] / [refresh] | okunamadı | hata görünümü / içerik kalır |
 /// | [loadMore] | okunamadı | liste olduğu gibi kalır (yeniden kaydırınca dener) |
-/// | [block] | onaylandı | satır anında kaybolur, TST-09 (Geri al) |
-/// | | yazılamadı / "Geri al" | satır geri gelir; toast `BlockUserMixin`'den |
-/// | [submitReport] | yazıldı / zaten bildirilmiş | view → [showReportReceived] (DLG-12) |
-/// | | yazılamadı | TST-24 · TST-X18 |
+/// | [openMemberMenu] (yönetici "⋮", W-20) | SHT-21 → profil / SHT-22 → DLG-20 / DLG-19 | `ManageMemberActionsMixin`: rol iyimser (grup değişir) → TST-46; satır iyimser düşer → TST-47 "Geri al" |
 ///
 /// Design: CLB-06
 @riverpod
 final class ClubMembersViewModel extends _$ClubMembersViewModel
-    with
-        ProjectDependencyMixin,
-        WriteGuardMixin,
-        BlockUserMixin,
-        ReportReceivedMixin {
+    with ProjectDependencyMixin, WriteGuardMixin, ManageMemberActionsMixin {
   bool _isLoading = false;
 
   /// İçeriğin kuşağı: her tam okumada artar; eski kuşağın sayfası yazılmaz.
   int _generation = 0;
 
-  /// Bu ekranda yapılan engel değişiklikleri; oturumdaki kümenin üstüne
-  /// uygulanır.
-  final BlockOverrides _blocks = BlockOverrides();
-
-  /// Oturum ViewModel'i (uygulama boyunca yaşar); bu ViewModel kapandıktan
-  /// sonra gelen "Geri al" için saklanır.
-  late SessionViewModel _session;
-
   @override
   ClubMembersState build(String clubId) {
     ref.listen(sessionViewModelProvider, (previous, session) {
       if (previous?.blockedUserIds == session.blockedUserIds) return;
-      state = state.copyWith(
-        blockedUserIds: _blocks.applyTo(session.blockedUserIds),
-      );
+      state = state.copyWith(blockedUserIds: session.blockedUserIds);
     });
-    _session = ref.read(sessionViewModelProvider.notifier);
     // Üyeler ilk karede okunmaya başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_load));
     return ClubMembersState(
@@ -81,14 +61,6 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
       isFetching: true,
     );
   }
-
-  @override
-  String? get blockerId => ref.read(sessionViewModelProvider).uid;
-
-  /// [userId] kullanıcısının SHT-10 hedefi (kullanıcı şikayetinde kulüp
-  /// yoktur — CD-33).
-  ReportTarget reportTargetOf(String userId) =>
-      (type: ReportTargetType.user, id: userId, clubId: null);
 
   /// Üyeleri yeniden okur — hata görünümündeki "Yeniden dene". Süren okuma
   /// varken gelen çağrı yok sayılır.
@@ -166,69 +138,74 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
     state = state.copyWith(query: query);
   }
 
-  /// SHT-27 "Engelle": DLG-13 → yazım → TST-09 (`BlockUserMixin`). Satır
-  /// iyimser kaybolur; yazılamazsa ya da "Geri al" seçilirse geri gelir.
-  Future<void> block(String userId) async {
-    final name = state.nameOfUser(userId);
-    if (name == null) return;
-    await blockUser(userId: userId, name: name);
-  }
-
-  /// SHT-27 "Engeli kaldır": yazım → TST-09 (`BlockUserMixin`). Engellenenler
-  /// listede çizilmediğinden yalnızca oturum henüz güncellenmemişken
-  /// (ör. "Geri al" sonrası) görünür.
-  Future<void> unblock(String userId) async {
-    final name = state.nameOfUser(userId);
-    if (name == null) return;
-    await unblockUser(userId: userId, name: name);
-  }
+  // ─────────────────────── yönetici menüsü (SHT-21, W-20) ───────────────────────
 
   @override
-  void onBlockChanged(String userId, {required bool isBlocked}) {
+  SessionState? get memberSession =>
+      ref.mounted ? ref.read(sessionViewModelProvider) : null;
+
+  /// Satır menüsü (`CLB-06.menu.<userId>`): SHT-21 → profil / rol değiştir /
+  /// çıkar (`ManageMemberActionsMixin`). "Profili gör" view'a döner.
+  Future<MemberMenuOutcome> openMemberMenu(MembershipModel membership) =>
+      openMemberActions(
+        clubId,
+        membership,
+        name: state.nameOf(membership),
+      );
+
+  @override
+  void onMemberRemoved(MembershipModel membership) {
     if (!ref.mounted) return;
-    _blocks.mark(userId, isBlocked: isBlocked);
-    final name = state.nameOfUser(userId);
+    final club = state.club;
     state = state.copyWith(
-      blockedUserIds: _blocks.applyTo(
-        ref.read(sessionViewModelProvider).blockedUserIds,
-      ),
-      pendingUndo: isBlocked && name != null
-          ? BlockUndo(userId: userId, name: name)
-          : null,
-      clearPendingUndo: !isBlocked,
+      managers: _without(state.managers, membership.userId),
+      members: _without(state.members, membership.userId),
+      club: club?.copyWith(memberCount: club.memberCount - 1),
     );
   }
 
-  /// Engel yazıldı / geri alındı: oturumdaki engel kümesi anında güncellenir
-  /// ki öteki ekranlar da (CLB-07 bandı, SHT-27 satırı) güncel kümeyi görsün;
-  /// yerel iyimser kayıt artık gerekmez. "Geri al" ekran kapandıktan sonra da
-  /// gelebilir (TST-09 ekrandan uzun yaşar); oturum uygulama boyunca
-  /// yaşadığından o durumda da eşitlenir.
   @override
-  void onBlockSaved(String userId, {required bool isBlocked}) {
-    _session.setBlocked(userId, isBlocked: isBlocked);
-    _blocks.settle(userId);
+  void onMemberRestored(MembershipModel membership) {
+    if (!ref.mounted) return;
+    final known = [
+      ...state.managers,
+      ...state.members,
+    ].any((m) => m.userId == membership.userId);
+    if (known) return;
+    final club = state.club;
+    state = _placed(
+      membership,
+    ).copyWith(club: club?.copyWith(memberCount: club.memberCount + 1));
   }
 
-  /// SHT-10'da doğrulanan kullanıcı şikayetini yazar
-  /// (`ReportReceivedMixin.sendReport`). `true` → sheet kapanır ve view
-  /// [showReportReceived] çağırır; `false` → sheet açık kalır (TST-24 /
-  /// TST-X18).
-  Future<bool> submitReport(ReportReasonResult report) => sendReport(
-    reporterId: ref.read(sessionViewModelProvider).uid,
-    report: report,
-  );
-
-  /// DLG-12 "Şikayetin alındı"; "… kullanıcısını da engelle" seçilirse
-  /// [block] (DLG-13 onayıyla).
-  Future<void> showReportReceived(String userId) async {
-    final wantsBlock = await showReportReceivedDialog(
-      blockableUserName: state.blockedUserIds.contains(userId)
-          ? null
-          : state.nameOfUser(userId),
-    );
-    if (wantsBlock && ref.mounted) await block(userId);
+  @override
+  void onMemberRoleChanged(MembershipModel membership) {
+    if (!ref.mounted) return;
+    state = _placed(membership);
   }
+
+  @override
+  void onMemberListStale(String clubId) {
+    if (ref.mounted) unawaited(refresh());
+  }
+
+  /// [membership] rolünün grubuna yerleşmiş durum (yönetim kurulu →
+  /// [ClubMembersState.managers], üye → [ClubMembersState.members]).
+  ClubMembersState _placed(MembershipModel membership) {
+    final managers = _without(state.managers, membership.userId);
+    final members = _without(state.members, membership.userId);
+    return membership.role == ClubRole.member
+        ? state.copyWith(managers: managers, members: [...members, membership])
+        : state.copyWith(managers: [...managers, membership], members: members);
+  }
+
+  static List<MembershipModel> _without(
+    List<MembershipModel> list,
+    String userId,
+  ) => [
+    for (final m in list)
+      if (m.userId != userId) m,
+  ];
 
   /// İçeriği baştan okur ve ilk yüklemeyi / yenilemeyi bitirir.
   Future<void> _load() async {
