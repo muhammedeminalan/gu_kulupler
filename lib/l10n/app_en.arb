@@ -3651,6 +3651,10 @@
   "@notifSystem": {
     "description": "Key notif.system"
   },
+  "notifTargetRemoved": "Content removed",
+  "@notifTargetRemoved": {
+    "description": "Key notif.targetRemoved"
+  },
   "notifUnread": "Unread",
   "@notifUnread": {
     "description": "Key notif.unread"

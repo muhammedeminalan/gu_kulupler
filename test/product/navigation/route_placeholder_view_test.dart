@@ -56,7 +56,8 @@ void main() {
         'lib/product/navigation/routes/clubs_routes.dart': 0,
         // T-24: Etkinlikler sekme kökü gerçek view'a bağlandı (EVT-01).
         'lib/product/navigation/routes/events_routes.dart': 0,
-        'lib/product/navigation/routes/notifications_routes.dart': 1,
+        // T-26: Bildirimler sekme kökü gerçek view'a bağlandı (NTF-01).
+        'lib/product/navigation/routes/notifications_routes.dart': 0,
         'lib/product/navigation/routes/admin_routes.dart': 1,
         'lib/product/navigation/routes/profile_routes.dart': 1,
       };

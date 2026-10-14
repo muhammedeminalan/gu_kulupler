@@ -8,6 +8,11 @@
 //   expect(reminders.scheduled[id]?.triggerAtUtc, startsAt - 1 sa);
 //   await viewModel.cancelRsvp();
 //   expect(reminders.cancelled, [rsvp.id]);
+//
+//   // Uygulama açıkken hatırlatıcıya dokunma (`tappedPayloads`):
+//   reminders.tap(LocalReminderService.payloadFor('e01'));
+import 'dart:async';
+
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
@@ -50,6 +55,17 @@ final class FakeLocalReminderService extends FakeBase
 
   /// `initialLaunchPayload` sonucu (soğuk açılış senaryosu).
   String? launchPayload;
+
+  final StreamController<String> _taps = StreamController<String>.broadcast(
+    sync: true,
+  );
+
+  /// Uygulama açıkken [payload] yüklü hatırlatıcıya dokunma benzetimi
+  /// (`tappedPayloads` dinleyicilerine iletilir).
+  void tap(String payload) => _taps.add(payload);
+
+  /// `tappedPayloads` akışının dinleyicisi var mı?
+  bool get hasTapListener => _taps.hasListener;
 
   /// [rsvpId] için plan; yoksa `null`.
   ScheduledReminder? scheduledFor(String rsvpId) =>
@@ -111,6 +127,9 @@ final class FakeLocalReminderService extends FakeBase
     _throwPending();
     rescheduleCalls++;
   }
+
+  @override
+  Stream<String> get tappedPayloads => _taps.stream;
 
   @override
   Future<String?> initialLaunchPayload() async {

@@ -3651,6 +3651,10 @@
   "@notifSystem": {
     "description": "Key notif.system"
   },
+  "notifTargetRemoved": "İçerik kaldırıldı",
+  "@notifTargetRemoved": {
+    "description": "Key notif.targetRemoved"
+  },
   "notifUnread": "Okunmamış",
   "@notifUnread": {
     "description": "Key notif.unread"

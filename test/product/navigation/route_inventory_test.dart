@@ -16,6 +16,8 @@
 // `TicketRoute` (`/events/:eventId/ticket`).
 // T-24 · `EventsRoute` kökü gerçek view (EVT-01), `MyEventsRoute`
 // (`/events/mine`).
+// T-26 · `NotificationsRoute` kökü gerçek view (NTF-01),
+// `NotificationPrefsRoute` (`/notifications/preferences`, NTF-02).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -67,6 +69,8 @@ const Map<GoRouteData, String> _routes = {
   EventDetailRoute(eventId: _eventId): '/events/:eventId',
   TicketRoute(eventId: _eventId): '/events/:eventId/ticket',
   NotificationsRoute(): '/notifications',
+  // Bildirimler dalı (T-26: NTF-02)
+  NotificationPrefsRoute(): '/notifications/preferences',
   AdminRoute(): '/admin',
   ProfileRoute(): '/profile',
 };
@@ -131,11 +135,11 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 29 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 30 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
-        'T-23: +2, T-24: +1)', () {
+        'T-23: +2, T-24: +1, T-26: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(29));
+      expect(_routes, hasLength(30));
     });
 
     test('T-24 · MyEventsRoute: sabit `mine` parçası `:eventId` kalıbına '

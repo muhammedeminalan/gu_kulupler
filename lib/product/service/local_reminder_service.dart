@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -64,6 +65,12 @@ abstract interface class LocalReminderService {
   /// Uygulamayı hatırlatıcıya dokunarak soğuk açılışta başlatan bildirimin
   /// yükü; yoksa `null` (CD-72).
   Future<String?> initialLaunchPayload();
+
+  /// Uygulama çalışırken (ön ya da arka planda) hatırlatıcıya dokunuşların
+  /// yükleri (`onDidReceiveNotificationResponse`; CD-72). Soğuk açılış bu
+  /// akışta değildir ([initialLaunchPayload]). Yayın akışıdır; dinlemeye
+  /// başlamak eklentiyi kurar. Yükü olmayan dokunuş iletilmez.
+  Stream<String> get tappedPayloads;
 
   /// Tek payload biçimi: `event_reminder:<eventId>` (§13.1, §15.8).
   static String payloadFor(String eventId) => '$payloadPrefix$eventId';
@@ -138,8 +145,9 @@ abstract interface class LocalReminderService {
 ///   metni o zaman cihaz dilinden üretilir.
 /// * iOS `DarwinInitializationSettings` izin istemez (üç `request*Permission`
 ///   bayrağı `false`); izin `PermissionService`'tedir.
-/// * Dokunma yönlendirmesi (`onDidReceiveNotificationResponse`) T-26'dadır;
-///   soğuk açılış yükü [initialLaunchPayload].
+/// * Uygulama çalışırken dokunma (`onDidReceiveNotificationResponse`)
+///   [tappedPayloads] akışına düşer; yönlendirme `NotificationNavigator
+///   .openPayload`'dadır (T-26). Soğuk açılış yükü [initialLaunchPayload].
 final class FlutterLocalReminderService implements LocalReminderService {
   /// `plugin` yalnızca testte verilir; `clock` geçmiş tetik denetimi içindir.
   FlutterLocalReminderService({
@@ -155,6 +163,15 @@ final class FlutterLocalReminderService implements LocalReminderService {
 
   /// Süren / biten eklenti kurulumu (bir kez).
   Future<void>? _initialization;
+
+  /// Uygulama çalışırken dokunulan hatırlatıcıların yükleri.
+  late final StreamController<String>
+  _taps = StreamController<String>.broadcast(
+    // Dokunuş yalnızca kurulumda verilen geri çağrıyla gelir: dinleyen varsa
+    // eklenti kurulmuş olmalıdır.
+    onListen: () =>
+        unawaited(_guard('Hatırlatıcı eklentisi kurulamadı', _initialize)),
+  );
 
   /// Hatırlatıcıların saat dilimi (D-26).
   static const String timeZoneName = 'Europe/Istanbul';
@@ -305,6 +322,16 @@ final class FlutterLocalReminderService implements LocalReminderService {
   }
 
   @override
+  Stream<String> get tappedPayloads => _taps.stream;
+
+  /// Eklentinin dokunma geri çağrısı (ön / arka planda çalışan uygulama).
+  void _onResponse(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+    _taps.add(payload);
+  }
+
+  @override
   Future<String?> initialLaunchPayload() async {
     try {
       final details = await _plugin.getNotificationAppLaunchDetails();
@@ -325,6 +352,7 @@ final class FlutterLocalReminderService implements LocalReminderService {
   Future<void> _initialize() async {
     final pending = _initialization ??= _plugin.initialize(
       settings: initializationSettings,
+      onDidReceiveNotificationResponse: _onResponse,
     );
     try {
       await pending;

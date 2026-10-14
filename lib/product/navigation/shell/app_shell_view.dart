@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/notifications/provider/notifications_view_model.dart';
+import 'package:gu_kulupler/features/notifications/view/widget/foreground_notification_banner.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/format/count_badge_label.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
-import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
+import 'package:gu_kulupler/product/navigation/notification_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Uygulama kabuğu: etkin dalın gezgini + alt sekme çubuğu (navigation.md
@@ -29,9 +31,13 @@ import 'package:gu_ui/gu_ui.dart';
 ///   bildirim ön izni (DLG-03) cihazda **bir kez** sorulur (architecture §6;
 ///   prototip `auth.enterApp`). Prototipteki 600 ms gecikme yoktur: soru ilk
 ///   kareden sonra açılır.
-/// * Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa ilk kareden sonra
-///   etkinlik detayı Etkinlikler sekmesinde açılır (CD-72; T-25 köprüsü —
-///   `SessionViewModel.takeLaunchReminder`, uygulama ömründe bir kez).
+/// * Yerel hatırlatıcı dokunuşu (CD-72): uygulama hatırlatıcıya dokunarak
+///   (soğuk) açıldıysa ilk kareden sonra yük
+///   (`SessionViewModel.takeLaunchReminder`, uygulama ömründe bir kez),
+///   uygulama çalışırken dokunulduysa `SessionViewModel.reminderTaps`
+///   `NotificationNavigator.openPayload`'a verilir (bilet → EVT-03, değilse
+///   EVT-02; Etkinlikler sekmesi).
+/// * Ön plan bandı (TST-55) kabuğu sarar ([ForegroundNotificationBanner]).
 class AppShellView extends ConsumerStatefulWidget {
   /// [navigationShell]: `StatefulShellRoute.indexedStack`'in dal kabı.
   const AppShellView({required this.navigationShell, super.key});
@@ -83,9 +89,16 @@ class AppShellView extends ConsumerStatefulWidget {
 }
 
 class _AppShellViewState extends ConsumerState<AppShellView> {
+  /// Uygulama açıkken dokunulan hatırlatıcılar (yalnızca etkin oturumda).
+  StreamSubscription<String>? _reminderTaps;
+
   @override
   void initState() {
     super.initState();
+    _reminderTaps = ref
+        .read(sessionViewModelProvider.notifier)
+        .reminderTaps
+        .listen(_openReminder);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(
@@ -97,17 +110,25 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
     });
   }
 
-  /// Soğuk açılışın hatırlatıcı yükü varsa etkinlik detayına gider.
+  @override
+  void dispose() {
+    unawaited(_reminderTaps?.cancel());
+    super.dispose();
+  }
+
+  /// Soğuk açılışın hatırlatıcı yükü varsa hedefine gider.
   Future<void> _openLaunchReminder() async {
-    final eventId = await ref
+    final payload = await ref
         .read(sessionViewModelProvider.notifier)
         .takeLaunchReminder();
-    if (eventId == null || !mounted) return;
-    AppNavigator.openInTab(
-      context,
-      GuTab.events,
-      EventDetailRoute(eventId: eventId).location,
-    );
+    if (payload == null || !mounted) return;
+    _openReminder(payload);
+  }
+
+  /// Hatırlatıcı yükü → `NotificationNavigator.openPayload` (CD-72).
+  void _openReminder(String payload) {
+    if (!mounted) return;
+    unawaited(ref.read(notificationNavigatorProvider).openPayload(payload));
   }
 
   @override
@@ -121,54 +142,58 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
     final tabs = AppShellView.visibleTabs(isSuperAdmin: isSuperAdmin);
     final l10n = context.l10n;
     final colors = context.gu.colors;
-    // TODO(T-26): okunmamış bildirim sayısı `NotificationsViewModel`'den
-    // okunur; o zamana kadar rozet yoktur.
-    const unreadCount = 0;
+    // Rozet: tercih süzgecinden geçmiş okunmamışlar (PLAN §15.9; "9+").
+    final unreadCount = ref.watch(
+      notificationsViewModelProvider.select((s) => s.unreadCount),
+    );
 
-    return PopScope<Object?>(
-      // Yalnızca ilk sekmenin kökünde sistem uygulamadan çıkarır.
-      canPop: currentTab == GuTab.clubs && isTabRoot,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        // Dal gezgini çağrı anında okunur: derleme anındaki değer bir
-        // gezinme geride kalabilir.
-        if (currentTab.navigatorKey.currentState?.canPop() ?? false) {
-          GoRouter.of(context).pop();
-          return;
-        }
-        navigationShell.goBranch(GuTab.clubs.index);
-      },
-      child: GuSystemUi(
-        // Sekme kökünde sistem gezinme çubuğu alt çubuğun zeminini sürdürür.
-        navBarColor: isTabRoot ? colors.bgSurface : null,
-        child: Scaffold(
-          backgroundColor: colors.bgCanvas,
-          body: navigationShell,
-          bottomNavigationBar: isTabRoot
-              ? GuBottomNav(
-                  items: [
-                    for (final tab in tabs)
-                      GuBottomNavItem(
-                        icon: _iconOf(tab),
-                        label: _labelOf(l10n, tab),
-                        badge: tab == GuTab.notifications
-                            ? countBadgeLabel(l10n, unreadCount)
-                            : null,
-                      ),
-                  ],
-                  currentIndex: tabs.indexOf(currentTab),
-                  onTap: (index) => AppShellView.selectTab(
-                    shell: navigationShell,
-                    tab: tabs[index],
-                    isTabRoot: isTabRoot,
-                    onScrollTop: (tab) => ref
-                        .read(scrollTopRequestProvider(tab).notifier)
-                        .request(),
-                  ),
-                  semanticLabel: l10n.a11yMainNav,
-                  tabKeyBuilder: (index) => AppShellView.tabKeys[tabs[index]]!,
-                )
-              : null,
+    return ForegroundNotificationBanner(
+      child: PopScope<Object?>(
+        // Yalnızca ilk sekmenin kökünde sistem uygulamadan çıkarır.
+        canPop: currentTab == GuTab.clubs && isTabRoot,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          // Dal gezgini çağrı anında okunur: derleme anındaki değer bir
+          // gezinme geride kalabilir.
+          if (currentTab.navigatorKey.currentState?.canPop() ?? false) {
+            GoRouter.of(context).pop();
+            return;
+          }
+          navigationShell.goBranch(GuTab.clubs.index);
+        },
+        child: GuSystemUi(
+          // Sekme kökünde sistem gezinme çubuğu alt çubuğun zeminini sürdürür.
+          navBarColor: isTabRoot ? colors.bgSurface : null,
+          child: Scaffold(
+            backgroundColor: colors.bgCanvas,
+            body: navigationShell,
+            bottomNavigationBar: isTabRoot
+                ? GuBottomNav(
+                    items: [
+                      for (final tab in tabs)
+                        GuBottomNavItem(
+                          icon: _iconOf(tab),
+                          label: _labelOf(l10n, tab),
+                          badge: tab == GuTab.notifications
+                              ? countBadgeLabel(l10n, unreadCount)
+                              : null,
+                        ),
+                    ],
+                    currentIndex: tabs.indexOf(currentTab),
+                    onTap: (index) => AppShellView.selectTab(
+                      shell: navigationShell,
+                      tab: tabs[index],
+                      isTabRoot: isTabRoot,
+                      onScrollTop: (tab) => ref
+                          .read(scrollTopRequestProvider(tab).notifier)
+                          .request(),
+                    ),
+                    semanticLabel: l10n.a11yMainNav,
+                    tabKeyBuilder: (index) =>
+                        AppShellView.tabKeys[tabs[index]]!,
+                  )
+                : null,
+          ),
         ),
       ),
     );
