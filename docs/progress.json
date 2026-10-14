@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T06:56:16.631Z",
+  "updated": "2026-10-14T08:17:02.018Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-25",
   "statusValues": [
     "pending",
     "planning",
@@ -381,8 +381,8 @@
       "notes": ""
     },
     "T-25": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T06:56:48.799Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -973,7 +973,10 @@
       "resolveIn": [
         "T-25"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-25",
+      "closedAt": "2026-10-14T07:51:13.326Z",
+      "closeNote": "T-25 (CD-148 (2)): kimlik {type}_{eventKey}_{userId}, eventKey notifyX çağrısı başına (NotificationWriter.newEventKey); Rules biçimi doğrular; rules/notifications.test.js 'aynı tür/ref/alıcı ikinci olay' + repository_payloads t25 yeniden gönderim vakası"
     },
     {
       "id": "W-50",
@@ -997,7 +1000,10 @@
         "T-22",
         "T-25"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-25",
+      "closedAt": "2026-10-14T07:51:13.398Z",
+      "closeNote": "T-25 payı (notifications.refs.*): Rules refs.get(k, null); istemci anahtarsız, seed açık null + anahtarsız vakaları notifications.test.js; diğer paylar T-12/T-15/T-19/T-22'de kapandı"
     },
     {
       "id": "W-52",
@@ -1117,7 +1123,10 @@
       "resolveIn": [
         "T-25"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-25",
+      "closedAt": "2026-10-14T07:51:13.350Z",
+      "closeNote": "T-25: DI ClientFanOutDispatcher(FirebaseNotificationRepository, FirebaseRecipientResolver, onIssue → AppLogger.warn); project_dependency_test apply → application_received uçtan uca"
     },
     {
       "id": "W-63",
@@ -1126,7 +1135,10 @@
       "resolveIn": [
         "T-25"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-25",
+      "closedAt": "2026-10-14T07:51:13.374Z",
+      "closeNote": "T-25 (CD-148 (4)): alıcı = managersOf (CD-139 okuması); Rules alıcının etkin board/president üyeliğini okur; alıcı başına ayrı batch; t25 sözleşmesi + notifications.test.js"
     },
     {
       "id": "W-64",
@@ -1338,6 +1350,42 @@
       "text": "Etkinlik düzenleme formu (T-22 güvenlik incelemesi, CD-144 (10); domain-model §2.7): yayındaki etkinlik başladıysa başlangıç / bitiş alanları kilitli (EventRepository.update ruleViolation(eventEnded) döner; Rules canEditEvent), başlamamışsa yeni başlangıç gelecekte olmalı; taslakta serbest. Değeri aynı kalan zaman alanı değişiklik sayılmaz (form tüm alanları gönderebilir)",
       "resolveIn": [
         "T-34"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-83",
+      "declaredIn": "T-25",
+      "text": "Kapalı bildirim dalları (CD-148 (5)): application_approved/rejected, removed_from_club, role_changed Rules create dalları T-30'da üreticileriyle (ManagementRepository approve/reject/removeMember/changeRole/transferPresidency) aynı commit'te açılır + t25 tarzı yük sözleşmesi (asıl yazım + bildirim aynı batch). Kritik üyeler yalnızca WriteBatch alır: transaction'lı geçişler için NotificationDispatcher'a Transaction karşılığı eklenir. publishPost bildirimi duyuruyu yazan yöneticinin cihazından gider (Rules post.authorId == uid()). waitlist_promoted sözleşmesindeki elle yazılmış terfi bileşimi AttendanceRepository.promote ile değişir.",
+      "resolveIn": [
+        "T-30"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-84",
+      "declaredIn": "T-25",
+      "text": "report_resolved Rules create dalı T-37'de AdminRepository.resolveReports ile açılır (refs.reportId; şikayetçi başına belge, tek olay anahtarı, kritik batch) + yük sözleşmesi.",
+      "resolveIn": [
+        "T-37"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-85",
+      "declaredIn": "T-25",
+      "text": "Hatırlatıcı köprüsünün T-26 payı (CD-148 (7)): NTF-02 eventReminders / reminderTime kaydı başarılıysa SessionViewModel.rescheduleReminders(); ön planda hatırlatıcıya dokunma (onDidReceiveNotificationResponse) → createSelf + NotificationNavigator.openPayload (going → TicketRoute, diğer → EventDetailRoute; LocalReminderService.eventIdOfPayload); soğuk açılış köprüsü (AppShellView → takeLaunchReminder → EventDetailRoute) openPayload'a devredilir. NTF-01 okunmamış rozeti watchInbox + NotificationPreferenceFilter.",
+      "resolveIn": [
+        "T-26"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-86",
+      "declaredIn": "T-25",
+      "text": "T-25 güvenlik incelemesi (CD-148 (9)) kabul edilen sınırlamalar → T-45 'Mod C spam sınırlaması' raporu: (a) iptal → yeniden başvuru turunda tur başına yönetici başına bir application_received (bekleme süresi yok; tur başvuru listesi ve günlükte görünür); (b) etkin kulüp yöneticisinin event_new yayın penceresinde (Limits.notificationEventNewWindow = 10 dk) rastgele anahtarla tekrar itmesi (CD-65); (c) Limits.notificationFanOutChunkSize = 225 canlıda (erişim çağrısı önbelleği + 1000 ifade sınırı) doğrulanır — aşımda dağıtıcı yarılar, ölçümle küçültülür; fanout_result.json canlı değeriyle güncellenir.",
+      "resolveIn": [
+        "T-45"
       ],
       "status": "open"
     }

@@ -77,6 +77,7 @@ const Map<String, Object> _actual = {
   'notificationInboxLimit': Limits.notificationInboxLimit,
   'unreadBadgeMax': Limits.unreadBadgeMax,
   'notificationFanOutChunkSize': Limits.notificationFanOutChunkSize,
+  'notificationEventNewWindow': Limits.notificationEventNewWindow,
   'eventNewInterestFanOutMax': Limits.eventNewInterestFanOutMax,
   'accountDeletionChunk': Limits.accountDeletionChunk,
   'istanbulUtcOffset': Limits.istanbulUtcOffset,
@@ -241,9 +242,9 @@ void main() {
   final planNames = [for (final limit in planLimits) limit.name];
 
   group('T-08 · Limits · PLAN §9.8 ad paritesi', () {
-    test('tablo okunur: 69 tekil sabit', () {
-      expect(planLimits, hasLength(69));
-      expect(planNames.toSet(), hasLength(69), reason: 'yinelenen ad');
+    test('tablo okunur: 70 tekil sabit', () {
+      expect(planLimits, hasLength(70));
+      expect(planNames.toSet(), hasLength(70), reason: 'yinelenen ad');
     });
 
     test('test değer haritası tablodaki adlarla birebir', () {
@@ -281,7 +282,7 @@ void main() {
           .where((line) => RegExp('^ {2}[A-Za-z_@]').hasMatch(line));
 
       expect(typeDeclarations, ['abstract final class Limits {']);
-      expect(memberLines, hasLength(69));
+      expect(memberLines, hasLength(70));
       expect(memberLines, everyElement(startsWith('  static ')));
     });
 

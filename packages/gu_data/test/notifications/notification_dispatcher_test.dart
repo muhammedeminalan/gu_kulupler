@@ -22,6 +22,7 @@ Future<Map<String, FirestoreResult<DispatchReport>>> _callAll(
   'notifyApplicationReceived': await dispatcher.notifyApplicationReceived(
     clubId: 'c01',
     applicantId: 'u1',
+    sequence: 0,
   ),
   'notifyApplicationDecided': await dispatcher.notifyApplicationDecided(
     clubId: 'c01',
@@ -177,7 +178,7 @@ void main() {
           dispatcher.calls.first,
           const DispatchCall(
             kind: 'notifyApplicationReceived',
-            args: {'clubId': 'c01', 'applicantId': 'u1'},
+            args: {'clubId': 'c01', 'applicantId': 'u1', 'sequence': 0},
           ),
         );
         expect(

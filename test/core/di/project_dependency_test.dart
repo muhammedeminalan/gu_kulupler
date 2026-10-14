@@ -419,9 +419,9 @@ void main() {
   });
 
   group('T-15 · ProjectDependency · kulüp ve üyelik kayıtları', () {
-    test('beş repository gerçek uygulamalarıyla, bildirim dağıtıcısı Noop '
-        'olarak kaydedilir (CD-36); mixin getter’ları aynı örnekleri '
-        'döndürür', () async {
+    test('beş repository gerçek uygulamalarıyla, bildirim dağıtıcısı '
+        'istemci dağıtıcısı olarak kaydedilir (T-25, W-62); mixin '
+        'getter’ları aynı örnekleri döndürür', () async {
       await ProjectDependency.setup(
         navigatorKey: navigatorKey,
         toastController: toastController,
@@ -436,10 +436,7 @@ void main() {
       expect(GetIt.I<ReportRepository>(), isA<FirebaseReportRepository>());
       expect(GetIt.I<BlockRepository>(), isA<FirebaseBlockRepository>());
       expect(GetIt.I<ActivityRepository>(), isA<FirebaseActivityRepository>());
-      expect(
-        GetIt.I<NotificationDispatcher>(),
-        isA<NoopNotificationDispatcher>(),
-      );
+      expect(GetIt.I<NotificationDispatcher>(), isA<ClientFanOutDispatcher>());
 
       final consumer = _Consumer();
       expect(consumer.clubRepository, same(GetIt.I<ClubRepository>()));
@@ -506,6 +503,109 @@ void main() {
         const PageRequest(),
       );
       expect(log.dataOrNull?.items.single.kind, ActivityKind.memberJoined);
+    });
+  });
+
+  group('T-25 · ProjectDependency · bildirim kayıtları', () {
+    test('gelen kutusu repository’si gerçek uygulamasıyla kaydedilir; mixin '
+        'getter’ı aynı örneği döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(
+        GetIt.I<NotificationRepository>(),
+        isA<FirebaseNotificationRepository>(),
+      );
+      expect(
+        _Consumer().notificationRepository,
+        same(GetIt.I<NotificationRepository>()),
+      );
+    });
+
+    test('başvuru kayıtlı dağıtıcıyla etkin yöneticilere application_received '
+        'yazar (danışmana ve başvurana değil); belge kayıtlı repository’nin '
+        'gelen kutusunda görünür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(
+          appClock: FakeAppClock(DateTime.utc(2026, 10, 13)),
+        ),
+      );
+      const applicant = UserModel(
+        uid: 'u_ayse',
+        name: 'Ayşe Işık',
+        nameLower: 'ayşe ışık',
+        avatarSeed: 'u_ayse',
+        profileComplete: true,
+      );
+      await firestore.db.doc('users/u_ayse').set(applicant.toJson());
+      await firestore.db
+          .doc('clubs/c01')
+          .set(
+            const ClubModel(
+              name: 'Satranç Kulübü',
+              nameLower: 'satranç kulübü',
+              categoryId: 'k01',
+              iconName: 'cpu',
+              palette: ClubPalette.red,
+              pattern: ClubPattern.dots,
+              founded: 2015,
+              presidentId: 'u_president',
+              memberCount: 3,
+            ).toJson(),
+          );
+      for (final (uid, role) in [
+        ('u_president', ClubRole.president),
+        ('u_board', ClubRole.board),
+        ('u_advisor', ClubRole.advisor),
+      ]) {
+        await firestore.db
+            .doc('memberships/c01_$uid')
+            .set(
+              MembershipModel(
+                clubId: 'c01',
+                userId: uid,
+                applicant: MembershipApplicantModel(
+                  name: 'Yönetici',
+                  avatarSeed: uid,
+                ),
+                status: MembershipStatus.active,
+                role: role,
+              ).toJson(),
+            );
+      }
+      final consumer = _Consumer();
+
+      final applied = await consumer.membershipRepository.apply(
+        clubId: 'c01',
+        applicant: applicant,
+        email: 'ayse@ogr.gumushane.edu.tr',
+        note: '',
+      );
+
+      expect(applied.dataOrNull?.status, MembershipStatus.pending);
+      final written = await firestore.db.collection('notifications').get();
+      expect(
+        written.docs.map((doc) => doc.data()['userId']).toSet(),
+        {'u_president', 'u_board'},
+      );
+      expect(
+        written.docs.map((doc) => doc.id),
+        everyElement(startsWith('application_received_')),
+      );
+      final inbox = await consumer.notificationRepository
+          .watchInbox('u_board')
+          .first;
+      expect(
+        inbox.dataOrNull?.single.type,
+        NotificationType.applicationReceived,
+      );
+      expect(inbox.dataOrNull?.single.refs.applicantId, 'u_ayse');
     });
   });
 

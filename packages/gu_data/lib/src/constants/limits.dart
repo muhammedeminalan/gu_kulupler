@@ -274,9 +274,16 @@ abstract final class Limits {
   /// Okunmamış rozetinde gösterilen en büyük sayı (üstü `9+`).
   static const int unreadBadgeMax = 9;
 
-  /// `ClientFanOutDispatcher` parça boyutu (başlangıç değeri; T-25 bütçe
-  /// ölçümü günceller).
-  static const int notificationFanOutChunkSize = 50;
+  /// `ClientFanOutDispatcher` parça boyutu: T-25 emülatör ölçümünde en büyük
+  /// geçen N'nin (450) yarısı (`firebase/test/budget/fanout_result.json`;
+  /// parite RP05). T-45'te yeniden ölçülür.
+  static const int notificationFanOutChunkSize = 225;
+
+  /// `event_new` bildiriminin yazılabildiği pencere: etkinliğin (yeniden)
+  /// yayınından (`publishedAt`, sunucu zamanı) sonra bu süre içinde. Rules
+  /// `// limit: notificationEventNewWindow` (T-25 güvenlik incelemesi: eski
+  /// yayının bildirimi sonradan yeniden itilemez).
+  static const Duration notificationEventNewWindow = Duration(minutes: 10);
 
   /// `event_new` ilgi-eşleşmeli alıcı üst sınırı
   /// (`UserRepository.listByInterests`, CD-38).

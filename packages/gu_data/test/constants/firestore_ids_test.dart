@@ -205,6 +205,23 @@ void main() {
       expect(discriminated, isNot(contains(firstApproval)));
     });
 
+    test('applicationEventKey = clubId_applicantId_priorCount: her başvuru '
+        'yönetici başına tek belge, kulüp ve yeniden başvuru ayrışır '
+        '(CD-148)', () {
+      expect(
+        FirestoreIds.applicationEventKey('c01', 'u_ayse', 0),
+        'c01_u_ayse_0',
+      );
+      expect(
+        {
+          FirestoreIds.applicationEventKey('c01', 'u_ayse', 0),
+          FirestoreIds.applicationEventKey('c01', 'u_ayse', 1),
+          FirestoreIds.applicationEventKey('c02', 'u_ayse', 0),
+        },
+        hasLength(3),
+      );
+    });
+
     test('kimlik tür, referans ve alıcının her birine duyarlıdır', () {
       final base = FirestoreIds.notification('role_changed', 'c01', 'u_ayse');
 
@@ -228,6 +245,9 @@ void main() {
       expect(note, contains('**`refId` olay başına tekil olmalı**'));
       expect(note, contains('CD-129'));
       expect(note, contains('W-49'));
+      // T-25: şema olay anahtarıyla kesinleşti (CD-148).
+      expect(note, contains('CD-148'));
+      expect(note, contains('{type}_{eventKey}_{userId}'));
     });
 
     test('vote = oy verenin uid değeri', () {
@@ -349,6 +369,7 @@ void main() {
         'vote',
         'rsvp',
         'notification',
+        'applicationEventKey',
         'report',
         'block',
         'savedPost',
@@ -395,7 +416,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 21 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 22 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -415,6 +436,8 @@ void main() {
         'report',
         'announcementCounter',
         'notification',
+        // T-25 güvenlik incelemesi · başvuru bildiriminin olay anahtarı (CD-148)
+        'applicationEventKey',
         'activity',
         'vote',
         // T-19 · gönderi günlüğü kimliği ve sayaç işaretçileri (CD-141)

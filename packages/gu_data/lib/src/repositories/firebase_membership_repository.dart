@@ -113,12 +113,14 @@ final class FirebaseMembershipRepository implements MembershipRepository {
       note: note,
       target: MembershipStatus.pending,
     );
-    if (result.isSuccess) {
+    if (result case FirebaseSuccess(data: final membership)) {
       // Fan-out asıl işlem kesinleştikten sonra ve en iyi çabayladır:
-      // bildirim hatası başvurunun sonucunu bozmaz (PLAN §10.5).
+      // bildirim hatası başvurunun sonucunu bozmaz (PLAN §10.5). Olay
+      // anahtarı bu başvurunun `priorCount`'udur (CD-148).
       await _dispatcher.notifyApplicationReceived(
         clubId: clubId,
         applicantId: applicant.uid,
+        sequence: membership.priorCount,
       );
     }
     return result;

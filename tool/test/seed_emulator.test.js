@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { TOOL_DIR } = require('./helpers');
-const { COLLECTIONS, PATH_OF, convert, expectedCounts, staticTablesDiff, validate } = require('../seed/lib/convert');
+const { COLLECTIONS, PATH_OF, convert, dayShiftMs, expectedCounts, staticTablesDiff, validate, withExtras } = require('../seed/lib/convert');
 const { GuardError, encodeValue, resolveTarget } = require('../seed/lib/emulator_rest');
 const { placeholderPng } = require('../seed/placeholder_png');
 
@@ -79,6 +79,8 @@ test('seed · --dry-run ağa çıkmadan sayıları basar; bilinmeyen argüman ku
   assert.equal(dry.code, 0, dry.stderr);
   assert.match(dry.stdout, /kuru koşum \(yazılmadı\)/);
   assert.match(dry.stdout, /^\s+rsvps\s+944$/m);
+  // T-25: demo-notifications.json'daki 5 ek tür birleştirilir (40 + 5).
+  assert.match(dry.stdout, /^\s+notifications\s+45$/m);
   assert.match(dry.stdout, /^\s+auth\s+226$/m);
   assert.equal(dry.stdout.includes(raw.meta.demoPassword), false, 'parola çıktıya yazılmamalı');
   assert.equal(run(['--sil'], {}).code, 2);
@@ -181,7 +183,14 @@ test('seed · §9.12 kuralları: gönderi, oy, etkinlik, şikayet, sayaç, zaman
 
   assert.deepEqual(Object.keys(docs.reports).filter((id) => id.endsWith('_post_p17')), ['u051_post_p17', 'u052_post_p17', 'u053_post_p17']);
   assert.equal(docs.reports.u051_post_p17.targetClubId, raw.posts.p17.clubId);
-  assert.equal('id' in docs.notifications.n001, false);
+  // T-25 şeması: kimlik {type}_{eventKey}_{userId} (hatırlatıcı event_reminder_{eventId}_{uid}), refs yalnızca
+  // türün zorunluları (eksik clubId etkinlikten), read bool; `id` alanı yok.
+  const n001 = docs.notifications.system_seedn001000000000000_u_ayse;
+  assert.deepEqual(n001.refs, { textKey: 'welcome' });
+  assert.equal('id' in n001, false);
+  assert.ok(docs.notifications.event_reminder_e01_u_mehmet);
+  assert.deepEqual(docs.notifications.event_new_seedn002000000000000_u_ayse.refs, { clubId: 'c01', eventId: 'e01' });
+  assert.ok(Object.values(docs.notifications).every((n) => typeof n.read === 'boolean'));
   assert.deepEqual(Object.keys(Object.values(docs.activity)[0]).sort(), ['actorId', 'clubId', 'createdAt', 'kind', 'refs']);
   assert.deepEqual(Object.keys(docs.savedPosts), ['u_mehmet_p01', 'u_mehmet_p21']);
 
@@ -193,9 +202,14 @@ test('seed · §9.12 kuralları: gönderi, oy, etkinlik, şikayet, sayaç, zaman
   const shifted = convert(raw, { now: later, randomHex: sequentialHex }).docs;
   assert.deepEqual(Object.keys(shifted.announcementCounters), ['c01_20261010']);
 
-  // zaman kuralı: ISO + (now − meta.today); *_rel_days hiçbir belgede yok
+  // zaman kuralı: meta.today gününden now'ın Istanbul gününe TAM gün kayması (saat korunur); 10 Ekim
+  // 23:59:59.999 → 2 gün. *_rel_days hiçbir belgede yok
   assert.equal(docs.events.e01.startsAt.toISOString(), '2026-10-09T15:00:00.000Z');
-  assert.equal(shifted.events.e01.startsAt.getTime(), docs.events.e01.startsAt.getTime() + 3 * DAY_MS - 1);
+  assert.equal(dayShiftMs(TODAY, later), 2 * DAY_MS);
+  assert.equal(dayShiftMs(TODAY, new Date(TODAY.getTime() + 3 * DAY_MS)), 3 * DAY_MS);
+  assert.equal(shifted.events.e01.startsAt.getTime(), docs.events.e01.startsAt.getTime() + 2 * DAY_MS);
+  assert.equal(shifted.notifications.event_reminder_e01_u_mehmet.createdAt.getTime(),
+    docs.notifications.event_reminder_e01_u_mehmet.createdAt.getTime() + 2 * DAY_MS);
   assert.equal(docs.events.e01.updatedAt.getTime(), docs.events.e01.createdAt.getTime());
   const leaked = COLLECTIONS.flatMap((name) => Object.entries(docs[name]).filter(([, d]) => JSON.stringify(d).includes('_rel_days')).map(([id]) => `${name}/${id}`));
   assert.deepEqual(leaked, []);
@@ -285,4 +299,24 @@ test('seed · yardımcılar: Firestore değer kodlaması, yer tutucu PNG (trLowe
   assert.deepEqual(placeholderPng('p02-img1'), png);
   assert.notDeepEqual(placeholderPng('p02-img2'), png);
   assert.ok(png.length < 5 * 1024);
+});
+
+test('seed · T-25 ek bildirimler: 13 türün hepsi, okunmuş ve okunmamış; kimlik çakışması hata', () => {
+  const extras = JSON.parse(fs.readFileSync(path.join(TOOL_DIR, 'seed', 'demo-notifications.json'), 'utf8'));
+  const merged = withExtras(raw, extras);
+  const { docs } = convert(merged, { now: TODAY, randomHex: sequentialHex });
+  assert.equal(Object.keys(docs.notifications).length, expectedCounts(merged).notifications);
+  assert.deepEqual(validate(docs, { announcementDailyLimit: 2 }), []);
+  const types = new Set(Object.values(docs.notifications).map((n) => n.type));
+  assert.equal(types.size, 13);
+  assert.ok(Object.values(docs.notifications).some((n) => n.read) && Object.values(docs.notifications).some((n) => !n.read));
+  assert.deepEqual(docs.notifications.role_changed_seedn102000000000000_u_elif?.refs, { clubId: 'c01', role: 'board' });
+  assert.throws(() => withExtras(raw, { notifications: { n001: raw.notifications.n001 } }), /zaten var/);
+  assert.equal(Object.keys(raw.notifications).length, 40, 'demo-data.json değişmez');
+
+  const broken = structuredClone(docs);
+  broken.notifications['event_new_kisaanahtar_u_ayse'] = { ...Object.values(docs.notifications)[1] };
+  broken.notifications.system_seedn001000000000000_u_ayse.refs = { textKey: 'welcome', clubId: 'c01' };
+  const problems = validate(broken, { announcementDailyLimit: 2 });
+  assert.equal(problems.length, 2, problems.join('\n'));
 });

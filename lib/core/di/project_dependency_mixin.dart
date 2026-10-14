@@ -78,6 +78,12 @@ mixin ProjectDependencyMixin {
   /// hatırlatma, bilet (T-22).
   RsvpRepository get rsvpRepository => GetIt.I<RsvpRepository>();
 
+  /// Uygulama içi bildirimler: gelen kutusu, okundu, kaydırarak sil / geri
+  /// al, cihazın kendi hatırlatıcı belgesi (`createSelf`) (T-25). Başkası
+  /// adına yazım bu arayüzde değil, dağıtıcıdadır.
+  NotificationRepository get notificationRepository =>
+      GetIt.I<NotificationRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

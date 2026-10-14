@@ -24,6 +24,7 @@ final class NoopNotificationDispatcher implements NotificationDispatcher {
   Future<FirestoreResult<DispatchReport>> notifyApplicationReceived({
     required String clubId,
     required String applicantId,
+    required int sequence,
   }) => _skipped(_unresolved);
 
   @override

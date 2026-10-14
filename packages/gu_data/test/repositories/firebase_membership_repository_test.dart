@@ -403,7 +403,7 @@ void main() {
       expect(dispatcher.calls, const [
         DispatchCall(
           kind: 'notifyApplicationReceived',
-          args: {'clubId': _clubId, 'applicantId': _uid},
+          args: {'clubId': _clubId, 'applicantId': _uid, 'sequence': 0},
         ),
       ]);
 

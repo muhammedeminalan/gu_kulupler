@@ -48,9 +48,11 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
   Future<FirestoreResult<DispatchReport>> notifyApplicationReceived({
     required String clubId,
     required String applicantId,
+    required int sequence,
   }) => _fanOut('notifyApplicationReceived', {
     'clubId': clubId,
     'applicantId': applicantId,
+    'sequence': sequence,
   }, const []);
 
   @override

@@ -4,6 +4,7 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
+import 'package:gu_kulupler/core/session/session_reminder_sync.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
@@ -41,6 +42,12 @@ part 'session_view_model.g.dart';
 /// değişince ya da askıya alınınca dinleyici bırakılır. **Engellenenler**
 /// tek seferlik okunur (`BlockRepository.fetchActiveBlocks`): oturum
 /// çözülünce ve [refreshUser] ile.
+///
+/// **Hatırlatıcılar (T-25, PLAN §15.6):** oturum bir kullanıcı için `active`
+/// çözülünce (açılış + giriş) ve uygulama dili değişince yerel planlar
+/// baştan kurulur ([rescheduleReminders]); oturum kapanınca hepsi iptal
+/// edilir. Soğuk açılışın hatırlatıcı yükünü kabuk bir kez alır
+/// ([takeLaunchReminder]); oturum `active` dışında çözülürse yük atılır.
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
     with ProjectDependencyMixin, SuspendedAccountMixin {
@@ -63,6 +70,13 @@ final class SessionViewModel extends _$SessionViewModel
   _membershipSubscription;
   String? _membershipsFor;
 
+  /// Hatırlatıcı köprüsü ve planları kurulmuş kullanıcı (bu etkinleşmede).
+  final SessionReminderSync _reminders = SessionReminderSync();
+  String? _remindersFor;
+
+  /// Soğuk açılış yükü alındı ya da atıldı mı (uygulama ömründe bir kez)?
+  bool _launchHandled = false;
+
   @override
   SessionState build() {
     final authSubscription = authRepository.watchAuthState().listen(
@@ -71,6 +85,11 @@ final class SessionViewModel extends _$SessionViewModel
     );
     final tokenSubscription = authRepository.tokenErrors.listen(_onTokenError);
     ref
+      // Planlı bildirimlerin metni planlandığı dildedir: dil değişince
+      // yeniden kurulur (PLAN §15.6; kanal adı da değişir).
+      ..listen(appPreferencesViewModelProvider, (previous, next) {
+        if (previous?.locale != next.locale) unawaited(rescheduleReminders());
+      })
       ..onDispose(authSubscription.cancel)
       ..onDispose(tokenSubscription.cancel)
       ..onDispose(_stopMembershipWatch);
@@ -179,7 +198,6 @@ final class SessionViewModel extends _$SessionViewModel
   /// döner: çağıran akışını sonuca göre sürdürür (DLG-27 kapısı açık kalır,
   /// `sessionExpired` inmez).
   Future<bool> signOut() async {
-    // TODO(T-23): `localReminderService.cancelAll()`.
     // Üyelik dinleyicisi çıkıştan önce bırakılır: kapanan oturumun açık
     // dinleyicisi yetki hatası üretir.
     final watched = _membershipsFor;
@@ -187,6 +205,7 @@ final class SessionViewModel extends _$SessionViewModel
     final result = await authRepository.signOut();
     switch (result) {
       case FirebaseSuccess():
+        _stopReminders();
         if (ref.mounted) state = state.copyWith(sessionExpired: false);
         return true;
       case FirebaseFailure(:final error):
@@ -236,6 +255,42 @@ final class SessionViewModel extends _$SessionViewModel
     }
   }
 
+  /// Etkin oturumun yerel hatırlatıcılarını baştan kurar (PLAN §15.6):
+  /// `settings/{uid}` + kendi `going` kayıtları + etkinlikleri okunur,
+  /// `LocalReminderService.rescheduleAll` çağrılır. Oturum etkinleşince ve
+  /// dil değişince kendiliğinden; NTF-02 tercih kaydından sonra (T-26)
+  /// açıkça çağrılır. Etkin oturum yoksa etkisizdir.
+  Future<void> rescheduleReminders() async {
+    final uid = state.uid;
+    if (uid == null || state.status != AuthStatus.active) return;
+    _remindersFor = uid;
+    await _reminders.reschedule(
+      uid,
+      isCurrent: () =>
+          ref.mounted &&
+          _remindersFor == uid &&
+          state.uid == uid &&
+          state.status == AuthStatus.active,
+    );
+  }
+
+  /// Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa etkinliğin kimliği;
+  /// yoksa `null` (CD-72; PLAN §15.6). Uygulama ömründe **bir kez** yanıt
+  /// verir: kabuk ilk kuruluşta çağırır ve `EventDetailRoute`'a gider.
+  /// Hatırlatıcının liste belgesi (`event_reminder`) burada yazılır. Oturum
+  /// önce `active` dışında çözüldüyse yük atılmıştır.
+  Future<String?> takeLaunchReminder() async {
+    final uid = state.uid;
+    if (_launchHandled || uid == null || state.status != AuthStatus.active) {
+      _launchHandled = true;
+      return null;
+    }
+    _launchHandled = true;
+    final eventId = await _reminders.takeLaunchEventId(uid);
+    if (!ref.mounted || state.uid != uid) return null;
+    return eventId;
+  }
+
   /// Bekleyen askı bildirimini (DLG-01 "Hesabın askıya alındı") gösterir ve
   /// kapanana kadar bekler; bekleyen bildirim yoksa etkisizdir. Giriş ekranı
   /// (AUT-01) açılışta ve oturum durumu değişince çağırır.
@@ -254,6 +309,8 @@ final class SessionViewModel extends _$SessionViewModel
     if (user == null) {
       _claimsRefreshedFor = null;
       _stopMembershipWatch();
+      _stopReminders();
+      _launchHandled = true;
       state = _withoutUser(
         state,
       ).copyWith(status: AuthStatus.signedOut, onboardingSeen: onboardingSeen);
@@ -406,7 +463,19 @@ final class SessionViewModel extends _$SessionViewModel
       isError: false,
       sessionExpired: sessionExpired,
     );
-    if (isActive) _watchMemberships(uid);
+    if (isActive) {
+      _watchMemberships(uid);
+      if (_remindersFor != uid) unawaited(rescheduleReminders());
+    } else {
+      _launchHandled = true;
+    }
+  }
+
+  /// Oturum kapandı: planlar iptal edilir (yerel bildirim planı, veri değil).
+  void _stopReminders() {
+    if (_remindersFor == null) return;
+    _remindersFor = null;
+    unawaited(_reminders.cancelAll());
   }
 
   /// [uid] kullanıcısının üyeliklerini canlı dinlemeye başlar (PLAN §10.6

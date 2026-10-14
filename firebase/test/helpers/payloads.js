@@ -717,6 +717,60 @@ function promoteWrites({ club, eventId = 'e_live', userId = 'u_student' }) {
   };
 }
 
+// ── T-25 · notifications ──────────────────────────────────────────────────────────────────────
+// Yazma yolları docs/plans/T-25.md §6 (a, b, f, g): NotificationWriter.addToBatch / createMany (dağıtıcı),
+// NotificationRepository.createSelf (`event_reminder`), markRead / markAllRead / soft delete / restore.
+
+/** Örnek olay anahtarları — `NotificationWriter.newEventKey` biçimi (20 karakter `[A-Za-z0-9]`). */
+const EVENT_KEY = 'AbCdEfGhIjKlMnOpQr01';
+const EVENT_KEY_2 = 'ZyXwVuTsRqPoNmLkJi23';
+
+/** Dart `FirestoreIds.notification`: `notifications/{type}_{eventKey}_{userId}`. */
+const notificationPath = (type, key, userId) => `notifications/${type}_${key}_${requireId(userId, 'userId')}`;
+
+/** `event_reminder` kimliği (createSelf): `notifications/event_reminder_{eventId}_{uid}`. */
+const reminderPath = (eventId, uid) => `notifications/event_reminder_${requireId(eventId, 'eventId')}_${requireId(uid, 'uid')}`;
+
+/**
+ * Bildirim belgesi (istemci biçimi): `userId`, `type`, `refs` (yalnızca dolu referanslar — W-51), `read: false`
+ * + `BaseFieldsPayload.create()`. Metin ve aktör alanı yoktur (CD-147).
+ */
+function notificationCreate(type, userId, refs, extra) {
+  return { userId, type, refs, read: false, ...baseCreate(), ...extra };
+}
+
+/**
+ * Dağıtıcının olay anahtarı (CD-148 — ClientFanOutDispatcher): tek seferlik olaylarda olayın kimliği
+ * (`announcement` → postId, `event_cancelled` → eventId, `application_received` →
+ * `FirestoreIds.applicationEventKey` = `{clubId}_{applicantId}_{priorCount}`), diğerlerinde rastgele anahtar.
+ * `key` verilirse olduğu gibi kullanılır (ret vakaları: tek seferlik türde rastgele anahtar).
+ */
+function eventKeyOf(type, refs, { key, sequence = 0 } = {}) {
+  if (key !== undefined) return key;
+  // Zorunlu referansı eksik ret vakalarında kimlik yine kurulabilsin diye boş referans rastgele anahtara düşer.
+  if (type === 'announcement') return refs.postId || EVENT_KEY;
+  if (type === 'event_cancelled') return refs.eventId || EVENT_KEY;
+  if (type === 'application_received') return `${refs.clubId}_${refs.applicantId}_${sequence}`;
+  return EVENT_KEY;
+}
+
+/** Fan-out parçası (`createMany`): tek olay anahtarı → her alıcıya bir `set`; ad = alıcı. */
+function fanOutWrites({ type, refs, recipients, key, sequence }) {
+  const eventKey = eventKeyOf(type, refs, { key, sequence });
+  return Object.fromEntries(recipients.map((u) => [u, set(notificationPath(type, eventKey, u), notificationCreate(type, u, refs))]));
+}
+
+/** `AttendanceRepository.promote` (T-30) + terfi edilenin `waitlist_promoted` bildirimi (kritik, aynı batch). */
+function promoteNotifyWrites({ club, eventId = 'e_live', userId = 'u_student', recipient = userId, key = EVENT_KEY }) {
+  return {
+    ...promoteWrites({ club, eventId, userId }),
+    notification: set(notificationPath('waitlist_promoted', key, recipient), notificationCreate('waitlist_promoted', recipient, { clubId: club, eventId })),
+  };
+}
+
+/** `markRead` / `markAllRead` (parça başına bir update). */
+const notificationRead = () => ({ read: true, ...baseUpdate() });
+
 /**
  * `expectations/*.json` vakalarındaki `variant` adları → yük üreticisi `(ctx) => data`.
  * `ctx` = { role, uid, club, otherClub }. Koleksiyon task'ları kendi varyantlarını aşağıya ekler
@@ -820,6 +874,13 @@ const variants = new Map([
   ['rsvpCancelAlone', () => ({ status: 'cancelled', ...baseUpdate() })],
   ['rsvpReminder', () => rsvpReminder()],
   ['rsvpAttendAlone', (ctx) => ({ status: 'attended', scannedAt: serverTimestamp(), scannedBy: ctx.uid, ...baseUpdate() })],
+  // T-25 · notifications (alıcı `u_member`; matris yolu `newDocPath` ile verilir)
+  ['notificationEventNew', (ctx) => notificationCreate('event_new', 'u_member', { clubId: ctx.club, eventId: 'e_public' })],
+  ['notificationReminderSelf', (ctx) => notificationCreate('event_reminder', ctx.uid, { clubId: ctx.club, eventId: 'e_public' })],
+  ['notificationSystem', () => notificationCreate('system', 'u_member', { textKey: 'welcome' })],
+  ['notificationRead', () => notificationRead()],
+  ['notificationUnread', () => ({ read: false, ...baseUpdate() })],
+  ['notificationRetype', () => ({ type: 'announcement', ...baseUpdate() })],
 ]);
 
 /**
@@ -974,6 +1035,15 @@ module.exports = {
   eventCounterData,
   attendWrites,
   promoteWrites,
+  EVENT_KEY,
+  EVENT_KEY_2,
+  notificationPath,
+  reminderPath,
+  notificationCreate,
+  eventKeyOf,
+  fanOutWrites,
+  promoteNotifyWrites,
+  notificationRead,
   registerVariant,
   payloadFor,
   batchFor,

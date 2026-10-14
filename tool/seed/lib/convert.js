@@ -4,7 +4,10 @@
 // değişirse ikisi birlikte değişir. Saf fonksiyonlardır: ağ, dosya ya da saat okumaz ("şimdi" ve
 // rastgelelik parametredir).
 //
-// Zaman kuralı: her an `ISO + (now − meta.today)` olur; `*_rel_days` anahtarları yazılmaz.
+// Zaman kuralı (tek yer: `dayShiftMs`): her an `ISO + D` olur; D = referans gün (`meta.today`, Istanbul
+// gece yarısı) ile çalıştırma anının Istanbul günü arasındaki TAM gün farkı — saat korunur (demo'da
+// "yarın 18:00" olan etkinlik, tohumlama hangi saatte yapılırsa yapılsın yine yarın 18:00'dedir).
+// `*_rel_days` anahtarları yazılmaz.
 // Zamanlar JS `Date` olarak döner (yazıcı bunları Firestore `timestampValue`'ya çevirir).
 const { trLower } = require('./tr_lower');
 
@@ -18,6 +21,7 @@ const SEED_TITLES = Object.freeze(['Prof. Dr.', 'Doç. Dr.', 'Dr. Öğr. Üyesi'
 const SUPER_ADMIN_ID = 'u_admin';
 
 const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 /** Istanbul'un UTC'ye göre sabit kayması (Dart `Limits.istanbulUtcOffset`). */
 const ISTANBUL_OFFSET_MS = 3 * HOUR_MS;
 
@@ -58,6 +62,52 @@ const pad = (value, width) => String(value).padStart(width, '0');
 /** JSON'da olmayan anahtar `null` yazılır (Dart map okuması gibi). */
 const orNull = (value) => (value === undefined ? null : value);
 
+/** [date]'in Istanbul gününün başlangıcı (UTC ms) — `AppClock.istanbulStartOfDay`. */
+const istanbulStartOfDay = (date) =>
+  Math.floor((date.getTime() + ISTANBUL_OFFSET_MS) / DAY_MS) * DAY_MS - ISTANBUL_OFFSET_MS;
+
+/** Demo verinin kayması: `meta.today` gününden [now]'ın Istanbul gününe tam gün farkı (ms). */
+const dayShiftMs = (today, now) => istanbulStartOfDay(now) - istanbulStartOfDay(today);
+
+// ── T-25 · bildirim belgeleri (docs/plans/T-25.md §6 a–b) ────────────────────────────────────────
+/** Türün zorunlu `refs` alanları — Dart `NotificationRefsModel.requiredFor` ile aynı. */
+const NOTIFICATION_REFS = Object.freeze({
+  application_received: ['clubId', 'applicantId'],
+  application_approved: ['clubId'],
+  application_rejected: ['clubId'],
+  removed_from_club: ['clubId'],
+  role_changed: ['clubId', 'role'],
+  announcement: ['clubId', 'postId'],
+  event_new: ['clubId', 'eventId'],
+  event_reminder: ['clubId', 'eventId'],
+  event_cancelled: ['clubId', 'eventId'],
+  waitlist_promoted: ['clubId', 'eventId'],
+  report_resolved: ['reportId'],
+  new_report: ['reportId'],
+  system: ['textKey'],
+});
+/** Olay anahtarı biçimi (`NotificationWriter.newEventKey`; Rules `[A-Za-z0-9]{20}`). */
+const EVENT_KEY = /^[A-Za-z0-9]{20}$/;
+
+/**
+ * Bildirim belgesinin kimliği (`FirestoreIds.notification`): `event_reminder` → `event_reminder_{eventId}_{uid}`
+ * (createSelf ile aynı — ikinci belge açılmaz); tek seferlik olaylarda dağıtıcıyla aynı olay anahtarı (CD-148):
+ * `announcement` → postId, `event_cancelled` → eventId, `application_received` → `{clubId}_{applicantId}_{priorCount}`
+ * ([sequence] = başvuranın seed üyeliğinin `priorCount`'u, yoksa 0); diğerleri `{type}_{eventKey}_{uid}`. Demo
+ * kaydının olay anahtarı kaydın kimliğinden türer (`seed` + kimliğin harf / rakamları, `0` ile 20 karaktere):
+ * yeniden tohumlama aynı belgeye yazar; 20'yi aşan ya da çakışan anahtar dönüşüm / sayı denetiminde hatadır.
+ */
+function notificationDocId(rawId, notification, sequence = 0) {
+  const { type, refs, userId } = notification;
+  if (type === 'event_reminder') return `event_reminder_${refs.eventId}_${userId}`;
+  if (type === 'announcement') return `announcement_${refs.postId}_${userId}`;
+  if (type === 'event_cancelled') return `event_cancelled_${refs.eventId}_${userId}`;
+  if (type === 'application_received') return `application_received_${refs.clubId}_${refs.applicantId}_${sequence}_${userId}`;
+  const key = `seed${rawId.replace(/[^A-Za-z0-9]/g, '')}`.padEnd(20, '0');
+  if (!EVENT_KEY.test(key)) throw new Error(`notifications/${rawId}: olay anahtarı üretilemedi (${key})`);
+  return `${notification.type}_${key}_${notification.userId}`;
+}
+
 /** Istanbul gününün parçaları (UTC+3, yaz saati yok). */
 function istanbulParts(date) {
   const wall = new Date(date.getTime() + ISTANBUL_OFFSET_MS);
@@ -89,7 +139,7 @@ function convert(raw, { now, randomHex }) {
   if (!(now instanceof Date) || Number.isNaN(now.getTime())) throw new Error('convert: geçerli bir `now` gerekli');
   const today = new Date(raw.meta.today);
   if (Number.isNaN(today.getTime())) throw new Error('demo-data.json: meta.today geçersiz');
-  const shift = now.getTime() - today.getTime();
+  const shift = dayShiftMs(today, now);
 
   const { users, clubs, memberships, posts, comments, events, rsvps } = raw;
 
@@ -349,13 +399,23 @@ function convert(raw, { now, randomHex }) {
   }
 
   // ── notifications · reports · activity ─────────────────────────────────────────────────────
+  // T-25 şeması: kimlik `{type}_{eventKey}_{uid}`, `refs` yalnızca türün zorunluları (eksik `clubId`
+  // etkinlikten), `read` bool; metin / aktör alanı yok (CD-147).
   const notificationDocs = {};
   for (const [id, notification] of entries(raw.notifications)) {
-    notificationDocs[id] = {
+    const required = NOTIFICATION_REFS[notification.type];
+    if (!required) throw new Error(`notifications/${id}: bilinmeyen tür ${notification.type}`);
+    const given = notification.refs || {};
+    const refs = {};
+    for (const field of required) {
+      refs[field] = field === 'clubId' && !given.clubId && given.eventId ? events[given.eventId]?.clubId : given[field];
+    }
+    const applicant = refs.applicantId ? membershipDocs[`${refs.clubId}_${refs.applicantId}`] : undefined;
+    notificationDocs[notificationDocId(id, { ...notification, refs }, applicant?.priorCount || 0)] = {
       userId: notification.userId,
       type: notification.type,
-      refs: orNull(notification.refs),
-      read: orNull(notification.read),
+      refs,
+      read: notification.read === true,
       ...base(time(notification, 'createdAt')),
     };
   }
@@ -558,6 +618,20 @@ function validate(docs, { announcementDailyLimit }) {
   for (const [id, comment] of Object.entries(docs.comments)) {
     if (docs.posts[comment.postId]?.clubId !== comment.clubId) problems.push(`comments/${id}: clubId gönderinin kulübü değil`);
   }
+  // T-25 · bildirim biçimi (firestore.rules `notifications`): kimlik ↔ tür / alıcı, refs zorunluları dolu.
+  for (const [id, n] of Object.entries(docs.notifications)) {
+    const required = NOTIFICATION_REFS[n.type] || [];
+    const keyed = id.startsWith(`${n.type}_`) && id.endsWith(`_${n.userId}`)
+      && EVENT_KEY.test(id.slice(n.type.length + 1, id.length - n.userId.length - 1));
+    const sequence = n.refs.applicantId ? docs.memberships[`${n.refs.clubId}_${n.refs.applicantId}`]?.priorCount || 0 : 0;
+    const exact = { event_reminder: true, announcement: true, event_cancelled: true, application_received: true }[n.type];
+    const idOk = exact ? id === notificationDocId(id, n, sequence) : keyed;
+    if (!idOk) problems.push(`notifications/${id}: kimlik {type}_{eventKey}_{userId} değil`);
+    if (Object.keys(n.refs).join(',') !== required.join(',') || required.some((f) => typeof n.refs[f] !== 'string' || !n.refs[f])) {
+      problems.push(`notifications/${id}: refs türün zorunlularıyla tutarsız`);
+    }
+    if (typeof n.read !== 'boolean') problems.push(`notifications/${id}: read bool değil`);
+  }
   for (const [id, saved] of Object.entries(docs.savedPosts)) {
     if (id !== `${saved.userId}_${saved.postId}` || docs.posts[saved.postId]?.clubId !== saved.clubId) {
       problems.push(`savedPosts/${id}: kimlik ya da clubId tutarsız`);
@@ -620,6 +694,19 @@ function staticTablesDiff(raw, staticTablesSource) {
   return problems;
 }
 
+/**
+ * `demo-data.json` + T-25 ek bildirimleri (`demo-notifications.json`; README madde 4: demo veri salt okunur,
+ * yeni senaryo ayrı dosyada). Kimlik çakışması hatadır. Saf fonksiyon: [raw] değişmez.
+ */
+function withExtras(raw, extras) {
+  const notifications = { ...raw.notifications };
+  for (const [id, notification] of Object.entries(extras.notifications || {})) {
+    if (notifications[id]) throw new Error(`demo-notifications.json: ${id} demo-data.json'da zaten var`);
+    notifications[id] = notification;
+  }
+  return { ...raw, notifications };
+}
+
 module.exports = {
   SEED_SUSPEND_REASON,
   SEED_TITLES,
@@ -629,6 +716,9 @@ module.exports = {
   TICKET_CODE,
   istanbulDay,
   istanbulDayKey,
+  dayShiftMs,
+  notificationDocId,
+  withExtras,
   fileStamp,
   convert,
   expectedCounts,
