@@ -116,3 +116,8 @@ SET-04.licenseLink.*   # design/prototype/app/screens-profile.js:101 — "Lisans
 SET-05.subject.*   # design/prototype/app/screens-profile.js:122 — konu menüsünün öğeleri (`SET-05.subject.<konu>`) yalnızca menü açıkken (`menu`); yakalama kapalı menü
 SET-05.scrim       # design/prototype/app/ui.js:191 + screens-profile.js:122 — konu menüsünün saydam scrim'i (`PopMenu id="SET-05"`) yalnızca menü açıkken
 SET-05.newRequest  # design/prototype/app/screens-profile.js:116 — "Yeni talep" yalnızca talep gönderildikten sonraki başarı kartında (`f.sent`); yakalama boş form
+MGT-10.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-10.retry           # lib/features/management/view/activity_log_view.dart — yalnızca günlük okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-01.switchClub      # design/prototype/app/screens-manage.js:9 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-01.share           # design/prototype/app/screens-manage.js:22 — "Henüz üyen yok" kartının Paylaş düğmesi yalnızca sıradan üyesi olmayan kulüpte ve danışman değilken (`!members.length && !readOnly`); yakalama 231 üyeli c03
+MGT-01.retry           # lib/features/management/view/manage_view.dart — yalnızca panel okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

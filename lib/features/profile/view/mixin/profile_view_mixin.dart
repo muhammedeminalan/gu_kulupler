@@ -117,27 +117,22 @@ mixin ProfileViewMixin on ConsumerState<ProfileView> {
   void openClub(String clubId) => ClubDetailRoute(clubId: clubId).go(context);
 
   /// Yönetilen kulüp satırı (`PRF-01.managed.<id>`) → MGT-01.
-  void openManaged(String clubId) {
-    // TODO(T-31): `ManageRoute(clubId: clubId).go(context)` (MGT-01).
-  }
+  void openManaged(String clubId) => ManageRoute(clubId: clubId).go(context);
 
   /// "Yönetim paneli" (`PRF-01.managedAll`; prototip `flows.openManage`):
-  /// birden çok yönetilen kulüpte SHT-18 → seçilen kulübün MGT-01'i; tek
-  /// kulüpte doğrudan MGT-01.
+  /// birden çok yönetilen kulüpte SHT-18 (varsayılan davranışı seçilen
+  /// kulübün MGT-01'idir — W-26); tek kulüpte doğrudan MGT-01.
   Future<void> openManagePanel() async {
     final managed = ref.read(profileViewModelProvider).managedClubs;
     if (managed.isEmpty) return;
-    final String? clubId;
     if (managed.length > 1) {
-      clubId = await _feedback.showSheet<String>(
+      await _feedback.showSheet<String>(
         SheetId.sht18,
         builder: (_) => const ManagedClubPickerSheet(),
       );
-    } else {
-      clubId = managed.single.club.id;
+      return;
     }
-    if (!mounted || clubId == null) return;
-    openManaged(clubId);
+    openManaged(managed.single.club.id);
   }
 
   /// "Etkinlikleri keşfet" (`PRF-01.discover`, kulüp yokken) → CLB-01.

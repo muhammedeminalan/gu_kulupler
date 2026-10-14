@@ -206,7 +206,12 @@ Future<GoRouter> _pumpRoute(
                     .asNameMap()[state.uri.queryParameters['tab']],
               ),
               routes: [
-                for (final segment in ['applied', 'application', 'members'])
+                for (final segment in [
+                  'applied',
+                  'application',
+                  'members',
+                  'manage',
+                ])
                   GoRoute(
                     path: segment,
                     builder: (_, state) => _Stub(state.uri.path),
@@ -1056,19 +1061,20 @@ void main() {
       expect(segmented().value, ClubEventSegment.upcoming.name);
     });
 
-    testWidgets('yönetici düğmeleri: hedefleri (MGT-01, MGT-05) henüz bağlı '
-        'değil: gezinme yok, hata yok', (tester) async {
+    testWidgets('yönetici düğmeleri: "Etkinlik oluştur" (MGT-05) henüz bağlı '
+        'değil; "Yönetim" → MGT-01 (W-12)', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: sessionWith(role: ClubRole.board),
         query: '?tab=members',
       );
-      for (final key in [_openManage, _createEvent]) {
-        await _tapKey(tester, key);
-        await tester.pumpAndSettle();
-      }
+      await _tapKey(tester, _createEvent);
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(_location(router), '$_clubsPath/$kClubId?tab=members');
+      await _tapKey(tester, _openManage);
+      await tester.pumpAndSettle();
+      expect(_location(router), '$_clubsPath/$kClubId/manage');
     });
   });
 

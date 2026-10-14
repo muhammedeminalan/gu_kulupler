@@ -469,8 +469,9 @@ void main() {
       expect(selected, _mixedManaged);
     });
 
-    testWidgets('`onSelect` verilmezse sayfa yalnızca kimliği döner (MGT-01 '
-        'yönlendirmesi T-31 — W-26); kapat, scrim ve geri `null`', (
+    testWidgets('`onSelect` verilmezse kimlik döner (yönlendirici yokken '
+        'MGT-01 yönlendirmesi atlanır — W-26 akış testinde); kapat, scrim ve '
+        'geri `null`', (
       tester,
     ) async {
       final harness = await _open(tester, _harness(), session: _president);

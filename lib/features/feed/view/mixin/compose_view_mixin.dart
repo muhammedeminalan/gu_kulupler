@@ -130,14 +130,18 @@ mixin ComposeViewMixin on UnsavedChangesMixin<ComposeView> {
   }
 
   /// Kulüp adı (`FED-03.switchClub`): SHT-18 → seçilen kulübün yazı ekranı
-  /// (prototip `nav.replace('FED-03', {clubId})`).
-  Future<void> switchClub() async {
-    final current = widget.clubId;
-    final clubId = await _feedback.showSheet<String>(
-      SheetId.sht18,
-      builder: (_) => ManagedClubPickerSheet(selectedClubId: current),
-    );
-    if (!mounted || clubId == null || clubId == current) return;
+  /// (prototip `nav.replace('FED-03', {clubId})`). `onSelect` verilir: sheet'in
+  /// varsayılanı (seçilen kulübün MGT-01'i, W-26) burada istenmez.
+  Future<void> switchClub() => _feedback.showSheet<String>(
+    SheetId.sht18,
+    builder: (_) => ManagedClubPickerSheet(
+      selectedClubId: widget.clubId,
+      onSelect: _openCompose,
+    ),
+  );
+
+  void _openCompose(String clubId) {
+    if (!mounted || clubId == widget.clubId) return;
     ComposeRoute(clubId: clubId).go(context);
   }
 

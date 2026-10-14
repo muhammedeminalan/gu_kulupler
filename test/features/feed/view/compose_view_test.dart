@@ -26,6 +26,7 @@ import 'package:gu_kulupler/features/feed/provider/compose_view_model.dart';
 import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/compose_form.dart';
 import 'package:gu_kulupler/features/feed/view/widget/poll_editor.dart';
+import 'package:gu_kulupler/product/feedback/catalogs/sheets/managed_club_picker_sheet.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/photo_source_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
@@ -807,9 +808,16 @@ void main() {
         session: composeSession(alsoManages: 'c01'),
       );
       expect(find.byKey(_switchClub), findsOneWidget);
-      _feedback().nextSheetResult = 'c01';
       await _tapKey(tester, _switchClub);
       expect(_feedback().sheets, [SheetId.sht18]);
+      // Seçim `onSelect` ile gelir (sheet'in MGT-01 varsayılanı bastırılır).
+      final sheet =
+          _feedback().lastSheetBuilder!(
+                tester.element(find.byType(ComposeView)),
+              )
+              as ManagedClubPickerSheet;
+      sheet.onSelect!('c01');
+      await tester.pumpAndSettle();
       expect(_location(router), '/clubs/c01/compose');
     });
 

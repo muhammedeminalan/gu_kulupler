@@ -16,6 +16,8 @@ import 'package:gu_kulupler/features/events/view/ticket_view.dart';
 import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
+import 'package:gu_kulupler/features/management/view/activity_log_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notification_prefs_view.dart';
 import 'package:gu_kulupler/features/notifications/view/notifications_view.dart';
 import 'package:gu_kulupler/features/profile/view/edit_profile_view.dart';

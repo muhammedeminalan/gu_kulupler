@@ -2,8 +2,9 @@ part of 'shell_route.dart';
 
 // T-11 dal kökünü, T-16 kulüp detayı ile başvuru rotalarını, T-17 sekme
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
-// profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı kurar; kalan alt
-// rotalar PLAN §13.3.2 tablosundaki task'larda eklenir.
+// profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
+// panelini ve faaliyet geçmişini kurar; kalan alt rotalar PLAN §13.3.2
+// tablosundaki task'larda eklenir.
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `user/:userId` —
 // T-18) `:clubId` kalıbından **önce** yazılır (go_router ilk eşleşeni alır).
@@ -23,6 +24,12 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
         TypedGoRoute<ClubMembersRoute>(path: ClubMembersRoute.segment),
         TypedGoRoute<PostDetailRoute>(path: PostDetailRoute.segment),
         TypedGoRoute<ComposeRoute>(path: ComposeRoute.segment),
+        TypedGoRoute<ManageRoute>(
+          path: ManageRoute.segment,
+          routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
+          ],
+        ),
       ],
     ),
   ],
@@ -205,6 +212,46 @@ final class ComposeRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ComposeView(clubId: clubId, editPostId: edit);
+}
+
+/// MGT-01 Yönetim paneli — `/clubs/:clubId/manage`. CLB-03'ün alt rotasıdır
+/// (guard `V`: o kulüpte yönetici ya da danışman; diğerleri kulüp sayfasına
+/// TST-X18 ile yönlenir — `RouteAccessTable`). CLB-03 "Yönetim paneli",
+/// SHT-18 ve PRF-01 yönetilen kulüp `go` ile açar, geri kulübe döner.
+/// Danışman salt okunur görür (Q-09; yazma eylemleri TST-26).
+final class ManageRoute extends GoRouteData
+    with $ManageRoute, PlatformPageMixin {
+  /// [clubId] kulübünün yönetim paneli.
+  const ManageRoute({required this.clubId});
+
+  /// `/clubs/:clubId` altındaki yol parçası.
+  static const String segment = 'manage';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ManageView(clubId: clubId);
+}
+
+/// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt
+/// rotasıdır (guard `V`); MGT-01 "Son hareketler → Tümü" `go` ile açar, geri
+/// panele döner.
+final class ActivityLogRoute extends GoRouteData
+    with $ActivityLogRoute, PlatformPageMixin {
+  /// [clubId] kulübünün faaliyet geçmişi.
+  const ActivityLogRoute({required this.clubId});
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'activity';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ActivityLogView(clubId: clubId);
 }
 
 /// CLB-07 Profil — `/clubs/user/:userId?clubId=` (guard `A`). `/clubs`'un

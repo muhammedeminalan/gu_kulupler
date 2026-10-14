@@ -3371,6 +3371,30 @@
   "@mgtChartAria": {
     "description": "Key mgt.chart.aria"
   },
+  "mgtChartPoint": "{week}: {count}",
+  "@mgtChartPoint": {
+    "description": "Key mgt.chart.point",
+    "placeholders": {
+      "week": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mgtChartTooltip": "{week} · {count}",
+  "@mgtChartTooltip": {
+    "description": "Key mgt.chart.tooltip",
+    "placeholders": {
+      "week": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "mgtGrowth": "Member growth",
   "@mgtGrowth": {
     "description": "Key mgt.growth"
