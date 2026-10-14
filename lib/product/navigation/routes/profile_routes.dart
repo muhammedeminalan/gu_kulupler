@@ -1,8 +1,8 @@
 part of 'shell_route.dart';
 
 // T-11 dal kökünü kurar; T-27 sekme kökünün gerçek ekranını ve profil
-// alt rotalarını, T-28 ayarlar ağacını ekler (PLAN §13.3.5).
-// TODO(T-29): `DeleteAccountRoute` (`settings/delete`).
+// alt rotalarını, T-28 ayarlar ağacını, T-29 hesap silmeyi ekler (PLAN
+// §13.3.5).
 
 /// Profil dalının rota ağacı (navigation.md §2.5). Alt rotalar sahip
 /// task'larında bu ağaca eklenir.
@@ -28,6 +28,7 @@ const TypedGoRoute<ProfileRoute> profileRouteTree = TypedGoRoute<ProfileRoute>(
         ),
         TypedGoRoute<AboutRoute>(path: AboutRoute.segment),
         TypedGoRoute<SupportRoute>(path: SupportRoute.segment),
+        TypedGoRoute<DeleteAccountRoute>(path: DeleteAccountRoute.segment),
       ],
     ),
   ],
@@ -188,4 +189,20 @@ final class SupportRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const SupportView();
+}
+
+/// SET-03 Hesabı sil — `/profile/settings/delete` (guard `A`). SET-01
+/// "Hesabı sil" (`SET-01.delete`, W-33) `go` ile açar, geri SET-01'e döner.
+/// Silme bitince oturum kapanır; router AUT-01'e taşır.
+final class DeleteAccountRoute extends GoRouteData
+    with $DeleteAccountRoute, PlatformPageMixin {
+  /// Hesap silme rotası.
+  const DeleteAccountRoute();
+
+  /// `/profile/settings` altındaki yol parçası.
+  static const String segment = 'delete';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const DeleteAccountView();
 }

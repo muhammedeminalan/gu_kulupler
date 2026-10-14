@@ -6,6 +6,7 @@ import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_reminder_sync.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
+import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/mixin/suspended_account_mixin.dart';
@@ -552,15 +553,39 @@ final class SessionViewModel extends _$SessionViewModel
   }
 
   /// Hesabı silinmiş (anonimleştirilmiş) kullanıcının oturumunu kapatır;
-  /// state, oturum akışından gelen olayla `signedOut` olur.
+  /// state, oturum akışından gelen olayla `signedOut` olur (giriş engeli —
+  /// domain-model §11 adım 4, Q-11).
+  ///
+  /// Önce yarıda kalmış temizlik sürdürülür
+  /// (`AccountDeletionRepository.resumeCleanup`; sözleşme
+  /// `docs/plans/T-29.md` §4 b): SET-03 dizisi `markDeleted`'dan sonra kesildiyse
+  /// (uygulama kapandı / ağ gitti) kalan parçalar burada biter. Temizlik **en
+  /// iyi çabadır**: hatası günlüğe düşer, oturum kapatmayı engellemez (kalan iş
+  /// bir sonraki girişte yeniden denenir). Çözüm sürerken
+  /// ([SessionState.isResolving]) açılış ekranı görünür. Kapanınca giriş
+  /// ekranında TST-22 gösterilir.
   ///
   /// Oturum kapatılamazsa hesap uygulamada **kalmaz**: durum `unknown` +
   /// hata olur (R1 → SYS-01 → SYS-02 "Yeniden dene" kapatmayı yeniden dener).
   Future<void> _closeDeletedAccount(int epoch) async {
-    // TODO(T-29): `accountDeletionRepository.resumeCleanup(uid)` + TST-22.
     _stopMembershipWatch();
+    final uid = state.uid;
+    if (uid != null) {
+      final cleanup = await accountDeletionRepository.resumeCleanup(uid);
+      if (cleanup case FirebaseFailure(:final error, :final message)) {
+        AppLogger.warn(
+          'Silinmiş hesabın temizliği sürdürülemedi: ${error.name}',
+          error: message,
+        );
+      }
+      if (!_isCurrent(epoch)) return;
+    }
     final result = await authRepository.signOut();
-    if (result.isSuccess || !_isCurrent(epoch)) return;
+    if (result.isSuccess) {
+      feedback.showToast(ToastId.tst22);
+      return;
+    }
+    if (!_isCurrent(epoch)) return;
     AppLogger.warn(
       'Silinmiş hesabın oturumu kapatılamadı: ${result.errorOrNull?.name}',
     );

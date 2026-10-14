@@ -797,6 +797,83 @@ function promoteNotifyWrites({ club, eventId = 'e_live', userId = 'u_student', r
 /** `markRead` / `markAllRead` (parça başına bir update). */
 const notificationRead = () => ({ read: true, ...baseUpdate() });
 
+// ── T-29 · hesap silme (AccountDeletionRepository; sözleşme docs/plans/T-29.md §4) ─────────────
+// Yükler Dart `Anonymization` sabitleriyle aynıdır (rules/account_deletion.test.js Dart kaynağıyla
+// karşılaştırır); Rules literalleri birebir bekler.
+
+/** `Anonymization.deletedUserName` ve küçük harfli kopyası (`nameLower`). */
+const DELETED_USER_NAME = 'Silinmiş kullanıcı';
+const DELETED_USER_NAME_LOWER = 'silinmiş kullanıcı';
+
+/** `Anonymization.applicantPayload()` — üyelik `applicant` anlık görüntüsünün yerine geçen harita. */
+const ANONYMIZED_APPLICANT = Object.freeze({ name: DELETED_USER_NAME, department: null, year: null, avatarSeed: 'deleted' });
+
+/** `Anonymization.userPayload(uid)` + servis `updatedAt` (soft delete alanları dahil). */
+function anonymizedUser(uid, extra) {
+  return {
+    name: DELETED_USER_NAME,
+    nameLower: DELETED_USER_NAME_LOWER,
+    bio: '',
+    interests: [],
+    avatarPath: null,
+    department: null,
+    year: null,
+    status: 'deleted',
+    ...softDelete(uid),
+    ...extra,
+  };
+}
+
+/** `Anonymization.accountPayload()` + `updatedAt`. */
+const anonymizedAccount = (extra) => ({ email: '', emailLower: '', fcmTokens: [], ...baseUpdate(), ...extra });
+
+/** `Anonymization.contactPayload()` + `updatedAt`. */
+const anonymizedContact = (extra) => ({ email: '', emailLower: '', note: '', ...baseUpdate(), ...extra });
+
+/** `AccountDeletionRepository.markDeleted` — adım 1: `users/{uid}` + `private/account` tek batch. */
+function markDeletedWrites({ uid, user, account }) {
+  return {
+    user: update(`users/${requireId(uid, 'uid')}`, user || anonymizedUser(uid)),
+    account: update(`users/${uid}/private/account`, account || anonymizedAccount()),
+  };
+}
+
+/** M14 hedef durumu: `active → left`, `pending → cancelled`, geçmiş durumlar aynı kalır. */
+const M14_TARGET = Object.freeze({ active: 'left', pending: 'cancelled' });
+
+/** M14 hedefi rolüyle: etkin başkan `active` kalır (yalnızca anlık görüntü + contact — güvenlik incelemesi T-29). */
+const m14Target = (from, role) => (from === 'active' && role === 'president' ? 'active' : M14_TARGET[from] || from);
+
+/**
+ * `MembershipRepository.anonymizeChunk` — M14: her üyelik için `applicant` + durum geçişi, `private/contact`
+ * boşaltma; `active` üye / yönetim kurulu üyeliğinde aynı işlemde `memberCount −1` (danışman sayılmaz; etkin
+ * başkan `active` kalır, sayaç yok).
+ * @param {{uid: string, memberships: {club: string, from: string, role?: string, contact?: boolean, counter?: boolean}[]}} args
+ *   `counter` verilmezse kural gereği hesaplanır (`active` ∧ rol `member` | `board`); vakalar bilerek ezebilir.
+ */
+function anonymizeMembershipWrites({ uid, memberships }) {
+  const writes = {};
+  memberships.forEach(({ club, from, role = 'member', contact = true, counter }, i) => {
+    const to = m14Target(from, role);
+    writes[`membership${i}`] = update(membershipPath(club, uid), { status: to, applicant: { ...ANONYMIZED_APPLICANT }, ...baseUpdate() });
+    if (contact) writes[`contact${i}`] = update(contactPath(club, uid), anonymizedContact());
+    const bump = counter === undefined ? from === 'active' && ['member', 'board'].includes(role) : counter;
+    if (bump) writes[`club${i}`] = update(`clubs/${club}`, memberCountBump(-1));
+  });
+  return writes;
+}
+
+/** `AccountDeletionRepository.softDeletePersonalChunk` — her belge `SoftDelete.payload(actorId: uid)`. */
+function personalSoftDeleteWrites({ uid, paths }) {
+  return Object.fromEntries(paths.map((p, i) => [`doc${i}`, update(p, softDelete(uid))]));
+}
+
+/** Bağlamın `club` içindeki üyeliğinin M14 parçası (roles.json tanımından). */
+function ownMembershipChunk(ctx) {
+  const membership = roles.definitions[ctx.role].membership || { status: 'active', role: 'member' };
+  return anonymizeMembershipWrites({ uid: ctx.uid, memberships: [{ club: ctx.club, from: membership.status, role: membership.role }] });
+}
+
 /**
  * `expectations/*.json` vakalarındaki `variant` adları → yük üreticisi `(ctx) => data`.
  * `ctx` = { role, uid, club, otherClub }. Koleksiyon task'ları kendi varyantlarını aşağıya ekler
@@ -912,6 +989,9 @@ const variants = new Map([
   ['ticketCreateWithAttachment', (ctx) => ticketCreate({ uid: ctx.uid, attachmentPaths: [supportAttachmentPath()] })],
   ['ticketClose', () => ({ status: 'closed', ...baseUpdate() })],
   ['ticketEditMessage', () => ({ message: 'Değiştirilmiş mesaj.', ...baseUpdate() })],
+  // T-29 · hesap silme (tek yazımlı parçalar; çok yazımlılar aşağıda `batches`)
+  ['accountAnonymize', () => anonymizedAccount()],
+  ['contactAnonymize', () => anonymizedContact()],
 ]);
 
 /**
@@ -947,6 +1027,9 @@ const batches = new Map([
   ['attendBatch', (ctx) => attendWrites({ club: ctx.club, uid: ctx.uid })],
   ['unattendBatch', (ctx) => attendWrites({ club: ctx.club, uid: ctx.uid, userId: 'u_board', attended: false })],
   ['promoteBatch', (ctx) => promoteWrites({ club: ctx.club })],
+  // T-29
+  ['markDeletedBatch', (ctx) => markDeletedWrites({ uid: ctx.uid })],
+  ['anonymizeMembershipBatch', (ctx) => ownMembershipChunk(ctx)],
 ]);
 
 /** Batch varyantının yazım listesini üretir; bilinmeyen ad hatadır. */
@@ -1078,6 +1161,15 @@ module.exports = {
   fanOutWrites,
   promoteNotifyWrites,
   notificationRead,
+  DELETED_USER_NAME,
+  DELETED_USER_NAME_LOWER,
+  ANONYMIZED_APPLICANT,
+  anonymizedUser,
+  anonymizedAccount,
+  anonymizedContact,
+  markDeletedWrites,
+  anonymizeMembershipWrites,
+  personalSoftDeleteWrites,
   registerVariant,
   payloadFor,
   batchFor,

@@ -21,12 +21,14 @@ import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/init/app_gate_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
+import '../../fakes/fake_account_deletion_repository.dart';
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_block_repository.dart';
@@ -330,6 +332,61 @@ void main() {
         },
       );
     }
+
+    test('T-29 · silinmiş hesapla giriş: yarıda kalmış temizlik sürdürülür '
+        '(resumeCleanup), sonra oturum kapanır + TST-22', () async {
+      final memberships =
+          GetIt.I<MembershipRepository>() as FakeMembershipRepository;
+      final deletion =
+          GetIt.I<AccountDeletionRepository>() as FakeAccountDeletionRepository;
+      final feedback = GetIt.I<FeedbackService>() as FakeFeedbackService;
+      users.putActive('u1');
+      memberships.clubRepository.put('c01', memberCount: 1);
+      memberships.put(
+        const MembershipModel(
+          clubId: 'c01',
+          userId: 'u1',
+          applicant: MembershipApplicantModel(name: 'Ayşe', avatarSeed: 's'),
+          status: MembershipStatus.active,
+        ),
+      );
+      await deletion.markDeleted('u1');
+      auth.currentUser = _user();
+
+      final container = await resolved();
+      await pumpEventQueue();
+
+      expect(deletion.callsTo('resumeCleanup').single.args, ['u1']);
+      expect(
+        memberships.memberships['c01_u1']!.status,
+        MembershipStatus.left,
+      );
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(feedback.toasts, [ToastId.tst22]);
+      expect(
+        stateOf(container),
+        const SessionState(status: AuthStatus.signedOut),
+      );
+    });
+
+    test(
+      'T-29 · temizlik hatası oturum kapatmayı engellemez (en iyi çaba)',
+      () async {
+        final deletion =
+            GetIt.I<AccountDeletionRepository>()
+                as FakeAccountDeletionRepository;
+        users.putActive('u1');
+        await deletion.markDeleted('u1');
+        deletion.failNext(FirestoreError.unavailable);
+        auth.currentUser = _user();
+
+        final container = await resolved();
+        await pumpEventQueue();
+
+        expect(auth.callsTo('signOut'), hasLength(1));
+        expect(stateOf(container).status, AuthStatus.signedOut);
+      },
+    );
 
     test('silinmiş kullanıcının oturumu kapatılamazsa hesap uygulamada '
         'kalmaz: unknown + isError (açık oturum yenilenirken de)', () async {

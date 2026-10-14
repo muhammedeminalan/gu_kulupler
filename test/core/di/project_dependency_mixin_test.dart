@@ -76,6 +76,11 @@ void main() {
       expect(consumer.rsvpRepository, same(GetIt.I<RsvpRepository>()));
       // T-28 · destek talepleri
       expect(consumer.supportRepository, same(GetIt.I<SupportRepository>()));
+      // T-29 · hesap silme
+      expect(
+        consumer.accountDeletionRepository,
+        same(GetIt.I<AccountDeletionRepository>()),
+      );
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

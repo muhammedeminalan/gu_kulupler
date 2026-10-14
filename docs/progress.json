@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T12:29:50.894Z",
+  "updated": "2026-10-14T17:45:34.597Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -421,11 +421,13 @@
       "notes": ""
     },
     "T-29": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-14T12:30:22.905Z",
+      "finishedAt": "2026-10-14T17:45:34.596Z",
+      "commits": [
+        "6066f51"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-30": {
@@ -880,7 +882,10 @@
       "resolveIn": [
         "T-29"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-29",
+      "closedAt": "2026-10-14T17:06:10.242Z",
+      "closeNote": "SET-01 'Hesabı sil' (SET-01.delete) → DeleteAccountRoute (/profile/settings/delete) → SET-03; test/flows/account_deletion_flow_test.dart"
     },
     {
       "id": "W-34",
@@ -1352,7 +1357,10 @@
       "resolveIn": [
         "T-29"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-29",
+      "closedAt": "2026-10-14T17:06:10.267Z",
+      "closeNote": "AccountDeletionRepository yalnızca going/waitlist + endsAt > now + clockSkewTolerance kayıtlarını iptal eder (buildPlan + cancelRsvpChunk işlem içinde yeniden denetler); geçmiş ve attended kayıtlar dokunulmaz — Rules canCancelRsvp reddi repository_payloads t29 denied + account_deletion.test.js"
     },
     {
       "id": "W-81",
@@ -1430,6 +1438,34 @@
       "text": "Destek talebi / support/ kotası yok — kabul edilmiş sınırlama (rules-spec §9.13, PLAN §20 R-27, CD-151 (7)): supportTickets create'te sayı / bekleme sınırı yok, support/ yüklemesinde 'yalnızca kendi klasörü' freni yok (yetim dosya, izi uploaderId). Fren: askı (activeUser / accountActive; rules/support_tickets.test.js 'kabul edilmiş sınırlama' testi), App Check (CD-64). T-45 spam raporunda ölçülür; gerekirse bekleme kuralı (users/{uid}/private/account.lastTicketNo + lastTicketAt işaretçisi, aynı batch'te getAfter — batch içi çoklu talebi işaretçi engeller) kullanıcıya sorulur; süper admin destek listesi (konsol / ileride ADM) createdAt ↓ + limit ile okunur",
       "resolveIn": [
         "T-45"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-89",
+      "declaredIn": "T-29",
+      "text": "Hesap silme — yönetici dalları (T-29 güvenlik incelemesi, CD-152): (a) M5 / M6 onay / red: başvuranın hesabı silinmişse (yarım kalan temizlikte pending kalan başvuru) Rules reddeder — get(users/{applicant}).data.status != 'deleted' (sayaç hayalet üyeyle +1 olmasın); MGT-02 kuyruğu silinmiş başvuranı göstermez ya da 'Silinmiş kullanıcı' olarak reddettirir; (b) M11 devir: hedef hesabı etkin olmalı — get(users/{target}).data.status == 'active' (silinmiş / askıdaki üyeye başkanlık devredilemez); (c) M9 çıkarma silinmiş üyede açık kalır (temizliği yönetici tamamlayabilsin). Rules testleri: deleted bağlamıyla M5 / M6 / M11 ret",
+      "resolveIn": [
+        "T-30"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-90",
+      "declaredIn": "T-29",
+      "text": "Silinmiş başkan (T-29 güvenlik incelemesi, CD-152): başkanlık engeli istemcidedir (precheck); değiştirilmiş istemci / devir yarışıyla etkin başkanken silinen hesabın üyeliği active KALIR (M14 başkan dalı yalnızca applicant + private/contact'ı boşaltır). Kulüp başkanı 'Silinmiş kullanıcı' görünür; silinmiş hesap geçerli jetonuyla o kulübün içini (seesInside) okuyabilir, yazamaz. T-33: devir akışı / MGT-03 başkanı silinmiş kulübü göstermez (kimse devredemez); T-37: süper admin başkanlığı yeni üyeye atar ve silinmiş başkanın üyeliğini kaldırır (ADM; sayaç dahil) — o zamana kadar kabul edilen sınırlama",
+      "resolveIn": [
+        "T-33",
+        "T-37"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-91",
+      "declaredIn": "T-29",
+      "text": "Hesap silme temizliği en iyi çabadır (T-29 güvenlik incelemesi, CD-152): markDeleted sonrası parçalar yarım kalırsa (ağ, kalıcı Rules reddi — ör. 0'a kaymış memberCount) kalan iş yalnızca kullanıcının yeniden girişinde sürer; hiç dönmeyen kullanıcının üyelik anlık görüntüsü / contact'ı / açık katılımı kalabilir. T-37: ENV korumalı (emülatör / onaylı gerçek proje) yönetici betiği status == 'deleted' hesaplar için buildPlan eşdeğerini çıkarır, kalan M14 / rsvp / kişisel temizliği sayaçlarla birlikte tamamlar (tool/admin/; ADM-05'te 'temizlik eksik' göstergesi isteğe bağlı)",
+      "resolveIn": [
+        "T-37"
       ],
       "status": "open"
     }

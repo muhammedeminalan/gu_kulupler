@@ -30,7 +30,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const {
-  COLLECTIONS, PATH_OF, convert, convertSupport, expectedCounts, staticTablesDiff, validate, validateSupport, withExtras,
+  COLLECTIONS, PATH_OF, convert, convertDeleted, convertSupport, expectedCounts, staticTablesDiff, validate, validateDeleted,
+  validateSupport, withExtras,
 } = require('./lib/convert');
 const rest = require('./lib/emulator_rest');
 const { placeholderPng } = require('./placeholder_png');
@@ -43,6 +44,8 @@ const DATA_FILE = path.join(__dirname, 'demo-data.json');
 const EXTRA_NOTIFICATIONS_FILE = path.join(__dirname, 'demo-notifications.json');
 /** T-28 · demo destek talepleri (README madde 4; `COLLECTIONS` dışında, kendi sayım satırı). */
 const SUPPORT_FILE = path.join(__dirname, 'demo-support.json');
+/** T-29 · demo silinmiş (anonim) hesap — silme dizisinin sonuç belgeleri (README madde 4; sayımı koleksiyonlara eklenir). */
+const DELETED_FILE = path.join(__dirname, 'demo-deleted.json');
 const STATIC_TABLES = path.join(REPO, 'packages/gu_data/lib/src/constants/static_tables.dart');
 
 /** Aynı anda açık Auth / Storage isteği sayısı. */
@@ -171,6 +174,12 @@ async function main(argv) {
   const now = args.now || new Date();
   const { docs, authUsers, images } = convert(raw, { now, randomHex: () => crypto.randomBytes(8).toString('hex') });
   const supportTickets = convertSupport(raw, JSON.parse(fs.readFileSync(SUPPORT_FILE, 'utf8')), { now });
+  const deleted = convertDeleted(raw, JSON.parse(fs.readFileSync(DELETED_FILE, 'utf8')), { now });
+  authUsers.push(...deleted.authUsers);
+  /** Silinmiş hesap belgelerinin koleksiyon başına sayısı (`--check` beklenenine eklenir). */
+  const deletedCounts = Object.fromEntries(
+    COLLECTIONS.map((name) => [name, deleted.writes.filter(([docPath]) => COUNT_QUERIES[name][2].test(docPath)).length]),
+  );
 
   // Yazmadan önce: dönüşüm tutarlı mı, referans listeleri Dart StaticTables ile aynı mı?
   const limits = dart.readLimits(REPO);
@@ -178,6 +187,7 @@ async function main(argv) {
     ...validate(docs, { announcementDailyLimit: limits.ints.announcementDailyLimit }),
     ...staticTablesDiff(raw, fs.readFileSync(STATIC_TABLES, 'utf8')),
     ...validateSupport(supportTickets, raw.users),
+    ...validateDeleted(deleted, raw),
   ];
   const expected = expectedCounts(raw);
   for (const name of COLLECTIONS) {
@@ -194,6 +204,7 @@ async function main(argv) {
     printCounts(`${NAME}: kuru koşum (yazılmadı) · now=${now.toISOString()}`, [
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
       ['supportTickets', String(Object.keys(supportTickets).length)],
+      ['deleted (T-29)', String(deleted.writes.length)],
       ['auth', String(authUsers.length)],
       ['storage', String(images.length)],
     ]);
@@ -211,6 +222,7 @@ async function main(argv) {
   const writes = [
     ...COLLECTIONS.flatMap((name) => Object.entries(docs[name]).map(([id, data]) => [PATH_OF[name](id), data])),
     ...Object.entries(supportTickets).map(([id, data]) => [`supportTickets/${id}`, data]),
+    ...deleted.writes,
   ];
   await rest.writeDocuments(target, writes);
 
@@ -232,6 +244,7 @@ async function main(argv) {
     printCounts(`${NAME}: yazıldı`, [
       ...COLLECTIONS.map((name) => [name, String(expected[name])]),
       ['supportTickets', String(Object.keys(supportTickets).length)],
+      ['deleted (T-29)', String(deleted.writes.length)],
       ['auth', String(authUsers.length)],
       ['storage', target.storage ? String(images.length) : 'atlandı'],
     ]);
@@ -243,7 +256,7 @@ async function main(argv) {
   const found = await countEmulator(target, bucket);
   const superAdmins = authUsers.filter((u) => u.claims && u.claims.superadmin).length;
   const rows = [
-    ...COLLECTIONS.map((name) => [name, found.counts[name], expected[name]]),
+    ...COLLECTIONS.map((name) => [name, found.counts[name], expected[name] + deletedCounts[name]]),
     ['supportTickets', found.support, Object.keys(supportTickets).length],
     ['auth', found.auth, authUsers.length],
     ['auth:superadmin', found.superAdmins, superAdmins],

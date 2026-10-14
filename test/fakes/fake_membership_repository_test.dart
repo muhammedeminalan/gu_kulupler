@@ -457,6 +457,81 @@ void main() {
     });
   });
 
+  group('T-29 · FakeMembershipRepository.anonymizeChunk (M14)', () {
+    test(
+      'active → left (üye −1, danışman sayaçsız), pending → cancelled, '
+      'geçmiş durum aynı; anlık görüntü ve iletişim belgesi boşalır',
+      () async {
+        clubs
+          ..put('c01', memberCount: 3)
+          ..put('c02', memberCount: 3)
+          ..put('c03', memberCount: 3)
+          ..put('c04', memberCount: 3);
+        fake
+          ..put(_membership(), email: _email, note: 'Not.')
+          ..put(_membership(clubId: 'c02', role: ClubRole.advisor))
+          ..put(_membership(clubId: 'c03', status: MembershipStatus.pending))
+          ..put(_membership(clubId: 'c04', status: MembershipStatus.rejected));
+
+        final result = await fake.anonymizeChunk(
+          uid: _uid,
+          memberships: fake.memberships.values.toList(),
+        );
+
+        expect(result.isSuccess, isTrue);
+        MembershipModel of(String clubId) =>
+            fake.memberships['${clubId}_$_uid']!;
+        expect(of('c01').status, MembershipStatus.left);
+        expect(of('c02').status, MembershipStatus.left);
+        expect(of('c03').status, MembershipStatus.cancelled);
+        expect(of('c04').status, MembershipStatus.rejected);
+        for (final clubId in ['c01', 'c02', 'c03', 'c04']) {
+          expect(
+            of(clubId).applicant,
+            FirebaseMembershipRepository.anonymizedApplicant,
+          );
+        }
+        expect(clubs.clubs['c01']!.memberCount, 2);
+        expect(clubs.clubs['c02']!.memberCount, 3);
+        expect(fake.contacts['${_clubId}_$_uid']!.email, isEmpty);
+        expect(fake.contacts['${_clubId}_$_uid']!.note, isEmpty);
+      },
+    );
+
+    test(
+      'etkin başkan: durum active kalır, anlık görüntü anonim, sayaç '
+      'oynamaz; parçadaki üye yine ayrılır (gerçek repository ile aynı)',
+      () async {
+        clubs
+          ..put('c01', memberCount: 3)
+          ..put('c02', memberCount: 3);
+        fake
+          ..put(_membership())
+          ..put(_membership(clubId: 'c02', role: ClubRole.president));
+
+        final result = await fake.anonymizeChunk(
+          uid: _uid,
+          memberships: fake.memberships.values.toList(),
+        );
+
+        expect(result.isSuccess, isTrue);
+        final president = fake.memberships['c02_$_uid']!;
+        expect(president.status, MembershipStatus.active);
+        expect(president.role, ClubRole.president);
+        expect(
+          president.applicant,
+          FirebaseMembershipRepository.anonymizedApplicant,
+        );
+        expect(clubs.clubs['c02']!.memberCount, 3);
+        expect(
+          fake.memberships['${_clubId}_$_uid']!.status,
+          MembershipStatus.left,
+        );
+        expect(clubs.clubs['c01']!.memberCount, 2);
+      },
+    );
+  });
+
   group('T-15 · FakeMembershipRepository ↔ FirebaseMembershipRepository', () {
     /// Gerçek repository'yi bellekteki veritabanında aynı ön koşulla koşar.
     Future<_Outcome> runReal(

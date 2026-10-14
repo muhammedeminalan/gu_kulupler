@@ -1,0 +1,32 @@
+{
+  "_doc": "T-29 — demo silinmiş (anonimleştirilmiş) hesap (SET-03; domain-model §11; docs/plans/T-29.md §4). demo-data.json'da silinmiş kullanıcı yoktur (README madde 4: demo veri salt okunur, yeni senaryo ayrı dosyada). Dönüşüm hesap silme dizisinin SONUCUNU yazar: users/{uid} anonim (`Anonymization.userPayload`: name 'Silinmiş kullanıcı', bio '', interests [], avatarPath / department / year null, status deleted, soft delete alanları), private/account e-postası boş, üyelik `left` + anonim applicant ({name, department null, year null, avatarSeed 'deleted'}) + boş contact; eski gönderi ve yorumu KALIR (yazar 'Silinmiş kullanıcı' görünür). Auth kimliği silinmez (Q-11): aynı e-posta + demo parolasıyla giriş denemesi oturum çözümünde kapatılır (giriş engeli, TST-22). Zamanlar ISO; meta.today'e göre tam gün kaydırılır. Gönderi kulübün sabit gönderisi değildir, beğenisi yoktur; yorum aynı gönderidedir (commentCount 1).",
+  "users": {
+    "u_deleted": {
+      "email": "silinen.hesap@ogr.gumushane.edu.tr",
+      "avatarSeed": "u_deleted",
+      "createdAt": "2025-11-02T10:00:00.000Z",
+      "deletedAt": "2026-10-01T12:00:00.000Z",
+      "memberships": {
+        "c01": {
+          "role": "member",
+          "appliedAt": "2026-01-10T09:00:00.000Z",
+          "decidedAt": "2026-01-11T09:00:00.000Z"
+        }
+      },
+      "posts": {
+        "p_del01": {
+          "clubId": "c01",
+          "text": "Bahar dönemi atölye notlarını kulüp klasörüne yükledim, isteyen bakabilir.",
+          "createdAt": "2026-03-15T17:30:00.000Z"
+        }
+      },
+      "comments": {
+        "cm_del01": {
+          "postId": "p_del01",
+          "text": "Sunum dosyası da eklendi.",
+          "createdAt": "2026-03-15T18:05:00.000Z"
+        }
+      }
+    }
+  }
+}

@@ -234,6 +234,16 @@ abstract final class ProjectDependency {
       appClock,
       Random.secure(),
     );
+    // T-29 · hesap silme: üyelik, katılım ve etkinlik okumaları kayıtlı
+    // repository'lerden; parçalar transaction / batch'tir (yeniden
+    // başlatılabilir dizi — `docs/plans/T-29.md` §4).
+    final accountDeletionRepository = FirebaseAccountDeletionRepository(
+      firestoreService,
+      membershipRepository,
+      rsvpRepository,
+      eventRepository,
+      appClock,
+    );
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -273,6 +283,8 @@ abstract final class ProjectDependency {
       ..registerSingleton<RsvpRepository>(rsvpRepository)
       // T-28 · destek talepleri
       ..registerSingleton<SupportRepository>(supportRepository)
+      // T-29 · hesap silme
+      ..registerSingleton<AccountDeletionRepository>(accountDeletionRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

@@ -107,6 +107,11 @@ PRF-03.menu.*.cancel   # design/prototype/app/screens-profile.js:48 — "İsteğ
 PRF-03.menu.*.reapply  # design/prototype/app/screens-profile.js:49 — "Tekrar başvur" yalnızca menü açıkken ve reddedilen / çıkarılan üyelikte; yakalama kapalı menü
 PRF-04.retry           # lib/features/profile/view/saved_view.dart — yalnızca kayıtlar / gönderiler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
 SET-02.retry           # lib/features/settings/view/blocked_users_view.dart — yalnızca engeller / kullanıcılar okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+SET-03.reason.*        # design/prototype/app/screens-profile.js:88 — ayrılma nedeni seçenekleri (`SET-03.reason.<neden>`) yalnızca 2. adımda (`f.step === 2`); yakalama 1. adım
+SET-03.reasonText      # design/prototype/app/screens-profile.js:88 — neden serbest metni yalnızca 2. adımda (`f.step === 2`); yakalama 1. adım
+SET-03.password        # design/prototype/app/screens-profile.js:89 — şifre alanı yalnızca 3. adımda (`f.step === 3`); yakalama 1. adım
+SET-03.confirmWord     # design/prototype/app/screens-profile.js:89 — "SİL" alanı yalnızca 3. adımda (`f.step === 3`); yakalama 1. adım
+SET-03.confirm         # design/prototype/app/screens-profile.js:91 — "Hesabımı kalıcı olarak sil" yalnızca 3. adımda ("Devam" yerine); yakalama 1. adım
 SET-04.licenseLink.*   # design/prototype/app/screens-profile.js:101 — "Lisansı görüntüle" yalnızca lisans satırı açıkken (`open[k]`); yakalamada satırlar kapalı
 SET-05.subject.*   # design/prototype/app/screens-profile.js:122 — konu menüsünün öğeleri (`SET-05.subject.<konu>`) yalnızca menü açıkken (`menu`); yakalama kapalı menü
 SET-05.scrim       # design/prototype/app/ui.js:191 + screens-profile.js:122 — konu menüsünün saydam scrim'i (`PopMenu id="SET-05"`) yalnızca menü açıkken

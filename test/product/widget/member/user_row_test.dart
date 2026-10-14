@@ -111,6 +111,22 @@ void main() {
       }
     });
 
+    testWidgets('T-29 · hesabı silinmiş (anonim) kullanıcı belgesi `null` '
+        'gibi çizilir: ARB "Silinmiş kullanıcı" (veri literali değil) + `?` '
+        'avatarı — EN', (tester) async {
+      final deleted = _user.copyWith(
+        name: Anonymization.deletedUserName,
+        status: UserStatus.deleted,
+        isDeleted: true,
+      );
+      await _pump(tester, UserRow(user: deleted), locale: _en);
+      final l10n = tester.l10nFor(_en);
+      expect(_tile(tester).title, l10n.commonDeletedUser);
+      expect(find.text(Anonymization.deletedUserName), findsNothing);
+      expect(_avatar(tester).initials, '?');
+      expect(_avatar(tester).seed, '?');
+    });
+
     testWidgets('`named`: belgesiz satır; boş alt satır çizilmez; tohum boşsa '
         'kullanıcı kimliği kullanılır', (tester) async {
       await _pump(

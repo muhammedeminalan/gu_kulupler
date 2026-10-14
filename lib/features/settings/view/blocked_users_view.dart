@@ -52,11 +52,12 @@ class BlockedUsersView extends ConsumerWidget {
     Widget row(BlockedEntry entry) {
       final (block, user) = entry;
       final userId = block.blockedId;
-      final name = user?.name ?? l10n.commonDeletedUser;
+      final isGone = user == null || user.isDeleted || user.isAnonymized;
+      final name = isGone ? l10n.commonDeletedUser : user.name;
       return UserRow(
         key: ValueKey<String>(userId),
         user: user,
-        sub: user == null
+        sub: isGone
             ? null
             : MemberRow.departmentAndYear(
                 context,

@@ -87,6 +87,11 @@ mixin ProjectDependencyMixin {
   /// Destek talepleri: talep + ek (SET-05), kendi taleplerim (T-28).
   SupportRepository get supportRepository => GetIt.I<SupportRepository>();
 
+  /// Hesap silme (SET-03): başkanlık ön denetimi, anonimleştirme ve parçalı,
+  /// yeniden başlatılabilir temizlik dizisi (T-29).
+  AccountDeletionRepository get accountDeletionRepository =>
+      GetIt.I<AccountDeletionRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

@@ -142,6 +142,31 @@ abstract interface class MembershipRepository {
     required String userId,
   });
 
+  /// Hesap silme (M14, T-29): [uid] kullanıcısının ≤
+  /// `Limits.accountDeletionChunk` üyeliğini **tek transaction'da**
+  /// anonimleştirir (sözleşme `docs/plans/T-29.md` §4 a).
+  ///
+  /// Her üyelik işlem içinde yeniden okunur ve güncel durumuna göre yazılır:
+  /// `active → left` (üye / yönetim kurulunda aynı işlemde
+  /// `clubs.memberCount −1`; danışman sayılmaz, sayaç oynamaz),
+  /// `pending → cancelled`, diğer durumlar değişmez; hepsinde `applicant`
+  /// `Anonymization.applicantPayload` ile değiştirilir ve var olan
+  /// `private/contact` belgesi `Anonymization.contactPayload` ile boşaltılır.
+  /// Zaten anonimleşmiş ve terminal durumdaki üyelik yazılmaz (idempotent).
+  /// `users/{uid}` yazılmaz; `clubs.lastMembershipRef` yazılmaz (CD-137
+  /// madde 8q).
+  ///
+  /// **Etkin başkan** üyeliği `left` yapılmaz (önce devir — M11; Rules da
+  /// reddeder): durumu `active` kalır, yalnızca `applicant` ve `private/contact`
+  /// anonimleşir, sayaç oynamaz (T-29 güvenlik incelemesi; kulübün devri
+  /// W-90). [memberships] [uid]'e ait değilse ya da
+  /// `Limits.accountDeletionChunk`'ı aşıyorsa
+  /// [FirestoreError.invalidArgument]; boş liste yazmadan başarı döner.
+  Future<FirestoreResult<void>> anonymizeChunk({
+    required String uid,
+    required List<MembershipModel> memberships,
+  });
+
   /// [clubId] kulübünün aktif üyelerinden bir sayfa (CLB-06, MGT-03).
   ///
   /// [role] verilmezse en yeni üye üstte (`appliedAt` azalan); verilirse

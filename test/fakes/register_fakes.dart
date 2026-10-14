@@ -19,6 +19,7 @@ import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
 import '../helpers/fake_app_clock.dart';
+import 'fake_account_deletion_repository.dart';
 import 'fake_activity_repository.dart';
 import 'fake_announcement_counter_repository.dart';
 import 'fake_app_info_service.dart';
@@ -68,11 +69,16 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// (varlık, `commentCount`) kayıtlı `FakePostRepository`'den okur / işler.
 /// T-22: `FakeRsvpRepository` etkinliği ve sayaçlarını kayıtlı
 /// `FakeEventRepository`'den okur / işler (kontenjan kararı, ±1).
+/// T-29: `FakeAccountDeletionRepository` kayıtlı `FakeUserRepository` ve
+/// `FakeMembershipRepository` üzerinde çalışır (profil anonimleştirmesi,
+/// başkanlık ön denetimi, M14).
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
   final clock = FakeAppClock(kDefaultFakeNowUtc);
   final clubs = FakeClubRepository();
+  final users = FakeUserRepository();
+  final memberships = FakeMembershipRepository(clock, clubs: clubs);
   final counters = FakeAnnouncementCounterRepository(clock);
   final posts = FakePostRepository(clock, counters: counters);
   final events = FakeEventRepository(clock);
@@ -94,13 +100,11 @@ void registerDefaultFakes() {
     ..registerSingleton<AuthRepository>(
       FakeAuthRepository(clock, service: authService),
     )
-    ..registerSingleton<UserRepository>(FakeUserRepository())
+    ..registerSingleton<UserRepository>(users)
     ..registerSingleton<SettingsRepository>(FakeSettingsRepository())
     // T-15 · kulüp, üyelik, şikayet, engel, günlük, bildirim dağıtıcısı
     ..registerSingleton<ClubRepository>(clubs)
-    ..registerSingleton<MembershipRepository>(
-      FakeMembershipRepository(clock, clubs: clubs),
-    )
+    ..registerSingleton<MembershipRepository>(memberships)
     ..registerSingleton<ReportRepository>(FakeReportRepository())
     ..registerSingleton<BlockRepository>(FakeBlockRepository())
     ..registerSingleton<ActivityRepository>(FakeActivityRepository())
@@ -125,6 +129,14 @@ void registerDefaultFakes() {
     )
     // T-28 · destek talepleri
     ..registerSingleton<SupportRepository>(FakeSupportRepository(clock))
+    // T-29 · hesap silme
+    ..registerSingleton<AccountDeletionRepository>(
+      FakeAccountDeletionRepository(
+        clock,
+        users: users,
+        memberships: memberships,
+      ),
+    )
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
     // T-16 · sistem paylaşım sayfası
