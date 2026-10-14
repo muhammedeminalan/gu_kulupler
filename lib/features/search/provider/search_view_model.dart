@@ -7,6 +7,7 @@ import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/search/provider/search_scope.dart';
 import 'package:gu_kulupler/features/search/provider/search_state.dart';
+import 'package:gu_kulupler/product/event/event_pool.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/club_join_mixin.dart';
 import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
@@ -337,31 +338,18 @@ final class SearchViewModel extends _$SearchViewModel
     },
   ].join(_fieldSeparator).trLower();
 
-  /// Etkinlik sorgularının sonuçlarını birleştirir: başarısız sorgu
-  /// günlüğe düşer ve atlanır; aynı etkinlik bir kez; yalnızca [clubIds]
-  /// kulüplerinin (havuzdaki etkin kulüpler) etkinlikleri; başlangıca göre
-  /// artan.
+  /// Etkinlik sorgularının sonuçlarını birleştirir (`EventPool.merge`):
+  /// başarısız sorgu günlüğe düşer ve atlanır; aynı etkinlik bir kez;
+  /// yalnızca [clubIds] kulüplerinin (havuzdaki etkin kulüpler)
+  /// etkinlikleri; başlangıca göre artan.
   static List<EventModel> mergeEvents({
     required Set<String> clubIds,
     required List<FirestoreResult<List<EventModel>>> results,
-  }) {
-    final byId = <String, EventModel>{};
-    for (final result in results) {
-      switch (result) {
-        case FirebaseSuccess(:final data):
-          for (final event in data) {
-            if (clubIds.contains(event.clubId)) byId[event.id] = event;
-          }
-        case FirebaseFailure(:final error, :final message):
-          AppLogger.warn(
-            'Arama etkinlik havuzu okunamadı: ${error.name}',
-            error: message,
-          );
-      }
-    }
-    return byId.values.toList()
-      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-  }
+  }) => EventPool.merge(
+    clubIds: clubIds,
+    results: results,
+    logLabel: 'Arama etkinlik havuzu okunamadı',
+  );
 
   /// Önerilen kulüpler: kullanıcının aktif üyesi olmadığı kulüpler, ilgi
   /// alanlarının kategorileri önde; her grupta havuz sırası korunur.

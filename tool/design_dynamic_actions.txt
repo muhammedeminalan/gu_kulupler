@@ -75,3 +75,14 @@ EVT-02.attendeesPreview # design/prototype/app/screens-events.js:74 — katılı
 EVT-02.menu.*           # design/prototype/app/sheets.js:12 — EVT-MENU satırları (`reminder` yalnızca kaydı olanda, `calendar`, `share`, `report`) yalnızca ⋮ menüsü açıkken; yakalama kapalı menü
 EVT-02.scrim            # design/prototype/app/ui.js:191 + sheets.js:12 — EVT-MENU saydam scrim'i (`PopMenu id="EVT-02"`) yalnızca menü açıkken
 EVT-02.retry            # lib/features/events/view/event_detail_view.dart — yalnızca etkinlik / kulüp okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+EVT-04.retry            # lib/features/events/view/my_events_view.dart — yalnızca kayıtlar / etkinlikler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+EVT-04.discover         # design/prototype/app/screens-events.js:94 — "Etkinlikleri keşfet" yalnızca seçili sekme boşken (`EmptyState`); yakalama dolu "Yaklaşan" sekmesi (u_mehmet → e01)
+EVT-04.ticket.*         # design/prototype/app/screens-events.js:94 — bilet düğmesi "Yaklaşan" sekmesindeki her kayıtta (`EVT-04.ticket.${id}`); yakalamada yalnızca e01
+EVT-04.leave.*          # design/prototype/app/screens-events.js:94 — "Vazgeç" / "Ayrıl" "Yaklaşan" ve "Bekleme listesi" satırlarında (`EVT-04.leave.${id}`; W-81 (b) yalnızca bitmeden); yakalamada yalnızca e01
+EVT-04.event.*          # design/prototype/app/screens-events.js:94 — her satır (`EVT-04.event.${id}`); yakalamada yalnızca e01
+EVT-01.prevMonth        # design/prototype/app/ui.js:147 + screens-events.js:31 — takvim başlığı önceki ay oku yalnızca takvim kipinde (`view === 'calendar'`); yakalama liste kipi
+EVT-01.nextMonth        # design/prototype/app/ui.js:147 + screens-events.js:31 — takvim başlığı sonraki ay oku yalnızca takvim kipinde; yakalama liste kipi
+EVT-01.today            # design/prototype/app/ui.js:147 + screens-events.js:31 — takvim "Bugün" düğmesi (`onToday`) yalnızca takvim kipinde; yakalama liste kipi
+EVT-01.day.*            # design/prototype/app/ui.js:149 + screens-events.js:31 — takvim gün hücresi (`.day.<yyyy-mm-dd>`, 42 hücre) yalnızca takvim kipinde; yakalama liste kipi
+EVT-01.clearFilters     # design/prototype/app/screens-events.js:29–30 — "Filtreleri temizle" yalnızca SHT-11 süzgeci ya da çip seçiliyken ve sonuç boşken (`efCount(f) || chip !== 'all'`); yakalama dolu liste
+EVT-01.retry            # lib/features/events/view/event_list_view.dart — yalnızca etkinlikler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır (`ListState` varsayılanı `SYS-02.retry`, ui.js:104)

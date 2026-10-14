@@ -4578,6 +4578,27 @@
   "@sht11Month": {
     "description": "Key sht.11.month"
   },
+  "sht11Range": "{from} → {to}",
+  "@sht11Range": {
+    "description": "Key sht.11.range",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "sht11RangeFrom": "{from} → …",
+  "@sht11RangeFrom": {
+    "description": "Key sht.11.rangeFrom",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      }
+    }
+  },
   "sht11SortDate": "Tarihe göre",
   "@sht11SortDate": {
     "description": "Key sht.11.sort.date"

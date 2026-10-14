@@ -15,6 +15,7 @@ import 'package:gu_kulupler/features/auth/view/reset_password_view.dart';
 import 'package:gu_kulupler/features/auth/view/setup_profile_view.dart';
 import 'package:gu_kulupler/features/auth/view/verify_email_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_list_view.dart';
+import 'package:gu_kulupler/features/events/view/event_list_view.dart';
 import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/view/error_view.dart';
@@ -471,14 +472,15 @@ void main() {
   });
 
   group('T-11 · AppRouter · sekmeler (gerçek ağaç)', () {
-    testWidgets('Kulüpler kökü CLB-01 (T-17); kalan dört sekme kökü yer '
-        'tutucudur, başlık sekme adıdır', (tester) async {
+    testWidgets('Kulüpler kökü CLB-01 (T-17), Etkinlikler kökü EVT-01 '
+        '(T-24); kalan üç sekme kökü yer tutucudur, başlık sekme adıdır', (
+      tester,
+    ) async {
       final app = await TestRouter.pump(
         tester,
         session: FakeSessionStates.activeSuper,
       );
       final titles = {
-        GuTab.events: tr.navEvents,
         GuTab.notifications: tr.navNotifications,
         GuTab.admin: tr.navAdmin,
         GuTab.profile: tr.navProfile,
@@ -488,6 +490,10 @@ void main() {
         expect(app.location, tab.rootPath, reason: tab.name);
         if (tab == GuTab.clubs) {
           expect(find.byType(ClubListView), findsOneWidget);
+          continue;
+        }
+        if (tab == GuTab.events) {
+          expect(find.byType(EventListView), findsOneWidget);
           continue;
         }
         expect(_placeholderTitle(tester), titles[tab], reason: tab.name);
@@ -540,10 +546,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Kulüpler kökü gerçek ekrandır (T-17); yer tutucu Etkinlikler'de.
-      container.read(appRouterProvider).go(AppPaths.events);
+      // Kulüpler (T-17) ve Etkinlikler (T-24) kökleri gerçek ekrandır; yer
+      // tutucu Bildirimler'de.
+      container.read(appRouterProvider).go(AppPaths.notifications);
       await tester.pumpAndSettle();
-      expect(_placeholderTitle(tester), en.navEvents);
+      expect(_placeholderTitle(tester), en.navNotifications);
       expect(
         tester.widget<GuBottomNav>(find.byType(GuBottomNav)).semanticLabel,
         en.a11yMainNav,

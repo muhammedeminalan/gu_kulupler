@@ -1,8 +1,7 @@
 part of 'shell_route.dart';
 
-// T-11 dal kökünü, T-17 aramayı, T-23 etkinlik detayı ile bileti kurar;
-// kalan alt rotalar (`EventListView` kökü, `MyEventsRoute` — T-24) PLAN
-// §13.3.3 tablosundaki task'larda.
+// T-11 dal kökünü, T-17 aramayı, T-23 etkinlik detayı ile bileti, T-24
+// `EventListView` kökünü ve `MyEventsRoute`'u kurar (PLAN §13.3.3).
 //
 // Sıra önemlidir: sabit parçalı kardeşler (`search` — T-17, `mine` — T-24)
 // `:eventId` kalıbından **önce** yazılır (go_router ilk eşleşeni alır).
@@ -12,6 +11,7 @@ part of 'shell_route.dart';
 const TypedGoRoute<EventsRoute> eventsRouteTree = TypedGoRoute<EventsRoute>(
   path: AppPaths.events,
   routes: <TypedRoute<RouteData>>[
+    TypedGoRoute<MyEventsRoute>(path: MyEventsRoute.segment),
     TypedGoRoute<EventsSearchRoute>(path: EventsSearchRoute.segment),
     TypedGoRoute<EventDetailRoute>(
       path: EventDetailRoute.segment,
@@ -22,7 +22,7 @@ const TypedGoRoute<EventsRoute> eventsRouteTree = TypedGoRoute<EventsRoute>(
   ],
 );
 
-/// Etkinlikler sekmesinin kökü — `/events`.
+/// EVT-01 Etkinlikler — Etkinlikler sekmesinin kökü, `/events` (guard `A`).
 final class EventsRoute extends GoRouteData
     with $EventsRoute, PlatformPageMixin {
   /// Sekme kökü rotası.
@@ -30,8 +30,22 @@ final class EventsRoute extends GoRouteData
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      // TODO(T-24): `EventListView` (Etkinlikler sekme kökü).
-      RoutePlaceholderView(title: (l10n) => l10n.navEvents);
+      const EventListView();
+}
+
+/// EVT-04 Etkinliklerim — `/events/mine` (guard `A`). EVT-01 "Biletlerim"
+/// düğmesi (`EVT-01.tickets`) `go` ile açar, geri EVT-01'e döner.
+final class MyEventsRoute extends GoRouteData
+    with $MyEventsRoute, PlatformPageMixin {
+  /// Kullanıcının katılım kayıtları.
+  const MyEventsRoute();
+
+  /// `/events` altındaki yol parçası (sabit; `:eventId`'den önce).
+  static const String segment = 'mine';
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const MyEventsView();
 }
 
 /// CLB-02 Arama (paylaşılan yaprak, PLAN §13.9) — `/events/search` (guard

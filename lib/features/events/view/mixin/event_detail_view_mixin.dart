@@ -157,17 +157,8 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
   /// Yüklenmiş kapak görseli (`event.coverPath`); adresi henüz bilinmiyorsa
   /// `null` (şablon kapak). Adres gelince görsel çözücüsü yeniden yayılır ve
   /// ekran yeniden çizilir.
-  ImageProvider? coverImageOf(EventModel event) {
-    final path = event.coverPath;
-    if (path == null) return null;
-    ref.watch(postImageResolverProvider);
-    final cache = ref.read(imageUrlCacheProvider);
-    unawaited(cache.request(path));
-    final url = cache.peek(path);
-    return url == null
-        ? null
-        : ref.read(storageImageFactoryProvider)(url, path);
-  }
+  ImageProvider? coverImageOf(EventModel event) =>
+      ref.watch(storageImageResolverProvider)(event.coverPath);
 
   // ──────────────────────────────── eylemler ────────────────────────────────
 
