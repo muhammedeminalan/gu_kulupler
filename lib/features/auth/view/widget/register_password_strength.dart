@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:gu_kulupler/product/widget/form/password_strength_bar.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Şifre kuralı satırı: karşılandı mı + metni (çağırandan; ARB).
@@ -7,10 +8,7 @@ typedef RegisterPasswordRule = ({bool met, String label});
 /// AUT-02 şifre gücü göstergesi — şifre alanının altındaki dilimli çubuk ve
 /// kural listesi (`screens-auth.js:98–99`).
 ///
-/// * Çubuk: [max] eşit dilim, yükseklik 4, radius 2, aralık 4. Dolu dilim
-///   rengi güce göre: ≤ 1 `state.danger`, 2 `state.warning`, ≥ 3
-///   `state.success`; boş dilim `border.default`. Dekoratiftir
-///   (`aria-hidden`).
+/// * Çubuk: `PasswordStrengthBar` (SHT-32 ile ortak).
 /// * Kurallar: satır başına 14 px ikon (`circle-check` / `circle-x`) + `bodyS`
 ///   metin, aralık 6, satırlar arası 4; karşılanan `state.success`, diğeri
 ///   `text.muted`.
@@ -35,44 +33,15 @@ class RegisterPasswordStrength extends StatelessWidget {
   /// Kural satırları, gösterim sırasıyla.
   final List<RegisterPasswordRule> rules;
 
-  /// Zayıf (kırmızı) sayılan en yüksek güç.
-  static const int _weakMax = 1;
-
-  /// Orta (sarı) sayılan güç.
-  static const int _medium = 2;
-
-  Color _fillColor(GuColors colors) {
-    if (strength <= _weakMax) return colors.stateDanger;
-    return strength == _medium ? colors.stateWarning : colors.stateSuccess;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final gu = context.gu;
-    final colors = gu.colors;
-    final fill = _fillColor(colors);
+    final colors = context.gu.colors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: GuSpacing.s8,
       children: [
-        ExcludeSemantics(
-          child: Row(
-            spacing: GuSpacing.s4,
-            children: [
-              for (var index = 0; index < max; index++)
-                Expanded(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: index < strength ? fill : colors.borderDefault,
-                      borderRadius: GuRadius.borderHandle,
-                    ),
-                    child: const SizedBox(height: GuSizes.progressHeightThin),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        PasswordStrengthBar(strength: strength, max: max),
         Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

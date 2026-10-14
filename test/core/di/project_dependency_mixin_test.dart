@@ -74,6 +74,8 @@ void main() {
       // T-22 · etkinlik ve katılım
       expect(consumer.eventRepository, same(GetIt.I<EventRepository>()));
       expect(consumer.rsvpRepository, same(GetIt.I<RsvpRepository>()));
+      // T-28 · destek talepleri
+      expect(consumer.supportRepository, same(GetIt.I<SupportRepository>()));
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

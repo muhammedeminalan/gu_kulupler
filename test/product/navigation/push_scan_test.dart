@@ -2,7 +2,7 @@
 // CLAUDE.md §5). `lib/**` + `packages/*/lib/**` (üretilen dosyalar hariç):
 //   P01 push biçimleri (`context.push*(`, `.push(context)`, `.push<`,
 //       `pushReplacement*`, `GoRouter.of(context).push`) — izinli tek biçim
-//       `LegalRoute(…).push<void>(context)` ve yalnızca 4 dosyada; ayrıca
+//       `LegalRoute(…).push<void>(context)` ve yalnızca 5 dosyada; ayrıca
 //       gu_ui overlay primitifinin rota itmesi `Navigator.of(…).push<T>(`
 //       (sheet / dialog / menü rota değildir — PLAN §13.6, CD-113; T-07)
 //   P02 view dosyalarında `Navigator.` (overlay çerçeveleri hariç)
@@ -16,12 +16,14 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/design_files.dart';
 
 /// `LegalRoute(…).push<void>(context)` izinli dosyalar (giriş, kayıt,
-/// katılım başvurusu sheet'i, hakkında — PLAN §13.10).
+/// katılım başvurusu sheet'i, hakkında, ayarlar gizlilik satırı — PLAN
+/// §13.10; SET-01 T-28'de eklendi).
 const Set<String> _legalPushFiles = {
   'lib/features/auth/view/login_view.dart',
   'lib/features/auth/view/register_view.dart',
   'lib/features/clubs/view/widget/join_application_sheet.dart',
   'lib/features/settings/view/about_view.dart',
+  'lib/features/settings/view/settings_view.dart',
 };
 
 typedef _Violation = ({String file, int line, String rule, String text});
@@ -185,7 +187,7 @@ void a(BuildContext context) {
       expect(v.map((e) => e.line), [2, 3, 4, 5, 6, 7]);
     });
 
-    test('P01: LegalRoute.push<void> yalnızca izinli 4 dosyada geçer', () {
+    test('P01: LegalRoute.push<void> yalnızca izinli 5 dosyada geçer', () {
       const src = '''
 void a(BuildContext context) {
   LegalRoute(tip: LegalTip.kvkk).push<void>(context);

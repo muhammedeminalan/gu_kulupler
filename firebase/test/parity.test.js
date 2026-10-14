@@ -313,7 +313,7 @@ describe('parite (g) · enum değerleri ↔ Rules değer listeleri (T-15)', () =
     // T-22: + EventStatus (draft / published / cancelled) ve RsvpStatus (going / waitlist / attended / cancelled).
     const statuses = [
       ...membershipStatuses,
-      ...['club_status.dart', 'user_status.dart', 'report_status.dart', 'event_status.dart', 'rsvp_status.dart'].flatMap(enumValues),
+      ...['club_status.dart', 'user_status.dart', 'report_status.dart', 'event_status.dart', 'rsvp_status.dart', 'ticket_status.dart'].flatMap(enumValues),
     ];
     const used = { status: literalsOf('status'), role: literalsOf('role'), kind: literalsOf('kind') };
     expect(used.status).toEqual(expect.arrayContaining([...membershipStatuses, 'open']));
@@ -428,6 +428,58 @@ describe('parite (g) · enum değerleri, desenler ve alan beyaz listeleri ↔ Ru
     expect(firestoreRules.match(/lastRsvpRef/g).length).toBeGreaterThan(0);
     const eventBlock = firestoreRules.slice(firestoreRules.indexOf('match /events/{eventId} {'), firestoreRules.indexOf('match /private/{docId} {', firestoreRules.indexOf('match /events/{eventId} {')));
     expect(eventBlock.replace(/\/\/[^\n]*/g, '')).not.toMatch(/'lastRsvpRef'/);
+  });
+});
+
+describe('parite (g) · supportTickets ve Storage support/ ↔ Dart (T-28)', () => {
+  const SRC = path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src');
+  const readDart = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
+  const enumValues = (file) => [...readDart(`models/enums/${file}`).matchAll(/^\s+\w+\('([^']+)'[,)]/gm)].map((m) => m[1]);
+  const quoted = (source) => [...source.matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  const listAfter = (anchor) => {
+    const at = firestoreRules.indexOf(anchor);
+    if (at < 0) throw new Error(`firestore.rules: "${anchor}" bulunamadı`);
+    const open = firestoreRules.indexOf('[', at);
+    return quoted(firestoreRules.slice(open, firestoreRules.indexOf(']', open)));
+  };
+  const modelKeys = (rel) => {
+    const fields = Object.fromEntries([...readDart('constants/firestore_fields.dart').matchAll(/static const String (\w+) = '([^']+)';/g)].map((m) => [m[1], m[2]]));
+    return [...readDart(rel).matchAll(/@JsonKey\(name: FirestoreFields\.(\w+)\)/g)].map((m) => fields[m[1]]);
+  };
+  const sorted = (keys) => [...new Set(keys)].sort();
+
+  test('supportTickets.subject değer listesi = SupportSubject (5); durum değerleri = TicketStatus', () => {
+    expect(listAfter('// SupportSubject (5)')).toEqual(enumValues('support_subject.dart'));
+    expect(enumValues('support_subject.dart')).toHaveLength(5);
+    expect(listAfter('&& request.resource.data.status in [')).toEqual(enumValues('ticket_status.dart'));
+  });
+
+  test('create beyaz listesi = SupportTicketModel anahtarları (BaseFields dahil)', () => {
+    expect(sorted(listAfter('function canCreateTicket()'))).toEqual(sorted(modelKeys('models/support_ticket_model.dart')));
+  });
+
+  test('ticketNo deseni = FirestoreIds.supportTicketNoPattern (Firestore kimliği ve Storage klasörü)', () => {
+    const pattern = /static const String supportTicketNoPattern =\s*r'\^([^']+)\$'/.exec(readDart('constants/firestore_ids.dart'));
+    expect(pattern).not.toBeNull();
+    const literal = dart.toRulesLiteral(pattern[1]);
+    expect(firestoreRules).toContain(`d.ticketNo.matches('${literal}')`);
+    expect(firestoreRules).toContain('&& ticketNo == d.ticketNo');
+    expect(storageRules).toContain(`&& ticketNo.matches('${literal}') && uploaderMetadataOnly() && accountActive();`);
+  });
+
+  test('attachmentPaths[0] deseni = support/{ticketNo}/ + StoragePaths.fileNamePattern', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`d.attachmentPaths[0].matches('support/' + ticketNo + '/${dart.toRulesLiteral(pattern[1])}')`);
+  });
+
+  test('support/ yüklemesi: FirebaseSupportRepository yalnızca `uploaderId` özel üst verisi gönderir; okuma bu alana bakar', () => {
+    const repository = readDart('repositories/firebase_support_repository.dart');
+    expect(repository).toContain("static const String _uploaderIdMetadata = 'uploaderId';");
+    expect(repository).toMatch(/customMetadata: \{_uploaderIdMetadata: userId\}/);
+    expect(repository.match(/customMetadata:/g)).toHaveLength(1);
+    expect(storageRules).toContain("request.resource.metadata.keys().hasOnly(['uploaderId', 'firebaseStorageDownloadTokens'])");
+    expect(storageRules).toContain('resource.metadata.uploaderId == request.auth.uid');
   });
 });
 

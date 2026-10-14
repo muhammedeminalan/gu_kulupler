@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/product/form/form_field_error.dart';
+import 'package:gu_kulupler/product/form/password_strength.dart';
 
 /// Kayıt formunun alanları (AUT-02); sıra ekrandaki sıradır — ilk hatalı alan
 /// bu sırayla bulunur ([RegisterState.firstInvalidField]).
@@ -108,31 +108,21 @@ final class RegisterState extends Equatable {
   /// Son gönderimin sunucu hatası; form değişince temizlenir.
   final RegisterError? submitError;
 
-  static final RegExp _uppercase = RegExp(r'\p{Lu}', unicode: true);
-  static final RegExp _digit = RegExp(r'\d');
-  static final RegExp _symbol = RegExp(r'[^\p{L}\p{N}]', unicode: true);
-
   /// Şifre kuralı: en az `Limits.passwordMinLength` karakter.
-  bool get hasMinLength => password.runes.length >= Limits.passwordMinLength;
+  bool get hasMinLength => PasswordStrength.hasMinLength(password);
 
   /// Şifre kuralı: en az bir büyük harf (Türkçe harfler dahil).
-  bool get hasUppercase => _uppercase.hasMatch(password);
+  bool get hasUppercase => PasswordStrength.hasUppercase(password);
 
   /// Şifre kuralı: en az bir rakam.
-  bool get hasDigit => _digit.hasMatch(password);
+  bool get hasDigit => PasswordStrength.hasDigit(password);
 
   /// Şifre gücü, 0 – [passwordStrengthMax]: karşılanan ölçüt sayısı
-  /// (uzunluk, büyük harf, rakam, harf / rakam dışı karakter —
-  /// `screens-auth.js:82`).
-  int get passwordStrength => [
-    hasMinLength,
-    hasUppercase,
-    hasDigit,
-    _symbol.hasMatch(password),
-  ].where((met) => met).length;
+  /// (`PasswordStrength.of`; `screens-auth.js:82`).
+  int get passwordStrength => PasswordStrength.of(password);
 
   /// [passwordStrength] üst sınırı (güç çubuğundaki dilim sayısı).
-  static const int passwordStrengthMax = 4;
+  static const int passwordStrengthMax = PasswordStrength.max;
 
   /// Odağın taşınacağı ilk hatalı alan (form sırasıyla); hata yoksa `null`.
   /// Kayıtlı e-posta hatası ([RegisterError.emailInUse]) e-posta alanına

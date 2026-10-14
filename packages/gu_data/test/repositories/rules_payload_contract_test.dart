@@ -48,6 +48,10 @@
 // saatinden tam gün). Yeni etkinliğin kimliği `@autoId`'dir (`newId`); bilet
 // kodu sıralı `FakeTicketCodeGenerator`'dan gelir.
 //
+// T-28: `t28.scenarios` — `FirebaseSupportRepository.createTicket` (eksiz /
+// ekli). Belge kimliği talep numarasıdır; ek yüklemesi (`upload`) yazımdan
+// öncedir.
+//
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
 import 'dart:typed_data';
@@ -1518,6 +1522,108 @@ void main() {
         expect(_normalized(db.log), writes);
         expect(db.commits, batches);
         expect(db.transactions, 0);
+      });
+    }
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur', () {
+      _expectWellFormedVariants(scenarios);
+    });
+  });
+
+  group('T-28 · Rules yük sözleşmesi (destek talebi)', () {
+    final t28 = contract['t28']! as Map<String, Object?>;
+    final actors = (t28['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t28['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+
+    late SupportRepository support;
+
+    /// SET-05 formunun gerçek girdisi (konu "Hata bildirimi", ek SHT-16).
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'SupportRepository.createTicket · eksiz': (uid) =>
+              support.createTicket(
+                userId: uid,
+                subject: SupportSubject.bug,
+                message: 'Bildirimler gelmiyor.',
+              ),
+          'SupportRepository.createTicket · ekli (SHT-16)': (uid) =>
+              support.createTicket(
+                userId: uid,
+                subject: SupportSubject.bug,
+                message: 'Bildirimler gelmiyor.',
+                attachment: SupportAttachment(
+                  bytes: _image,
+                  contentType: 'image/jpeg',
+                ),
+              ),
+        };
+
+    setUp(() {
+      support = FirebaseSupportRepository(
+        FirebaseFirestoreService(db),
+        storage,
+        FakeTicketCodeGenerator(),
+        FakeAppClock(_uploadedAt),
+        SequenceRandom(_randomBytes),
+      );
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(
+        scenarios.map((scenario) => scenario['role']),
+        everyElement(isIn(actors.keys)),
+      );
+      // Talep numarası sıralı üreticinin ilk numarasıdır (Rules deseni).
+      expect(
+        FakeTicketCodeGenerator().supportTicketNo(),
+        matches(FirestoreIds.supportTicketNoPattern),
+      );
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — yazım ve yükleme sözleşmeyle birebir; belge kimliği = '
+          'ticketNo, ek talebin klasöründe', () async {
+        final uid = actors[scenario['role']]!;
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(_normalized(db.log), scenario['writes']);
+        expect(db.transactions, 0);
+        expect(
+          [
+            for (final upload in storage.uploads)
+              {
+                'path': upload.path,
+                'contentType': upload.contentType,
+                'customMetadata': upload.customMetadata,
+              },
+          ],
+          [?scenario['upload']],
+        );
+        final write =
+            (scenario['writes']! as List<Object?>).single!
+                as Map<String, Object?>;
+        final data = write['data']! as Map<String, Object?>;
+        expect(write['path'], 'supportTickets/${data['ticketNo']}');
+        for (final path in (data['attachmentPaths']! as List<Object?>)) {
+          expect(
+            StoragePaths.isSupportFile(
+              path! as String,
+              data['ticketNo']! as String,
+            ),
+            isTrue,
+          );
+        }
       });
     }
 

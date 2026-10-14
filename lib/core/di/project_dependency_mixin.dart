@@ -84,6 +84,9 @@ mixin ProjectDependencyMixin {
   NotificationRepository get notificationRepository =>
       GetIt.I<NotificationRepository>();
 
+  /// Destek talepleri: talep + ek (SET-05), kendi taleplerim (T-28).
+  SupportRepository get supportRepository => GetIt.I<SupportRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

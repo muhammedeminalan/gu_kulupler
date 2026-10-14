@@ -136,7 +136,8 @@ Okuma/yazma: **yalnızca sahibi**; okuma ayrıca süper admin (ADM-05 e-posta ar
 ### 2.14 `savedPosts/{userId}_{postId}`
 `userId`, `postId`, `clubId`, `savedAt`, + `BaseFields` (kaydı kaldır = soft delete). Sahibi okur/yazar.
 
-### 2.15 `supportTickets/{ticketId}`
+### 2.15 `supportTickets/{ticketNo}`
+Belge kimliği talep numarasıdır (`supportTickets/GU-7K3Q9X` = `ticketNo`; otomatik ID değil — T-28, CD-151): numara tekilliğini Rules sağlar (var olan numaraya yazım `update` sayılır, sahibine kapalı); ek klasörü `support/{ticketNo}/` talebe bu kimlikle bağlıdır. Kota yok (rules-spec §9.13).
 `ticketNo` (örn. `GU-7K3Q9X`, CSPRNG; kullanıcıya `#GU-7K3Q9X` gösterilir), `userId`, `subject` (`bug·suggestion·account·club·other`), `message` (≤500), `attachmentPaths` (L<s> ≤1), `status` (`open·closed`), + `BaseFields`. Sahibi oluşturur/okur; süper admin okur.
 
 ### 2.16 `announcementCounters/{clubId}_{yyyyMMdd}`  (Istanbul günü)

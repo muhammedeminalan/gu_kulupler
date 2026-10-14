@@ -31,7 +31,7 @@ part 'notification_navigator.g.dart';
 /// | `eventReminder`, `waitlistPromoted` | `hasTicket` → `/events/{eventId}/ticket`, değilse `/events/{eventId}` | events |
 /// | `reportResolved` | `null` (rota yok; yalnızca TST-17) | — |
 /// | `newReport` | `/admin` (**geçici**; T-40 `AdminReportsRoute(reportId:)` — W-29) | admin |
-/// | `system`, `unknown` (varsayılan) | `/profile` (**geçici**; T-28 `AboutRoute` — W-30) | profile |
+/// | `system`, `unknown` (varsayılan) | `/profile/settings/about` (`AboutRoute`, SET-04) | profile |
 ///
 /// Türün gerektirdiği kimlik ([NotificationRefsModel]) eksikse hedef
 /// SYS-04'tür ([AppPaths.notFound]).
@@ -81,10 +81,9 @@ abstract final class NotificationTargets {
       // TODO(T-40): `AdminReportsRoute(reportId: refs.reportId)` + 250 ms
       // sonra SHT-26 (W-29); o güne kadar Admin sekme kökü.
       NotificationType.newReport => const AdminRoute().location,
-      // TODO(T-28): `AboutRoute()` (`/profile/settings/about`, W-30); o güne
-      // kadar Profil sekme kökü.
+      // SET-04 Hakkında (PLAN §13.7; yığın Profil → Ayarlar → Hakkında).
       NotificationType.system ||
-      NotificationType.unknown => const ProfileRoute().location,
+      NotificationType.unknown => const AboutRoute().location,
     };
   }
 

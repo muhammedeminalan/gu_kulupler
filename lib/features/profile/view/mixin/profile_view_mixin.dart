@@ -111,9 +111,7 @@ mixin ProfileViewMixin on ConsumerState<ProfileView> {
   void openSaved() => const SavedRoute().go(context);
 
   /// Ayarlar (`PRF-01.settings`, `PRF-01.settingsRow`) → SET-01.
-  void openSettings() {
-    // TODO(T-28): `const SettingsRoute().go(context)` (SET-01; W-32).
-  }
+  void openSettings() => const SettingsRoute().go(context);
 
   /// Kulüp satırı (`PRF-01.club.<id>`) → CLB-03 (Kulüpler sekmesi).
   void openClub(String clubId) => ClubDetailRoute(clubId: clubId).go(context);

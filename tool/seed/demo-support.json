@@ -1,0 +1,42 @@
+{
+  "_doc": "T-28 — demo destek talepleri (SET-05; süper admin destek kutusu T-40'ta okur). demo-data.json'da destek talebi yoktur (README madde 4: demo veri salt okunur, yeni senaryo ayrı dosyada). Anahtar talep numarasıdır (= belge kimliği, `GU-` + 6 karakter, FirestoreIds.supportTicketNoPattern); createdAt / updatedAt ISO, meta.today'e göre tam gün kaydırılır. Durumlar karışıktır (open / closed); ek yolu yoktur (Storage'a yer tutucu yüklenmez). Kullanıcılar demo-data.json'dadır; u_suspended askıdaki hesabın kendi talebini görebildiğini gösterir.",
+  "supportTickets": {
+    "GU-4825KM": {
+      "userId": "u_ayse",
+      "subject": "bug",
+      "message": "Etkinlik biletim açılmıyor, QR kod yerine boş ekran görüyorum.",
+      "status": "open",
+      "createdAt": "2026-10-07T09:12:00.000Z"
+    },
+    "GU-7KD3MP": {
+      "userId": "u_mehmet",
+      "subject": "suggestion",
+      "message": "Kulüp duyurularına emoji tepkisi eklenebilir mi?",
+      "status": "open",
+      "createdAt": "2026-10-06T18:40:00.000Z"
+    },
+    "GU-H2W9TB": {
+      "userId": "u_elif",
+      "subject": "club",
+      "message": "Kulübümüzün kapak görselini güncelleyemiyorum, yükleme yarıda kalıyor.",
+      "status": "closed",
+      "createdAt": "2026-10-02T11:05:00.000Z",
+      "updatedAt": "2026-10-03T08:30:00.000Z"
+    },
+    "GU-ZP5R8C": {
+      "userId": "u_burak",
+      "subject": "account",
+      "message": "Bölüm bilgimi yanlış seçtim, profilden değiştirebiliyor muyum?",
+      "status": "closed",
+      "createdAt": "2026-09-28T14:20:00.000Z",
+      "updatedAt": "2026-09-29T10:00:00.000Z"
+    },
+    "GU-Q6V4NE": {
+      "userId": "u_suspended",
+      "subject": "other",
+      "message": "Hesabım askıya alınmış görünüyor, nedenini öğrenebilir miyim?",
+      "status": "open",
+      "createdAt": "2026-10-05T16:45:00.000Z"
+    }
+  }
+}

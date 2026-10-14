@@ -224,6 +224,16 @@ abstract final class ProjectDependency {
       SecureTicketCodeGenerator(),
       appClock,
     );
+    // T-28 · destek talepleri. Ek talepten önce yüklenir (repository
+    // metodu); talep numarası ve dosya adının rastgele kısmı kriptografik
+    // kaynaktan gelir.
+    final supportRepository = FirebaseSupportRepository(
+      firestoreService,
+      storageService,
+      SecureTicketCodeGenerator(),
+      appClock,
+      Random.secure(),
+    );
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -261,6 +271,8 @@ abstract final class ProjectDependency {
       // T-22 · etkinlik ve katılım repository'leri
       ..registerSingleton<EventRepository>(eventRepository)
       ..registerSingleton<RsvpRepository>(rsvpRepository)
+      // T-28 · destek talepleri
+      ..registerSingleton<SupportRepository>(supportRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

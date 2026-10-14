@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T11:00:45.566Z",
+  "updated": "2026-10-14T11:54:44.847Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-28",
   "statusValues": [
     "pending",
     "planning",
@@ -411,8 +411,8 @@
       "notes": ""
     },
     "T-28": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T11:01:19.809Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -845,7 +845,10 @@
       "resolveIn": [
         "T-28"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-28",
+      "closedAt": "2026-10-14T11:40:14.699Z",
+      "closeNote": "NotificationTargets: system / unknown → AboutRoute (/profile/settings/about); deep_link_stack_test güncellendi"
     },
     {
       "id": "W-31",
@@ -863,7 +866,10 @@
       "resolveIn": [
         "T-28"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-28",
+      "closedAt": "2026-10-14T11:40:14.722Z",
+      "closeNote": "ProfileViewMixin.openSettings → SettingsRoute().go (PRF-01.settings, PRF-01.settingsRow); profile_view_test hedef tablosu"
     },
     {
       "id": "W-33",
@@ -1402,6 +1408,24 @@
       "id": "W-86",
       "declaredIn": "T-25",
       "text": "T-25 güvenlik incelemesi (CD-148 (9)) kabul edilen sınırlamalar → T-45 'Mod C spam sınırlaması' raporu: (a) iptal → yeniden başvuru turunda tur başına yönetici başına bir application_received (bekleme süresi yok; tur başvuru listesi ve günlükte görünür); (b) etkin kulüp yöneticisinin event_new yayın penceresinde (Limits.notificationEventNewWindow = 10 dk) rastgele anahtarla tekrar itmesi (CD-65); (c) Limits.notificationFanOutChunkSize = 225 canlıda (erişim çağrısı önbelleği + 1000 ifade sınırı) doğrulanır — aşımda dağıtıcı yarılar, ölçümle küçültülür; fanout_result.json canlı değeriyle güncellenir.",
+      "resolveIn": [
+        "T-45"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-87",
+      "declaredIn": "T-28",
+      "text": "support/ Storage kuralı gerçek sunucuda denenmedi (T-28 güvenlik incelemesi, CD-151 (7); emülatör göstermez): okuma kuralı resource.metadata.uploaderId'ye dayanır (başka hiçbir get kuralı üst veriye bakmaz), yükleme uploaderMetadataOnly() ister (sunucunun doldurduğu contentDisposition / indirme jetonu anahtarı — W-75 ile aynı belirsizlik). Kurallar canlıya yüklendikten HEMEN sonra Android ve iOS'ta ekli destek talebi gönderilir; doğrulanır: yükleme başarılı, yükleyen getBytes ile okur, başka hesap okuyamaz (unauthorized), süper admin okur. unauthorized gelirse T-28 yeniden açılır",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-88",
+      "declaredIn": "T-28",
+      "text": "Destek talebi / support/ kotası yok — kabul edilmiş sınırlama (rules-spec §9.13, PLAN §20 R-27, CD-151 (7)): supportTickets create'te sayı / bekleme sınırı yok, support/ yüklemesinde 'yalnızca kendi klasörü' freni yok (yetim dosya, izi uploaderId). Fren: askı (activeUser / accountActive; rules/support_tickets.test.js 'kabul edilmiş sınırlama' testi), App Check (CD-64). T-45 spam raporunda ölçülür; gerekirse bekleme kuralı (users/{uid}/private/account.lastTicketNo + lastTicketAt işaretçisi, aynı batch'te getAfter — batch içi çoklu talebi işaretçi engeller) kullanıcıya sorulur; süper admin destek listesi (konsol / ileride ADM) createdAt ↓ + limit ile okunur",
       "resolveIn": [
         "T-45"
       ],

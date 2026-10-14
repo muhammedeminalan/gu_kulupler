@@ -48,6 +48,7 @@ import 'fake_saved_post_repository.dart';
 import 'fake_settings_repository.dart';
 import 'fake_share_service.dart';
 import 'fake_storage_service.dart';
+import 'fake_support_repository.dart';
 import 'fake_url_launcher_service.dart';
 import 'fake_user_repository.dart';
 
@@ -122,6 +123,8 @@ void registerDefaultFakes() {
     ..registerSingleton<NotificationRepository>(
       FakeNotificationRepository(clock),
     )
+    // T-28 · destek talepleri
+    ..registerSingleton<SupportRepository>(FakeSupportRepository(clock))
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())
     // T-16 · sistem paylaşım sayfası

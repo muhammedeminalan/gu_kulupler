@@ -6,7 +6,8 @@ rules_version = '2';
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
 // ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi (events/ de onu kullanır — yeni yardımcı yok).
-// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21) · events/ (T-22).
+// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21) · events/ (T-22)
+// · support/ (T-28; okuma yalnızca yükleyen + süper admin).
 //
 // ÇAPRAZ SERVİS SINIRI (T-21): tek kural değerlendirmesinde EN ÇOK 2 Firestore belgesine erişilebilir
 // (Firebase belgesi: "No more than two Firestore documents may be accessed in a single Rules
@@ -115,6 +116,13 @@ service firebase.storage {
           && request.resource.metadata.clubId is string
           && request.resource.metadata.clubId.matches('[A-Za-z0-9_-]+');
     }
+    // support/ yüklemesinin tek özel üst verisi (T-28): `uploaderId` = oturumdaki uid (+ indirme jetonu,
+    // `noCustomMetadata()` ile aynı gerekçe). Alan atlanamaz, başkasının kimliği yazılamaz; üst veri sonradan
+    // değiştirilemez (`update: false`) — okuma kuralı bu alana güvenir. Üst veri yoksa ifade hata verir = ret.
+    function uploaderMetadataOnly() {
+      return request.resource.metadata.keys().hasOnly(['uploaderId', 'firebaseStorageDownloadTokens'])
+          && request.resource.metadata.uploaderId == request.auth.uid;
+    }
     // Yükleyen, `clubId` kulübünün ETKİN yöneticisi mi? (çapraz servis: 1 Firestore belgesi)
     // Firestore `isManager(c)` ile aynı koşul: üyelik `active` ve rol yönetim kurulu / başkan. Danışman,
     // üye, başvurusu bekleyen, ayrılmış ve başka kulübün yöneticisi yükleyemez; süper admin de (gönderiyi
@@ -222,10 +230,26 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    // support/{ticketNo}/{file} — destek eki · T-28
+    // support/{ticketNo}/{file} — destek eki · T-28 (SET-05; rules-spec §7)
+    //  - Okuma: yalnızca YÜKLEYEN (`metadata.uploaderId == request.auth.uid`) ve süper admin, yalnızca TEK
+    //    dosya (`get`). Ek kişisel olabilir (ekran görüntüsü): diğer yolların aksine doğrulanmış her
+    //    kullanıcıya açık DEĞİLDİR. Yükleyen izi yüklemede zorunlu ve değiştirilemez olduğu için (aşağıda;
+    //    `update: false`) okuma Firestore'a bakmadan karar verir. Klasör listelenemez.
+    //  - Yükleme: doğrulanmış ve hesabı etkin her kullanıcı, yeni adla (`isNewFile()`), yalnızca kendi
+    //    kimliğiyle (`uploaderMetadataOnly()`). Klasör adı talep numarası desenindedir
+    //    (`FirestoreIds.supportTicketNoPattern` — Firestore `supportTickets` kuralıyla aynı): keyfi adlı
+    //    klasör açılamaz. Talep belgesi yükleme anında YOKTUR (önce ek, sonra belge — PLAN §10.4) ve
+    //    OKUNMAZ: başkasının numarasına dosya yüklenebilir ama İLİŞTİRİLEMEZ — talebin kimliği numaradır
+    //    ve belgeyi yalnızca sahibi yazar; yol `support/{ticketNo}/` desenine bağlıdır. Sonuç yetim
+    //    dosyadır; yükleyeni `metadata.uploaderId` gösterir ve onu yalnızca yükleyen okur.
+    //  - Çapraz servis: 1 belge (hesap — `accountActive()`); profilin tamamlanmış olmasını talep yazımı
+    //    (Firestore `activeUser()`) ister.
     match /support/{ticketNo}/{file} {
-      allow read: if false;
-      allow create: if false;
+      allow get: if signedInVerified()
+          && (isSuperAdmin() || resource.metadata.uploaderId == request.auth.uid);
+      allow list: if false;
+      allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
+          && ticketNo.matches('GU-[A-HJ-NP-Z2-9]{6}') && uploaderMetadataOnly() && accountActive();
       allow update, delete: if false;
     }
 

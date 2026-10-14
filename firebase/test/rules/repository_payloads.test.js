@@ -914,3 +914,104 @@ describe('T-25 · bildirimler — senaryolar (kendi bağlamı, kurallar açık)'
     await (again === 'allow' ? assertSucceeds(repeat) : assertFails(repeat));
   });
 });
+
+// 9. T-28 — `contract.t28.scenarios`: FirebaseSupportRepository.createTicket'in GERÇEK yazımı (biçim `t22` ile
+//    aynı; ön koşul yalnızca roles.json kimlik belgeleri). Ek senaryosunda dosya önce sözleşmedeki yol, tür ve
+//    `customMetadata` (`uploaderId`) ile senaryonun bağlamından Storage'a yüklenir, sonra belge yazılır.
+//    Numara çakışması: aynı numarayla ikinci create = update → ret (repository bir kez yeni numarayla dener).
+describe('T-28 · destek talebi — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t28 = contract.t28;
+  /** Ek baytları (ImagePickerService her zaman JPEG üretir). */
+  const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+
+  /** Bağlamların kullanıcı belgeleri (roles.json): `activeUser()` bunları okur. */
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  function writesOf(scenario, variant = {}) {
+    const patch = variant.patch || {};
+    const without = variant.without || [];
+    return scenario.writes
+      .map((write, index) => (patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write))
+      .filter((_write, index) => !without.includes(index));
+  }
+
+  const uploadOf = (role, upload) =>
+    uploadBytes(ref(contextFor(role).storage(), upload.path), JPEG, {
+      contentType: upload.contentType,
+      customMetadata: upload.customMetadata,
+    });
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  const scenarioOf = (call) => t28.scenarios.find((scenario) => scenario.call === call);
+
+  test('sözleşme: bağlamlar roles.json ile aynı; belge kimliği = ticketNo; ek talebin klasöründe', () => {
+    for (const [role, uid] of Object.entries(t28.actors)) expect(definition(role).uid).toBe(uid);
+    for (const scenario of t28.scenarios) {
+      const [write] = scenario.writes;
+      expect(write.path).toBe(`supportTickets/${write.data.ticketNo}`);
+      for (const path of write.data.attachmentPaths) expect(path.startsWith(`support/${write.data.ticketNo}/`)).toBe(true);
+      if (scenario.upload) expect(write.data.attachmentPaths).toEqual([scenario.upload.path]);
+    }
+  });
+
+  describe.each(t28.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek yazım geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      await seedDocs(identityDocs());
+      const writes = writesOf(scenario);
+
+      if (scenario.upload) await assertSucceeds(uploadOf(scenario.role, scenario.upload));
+      await assertSucceeds(send(db, writes));
+
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+      if (scenario.upload) {
+        const meta = await getMetadata(ref((await getAdminContext()).storage(), scenario.upload.path));
+        expect(meta.customMetadata).toEqual(scenario.upload.customMetadata);
+      }
+    });
+
+    const denied = scenario.denied || [];
+    if (denied.length === 0) return;
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      await seedDocs(identityDocs());
+      const writes = writesOf(scenario, variant);
+      const paths = [...new Set(writes.map((write) => write.path))];
+      const before = await snapshot(paths);
+
+      await assertFails(send(db, writes));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test('numara çakışması: aynı numarayla ikinci talep (create değil update) ret; yeni numarayla geçer', async () => {
+    const scenario = scenarioOf('SupportRepository.createTicket · eksiz');
+    const db = contextFor(scenario.role).firestore();
+    await seedDocs(identityDocs());
+    await assertSucceeds(send(db, scenario.writes));
+
+    await assertFails(send(db, scenario.writes));
+    const [write] = scenario.writes;
+    const retry = { ...write, path: 'supportTickets/GU-AAAAAC', data: { ...write.data, ticketNo: 'GU-AAAAAC' } };
+    await assertSucceeds(send(db, [retry]));
+  });
+
+  test('ek: başkası adına yükleme (uploaderId ≠ bağlam) ret; yükleyen dışındaki öğrenci eki okuyamaz', async () => {
+    const scenario = scenarioOf('SupportRepository.createTicket · ekli (SHT-16)');
+    await seedDocs(identityDocs());
+
+    await assertFails(uploadOf('member', scenario.upload));
+    await assertSucceeds(uploadOf(scenario.role, scenario.upload));
+    await assertFails(getMetadata(ref(contextFor('member').storage(), scenario.upload.path)));
+    await assertSucceeds(getMetadata(ref(contextFor('super').storage(), scenario.upload.path)));
+  });
+});

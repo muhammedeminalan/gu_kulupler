@@ -17,6 +17,7 @@ rules_version = '2';
 // (`event_published`, `event_cancelled`).
 // T-25 → notifications (sahibi R / U; tür bazlı C: application_received, announcement, event_new,
 // event_cancelled, waitlist_promoted, event_reminder).
+// T-28 → supportTickets (sahibi C + R; süper admin R + `status` U; kimlik = `ticketNo`).
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -1858,10 +1859,46 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 17 · supportTickets/{ticketId} — T-28
-    match /supportTickets/{ticketId} {
-      allow read: if false;
-      allow create, update: if false;
+    // 17 · supportTickets/{ticketNo} — T-28 · rules-spec §3.15
+    // Yazma yolu: SupportRepository.createTicket (C — SET-05 "Gönder"). Belge kimliği talep numarasıdır
+    // (`GU-XXXXXX`, `ticketNo` alanıyla aynı): numara tekilliğini bu kural sağlar — var olan numaraya
+    // yazım `create` değil `update` sayılır ve talep sahibine kapalıdır (istemci bir kez yeni numarayla
+    // dener). Ek yolu `support/{ticketNo}/` + StoragePaths.fileNamePattern olmalıdır: başka bir talebin
+    // klasörü ya da keyfi yol iliştirilemez. Talebi sahibi ve süper admin okur; yalnızca süper admin
+    // durumunu değiştirir (`open` ↔ `closed`). Talep silinmez (D-10).
+    match /supportTickets/{ticketNo} {
+      function canCreateTicket() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['ticketNo', 'userId', 'subject', 'message', 'attachmentPaths', 'status',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.userId == uid()
+            && d.ticketNo is string && d.ticketNo.matches('GU-[A-HJ-NP-Z2-9]{6}')
+            && ticketNo == d.ticketNo
+            // SupportSubject (5)
+            && d.subject in ['bug', 'suggestion', 'account', 'club', 'other']
+            && d.message is string && d.message.size() > 0
+            && d.message.size() <= 500   // limit: supportMessageMax
+            && d.status == 'open'
+            && d.attachmentPaths is list
+            && d.attachmentPaths.size() <= 1   // limit: supportAttachmentsMax
+            && (d.attachmentPaths.size() == 0
+                || (d.attachmentPaths[0] is string
+                    && d.attachmentPaths[0].matches('support/' + ticketNo + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)')))
+            && activeUser();
+      }
+
+      // U — yalnızca süper admin, yalnızca `status` (+ `updatedAt`); başka alan değişmez.
+      function canSetTicketStatus() {
+        return isSuper() && emailOk() && touches(['status'])
+            && request.resource.data.status in ['open', 'closed'];
+      }
+
+      // R — sahibi (askıdaki hesap dahil: kendi talebini görür) ve süper admin. Sorgu `userId == uid`
+      // süzgecini taşır (rules-spec §6); süper adminin süzgeçsiz listesi açıktır (ADM destek kutusu).
+      allow get, list: if emailOk() && (isSuper() || resource.data.userId == uid());
+      allow create: if canCreateTicket();
+      allow update: if canSetTicketStatus();
       allow delete: if false;
     }
 

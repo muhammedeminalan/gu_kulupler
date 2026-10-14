@@ -5625,5 +5625,159 @@
         ]
       }
     ]
+  },
+  "t28": {
+    "_doc": "T-28 — destek talebinin GERÇEK yazımı (FirebaseSupportRepository.createTicket; SET-05 \"Gönder\"; rules-spec §3.15, §7). Biçim `t22` ile aynıdır (`role`, `reads`, `writes`, `upload`, `expect`, `denied`). Belge kimliği talep numarasıdır (`supportTickets/{ticketNo}`); numara sıralı FakeTicketCodeGenerator'ın ilk destek numarasıdır (GU-AAAAAB), ek dosya adı sabit saat + sabit rastgele baytlardan (T-14 avatar girdileri). Ek önce yüklenir (yol `support/{ticketNo}/…`, tek özel üst veri `uploaderId`), sonra belge yazılır. Numara çakışması (var olan numaraya ikinci create = update) Rules'ta reddedilir; repository bir kez yeni numarayla dener.",
+    "actors": {
+      "student": "u_student",
+      "member": "u_member",
+      "super": "u_super"
+    },
+    "scenarios": [
+      {
+        "call": "SupportRepository.createTicket · eksiz",
+        "role": "student",
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "supportTickets/GU-AAAAAB",
+            "data": {
+              "ticketNo": "GU-AAAAAB",
+              "userId": "u_student",
+              "subject": "bug",
+              "message": "Bildirimler gelmiyor.",
+              "attachmentPaths": [],
+              "status": "open",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "supportTickets/GU-AAAAAB": {
+            "ticketNo": "GU-AAAAAB",
+            "userId": "u_student",
+            "status": "open",
+            "attachmentPaths": []
+          }
+        },
+        "denied": [
+          {
+            "name": "başkası adına talep (bağlam üye, userId öğrenci)",
+            "role": "member"
+          },
+          {
+            "name": "durum open değil",
+            "patch": {
+              "0": {
+                "status": "closed"
+              }
+            }
+          },
+          {
+            "name": "numara belge kimliğinden farklı",
+            "patch": {
+              "0": {
+                "ticketNo": "GU-ZZZZZZ"
+              }
+            }
+          },
+          {
+            "name": "500 karakteri aşan mesaj",
+            "patch": {
+              "0": {
+                "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              }
+            }
+          },
+          {
+            "name": "beyaz liste dışı alan",
+            "patch": {
+              "0": {
+                "appVersion": "1.0.0"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "SupportRepository.createTicket · ekli (SHT-16)",
+        "role": "student",
+        "reads": [],
+        "upload": {
+          "path": "support/GU-AAAAAB/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+          "contentType": "image/jpeg",
+          "customMetadata": {
+            "uploaderId": "u_student"
+          }
+        },
+        "writes": [
+          {
+            "op": "set",
+            "path": "supportTickets/GU-AAAAAB",
+            "data": {
+              "ticketNo": "GU-AAAAAB",
+              "userId": "u_student",
+              "subject": "bug",
+              "message": "Bildirimler gelmiyor.",
+              "attachmentPaths": [
+                "support/GU-AAAAAB/20261008T201502Z_0a1b2c3d4e5f6071.jpg"
+              ],
+              "status": "open",
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "supportTickets/GU-AAAAAB": {
+            "ticketNo": "GU-AAAAAB",
+            "attachmentPaths": [
+              "support/GU-AAAAAB/20261008T201502Z_0a1b2c3d4e5f6071.jpg"
+            ]
+          }
+        },
+        "denied": [
+          {
+            "name": "ek başka talebin klasöründe",
+            "patch": {
+              "0": {
+                "attachmentPaths": [
+                  "support/GU-ZZZZZZ/20261008T201502Z_0a1b2c3d4e5f6071.jpg"
+                ]
+              }
+            }
+          },
+          {
+            "name": "iki ek",
+            "patch": {
+              "0": {
+                "attachmentPaths": [
+                  "support/GU-AAAAAB/20261008T201502Z_0a1b2c3d4e5f6071.jpg",
+                  "support/GU-AAAAAB/20261008T201503Z_0a1b2c3d4e5f6072.jpg"
+                ]
+              }
+            }
+          },
+          {
+            "name": "ek yolu dosya adı biçiminde değil",
+            "patch": {
+              "0": {
+                "attachmentPaths": [
+                  "support/GU-AAAAAB/foto.jpg"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 }
