@@ -278,6 +278,31 @@ abstract final class ProjectDependency {
       eventRepository,
       appClock,
     );
+    // T-37 · süper admin (ADM-*): kompozisyon — başkan ataması / danışman
+    // bağlama üyelik repository'sinde (M11 / M13; sayaç + yan belge + günlük
+    // + bildirim tek işlem), şikayet çözümü gönderi / yorum gizleme +
+    // `report_resolved` (kritik) ile tek batch, arama kayıtlı kullanıcı
+    // repository'sinden. Yetki yalnızca Rules'ta (custom claim — D-28); kulüp
+    // görselinin dosya adı kriptografik kaynaktan.
+    final adminRepository = FirebaseAdminRepository(
+      firestore: firestoreService,
+      storage: storageService,
+      auth: authService,
+      clock: appClock,
+      random: Random.secure(),
+      memberships: membershipRepository,
+      reports: FirebaseReportModeration(
+        firestore: firestoreService,
+        auth: authService,
+        posts: postRepository,
+        comments: commentRepository,
+        dispatcher: notificationDispatcher,
+      ),
+      search: FirebaseUserSearch(
+        firestore: firestoreService,
+        users: userRepository,
+      ),
+    );
     // Cihaz servisleri (CD-08).
     final connectivityService =
         overrides.connectivityService ?? await _startConnectivity();
@@ -325,6 +350,7 @@ abstract final class ProjectDependency {
       // T-30 · yönetim ve yoklama
       ..registerSingleton<ManagementRepository>(managementRepository)
       ..registerSingleton<AttendanceRepository>(attendanceRepository)
+      ..registerSingleton<AdminRepository>(adminRepository)
       // Geri bildirim: router'ın kök gezgini + GuToastHost denetleyicisi
       // (CD-128).
       ..registerSingleton<GuToastController>(toastController)

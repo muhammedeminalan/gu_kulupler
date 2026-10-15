@@ -202,11 +202,12 @@ const authBase = (target) => `http://${target.auth}/identitytoolkit.googleapis.c
  * @param {string} password yerel demo parolası (demo-data.json#meta.demoPassword); günlüğe yazılmaz
  */
 async function upsertAuthUser(target, user, password) {
+  // Silinmiş (anonim) demo kullanıcının adı yoktur: Auth REST `displayName: null` kabul etmez.
   const account = {
     localId: user.uid,
     email: user.email,
     password,
-    displayName: user.displayName,
+    ...(typeof user.displayName === 'string' ? { displayName: user.displayName } : {}),
     emailVerified: user.emailVerified,
   };
   const created = await requestJson(`${authBase(target)}/accounts`, { method: 'POST', body: account });

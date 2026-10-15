@@ -32,7 +32,7 @@
     "n105": {
       "userId": "u064",
       "type": "report_resolved",
-      "refs": { "reportId": "u064_post_p13" },
+      "refs": { "reportId": "post_p13" },
       "createdAt": "2026-10-02T10:08:42.117Z",
       "read": false
     }

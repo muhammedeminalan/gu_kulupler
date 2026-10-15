@@ -7,7 +7,8 @@
 //  - Yazma: T-15'te yalnızca sayaç dalı açıktır ve tek başına geçmez (eşlik eden üyelik geçişi ister) —
 //    ayrıntı `counters.test.js`. T-30: yönetim alanları (etkin yönetici), devir (`presidentId` — üyelik
 //    yazımlarıyla; `memberships_manager.test.js`), yönetici sayaç dalı + yan belge `private/counter`
-//    (`expectations/club_counters.json`). Oluşturma ve askı (T-37) kapalıdır.
+//    (`expectations/club_counters.json`). T-37: süper admin dalları (oluşturma, kimlik, medya, askı, başkan
+//    atama, M13) — tek başına yazım vakaları burada, tam batch'ler `admin.test.js`.
 // Sorgu sözleşmesi ve indeksler `queries.test.js` dosyasındadır.
 const { runMatrix } = require('../helpers/matrix');
 

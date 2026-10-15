@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T01:56:40.087Z",
+  "updated": "2026-10-15T06:04:52.872Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-37",
   "statusValues": [
     "pending",
     "planning",
@@ -501,8 +501,8 @@
       "notes": ""
     },
     "T-37": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-15T04:15:25.204Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1478,7 +1478,10 @@
       "resolveIn": [
         "T-37"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-37",
+      "closedAt": "2026-10-15T05:50:42.620Z",
+      "closeNote": "T-37: report_resolved Rules dalı (yalnızca süper admin, grup anahtarı deseni, keyedIdOk) + FirebaseReportModeration.resolveReports tek batch (şikayetçi başına belge, tek olay anahtarı) + repository_payloads.json#t37 (removed / dismissed senaryoları; claim'siz 11 bağlam ret)"
     },
     {
       "id": "W-85",
@@ -1539,7 +1542,10 @@
         "T-33",
         "T-37"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-37",
+      "closedAt": "2026-10-15T05:50:42.646Z",
+      "closeNote": "T-37 payı: AdminRepository.assignPresident silinmiş eski başkanı board yapar (yeni hedef: active/president + memberCount +1 + yan belge); kalan üyelik M9 (MGT-03) ya da tool/admin/finish_account_deletion.js yeniden koşumuyla left (sayaç -1). Betik etkin başkanı left yapmaz (CD-160 (4))"
     },
     {
       "id": "W-91",
@@ -1548,7 +1554,10 @@
       "resolveIn": [
         "T-37"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-37",
+      "closedAt": "2026-10-15T05:50:42.672Z",
+      "closeNote": "T-37: tool/admin/finish_account_deletion.js (--uid | --all-deleted; kuru varsayılan, --yes + TTY proje kimliği, emülatör demo-) + saf lib/account_cleanup.js + tool/test/admin_scripts.test.js; idempotent, silme yok; README bölümü"
     },
     {
       "id": "W-92",
@@ -1581,7 +1590,10 @@
       "resolveIn": [
         "T-37"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-37",
+      "closedAt": "2026-10-15T05:50:42.698Z",
+      "closeNote": "T-37: assignPresident yeni hedefte presidentId + memberCount +1 tek güncelleme + clubs/{c}/private/counter yan belgesi aynı Tx (Rules canAssignPresident); createClub yan belge YAZMAZ (sözleşme §4 g.1 — sayılan üyeliği presidentId gösterir; Rules canCreateClub memberCount == 1); M13 danışman dalı açıldı (canLinkAdvisor / canAdminPlace)"
     },
     {
       "id": "W-95",
@@ -1665,6 +1677,20 @@
         "T-46"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-101",
+      "declaredIn": "T-37",
+      "text": "T-37 güvenlik incelemesi (CD-160 madde 8): (a) ADM-03 danışman 'kaldır' eylemi clubs.advisor.userId doluyken üyelik etkin danışman olmasa da gösterilir (bayat bağ — hesap silme; setAdvisor(active: false) yalnızca bağı ayırır) → T-39; (b) ADM-05 oturumdaki süper adminin kendi satırında askıya al / askıyı kaldır eylemi gösterilmez (AdminRepository.suspendUser / activateUser kendi hesabında invalidArgument, Rules reddeder) → T-41",
+      "resolveIn": [
+        "T-39",
+        "T-41"
+      ],
+      "status": "open",
+      "actions": [
+        "ADM-03",
+        "ADM-05"
+      ]
     }
   ],
   "notImplemented": [

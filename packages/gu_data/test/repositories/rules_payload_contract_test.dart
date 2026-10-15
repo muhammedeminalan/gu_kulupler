@@ -78,6 +78,7 @@ import '../fakes/fake_app_clock.dart';
 import '../fakes/fake_notification_dispatcher.dart';
 import '../fakes/fake_ticket_code_generator.dart';
 import '../fakes/recording_storage_service.dart';
+import '../fakes/scripted_auth_service.dart';
 import '../helpers/repo_sources.dart';
 
 const String _contractPath = 'firebase/test/contracts/repository_payloads.json';
@@ -129,6 +130,10 @@ final class _RecordingFirestore implements FirebaseFirestore {
   /// sırayla — sözleşmedeki `batches` gruplarıyla karşılaştırılır (T-25).
   final List<int> commits = [];
 
+  /// T-37 · koşulan koleksiyon sorguları (`{collection, where, limit}`),
+  /// sırayla — sözleşmedeki `queries` ile karşılaştırılır.
+  final List<Map<String, Object?>> queries = [];
+
   @override
   CollectionReference<Json> collection(String collectionPath) =>
       _RecordingCollection(collectionPath, this);
@@ -166,6 +171,144 @@ final class _RecordingCollection implements CollectionReference<Json> {
   @override
   DocumentReference<Json> doc([String? path]) =>
       _RecordingReference('${this.path}/${path ?? _autoId}', _db);
+
+  @override
+  Query<Json> where(
+    Object field, {
+    Object? isEqualTo,
+    Object? isNotEqualTo,
+    Object? isLessThan,
+    Object? isLessThanOrEqualTo,
+    Object? isGreaterThan,
+    Object? isGreaterThanOrEqualTo,
+    Object? arrayContains,
+    Iterable<Object?>? arrayContainsAny,
+    Iterable<Object?>? whereIn,
+    Iterable<Object?>? whereNotIn,
+    bool? isNull,
+  }) => _RecordingQuery(path, _db, const [], null).where(
+    field,
+    isEqualTo: isEqualTo,
+    isNotEqualTo: isNotEqualTo,
+    isLessThan: isLessThan,
+    isLessThanOrEqualTo: isLessThanOrEqualTo,
+    isGreaterThan: isGreaterThan,
+    isGreaterThanOrEqualTo: isGreaterThanOrEqualTo,
+    arrayContains: arrayContains,
+    arrayContainsAny: arrayContainsAny,
+    whereIn: whereIn,
+    whereNotIn: whereNotIn,
+    isNull: isNull,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// T-37 · yalnızca eşitlik süzgeçli koleksiyon sorgusu: koşulduğunda
+/// [_RecordingFirestore.queries]'e yazılır ve [_RecordingFirestore.docs]
+/// içindeki eşleşen belgeleri (koleksiyonun doğrudan belgeleri) döndürür.
+/// Başka işleç desteklenmez (sözleşmede yok).
+final class _RecordingQuery implements Query<Json> {
+  _RecordingQuery(this._collection, this._db, this._filters, this._limit);
+
+  final String _collection;
+  final _RecordingFirestore _db;
+  final List<(String, Object?)> _filters;
+  final int? _limit;
+
+  @override
+  Query<Json> where(
+    Object field, {
+    Object? isEqualTo,
+    Object? isNotEqualTo,
+    Object? isLessThan,
+    Object? isLessThanOrEqualTo,
+    Object? isGreaterThan,
+    Object? isGreaterThanOrEqualTo,
+    Object? arrayContains,
+    Iterable<Object?>? arrayContainsAny,
+    Iterable<Object?>? whereIn,
+    Iterable<Object?>? whereNotIn,
+    bool? isNull,
+  }) {
+    final others = [
+      isNotEqualTo,
+      isLessThan,
+      isLessThanOrEqualTo,
+      isGreaterThan,
+      isGreaterThanOrEqualTo,
+      arrayContains,
+      arrayContainsAny,
+      whereIn,
+      whereNotIn,
+      isNull,
+    ];
+    if (field is! String || isEqualTo == null || others.any((v) => v != null)) {
+      throw UnsupportedError('yalnızca eşitlik süzgeci: $field');
+    }
+    return _RecordingQuery(_collection, _db, [
+      ..._filters,
+      (field, isEqualTo),
+    ], _limit);
+  }
+
+  @override
+  Query<Json> limit(int limit) =>
+      _RecordingQuery(_collection, _db, _filters, limit);
+
+  @override
+  Future<QuerySnapshot<Json>> get([GetOptions? options]) async {
+    _db.queries.add({
+      'collection': _collection,
+      'where': [
+        for (final (field, value) in _filters) [field, '==', value],
+      ],
+      'limit': ?_limit,
+    });
+    final direct = RegExp('^${RegExp.escape(_collection)}/[^/]+\$');
+    final matches = [
+      for (final MapEntry(key: path, value: data) in _db.docs.entries)
+        if (direct.hasMatch(path) &&
+            _filters.every((filter) => data[filter.$1] == filter.$2))
+          _StoredQueryDoc(_RecordingReference(path, _db), data),
+    ];
+    return _StoredQuerySnapshot([
+      ...matches.take(_limit ?? matches.length),
+    ]);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// [_RecordingQuery] sonucunun belgeleri.
+final class _StoredQuerySnapshot implements QuerySnapshot<Json> {
+  _StoredQuerySnapshot(this.docs);
+
+  @override
+  final List<QueryDocumentSnapshot<Json>> docs;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Sorgu sonucundaki tek belge (her zaman vardır).
+final class _StoredQueryDoc implements QueryDocumentSnapshot<Json> {
+  _StoredQueryDoc(this.reference, this._data);
+
+  @override
+  final DocumentReference<Json> reference;
+  final Json _data;
+
+  @override
+  bool get exists => true;
+
+  @override
+  String get id => reference.id;
+
+  @override
+  Json data() => _data;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -1156,6 +1299,258 @@ void main() {
                   .entries) {
             expect(value, isA<String>(), reason: reason);
             expect(jsonEncode(writes), contains(key), reason: reason);
+          }
+        }
+      }
+    });
+  });
+
+  group('T-37 · Rules yük sözleşmesi (süper admin: kulüp, kullanıcı, başkan, '
+      'danışman, şikayet)', () {
+    final t37 = contract['t37']! as Map<String, Object?>;
+    final fixtures = t37['fixtures']! as Map<String, Object?>;
+    final actors = (t37['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t37['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+    final superId = actors['super']!;
+    const reason = 'Topluluk kurallarının ihlali.';
+
+    late AdminRepository admin;
+
+    /// Seed'deki kullanıcı belgesinin modeli (ADM-03 başkan seçimi profili
+    /// `UserRepository.getUser` ile okur).
+    UserModel seededUser(String uid) =>
+        UserModel.fromJson(db.docs['users/$uid']!, id: uid);
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı (aktör
+    /// oturumdaki süper admindir).
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function()>{
+          'AdminRepository.createClub': () => admin.createClub(
+            const ClubCreateInput(
+              name: 'Yeni Kulüp',
+              nameLower: 'yeni kulüp',
+              categoryId: 'k02',
+              iconName: 'flask-conical',
+              founded: 2024,
+              palette: ClubPalette.slate,
+              pattern: ClubPattern.dots,
+              summary: 'Yeni kulübün özeti.',
+            ),
+            presidentUserId: 'u_student',
+            presidentUser: seededUser('u_student'),
+            presidentEmail: 'student@ogr.gumushane.edu.tr',
+            advisor: const AdvisorInput(name: 'Ayşe Yılmaz', title: 'Doç. Dr.'),
+          ),
+          'AdminRepository.updateClubIdentity': () => admin.updateClubIdentity(
+            clubId,
+            const ClubIdentityPatch(
+              name: 'Robotik Kulübü',
+              nameLower: 'robotik kulübü',
+              categoryId: 'k03',
+              summary: 'Robotik topluluğu.',
+              advisor: AdvisorInput(name: 'Ayşe Yılmaz', title: 'Doç. Dr.'),
+            ),
+          ),
+          'AdminRepository.updateClubMedia · logo': () => admin.updateClubMedia(
+            clubId,
+            uploaderId: superId,
+            logo: ClubMediaUpload(bytes: _image, contentType: 'image/jpeg'),
+          ),
+          'AdminRepository.suspendClub': () =>
+              admin.suspendClub(clubId, reason: reason),
+          'AdminRepository.activateClub': () => admin.activateClub(clubId),
+          'AdminRepository.suspendUser': () =>
+              admin.suspendUser('u_member', reason: reason),
+          'AdminRepository.activateUser': () => admin.activateUser('u_susp'),
+          'AdminRepository.assignPresident · üyeliği olmayan hedef (W-94)':
+              () => admin.assignPresident(
+                clubId: clubId,
+                toUserId: 'u_student',
+                actorId: superId,
+              ),
+          'AdminRepository.assignPresident · etkin üye (M11)': () =>
+              admin.assignPresident(
+                clubId: clubId,
+                toUserId: 'u_member',
+                actorId: superId,
+              ),
+          'AdminRepository.setAdvisor · bağla (M13)': () => admin.setAdvisor(
+            clubId: clubId,
+            userId: 'u_student',
+            active: true,
+          ),
+          'AdminRepository.setAdvisor · kaldır (M13)': () => admin.setAdvisor(
+            clubId: clubId,
+            userId: 'u_advisor',
+            active: false,
+          ),
+          'AdminRepository.resolveReports · removed (gönderi)': () =>
+              admin.resolveReports(
+                reportIds: const ['u_member_post_p01', 'u_student_post_p01'],
+                action: ReportAction.removed,
+                actorId: superId,
+              ),
+          'AdminRepository.resolveReports · dismissed (hedefli: kullanıcı)':
+              () => admin.resolveReports(
+                reportIds: const ['u_member_user_u_board'],
+                action: ReportAction.dismissed,
+                actorId: superId,
+                target: (
+                  type: ReportTargetType.user,
+                  id: 'u_board',
+                  clubId: null,
+                ),
+              ),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      final activity = FirebaseActivityRepository(service);
+      final random = SequenceRandom(_randomBytes);
+      final auth = ScriptedAuthService()
+        ..currentUser = AuthUserInfo(
+          uid: superId,
+          email: 'super@gumushane.edu.tr',
+          emailVerified: true,
+        );
+      // Gerçek dağıtıcı + yazıcı: `role_changed` / `report_resolved`
+      // bildirimleri asıl yazımla aynı işlemdedir (W-83, W-84).
+      final dispatcher = ClientFanOutDispatcher(
+        writer: FirebaseNotificationRepository(service),
+        recipients: const _FixedRecipients([]),
+      );
+      final posts = FirebasePostRepository(
+        service,
+        storage,
+        activity,
+        FirebaseAnnouncementCounterRepository(service, clock),
+        clock,
+        random,
+      );
+      admin = FirebaseAdminRepository(
+        firestore: service,
+        storage: storage,
+        auth: auth,
+        clock: clock,
+        random: random,
+        memberships: FirebaseMembershipRepository(
+          service,
+          activity,
+          dispatcher,
+          clock,
+        ),
+        reports: FirebaseReportModeration(
+          firestore: service,
+          auth: auth,
+          posts: posts,
+          comments: FirebaseCommentRepository(service, clock),
+          dispatcher: dispatcher,
+        ),
+        search: FirebaseUserSearch(
+          firestore: service,
+          users: FirebaseUserRepository(service, storage, clock, random),
+        ),
+      );
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok; tek bağlam süper admin; muafiyetler roles.json bağlamları', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t37['autoId'], _autoId);
+      expect(t37['increment'], _increment);
+      expect(actors, {'super': 'u_super'});
+      for (final scenario in scenarios) {
+        expect(scenario['role'], 'super', reason: '${scenario['call']}');
+        expect(
+          scenario['exempt'] as List<Object?>? ?? const [],
+          everyElement(isIn(_t37ClaimlessContexts)),
+          reason: '${scenario['call']}',
+        );
+      }
+    });
+
+    test('AdminRepository yazma yüzeyinin her üyesi en az bir senaryoda '
+        '(PLAN §10.4; okumalar ve stats yazmaz)', () {
+      final covered = {
+        for (final scenario in scenarios)
+          (scenario['call']! as String).split(' · ').first,
+      };
+
+      expect(covered, {
+        'AdminRepository.createClub',
+        'AdminRepository.updateClubIdentity',
+        'AdminRepository.updateClubMedia',
+        'AdminRepository.suspendClub',
+        'AdminRepository.activateClub',
+        'AdminRepository.suspendUser',
+        'AdminRepository.activateUser',
+        'AdminRepository.assignPresident',
+        'AdminRepository.setAdvisor',
+        'AdminRepository.resolveReports',
+      });
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — sorgular, okumalar, yüklemeler, yazımlar ve işlem biçimi '
+          'sözleşmeyle birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+
+        final result = await calls[call]!();
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.queries, scenario['queries'] ?? const <Object?>[]);
+        expect(db.reads, scenario['reads']);
+        expect(
+          [
+            for (final upload in storage.uploads)
+              {
+                'path': upload.path,
+                'contentType': upload.contentType,
+                'customMetadata': upload.customMetadata,
+              },
+          ],
+          scenario['uploads'] ?? const <Object?>[],
+        );
+        expect(_normalized(db.log), scenario['writes']);
+        expect(db.transactions, scenario['tx'] == true ? 1 : 0);
+        // Her süper admin yazımı tek commit'tir (batch / transaction / tek
+        // güncelleme): ya hepsi ya hiçbiri.
+        expect(db.commits, [(scenario['writes']! as List<Object?>).length]);
+      });
+    }
+
+    test('aktör kimliği yalnızca oturumdaki süper admin; yetki alanı '
+        '(superadmin / role / isSuper) hiçbir yüke yazılmaz', () {
+      final encoded = jsonEncode([
+        for (final scenario in scenarios) scenario['writes'],
+      ]);
+      for (final key in ['superadmin', 'isSuper', 'isSuperAdmin']) {
+        expect(encoded, isNot(contains('"$key"')));
+      }
+      for (final scenario in scenarios) {
+        for (final write
+            in (scenario['writes']! as List<Object?>)
+                .cast<Map<String, Object?>>()) {
+          final data = write['data']! as Map<String, Object?>;
+          for (final field in [
+            FirestoreFields.createdBy,
+            FirestoreFields.resolvedBy,
+            FirestoreFields.hiddenBy,
+            FirestoreFields.actorId,
+          ]) {
+            if (data.containsKey(field)) {
+              expect(data[field], superId, reason: '${write['path']}');
+            }
           }
         }
       }
@@ -2366,6 +2761,22 @@ void main() {
 
 /// Sabit alıcılı [RecipientResolver] (sözleşme senaryoları): yönetici kümesi
 /// verilir, diğer sorgular bu testte çağrılmaz.
+/// T-37 · jest tarafının claim'siz ret bağlamları (roles.json `contexts` −
+/// `super`); senaryonun `exempt` listesi yalnızca bunlardan olabilir.
+const List<String> _t37ClaimlessContexts = [
+  'anon',
+  'unver',
+  'student',
+  'former',
+  'pending',
+  'member',
+  'board',
+  'president',
+  'advisor',
+  'otherManager',
+  'susp',
+];
+
 final class _FixedRecipients implements RecipientResolver {
   const _FixedRecipients(this._managers);
 

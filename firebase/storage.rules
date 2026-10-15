@@ -162,11 +162,12 @@ service firebase.storage {
     //  - Yükleme (MGT-09, ManagementRepository.updateClubMedia): yalnızca KLASÖRDEKİ kulübün etkin
     //    yöneticisi (yönetim kurulu / başkan), yeni adla (`isNewFile()`), hesabı etkinken; üst veride kendi
     //    kimliğiyle (`uploaderId`) ve klasördeki kulüple (`metadata.clubId == clubId`). posts/ / events/
-    //    yollarının aksine klasör adı kulübün KENDİSİDİR: yetki klasöre bağlanır (üye, danışman, süper
-    //    admin ve başka kulübün yöneticisi bu klasöre — kendi kulübü adına da — yükleyemez). `clubId`
+    //    yollarının aksine klasör adı kulübün KENDİSİDİR: yetki klasöre bağlanır (üye, danışman ve başka
+    //    kulübün yöneticisi bu klasöre — kendi kulübü adına da — yükleyemez; süper admin aşağıda). `clubId`
     //    deseni `clubMetadataOnly()`'dedir (`[A-Za-z0-9_-]+`; eşitlik klasör adını da kapsar).
-    //  - Süper admin yükleyemez (kulüp ayarlarını yalnızca kulüp yönetimi değiştirir — Q-09; süper adminin
-    //    kulüp oluşturma / kimlik alanları T-37).
+    //  - Süper admin de yükler (T-37 — AdminRepository.updateClubMedia, ADM-03; sözleşme docs/plans/T-37.md
+    //    §4 a.1, g-3): aynı üst veri (`uploaderId` = kendi uid'i, `metadata.clubId` = klasör), hesabı etkin. Claim
+    //    önce bakılır (`isSuperAdmin()` doğruysa üyelik belgesi okunmaz). Yol yazımı Firestore süper medya dalında.
     //  - Kulübün durumu okunmaz (aşağıdaki 2 belge sınırı): askıdaki / silinmiş kulübün yöneticisi dosyayı
     //    yükler, `logoPath` / `coverPath` yazımı Firestore `clubLive`'da düşer (yetim dosya; fren = hesabın
     //    askıya alınması — rules-spec §9.11g). İstemci yüklemeden önce kulübü okur (yok / silinmiş → dosya
@@ -178,7 +179,7 @@ service firebase.storage {
       allow list: if false;
       allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
           && clubMetadataOnly() && request.resource.metadata.clubId == clubId
-          && isManagerOf(clubId) && accountActive();
+          && (isSuperAdmin() || isManagerOf(clubId)) && accountActive();
       allow update, delete: if false;
     }
 

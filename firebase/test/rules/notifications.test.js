@@ -221,10 +221,11 @@ describe('notifications · yönetici kararları (application_approved / rejected
   });
 });
 
-describe('notifications · kapalı türler (üreticileri T-37; new_report hiç üretilmez — CD-37; system Admin SDK)', () => {
+// `report_resolved` T-37'de açıldı (yalnızca süper admin, grup anahtarı — rules/admin.test.js).
+describe('notifications · kapalı türler (new_report hiç üretilmez — CD-37; system Admin SDK)', () => {
   test.each([
-    ['report_resolved', 'super', 'u_member', { reportId: 'u_member_post_p01' }],
     ['new_report', 'member', 'u_super', { reportId: 'u_member_post_p01' }],
+    ['new_report', 'super', 'u_member', { reportId: 'post_p01' }],
     ['system', 'super', 'u_member', { textKey: 'welcome' }],
     ['unknown_type', 'board', 'u_member', { clubId: CLUB, eventId: 'e_public' }],
   ])('%s (%s) → deny', async (type, role, recipient, refs) => {

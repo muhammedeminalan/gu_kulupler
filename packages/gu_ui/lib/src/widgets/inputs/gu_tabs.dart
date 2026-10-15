@@ -128,14 +128,19 @@ class GuTabs extends StatelessWidget {
       );
     }
 
-    final row = Semantics(
-      role: SemanticsRole.tabBar,
-      container: true,
-      explicitChildNodes: true,
-      // Alt kenarlık payı içeride: gösterge kenarlığın üstüne çizilir ve
-      // kaydırma kırpmasının içinde kalır.
-      child: Padding(
-        padding: GuInsets.only(bottom: GuSizes.tabBorder),
+    // Alt kenarlık payı içeride: gösterge kenarlığın üstüne çizilir ve
+    // kaydırma kırpmasının içinde kalır.
+    final row = Padding(
+      padding: GuInsets.only(bottom: GuSizes.tabBorder),
+      // `tabBar` düğümü yalnızca sekme satırını kapsar (dolgu dışarıda):
+      // kutusu sekme düğümlerinin birleşimidir. Dolgu içeride olsaydı
+      // kaydırma görünümünün semantik kırpması (önbellek kenarı) 1 px
+      // payın içine düştüğünde sekmeler düşer, çubuk boş kalırdı ("a TabBar
+      // cannot be empty"). Sekme yoksa rol verilmez.
+      child: Semantics(
+        role: tabs.isEmpty ? null : SemanticsRole.tabBar,
+        container: true,
+        explicitChildNodes: true,
         child: Row(
           mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
           children: [
@@ -278,10 +283,14 @@ class _GuTabState extends State<_GuTab> {
     });
   }
 
+  /// Sekme düğümü `GuActionSurface`'ın (`GuTapTarget` sınırı) tek
+  /// düğümüdür: `role: tab` + `selected` + dokunma eylemi + etiket (metin ve
+  /// sayaç birleşir); `tabBar`'ın doğrudan çocuğu.
   @override
   Widget build(BuildContext context) => GuActionSurface(
     onTap: widget.onTap,
     selected: widget.selected,
+    role: SemanticsRole.tab,
     // css:82 `:focus-visible{border-radius:6px}`.
     borderRadius: GuRadius.borderCheckbox,
     builder: _buildVisual,
@@ -294,77 +303,74 @@ class _GuTabState extends State<_GuTab> {
     final count = tab.count;
     final icon = tab.icon;
     final scrollable = widget.scrollable;
-    return Semantics(
-      role: SemanticsRole.tab,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: GuSizes.tabHeight,
-              maxWidth: scrollable ? widget.maxWidth : double.infinity,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: GuSizes.tabHeight,
+            maxWidth: scrollable ? widget.maxWidth : double.infinity,
+          ),
+          child: Padding(
+            padding: GuInsets.sym(
+              h: scrollable ? GuSizes.tabPaddingXScroll : GuSizes.tabPaddingX,
             ),
-            child: Padding(
-              padding: GuInsets.sym(
-                h: scrollable ? GuSizes.tabPaddingXScroll : GuSizes.tabPaddingX,
-              ),
-              child: Center(
-                widthFactor: scrollable ? 1 : null,
-                heightFactor: 1,
-                child: TweenAnimationBuilder<Color?>(
-                  tween: ColorTween(
-                    end: widget.selected
-                        ? colors.brandPrimaryText
-                        : colors.textMuted,
-                  ),
-                  duration: gu.duration(GuMotion.fast),
-                  curve: GuMotion.easeCss,
-                  builder: (context, color, _) => Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: GuSizes.tabGap,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          tab.label,
-                          style: gu.text.tab.copyWith(color: color),
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+            child: Center(
+              widthFactor: scrollable ? 1 : null,
+              heightFactor: 1,
+              child: TweenAnimationBuilder<Color?>(
+                tween: ColorTween(
+                  end: widget.selected
+                      ? colors.brandPrimaryText
+                      : colors.textMuted,
+                ),
+                duration: gu.duration(GuMotion.fast),
+                curve: GuMotion.easeCss,
+                builder: (context, color, _) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: GuSizes.tabGap,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        tab.label,
+                        style: gu.text.tab.copyWith(color: color),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (count != null)
-                        GuCountBadge(
-                          label: '$count',
-                          size: GuCountBadgeSize.md,
-                        ),
-                      if (icon != null)
-                        GuIcon(icon, size: GuSizes.tabIcon, color: color),
-                    ],
+                    ),
+                    if (count != null)
+                      GuCountBadge(
+                        label: '$count',
+                        size: GuCountBadgeSize.md,
+                      ),
+                    if (icon != null)
+                      GuIcon(icon, size: GuSizes.tabIcon, color: color),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.selected)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -GuSizes.tabIndicatorBottomOverlap,
+            child: Padding(
+              padding: GuInsets.sym(h: GuSizes.tabIndicatorInset),
+              child: SizedBox(
+                height: GuSizes.tabIndicatorHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.brandPrimary,
+                    borderRadius: GuRadius.tabIndicator,
                   ),
                 ),
               ),
             ),
           ),
-          if (widget.selected)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: -GuSizes.tabIndicatorBottomOverlap,
-              child: Padding(
-                padding: GuInsets.sym(h: GuSizes.tabIndicatorInset),
-                child: SizedBox(
-                  height: GuSizes.tabIndicatorHeight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colors.brandPrimary,
-                      borderRadius: GuRadius.tabIndicator,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }

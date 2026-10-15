@@ -24,6 +24,7 @@ import 'package:gu_data/src/models/enums/user_status.dart';
 import 'package:gu_data/src/models/membership_applicant_model.dart';
 import 'package:gu_data/src/models/membership_contact_model.dart';
 import 'package:gu_data/src/models/membership_model.dart';
+import 'package:gu_data/src/models/user_account_model.dart';
 import 'package:gu_data/src/models/user_model.dart';
 import 'package:gu_data/src/notifications/notification_dispatcher.dart';
 import 'package:gu_data/src/repositories/firebase_activity_repository.dart';
@@ -38,7 +39,8 @@ import 'package:gu_data/src/utils/field_validators.dart';
 /// `memberships/{id}/private/contact`, `clubs.memberCount` sayacı ve günlük
 /// kaydı (PLAN §10.4; rules-spec §3.4 M1–M4, M7, M8, hesap silme M14 ve
 /// `private/contact` U(b) not düzenleme; yönetici geçişleri M5, M6, M9–M12 —
-/// sözleşme `docs/plans/T-30.md` §4).
+/// sözleşme `docs/plans/T-30.md` §4; süper admin danışman bağlama M13,
+/// başkan ataması ve kulüp kurucusu — `docs/plans/T-37.md` §4 a).
 ///
 /// Her geçiş tek transaction'dır: önce okur (başvuranın kullanıcı belgesi,
 /// kulüp, üyelik, iletişim belgesi, günlük kaydı), beklenen durumu doğrular,
@@ -582,6 +584,274 @@ final class FirebaseMembershipRepository implements MembershipRepository {
   }
 
   @override
+  Future<FirestoreResult<void>> setAdvisor({
+    required String clubId,
+    required String userId,
+    required bool active,
+  }) async {
+    if (_rejectPair<void>(clubId, userId) case final rejected?) {
+      return rejected;
+    }
+    final clubRef = _clubRef(clubId);
+    final membershipRef = _membershipRef(clubId, userId);
+    return _transact((tx) async {
+      // Transaction kuralı: tüm okumalar yazımlardan önce.
+      final club = _liveClub(await tx.get(clubRef));
+      final current = _managedMembership(
+        await tx.get(membershipRef),
+        clubId,
+        userId,
+      );
+      final isAdvisor =
+          current?.status == MembershipStatus.active &&
+          current?.role == ClubRole.advisor;
+
+      if (!active) {
+        final linked = club.advisor?.userId == userId;
+        // Kaldırma: etkin danışman üyeliği `left` olur. Bayat bağ (hesap
+        // silme üyeliği zaten kapattı — M14 / W-91; güvenlik incelemesi
+        // T-37): yalnızca kulüp bağı ayrılır. İkisi de yoksa `conflict`.
+        if (isAdvisor) {
+          tx.update(membershipRef, {
+            FirestoreFields.status: MembershipStatus.left.json,
+            ...BaseFieldsPayload.update(),
+          });
+        } else if (!linked) {
+          throw const ConflictException.conflict();
+        }
+        // Ad / ünvan kalır; yalnızca bağlı hesap ayrılır.
+        if (linked) {
+          tx.update(clubRef, {
+            FirestoreFields.advisorUserId: null,
+            ...BaseFieldsPayload.update(),
+          });
+        }
+        return;
+      }
+
+      final advisor = club.advisor;
+      if (advisor == null) {
+        throw const _Halt(
+          FirestoreError.failedPrecondition,
+          'setAdvisor: kulübün danışman kaydı (ad / ünvan) yok',
+        );
+      }
+      // Zaten bağlı: yeniden deneme güvenli, yazım yok.
+      if (isAdvisor && advisor.userId == userId) return;
+      // Başka bir hesap bağlı (önce kaldırılır) ya da hedefin etkin /
+      // bekleyen başka bir üyeliği var.
+      if (advisor.userId != null ||
+          current?.status == MembershipStatus.active ||
+          current?.status == MembershipStatus.pending) {
+        throw const ConflictException.conflict();
+      }
+      final appointment = await _readAppointee(
+        tx,
+        clubId,
+        userId,
+        hasMembership: current != null,
+      );
+
+      final fields = _appointed(ClubRole.advisor, appointment.applicant);
+      if (current == null) {
+        tx.set(membershipRef, {
+          FirestoreFields.clubId: clubId,
+          FirestoreFields.userId: userId,
+          ...fields,
+          FirestoreFields.priorCount: 0,
+          ...BaseFieldsPayload.create(),
+        });
+      } else {
+        // Geçmiş üyelik (`left` / `cancelled` / `rejected` / `removed`):
+        // `priorCount` korunur.
+        tx.update(membershipRef, {...fields, ...BaseFieldsPayload.update()});
+      }
+      _writeAppointeeContact(tx, clubId, userId, appointment);
+      // Danışman `memberCount`'a sayılmaz (M13): sayaç ve yan belge yok.
+      tx.update(clubRef, {
+        FirestoreFields.advisorUserId: userId,
+        ...BaseFieldsPayload.update(),
+      });
+    });
+  }
+
+  /// T-37 · `AdminRepository.assignPresident` (ADM-03 / SHT-25; sözleşme
+  /// `docs/plans/T-37.md` §4 a.3) — süper admin [actorId], [clubId]
+  /// kulübünün başkanlığını [toUserId] kullanıcısına verir. **Tek
+  /// transaction**: kulüp (`presidentId` = eski başkan), iki üyelik, hedefin
+  /// kullanıcı belgesi ve gerekirse hesabı / iletişim belgesi okunur, sonra:
+  ///
+  /// - hedef etkin `member` / `board` → [transferPresidency] ile aynı
+  ///   yazımlar (M11; sayaç değişmez);
+  /// - hedefin üyeliği yok ya da `left` / `cancelled` / `rejected` /
+  ///   `removed` → hedef üyelik `active` + `president` (`applicant`
+  ///   `users/{to}`'dan, `decidedAt` / `decidedBy` aktör, `priorCount`
+  ///   korunur / 0) + `private/contact` (hesap e-postası; belge varsa
+  ///   yalnızca e-posta) + eski başkan `board` + kulüpte **tek güncelleme**
+  ///   `{presidentId, memberCount +1}` + `clubs/{c}/private/counter`
+  ///   işaretçisi hedefi gösterir (W-94).
+  ///
+  /// İki yolda da `role_changed` günlüğü (hedef; varsa yeniden yazılmaz) ve
+  /// iki `role_changed` bildirimi aynı işlemdedir. Silinmiş eski başkan
+  /// (W-90) da `board` olur (kullanıcı belgesi okunmaz).
+  ///
+  /// Hatalar: hedef zaten başkan → [FirestoreError.invalidArgument]; eski
+  /// başkanın üyeliği etkin başkan değil, hedef `pending` ya da hesabı etkin
+  /// değil → [FirestoreError.conflict]; hedef danışman →
+  /// [FirestoreError.ruleViolation] (`notMember`); kulüp yok / silinmiş →
+  /// [FirestoreError.notFound].
+  Future<FirestoreResult<void>> assignPresident({
+    required String clubId,
+    required String toUserId,
+    required String actorId,
+  }) async {
+    if (_rejectManaged<void>(clubId, toUserId, actorId) case final rejected?) {
+      return rejected;
+    }
+    final clubRef = _clubRef(clubId);
+    final toRef = _membershipRef(clubId, toUserId);
+    final toUserRef = _firestore.doc(FirestoreCollections.users, toUserId);
+    return _transact((tx) async {
+      // Transaction kuralı: tüm okumalar yazımlardan önce.
+      final fromUserId = _liveClub(await tx.get(clubRef)).presidentId;
+      if (fromUserId == toUserId) {
+        throw const _Halt(
+          FirestoreError.invalidArgument,
+          'assignPresident: hedef zaten başkan',
+        );
+      }
+      if (!RepositoryHelpers.isValidId(fromUserId)) {
+        throw const ConflictException.conflict();
+      }
+      final fromRef = _membershipRef(clubId, fromUserId);
+      final from = _managedMembership(
+        await tx.get(fromRef),
+        clubId,
+        fromUserId,
+      );
+      if (from == null ||
+          from.status != MembershipStatus.active ||
+          from.role != ClubRole.president) {
+        throw const ConflictException.conflict();
+      }
+      final to = _managedMembership(await tx.get(toRef), clubId, toUserId);
+      final isMember = to?.status == MembershipStatus.active;
+      if (isMember && to?.role == ClubRole.advisor) {
+        throw _violation(FirestoreRuleCode.notMember);
+      }
+      if (to?.status == MembershipStatus.pending ||
+          (isMember && !_assignable.contains(to?.role))) {
+        throw const ConflictException.conflict();
+      }
+      if (to != null && isMember) {
+        // Hedef zaten sayılan üye: M11 devri, sayaç değişmez. W-89 (b): yeni
+        // başkanın hesabı etkin olmalı (yeni hedefte `_readAppointee` bakar).
+        if (_userOrNull(await tx.get(toUserRef))?.status != UserStatus.active) {
+          throw const ConflictException.conflict();
+        }
+        final entry = _roleActivityOf(
+          clubId,
+          actorId,
+          toUserId,
+          ClubRole.president,
+          to.priorCount,
+        );
+        final logged = await _isLogged(tx, entry);
+        _writeTransfer(tx, clubId, fromUserId, toUserId);
+        if (!logged) _activity.addToTransaction(tx, entry);
+        await _notifyTransfer(tx, clubId, fromUserId, toUserId);
+        return;
+      }
+
+      final appointment = await _readAppointee(
+        tx,
+        clubId,
+        toUserId,
+        hasMembership: to != null,
+      );
+      final priorCount = to?.priorCount ?? 0;
+      final entry = _roleActivityOf(
+        clubId,
+        actorId,
+        toUserId,
+        ClubRole.president,
+        priorCount,
+      );
+      final logged = await _isLogged(tx, entry);
+
+      final fields = _appointed(
+        ClubRole.president,
+        appointment.applicant,
+        decidedBy: actorId,
+      );
+      tx.update(fromRef, {
+        FirestoreFields.role: ClubRole.board.json,
+        ...BaseFieldsPayload.update(),
+      });
+      if (to == null) {
+        tx.set(toRef, {
+          FirestoreFields.clubId: clubId,
+          FirestoreFields.userId: toUserId,
+          ...fields,
+          FirestoreFields.priorCount: priorCount,
+          ...BaseFieldsPayload.create(),
+        });
+      } else {
+        tx.update(toRef, {...fields, ...BaseFieldsPayload.update()});
+      }
+      _writeAppointeeContact(tx, clubId, toUserId, appointment);
+      // Kulüpte tek güncelleme: yeni başkan + sayılan yeni üye (+1). Yolu
+      // herkese açık kulüp belgesine değil yan belgeye yazılır (W-64 / W-94).
+      tx.update(clubRef, {
+        FirestoreFields.presidentId: toUserId,
+        FirestoreFields.memberCount: FieldValue.increment(_joined),
+        ...BaseFieldsPayload.update(),
+      });
+      _pointCounter(tx, clubId, toUserId);
+      if (!logged) _activity.addToTransaction(tx, entry);
+      await _notifyTransfer(tx, clubId, fromUserId, toUserId);
+    });
+  }
+
+  /// T-37 · `AdminRepository.createClub` (sözleşme `docs/plans/T-37.md`
+  /// §4 a.1) — yeni [clubId] kulübünün başkan üyeliğini
+  /// (`memberships/{clubId}_{president.uid}`: `active`, `president`,
+  /// [president]'tan `applicant` anlık görüntüsü, `decidedAt` / `decidedBy`
+  /// [actorId], `priorCount: 0`) ve `private/contact` belgesini ([email], not
+  /// boş) kulüp belgesiyle **aynı** [batch]'e ekler. Sayaç yan belgesi
+  /// yazılmaz (kulüp `memberCount: 1` ile doğar; sayılan üyeliği
+  /// `presidentId` gösterir). Girdiyi çağıran doğrular; SDK tipi aldığı için
+  /// arayüzde değil buradadır.
+  void addFounderToBatch(
+    WriteBatch batch, {
+    required String clubId,
+    required UserModel president,
+    required String email,
+    required String actorId,
+  }) {
+    final userId = president.uid;
+    batch
+      ..set(_membershipRef(clubId, userId), {
+        FirestoreFields.clubId: clubId,
+        FirestoreFields.userId: userId,
+        ..._appointed(
+          ClubRole.president,
+          MembershipApplicantModel.fromUser(president),
+          decidedBy: actorId,
+        ),
+        FirestoreFields.priorCount: 0,
+        ...BaseFieldsPayload.create(),
+      })
+      ..set(_contactRef(clubId, userId), {
+        ...MembershipContactModel(
+          email: email,
+          emailLower: email.toLowerCase(),
+        ).toJson(),
+        ...BaseFieldsPayload.create(),
+      });
+  }
+
+  @override
   Future<FirestoreResult<void>> transferPresidency({
     required String clubId,
     required String fromUserId,
@@ -639,35 +909,132 @@ final class FirebaseMembershipRepository implements MembershipRepository {
       );
       final logged = await _isLogged(tx, entry);
 
-      // Tek işlem: kulüp hiçbir an başkansız ya da iki başkanlı kalmaz.
-      tx
-        ..update(fromRef, {
-          FirestoreFields.role: ClubRole.board.json,
-          ...BaseFieldsPayload.update(),
-        })
-        ..update(toRef, {
-          FirestoreFields.role: ClubRole.president.json,
-          ...BaseFieldsPayload.update(),
-        })
-        ..update(_clubRef(clubId), {
-          FirestoreFields.presidentId: toUserId,
-          ...BaseFieldsPayload.update(),
-        });
+      _writeTransfer(tx, clubId, fromUserId, toUserId);
       if (!logged) _activity.addToTransaction(tx, entry);
-      // İki ayrı olay (iki olay anahtarı): yeni başkan, eski başkan.
-      await _dispatcher.notifyRoleChangedInTransaction(
-        clubId: clubId,
-        userId: toUserId,
-        role: ClubRole.president,
-        transaction: tx,
-      );
-      await _dispatcher.notifyRoleChangedInTransaction(
-        clubId: clubId,
-        userId: fromUserId,
-        role: ClubRole.board,
-        transaction: tx,
-      );
+      await _notifyTransfer(tx, clubId, fromUserId, toUserId);
     });
+  }
+
+  /// M11 devrinin üç yazımı (tek işlem: kulüp hiçbir an başkansız ya da iki
+  /// başkanlı kalmaz): eski başkan `board`, yenisi `president`,
+  /// `clubs.presidentId`.
+  void _writeTransfer(
+    Transaction tx,
+    String clubId,
+    String fromUserId,
+    String toUserId,
+  ) => tx
+    ..update(_membershipRef(clubId, fromUserId), {
+      FirestoreFields.role: ClubRole.board.json,
+      ...BaseFieldsPayload.update(),
+    })
+    ..update(_membershipRef(clubId, toUserId), {
+      FirestoreFields.role: ClubRole.president.json,
+      ...BaseFieldsPayload.update(),
+    })
+    ..update(_clubRef(clubId), {
+      FirestoreFields.presidentId: toUserId,
+      ...BaseFieldsPayload.update(),
+    });
+
+  /// Devrin iki `role_changed` bildirimi, aynı işlemde — iki ayrı olay (iki
+  /// olay anahtarı): yeni başkan, eski başkan.
+  Future<void> _notifyTransfer(
+    Transaction tx,
+    String clubId,
+    String fromUserId,
+    String toUserId,
+  ) async {
+    await _dispatcher.notifyRoleChangedInTransaction(
+      clubId: clubId,
+      userId: toUserId,
+      role: ClubRole.president,
+      transaction: tx,
+    );
+    await _dispatcher.notifyRoleChangedInTransaction(
+      clubId: clubId,
+      userId: fromUserId,
+      role: ClubRole.board,
+      transaction: tx,
+    );
+  }
+
+  /// Süper adminin doğrudan açtığı etkin üyeliğin (başkan atama, danışman
+  /// bağlama) durum alanları: önceki kararın izleri boşalır, `appliedAt`
+  /// sunucu zamanı (etkin üye listesi bu alana göre sıralanır). [decidedBy]
+  /// verilmezse (danışman — M13) `decidedAt` / `decidedBy` `null`'dır.
+  Json _appointed(
+    ClubRole role,
+    MembershipApplicantModel applicant, {
+    String? decidedBy,
+  }) {
+    final timestamp = _firestore.serverTimestamp();
+    return {
+      FirestoreFields.status: MembershipStatus.active.json,
+      FirestoreFields.role: role.json,
+      FirestoreFields.applicant: applicant.toJson(),
+      FirestoreFields.appliedAt: timestamp,
+      FirestoreFields.decidedAt: decidedBy == null ? null : timestamp,
+      FirestoreFields.decidedBy: decidedBy,
+      FirestoreFields.retryAfter: null,
+      FirestoreFields.rejectReason: null,
+      FirestoreFields.rejectNote: _noNote,
+    };
+  }
+
+  /// Atanan kullanıcının işlem içi okumaları: `users/{userId}` (etkin
+  /// olmalı, değilse [FirestoreError.conflict]; `applicant` anlık görüntüsü
+  /// buradan — Rules dört alanı bu belgeyle karşılaştırır), hesabın e-postası
+  /// (`private/account`; boşsa çakışma) ve üyelik belgesi varsa
+  /// ([hasMembership]) iletişim belgesinin varlığı (süper admin olmayan
+  /// üyeliğin iletişim belgesini okuyamaz).
+  Future<_Appointee> _readAppointee(
+    Transaction tx,
+    String clubId,
+    String userId, {
+    required bool hasMembership,
+  }) async {
+    final user = _userOrNull(
+      await tx.get(_firestore.doc(FirestoreCollections.users, userId)),
+    );
+    if (user == null || user.status != UserStatus.active) {
+      throw const ConflictException.conflict();
+    }
+    final account = _existing(await tx.get(_accountRef(userId)), _accountOf);
+    if (account.email.isEmpty) throw const ConflictException.conflict();
+    final hasContact =
+        hasMembership && (await tx.get(_contactRef(clubId, userId))).exists;
+    return (
+      applicant: MembershipApplicantModel.fromUser(user),
+      email: account.email,
+      hasContact: hasContact,
+    );
+  }
+
+  /// Atanan kullanıcının `private/contact` belgesi: yoksa hesap e-postası +
+  /// boş not; varsa yalnızca e-posta güncellenir (not kalır).
+  void _writeAppointeeContact(
+    Transaction tx,
+    String clubId,
+    String userId,
+    _Appointee appointment,
+  ) {
+    final contactRef = _contactRef(clubId, userId);
+    if (appointment.hasContact) {
+      tx.update(contactRef, {
+        FirestoreFields.email: appointment.email,
+        FirestoreFields.emailLower: appointment.email.toLowerCase(),
+        ...BaseFieldsPayload.update(),
+      });
+    } else {
+      tx.set(contactRef, {
+        ...MembershipContactModel(
+          email: appointment.email,
+          emailLower: appointment.email.toLowerCase(),
+        ).toJson(),
+        ...BaseFieldsPayload.create(),
+      });
+    }
   }
 
   @override
@@ -1159,15 +1526,21 @@ final class FirebaseMembershipRepository implements MembershipRepository {
     int delta,
   ) {
     _bumpMemberCount(tx, _clubRef(clubId), delta);
-    tx.set(_counterRef(clubId), {
-      FirestoreFields.clubId: clubId,
-      FirestoreFields.lastMembershipRef: FirestoreIds.membershipRef(
-        clubId,
-        userId,
-      ),
-      ...BaseFieldsPayload.update(),
-    });
+    _pointCounter(tx, clubId, userId);
   }
+
+  /// `clubs/{clubId}/private/counter` yan belgesinin işaretçisi: aynı
+  /// işlemde sayılan üyelik `memberships/{clubId}_{userId}` (W-64; T-37
+  /// başkan atamasında da — W-94).
+  void _pointCounter(Transaction tx, String clubId, String userId) =>
+      tx.set(_counterRef(clubId), {
+        FirestoreFields.clubId: clubId,
+        FirestoreFields.lastMembershipRef: FirestoreIds.membershipRef(
+          clubId,
+          userId,
+        ),
+        ...BaseFieldsPayload.update(),
+      });
 
   /// Ret / çıkarma sonrası yeniden başvurunun açılacağı an (istemci saati +
   /// `Limits.reapplyCooldown`; Rules ±`Limits.clockSkewTolerance`).
@@ -1348,6 +1721,9 @@ final class FirebaseMembershipRepository implements MembershipRepository {
   static UserModel _userOf(FirestoreDoc doc) =>
       UserModel.fromJson(doc.data, id: doc.id);
 
+  static UserAccountModel _accountOf(FirestoreDoc doc) =>
+      UserAccountModel.fromJson(doc.data);
+
   Query<Json> get _memberships =>
       _firestore.collection(FirestoreCollections.memberships);
 
@@ -1385,7 +1761,25 @@ final class FirebaseMembershipRepository implements MembershipRepository {
         ),
         FirestoreCollections.contactDoc,
       );
+
+  /// `users/{uid}/private/account` — hesabın e-postası (atama / bağlama).
+  DocumentReference<Json> _accountRef(String uid) => _firestore.doc(
+    RepositoryHelpers.subcollectionPath(
+      FirestoreCollections.users,
+      uid,
+      FirestoreCollections.privateSub,
+    ),
+    FirestoreCollections.accountDoc,
+  );
 }
+
+/// Süper adminin atadığı kullanıcının işlem içinde okunan verisi (T-37):
+/// `applicant` anlık görüntüsü, hesap e-postası, iletişim belgesi var mı.
+typedef _Appointee = ({
+  MembershipApplicantModel applicant,
+  String email,
+  bool hasContact,
+});
 
 /// Transaction gövdesinin, yazım kuyruğa girmeden işlemi durdurduğu hata
 /// (bulunamadı, ayrıştırılamadı, geçersiz girdi, yetki, kodsuz iş kuralı —

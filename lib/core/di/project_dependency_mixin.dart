@@ -108,6 +108,13 @@ mixin ProjectDependencyMixin {
   AttendanceRepository get attendanceRepository =>
       GetIt.I<AttendanceRepository>();
 
+  /// Süper admin (ADM-*): kulüp oluşturma / kimlik / görsel / askı, başkan
+  /// atama, danışman bağlama (M13), şikayet grubu çözümü (`report_resolved`),
+  /// kullanıcı askısı ve arama (e-posta — yalnızca süper admin), genel bakış
+  /// sayaçları (T-37). Yetki custom claim'dir (D-28); claim'siz çağrı
+  /// `permissionDenied` döner — ViewModel o anda `refreshClaims` ister.
+  AdminRepository get adminRepository => GetIt.I<AdminRepository>();
+
   // ── Uygulama servisleri ──────────────────────────────────────────────
 
   /// Sheet / dialog / toast tek girişi.

@@ -90,6 +90,8 @@ void main() {
         consumer.attendanceRepository,
         same(GetIt.I<AttendanceRepository>()),
       );
+      // T-37 · süper admin
+      expect(consumer.adminRepository, same(GetIt.I<AdminRepository>()));
       // T-13 · dış bağlantı servisi
       expect(
         consumer.urlLauncherService,

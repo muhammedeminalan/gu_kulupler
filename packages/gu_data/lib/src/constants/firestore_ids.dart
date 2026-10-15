@@ -37,6 +37,15 @@ abstract final class FirestoreIds {
   static String report(String reporterId, String targetType, String targetId) =>
       '$reporterId$_separator$targetType$_separator$targetId';
 
+  /// Şikayet grubu anahtarı `{targetType}_{targetId}` (T-37; CD-33): aynı
+  /// hedefin şikayetleri tek grup olarak çözülür. `report_resolved`
+  /// bildiriminin `refs.reportId` değeridir (Rules
+  /// `^(post|comment|user|club|event)_[A-Za-z0-9_-]+$`); ADM-04 `?reportId=`
+  /// grubu bununla açar. [targetType] enum'un JSON değeridir. Belge kimliği
+  /// değildir ve parçalanarak okunmaz.
+  static String reportGroupKey(String targetType, String targetId) =>
+      '$targetType$_separator$targetId';
+
   /// `announcementCounters/{clubId}_{yyyyMMdd}` — [dayKey]
   /// `AppClock.istanbulDayKey` çıktısıdır.
   static String announcementCounter(String clubId, String dayKey) =>

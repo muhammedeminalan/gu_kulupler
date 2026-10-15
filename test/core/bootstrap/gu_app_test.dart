@@ -35,6 +35,7 @@ import 'package:gu_kulupler/product/widget/system/offline_banner.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
+import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_connectivity_service.dart';
 import '../../fakes/fake_feedback_service.dart';
 import '../../fakes/fake_permission_service.dart';
@@ -523,6 +524,28 @@ void main() {
       ).read(appGateViewModelProvider.notifier).onSessionExpired();
       await tester.pumpAndSettle();
       expect(_feedback().dialogs, [DialogId.dlg27]);
+    });
+  });
+
+  group('T-37 · GuApp · öne gelince oturum tazelenir', () {
+    testWidgets('AppLifecycleState.resumed → SessionViewModel.onAppResumed: '
+        "superadmin claim'i sunucudan (zorlanarak) okunur", (tester) async {
+      await _pumpGuApp(tester);
+      final auth = GetIt.I<AuthRepository>() as FakeAuthRepository;
+      expect(auth.callsTo('isSuperAdmin'), isEmpty);
+
+      // Arka plana gidip geri gelme (geçerli geçiş sırası).
+      const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ].forEach(tester.binding.handleAppLifecycleStateChanged);
+      await tester.pumpAndSettle();
+
+      expect(auth.callsTo('isSuperAdmin').first.args, [true]);
     });
   });
 }

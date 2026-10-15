@@ -471,3 +471,61 @@ test('seed · T-30 yönetici geçmişi: ret (retryAfter = karar + 7 gün), geri 
   const problems = validateManagement(broken, raw);
   assert.equal(problems.length, 3, problems.join('\n'));
 });
+
+test('seed · T-37 süper admin: claim tek (u_admin; Firestore alanı değil), hesap etkin + profil tamam; açık şikayet '
+  + 'grupları çözülmemiş (≥ 2 şikayetçili grup dahil), çözülmüşler süper admin + çözüm türüyle; report_resolved = grup '
+  + 'anahtarı + şikayetçi (W-84); askıdaki kulüp / kullanıcı gerekçeli (CD-133); validate bozuğu yakalar', () => {
+  const extras = JSON.parse(fs.readFileSync(path.join(TOOL_DIR, 'seed', 'demo-notifications.json'), 'utf8'));
+  const { docs, authUsers } = convert(withExtras(raw, extras), { now: TODAY, randomHex: sequentialHex });
+  assert.deepEqual(validate(docs, { announcementDailyLimit: 2 }), []);
+
+  // Yetki yalnızca Auth claim'i (D-28): kullanıcı belgesinde yetki alanı yok.
+  assert.deepEqual(authUsers.filter((u) => u.claims).map((u) => [u.uid, u.claims]), [['u_admin', { superadmin: true }]]);
+  for (const user of Object.values(docs.users)) {
+    for (const field of ['global', 'superadmin', 'isSuperAdmin', 'role']) assert.ok(!(field in user), field);
+  }
+  assert.equal(docs.users.u_admin.status, 'active');
+  assert.equal(docs.users.u_admin.profileComplete, true);
+
+  // ADM-04: hedef başına grup; açık gruplar beş hedef türünün dördünü kapsar, biri birden çok şikayetçili.
+  const groups = new Map();
+  for (const report of Object.values(docs.reports)) {
+    const key = `${report.targetType}_${report.targetId}`;
+    groups.set(key, [...(groups.get(key) || []), report]);
+  }
+  const open = [...groups].filter(([, reports]) => reports.every((r) => r.status === 'open'));
+  assert.deepEqual(open.map(([key]) => key.split('_')[0]).sort(), ['club', 'comment', 'post', 'post', 'user']);
+  assert.ok(open.some(([, reports]) => reports.length >= 2));
+  for (const [, reports] of open) {
+    assert.ok(reports.every((r) => r.action === null && r.resolvedBy === null && r.resolvedAt === null));
+  }
+  const resolved = Object.values(docs.reports).filter((r) => r.status === 'resolved');
+  assert.ok(resolved.length > 0 && resolved.every((r) => r.resolvedBy === 'u_admin' && r.action !== null));
+  const notices = Object.values(docs.notifications).filter((n) => n.type === 'report_resolved');
+  assert.deepEqual(notices.map((n) => [n.userId, n.refs]), [['u064', { reportId: 'post_p13' }]]);
+
+  // Askı: kulüpte gerekçe kulüp belgesinde; kullanıcıda yalnızca private/account'ta.
+  assert.equal(docs.clubs.c14.status, 'suspended');
+  assert.ok(docs.clubs.c14.suspendReason.length > 0);
+  for (const uid of ['u_suspended', 'u007']) {
+    assert.equal(docs.users[uid].status, 'suspended');
+    assert.ok(docs.account[uid].suspendReason.length > 0);
+  }
+
+  const broken = structuredClone(docs);
+  const noticeId = Object.keys(broken.notifications).find((id) => broken.notifications[id].type === 'report_resolved');
+  broken.notifications[noticeId].refs.reportId = 'u064_post_p13';
+  broken.reports.u051_post_p17.resolvedBy = 'u_admin';
+  broken.clubs.c14.suspendReason = null;
+  broken.users.u_admin.profileComplete = false;
+  const problems = validate(broken, { announcementDailyLimit: 2 });
+  assert.equal(problems.length, 4, problems.join('\n'));
+  for (const expected of [
+    /notifications\/report_resolved_[^:]+: report_resolved refs\.reportId/,
+    /reports\/u051_post_p17: durum ↔ çözüm alanları tutarsız/,
+    /clubs\/c14: askı gerekçesi durumla tutarsız/,
+    /users\/u_admin: süper admin etkin ve profili tamam değil/,
+  ]) {
+    assert.match(problems.join('\n'), expected);
+  }
+});

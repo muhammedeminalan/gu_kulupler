@@ -66,20 +66,25 @@ class GuSegmented extends StatelessWidget {
   final Key Function(int index)? optionKeyBuilder;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    role: SemanticsRole.tabBar,
-    container: true,
-    explicitChildNodes: true,
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.gu.colors.bgSurfaceMuted,
-        borderRadius: GuRadius.borderSm,
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: context.gu.colors.bgSurfaceMuted,
+      borderRadius: GuRadius.borderSm,
+    ),
+    child: Padding(
+      padding: GuInsets.sym(
+        h: GuSizes.segmentPadding,
+        v: GuSizes.segmentPadding,
       ),
-      child: Padding(
-        padding: GuInsets.sym(
-          h: GuSizes.segmentPadding,
-          v: GuSizes.segmentPadding,
-        ),
+      // `tabBar` düğümü yalnızca seçenek satırını kapsar (dolgu dışarıda):
+      // kutusu seçenek düğümlerinin birleşimidir. Dolgu içeride olsaydı
+      // kaydırma görünümünün semantik kırpması (önbellek kenarı) 3 px
+      // payın içine düştüğünde seçenekler düşer, kap boş kalırdı ("a TabBar
+      // cannot be empty"). Seçenek yoksa rol verilmez.
+      child: Semantics(
+        role: options.isEmpty ? null : SemanticsRole.tabBar,
+        container: true,
+        explicitChildNodes: true,
         child: Row(
           spacing: GuSizes.segmentGap,
           children: [
@@ -112,10 +117,14 @@ class _GuSegment extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// Seçenek düğümü `GuActionSurface`'ın (`GuTapTarget` sınırı) tek
+  /// düğümüdür: `role: tab` + `selected` + dokunma eylemi + etiket;
+  /// `tabBar`'ın doğrudan çocuğu.
   @override
   Widget build(BuildContext context) => GuActionSurface(
     onTap: onTap,
     selected: selected,
+    role: SemanticsRole.tab,
     borderRadius: GuRadius.borderChip,
     builder: _buildVisual,
   );
@@ -129,53 +138,50 @@ class _GuSegment extends StatelessWidget {
         ? (gu.isDark ? colors.bgSurfaceRaised : colors.bgSurface)
         : null;
     final icon = option.icon;
-    return Semantics(
-      role: SemanticsRole.tab,
-      child: AnimatedContainer(
-        duration: duration,
-        curve: GuMotion.easeCss,
-        constraints: const BoxConstraints(minHeight: GuSizes.segmentHeight),
-        padding: GuInsets.sym(h: GuSizes.segmentPaddingX),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: GuRadius.borderChip,
-          // css:223 `border:1px` için ayrı ölçü token'ı yok; en yakın:
-          // aynı radius ailesindeki `chipBorder` (1).
-          border: darkSelected
-              ? Border.all(
-                  color: colors.borderDefault,
-                  // Token değeri varsayılanla (1) aynı; kaynak token kalır.
-                  // ignore: avoid_redundant_argument_values
-                  width: GuSizes.chipBorder,
-                )
-              : null,
-          boxShadow: selected ? gu.shadows.e1 : null,
-        ),
-        child: Center(
-          heightFactor: 1,
-          child: TweenAnimationBuilder<Color?>(
-            tween: ColorTween(
-              end: selected ? colors.textHeading : colors.textSecondary,
-            ),
-            duration: duration,
-            curve: GuMotion.easeCss,
-            builder: (context, color, _) => Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: GuSizes.segmentItemGap,
-              children: [
-                if (icon != null)
-                  GuIcon(icon, size: GuSizes.segmentIcon, color: color),
-                Flexible(
-                  child: Text(
-                    option.label,
-                    style: gu.text.segment.copyWith(color: color),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return AnimatedContainer(
+      duration: duration,
+      curve: GuMotion.easeCss,
+      constraints: const BoxConstraints(minHeight: GuSizes.segmentHeight),
+      padding: GuInsets.sym(h: GuSizes.segmentPaddingX),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: GuRadius.borderChip,
+        // css:223 `border:1px` için ayrı ölçü token'ı yok; en yakın:
+        // aynı radius ailesindeki `chipBorder` (1).
+        border: darkSelected
+            ? Border.all(
+                color: colors.borderDefault,
+                // Token değeri varsayılanla (1) aynı; kaynak token kalır.
+                // ignore: avoid_redundant_argument_values
+                width: GuSizes.chipBorder,
+              )
+            : null,
+        boxShadow: selected ? gu.shadows.e1 : null,
+      ),
+      child: Center(
+        heightFactor: 1,
+        child: TweenAnimationBuilder<Color?>(
+          tween: ColorTween(
+            end: selected ? colors.textHeading : colors.textSecondary,
+          ),
+          duration: duration,
+          curve: GuMotion.easeCss,
+          builder: (context, color, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: GuSizes.segmentItemGap,
+            children: [
+              if (icon != null)
+                GuIcon(icon, size: GuSizes.segmentIcon, color: color),
+              Flexible(
+                child: Text(
+                  option.label,
+                  style: gu.text.segment.copyWith(color: color),
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

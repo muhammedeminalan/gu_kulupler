@@ -24,7 +24,7 @@
     {"role":"deleted","op":"get","expect":"deny","ref":"§6.5 yan belge üyeye / üye olmayana kapalı (W-64: işaretçi kimlik taşır)"},
     {"role":"board","op":"get","patch":{"users/{uid}":{"status":"suspended"}},"expect":"deny","ref":"§6.5 askıdaki yönetici okuyamaz (seesMgmt)"},
     {"role":"board","op":"list","expect":"deny","ref":"§6.5 liste kapalı (tekil get)"},
-    {"role":"super","op":"list","expect":"deny","ref":"§6.5 liste kapalı (tekil get)"},
+    {"role":"super","op":"list","expect":"allow","ref":"T-37 `/{path=**}/private` list: isSuper() (belgeyi süper admin zaten okur — seesMgmt)"},
     {"role":"board","op":"create","variant":"eventCounterAlone","expect":"deny","ref":"§6.5 yan belge tek başına yazılamaz (yalnızca yönetici sayaç bileşimiyle aynı işlemde)"},
     {"role":"president","op":"create","variant":"eventCounterAlone","expect":"deny","ref":"§6.5 yan belge tek başına yazılamaz (yalnızca yönetici sayaç bileşimiyle aynı işlemde)"},
     {"role":"advisor","op":"create","variant":"eventCounterAlone","expect":"deny","ref":"§6.5 yan belge tek başına yazılamaz (yalnızca yönetici sayaç bileşimiyle aynı işlemde)"},

@@ -2,7 +2,7 @@
 // T-15 — `reports/{reporterId}_{targetType}_{targetId}` (rules-spec §3.10; PLAN §11.1 satır 12; CD-33).
 //
 //  1. Rol × işlem matrisi: `expectations/reports.json` (aktif her kullanıcı kendi adına oluşturur;
-//     sahibi ve süper admin okur; kulüp yöneticisi başkasının şikayetini okuyamaz; çözme T-37'de).
+//     sahibi ve süper admin okur; kulüp yöneticisi başkasının şikayetini okuyamaz; çözme T-37 — `admin.test.js`).
 //  2. 6 neden × 5 hedef (CD-33) — değer listeleri Dart enum'larından okunur.
 //  3. Alan beyaz listesi, kimlik biçimi, `targetClubId` kuralı, not sınırı (`Limits.reportNoteMax`),
 //     başlangıç durumu (`open`, karar alanları boş), sunucu zamanı.

@@ -25,7 +25,7 @@
     {"role":"board","op":"get","patch":{"users/{uid}":{"status":"suspended"}},"expect":"deny","ref":"§3.3 askıdaki yönetici okuyamaz (seesMgmt)"},
     {"role":"board","op":"get","docPath":"clubs/c02/private/counter","expect":"deny","ref":"§3.3 başka kulübün yan belgesi (seesMgmt(c02) değil)"},
     {"role":"board","op":"list","expect":"deny","ref":"§3.3 liste kapalı (tekil get)"},
-    {"role":"super","op":"list","expect":"deny","ref":"§3.3 liste kapalı (tekil get)"},
+    {"role":"super","op":"list","expect":"allow","ref":"T-37 `/{path=**}/private` list: isSuper() (belgeyi süper admin zaten okur — seesMgmt)"},
     {"role":"board","op":"create","variant":"clubCounterAlone","expect":"deny","ref":"§3.3 yan belge tek başına yazılamaz (yalnızca memberCount ±1 oynayan yönetici geçişiyle aynı işlemde)","without":["clubs/c01/private/counter"]},
     {"role":"president","op":"create","variant":"clubCounterAlone","expect":"deny","ref":"§3.3 yan belge tek başına yazılamaz (yalnızca memberCount ±1 oynayan yönetici geçişiyle aynı işlemde)","without":["clubs/c01/private/counter"]},
     {"role":"advisor","op":"create","variant":"clubCounterAlone","expect":"deny","ref":"§3.3 yan belge tek başına yazılamaz (yalnızca memberCount ±1 oynayan yönetici geçişiyle aynı işlemde)","without":["clubs/c01/private/counter"]},

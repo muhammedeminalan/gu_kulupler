@@ -94,6 +94,13 @@ final class FakeMembershipRepository extends FakeBase
   /// etkin sayılır (gerçek repository kullanıcı belgesini okur).
   final Map<String, UserStatus> userStatuses = <String, UserStatus>{};
 
+  /// T-37 · atanan başkan / danışmanın profil anlık görüntüsü (gerçek
+  /// repository `users/{uid}`'yi işlem içinde okur; `FakeAdminRepository`
+  /// kayıtlı `FakeUserRepository`'den doldurur). Yoksa önceki üyeliğin
+  /// görüntüsü, o da yoksa yalnızca `avatarSeed` = uid.
+  final Map<String, MembershipApplicantModel> applicants =
+      <String, MembershipApplicantModel>{};
+
   /// Açık `watchMyMemberships` dinleyicisi sayısı.
   int activeListeners = 0;
 
@@ -479,6 +486,155 @@ final class FakeMembershipRepository extends FakeBase
     return const FirebaseSuccess(null);
   }
 
+  /// M13 (T-37) — danışman hesabını bağlar / bağı kaldırır; sonuçlar gerçek
+  /// `FirebaseMembershipRepository.setAdvisor` ile aynıdır. Bağla: kulüpte
+  /// danışman kaydı (ad / ünvan) yoksa `failedPrecondition`; zaten bağlıysa
+  /// yazım yok, başarı; başka hesap bağlıysa ya da hedefin etkin / bekleyen
+  /// üyeliği varsa ya da hesabı etkin değilse (`userStatuses`) `conflict`;
+  /// aksi halde üyelik `active` + `advisor` (karar alanları boş) ve
+  /// `advisor.userId`. Kaldır: etkin danışman üyeliği `left` + `advisor
+  /// .userId` boşalır; bayat bağda (üyelik etkin danışman değil) yalnızca
+  /// bağ boşalır; ikisi de değilse `conflict`. `memberCount` değişmez. İletişim
+  /// belgesi fake'te yazılmaz (hesap e-postası `FakeUserRepository`'dedir).
+  @override
+  Future<FirestoreResult<void>> setAdvisor({
+    required String clubId,
+    required String userId,
+    required bool active,
+  }) async {
+    record('setAdvisor', [clubId, userId, active]);
+    if (_rejected<void>([clubId, userId]) case final failure?) return failure;
+    final club = clubRepository.clubs[clubId];
+    if (club == null || club.isDeleted) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    final key = _key(clubId, userId);
+    final current = memberships[key];
+    final isAdvisor =
+        current?.status == MembershipStatus.active &&
+        current?.role == ClubRole.advisor;
+    final advisor = club.advisor;
+    if (!active) {
+      final linked = advisor?.userId == userId;
+      if (!isAdvisor && !linked) return _conflict();
+      if (isAdvisor) _write(current!.copyWith(status: MembershipStatus.left));
+      if (linked) {
+        clubRepository.clubs[clubId] = club.copyWith(
+          advisor: advisor!.copyWith(clearUserId: true),
+        );
+      }
+      return const FirebaseSuccess(null);
+    }
+    if (advisor == null) {
+      return const FirebaseFailure(FirestoreError.failedPrecondition);
+    }
+    if (isAdvisor && advisor.userId == userId) {
+      return const FirebaseSuccess(null);
+    }
+    if (advisor.userId != null ||
+        current?.status == MembershipStatus.active ||
+        current?.status == MembershipStatus.pending) {
+      return _conflict();
+    }
+    if (userStatuses[userId] case final status?
+        when status != UserStatus.active) {
+      return _conflict();
+    }
+    final now = _clock.nowUtc();
+    _write(
+      MembershipModel(
+        clubId: clubId,
+        userId: userId,
+        applicant: _appointee(userId, current),
+        status: MembershipStatus.active,
+        role: ClubRole.advisor,
+        appliedAt: now,
+        priorCount: current?.priorCount ?? 0,
+        createdAt: current?.createdAt ?? now,
+      ),
+    );
+    clubRepository.clubs[clubId] = club.copyWith(
+      advisor: advisor.copyWith(userId: userId),
+    );
+    return const FirebaseSuccess(null);
+  }
+
+  /// T-37 — `AdminRepository.assignPresident`'in üyelik tarafı (gerçek
+  /// `FirebaseMembershipRepository.assignPresident` ile aynı sonuçlar):
+  /// hedef etkin `member` / `board` → [transferPresidency] (M11; eski başkan
+  /// kulübün `presidentId`'sidir); üyeliği yok ya da geçmişte → hedef
+  /// `active` + `president`, eski başkan `board`, `presidentId` ve
+  /// `memberCount +1` (W-94). Hedef zaten başkan → `invalidArgument`; hedef
+  /// danışman → `ruleViolation(notMember)`; hedef `pending`, hesabı etkin
+  /// değil ya da eski başkanın üyeliği etkin başkan değil → `conflict`.
+  Future<FirestoreResult<void>> assignPresident({
+    required String clubId,
+    required String toUserId,
+    required String actorId,
+  }) async {
+    record('assignPresident', [clubId, toUserId, actorId]);
+    if (_rejected<void>([clubId, toUserId, actorId]) case final failure?) {
+      return failure;
+    }
+    final club = clubRepository.clubs[clubId];
+    if (club == null || club.isDeleted) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    final fromUserId = club.presidentId;
+    if (fromUserId == toUserId) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final to = memberships[_key(clubId, toUserId)];
+    if (to?.status == MembershipStatus.active) {
+      if (to!.role == ClubRole.advisor) {
+        return _violation(FirestoreRuleCode.notMember);
+      }
+      return transferPresidency(
+        clubId: clubId,
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        actorId: actorId,
+      );
+    }
+    if (to?.status == MembershipStatus.pending) return _conflict();
+    if (userStatuses[toUserId] case final status?
+        when status != UserStatus.active) {
+      return _conflict();
+    }
+    final from = memberships[_key(clubId, fromUserId)];
+    if (from == null ||
+        from.status != MembershipStatus.active ||
+        from.role != ClubRole.president) {
+      return _conflict();
+    }
+    final now = _clock.nowUtc();
+    _write(from.copyWith(role: ClubRole.board));
+    _write(
+      MembershipModel(
+        clubId: clubId,
+        userId: toUserId,
+        applicant: _appointee(toUserId, to),
+        status: MembershipStatus.active,
+        role: ClubRole.president,
+        appliedAt: now,
+        decidedAt: now,
+        decidedBy: actorId,
+        priorCount: to?.priorCount ?? 0,
+        createdAt: to?.createdAt ?? now,
+      ),
+    );
+    clubRepository.clubs[clubId] = club.copyWith(presidentId: toUserId);
+    _bumpMemberCount(clubId, 1);
+    _logManager(
+      ActivityKind.roleChanged,
+      clubId,
+      toUserId,
+      actorId,
+      role: ClubRole.president,
+    );
+    return const FirebaseSuccess(null);
+  }
+
   @override
   Future<FirestoreResult<void>> transferPresidency({
     required String clubId,
@@ -819,6 +975,11 @@ final class FakeMembershipRepository extends FakeBase
     }
     return const FirebaseSuccess(null);
   }
+
+  MembershipApplicantModel _appointee(String uid, MembershipModel? current) =>
+      applicants[uid] ??
+      current?.applicant ??
+      MembershipApplicantModel(name: '', avatarSeed: uid);
 
   void _logManager(
     ActivityKind kind,

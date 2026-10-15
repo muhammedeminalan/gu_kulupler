@@ -96,6 +96,9 @@ const NOTIFICATION_REFS = Object.freeze({
   new_report: ['reportId'],
   system: ['textKey'],
 });
+/** T-37 · şikayet çözüm türleri (`ReportAction`) ve grup anahtarı deseni (Rules `report_resolved`). */
+const REPORT_ACTIONS = Object.freeze(['dismissed', 'removed', 'suspended']);
+const REPORT_GROUP_KEY = /^(post|comment|user|club|event)_[A-Za-z0-9_-]+$/;
 /** Olay anahtarı biçimi (`NotificationWriter.newEventKey`; Rules `[A-Za-z0-9]{20}`). */
 const EVENT_KEY = /^[A-Za-z0-9]{20}$/;
 
@@ -688,6 +691,33 @@ function validate(docs, { announcementDailyLimit }) {
   }
   for (const [id, report] of Object.entries(docs.reports)) {
     if (id !== `${report.reporterId}_${report.targetType}_${report.targetId}`) problems.push(`reports/${id}: kimlik biçimi geçersiz`);
+    // T-37 · Rules `canResolveReport`: açık şikayetin çözüm alanları boş; çözülmüşte çözüm türü ve süper admin aktör.
+    const resolved = report.status === 'resolved';
+    if (resolved !== (REPORT_ACTIONS.includes(report.action) && report.resolvedBy === SUPER_ADMIN_ID && report.resolvedAt !== null)
+      || (!resolved && (report.status !== 'open' || report.action !== null || report.resolvedAt !== null || report.resolvedBy !== null))) {
+      problems.push(`reports/${id}: durum ↔ çözüm alanları tutarsız`);
+    }
+  }
+  // T-37 · `report_resolved` (W-84): refs.reportId grup anahtarıdır (`{targetType}_{targetId}` —
+  // FirestoreIds.reportGroupKey; Rules deseni) ve alıcı o ÇÖZÜLMÜŞ grubun şikayetçisidir.
+  for (const [id, n] of Object.entries(docs.notifications)) {
+    if (n.type !== 'report_resolved') continue;
+    const group = Object.values(docs.reports).filter(
+      (r) => `${r.targetType}_${r.targetId}` === n.refs.reportId && r.status === 'resolved',
+    );
+    if (!REPORT_GROUP_KEY.test(n.refs.reportId || '') || !group.some((r) => r.reporterId === n.userId)) {
+      problems.push(`notifications/${id}: report_resolved refs.reportId çözülmüş bir grubun anahtarı değil ya da alıcı şikayetçi değil`);
+    }
+  }
+  // T-37 · askı (CD-133): askıdaki kulübün gerekçesi dolu (1–300), etkin kulübünki boş. Süper admin (claim'in sahibi)
+  // etkin ve profili tamam — `report_resolved` / `role_changed` bildirim dalları yazanın `activeUser()` olmasını ister.
+  for (const [clubId, club] of Object.entries(docs.clubs)) {
+    const reasonOk = typeof club.suspendReason === 'string' && club.suspendReason.trim().length > 0 && club.suspendReason.length <= 300;
+    if (club.status === 'suspended' ? !reasonOk : club.suspendReason !== null) problems.push(`clubs/${clubId}: askı gerekçesi durumla tutarsız`);
+  }
+  const admin = docs.users[SUPER_ADMIN_ID];
+  if (!admin || admin.status !== 'active' || admin.profileComplete !== true) {
+    problems.push(`users/${SUPER_ADMIN_ID}: süper admin etkin ve profili tamam değil`);
   }
   for (const [id, counter] of Object.entries(docs.announcementCounters)) {
     if (counter.count > announcementDailyLimit) problems.push(`announcementCounters/${id}: count ${counter.count} > ${announcementDailyLimit}`);

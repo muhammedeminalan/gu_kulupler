@@ -19,8 +19,9 @@
 // (CLB-01, CLB-03), klasör listesi kapalı.
 // T-36 — `clubs/{clubId}/{file}` yüklemesi (MGT-09, ManagementRepository.updateClubMedia): posts/ / events/
 // kalıbı, ama yetki KLASÖRE bağlıdır — `metadata.clubId == clubId` ve `isManagerOf(clubId)` (klasördeki kulübün
-// etkin yöneticisi; danışman, üye, süper admin ve başka kulübün yöneticisi yükleyemez) + `accountActive()` =
-// 2 Firestore belgesi (CD-143). Kulüp belgesi okunmaz (askıdaki kulübün yolunu Firestore `clubLive` reddeder).
+// etkin yöneticisi; danışman, üye ve başka kulübün yöneticisi yükleyemez) + `accountActive()` = 2 Firestore
+// belgesi (CD-143). Kulüp belgesi okunmaz (askıdaki kulübün yolunu Firestore `clubLive` reddeder).
+// T-37 — süper admin de yükler (`isSuperAdmin() || isManagerOf(clubId)`; AdminRepository.updateClubMedia, ADM-03).
 //
 // T-21 — `posts/{postId}/{file}` (gönderi görseli, CD-39): tek dosya okuması doğrulanmış her kullanıcıya
 // açık, klasör listesi kapalı; yükleme yalnızca `metadata.clubId` kulübünün ETKİN yöneticisine (yönetim
@@ -270,15 +271,15 @@ describe('storage · storage.rules yapısı', () => {
     const create = /match \/clubs\/\{clubId\}\/\{file\} \{[^}]*?(allow create:[^;]*;)/.exec(rulesText);
     expect(create).not.toBeNull();
     const rule = create[1].replace(/\s+/g, ' ');
+    // T-37: süper admin de yükler (AdminRepository.updateClubMedia); claim önce bakılır (üyelik okunmaz).
     expect(rule).toBe(
       'allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file) '
         + '&& clubMetadataOnly() && request.resource.metadata.clubId == clubId '
-        + '&& isManagerOf(clubId) && accountActive();',
+        + '&& (isSuperAdmin() || isManagerOf(clubId)) && accountActive();',
     );
     // Yetki klasöre bağlıdır: üst verideki kulüp kimliğiyle değil (posts/ / events/ farkı).
     expect(rule).not.toContain('isManagerOf(request.resource.metadata.clubId)');
     expect(rule).not.toContain('noCustomMetadata()');
-    expect(rule).not.toContain('isSuperAdmin()');
   });
 });
 
@@ -1489,9 +1490,21 @@ describe('storage clubs/{clubId}/{file} · yükleme (rol: KLASÖRDEKİ kulübün
     expect(stored.customMetadata).toMatchObject({ clubId: CLUB_ID, uploaderId: uidOf(role) });
   });
 
-  // Üye, danışman, başvurusu bekleyen, ayrılmış, üye olmayan, süper admin, başka kulübün yöneticisi,
-  // askıdaki / silinmiş hesap, doğrulanmamış ve oturumsuz bağlam.
-  test.each(ALL_ROLES.filter((role) => !MANAGERS.includes(role)))('%s · c01 klasörüne yükleyemez → deny', async (role) => {
+  // T-37: süper admin de yükler (AdminRepository.updateClubMedia — ADM-03; sözleşme docs/plans/T-37.md §4 g-3): kendi
+  // kimliğiyle ve klasördeki kulüple; claim'siz aynı hesap yükleyemez. Hesabı etkin olmalıdır (accountActive).
+  test('super · c01 klasörüne (üyeliği olmadan) yükler → allow; claim\'siz aynı hesap / askıdaki süper admin hesabı → deny', async () => {
+    await assertSucceeds(upload('super', path, PNG, metaOf('super')));
+    const other = clubFile(NEW_FILE, 'c02');
+    const claimless = getTestEnv().authenticatedContext(uidOf('super'), { email: 'super@gumushane.edu.tr', email_verified: true }).storage();
+    await assertFails(uploadBytes(ref(claimless, other), PNG, metaOf('super', 'c02')));
+    await seedIdentity({ patch: { [`users/${uidOf('super')}`]: { status: 'suspended' } } });
+    await assertFails(upload('super', other, PNG, metaOf('super', 'c02')));
+    expect(await fileExists(other)).toBe(false);
+  });
+
+  // Üye, danışman, başvurusu bekleyen, ayrılmış, üye olmayan, başka kulübün yöneticisi, askıdaki / silinmiş hesap,
+  // doğrulanmamış ve oturumsuz bağlam.
+  test.each(ALL_ROLES.filter((role) => !MANAGERS.includes(role) && role !== 'super'))('%s · c01 klasörüne yükleyemez → deny', async (role) => {
     await assertFails(upload(role, path, PNG, metaOf(role)));
     expect(await fileExists(path)).toBe(false);
   });

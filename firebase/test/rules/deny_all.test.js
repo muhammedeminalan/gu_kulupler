@@ -5,8 +5,8 @@
 // `firestore.rules` `match` bloklarıyla karşılaştırılır.
 // Bir koleksiyon sahibi task'ta açıldığında o satır buradan düşer (aşağıdaki OPENED listesi) ve
 // kendi `rules/<koleksiyon>.test.js` matrisine taşınır; kalanlar kapalı kalmaya devam eder.
-// T-28 ile 19 satırın tamamı açıldı (T-30'un yan belgesi açık doğar): koleksiyon bazlı ret bloğu boş kalır (yalnızca koleksiyon grubu
-// `private` — T-37 — ve tanımsız yollar kapalıdır; aşağıdaki bloklar onları sınar).
+// T-28 ile 19 satırın tamamı açıldı (T-30'un yan belgesi açık doğar): koleksiyon bazlı ret bloğu boş kalır (yalnızca tanımsız
+// yollar ve koleksiyon grupları kapalıdır — T-37 `private` grubunu yalnızca süper admine açtı; aşağıdaki bloklar onları sınar).
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -145,8 +145,11 @@ describe('deny-all · matris koşucusu (helpers/matrix.js): süzgeçli list vaka
   });
 });
 
+/** Koleksiyon grubu → listeyi kurabilen bağlamlar (T-37: `private` — ADM-05 e-posta araması, rules/admin.test.js). */
+const GROUP_READERS = Object.freeze({ private: ['super'] });
+
 describe.each(groupMatches.map((m) => [m.names[m.names.length - 1]]))('deny-all · collectionGroup(%s)', (group) => {
-  test.each(CONTEXTS)('%s · list → deny', async (role) => {
+  test.each(CONTEXTS.filter((role) => !(GROUP_READERS[group] || []).includes(role)))('%s · list → deny', async (role) => {
     await assertFails(getDocs(collectionGroup(contextFor(role).firestore(), group)));
   });
 });
@@ -162,12 +165,12 @@ describe('deny-all · tanımsız yol (match /{document=**})', () => {
 });
 
 describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge yüzünden değildir', () => {
-  // Her bağlam, kuralları açıldığında süper admine izinli olacak okumayı dener: `private` koleksiyon
-  // grubu (ADM-05 e-posta araması — T-37). Üyelik, kullanıcı ve gizli hesap belgeleri yerindeyken de sonuç
-  // rettir. (Kendi kullanıcı / hesap / ayar belgesi T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy,
+  // Süper admin dışındaki her bağlam süper admine izinli okumayı dener: `private` koleksiyon grubu (ADM-05 e-posta
+  // araması — T-37; süper adminin geçen vakası rules/admin.test.js). Üyelik, kullanıcı ve gizli hesap belgeleri
+  // yerindeyken de sonuç rettir. (Kendi kullanıcı / hesap / ayar belgesi T-12'de; kulüp ve üyelik T-15'te; gönderi, yorum, oy,
   // kayıt ve duyuru sayacı T-19'da; etkinlik ve katılım T-22'de; bildirim T-25'te; destek talebi T-28'de
   // açıldı.)
-  test.each(ALL_CONTEXTS)('%s · private koleksiyon grubu → deny', async (role) => {
+  test.each(ALL_CONTEXTS.filter((role) => role !== 'super'))('%s · private koleksiyon grubu → deny', async (role) => {
     const docs = await seedBase();
     const uid = uidOf(role);
     const db = contextFor(role).firestore();

@@ -52,6 +52,12 @@ const QUERIES = Object.freeze({
   watchInbox: { collection: 'notifications', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
   // T-28: SupportRepository.listMine (talepler soft delete edilmez — `isDeleted` süzgeci istemcide).
   listMyTickets: { collection: 'supportTickets', equals: ['userId'], order: ['createdAt', 'desc'] },
+  // T-37 (sözleşme docs/plans/T-37.md §4 a.7, a.8, b): AdminRepository.stats yaklaşan etkinlik sayımı (`startsAt >= şimdi`
+  // aralığı = sıralama alanı) · listUsersByName (`nameLower` önek aralığı) · listReports (`status` + `createdAt↓`).
+  // Kulüp / kullanıcı / şikayet sayımları ve listManagerUserIds yalnızca eşitlik süzgecidir (tek alan indeksleri).
+  adminUpcomingEvents: { collection: 'events', equals: ['status', 'isDeleted'], order: ['startsAt', 'asc'] },
+  listUsersByName: { collection: 'users', equals: ['isDeleted'], order: ['nameLower', 'asc'] },
+  listReports: { collection: 'reports', equals: ['status'], order: ['createdAt', 'desc'] },
 });
 
 /**
@@ -461,6 +467,26 @@ describe('rsvps · sorgu biçimleri (rules-spec §6 EVT-04, MGT-06; PLAN §10.4 
     expect(ids(await assertSucceeds(getDocs(byTicket('board', 'GU-LVME-2345', 'e_public'))))).toEqual([]);
     await assertFails(getDocs(byTicket('member', 'GU-LVME-2345')));
     await assertFails(getDocs(query(rsvps('board'), where('ticketCode', '==', 'GU-LVME-2345'))));
+  });
+});
+
+describe('admin · sorgu biçimleri (T-37; PLAN §10.4 AdminRepository.stats / listManagerUserIds)', () => {
+  test('stats: dört count() süper admine açık (belge okunmaz); şikayet sayımı başkasına kapalı', async () => {
+    await seedFixture('base');
+    const count = async (role, coll, ...constraints) => (await getCountFromServer(query(collection(dbOf(role), coll), ...constraints))).data().count;
+    expect(await count('super', 'clubs', where('isDeleted', '==', false), where('status', '==', 'active'))).toBe(2);
+    expect(await count('super', 'users', where('isDeleted', '==', false))).toBeGreaterThan(0);
+    expect(await count('super', 'reports', where('status', '==', 'open'))).toBe(1);
+    const upcoming = [where('status', '==', 'published'), where('isDeleted', '==', false), where('startsAt', '>=', fromNow(0))];
+    expect(await count('super', 'events', ...upcoming)).toBe(2);
+    await assertFails(getCountFromServer(query(collection(dbOf('president'), 'reports'), where('status', '==', 'open'))));
+  });
+
+  test('listManagerUserIds: kulüp süzgeçsiz status == active + role in [board, president] süper admine açık', async () => {
+    await seedFixture('base');
+    const managers = (role) => getDocs(query(collection(dbOf(role), 'memberships'), where('status', '==', 'active'), where('role', 'in', ['board', 'president'])));
+    const snapshot = await assertSucceeds(managers('super'));
+    expect(snapshot.docs.map((d) => d.data().userId).sort()).toEqual(['u_board', 'u_mgr2', 'u_president']);
   });
 });
 

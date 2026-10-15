@@ -164,12 +164,35 @@ final class FirebaseCommentRepository implements CommentRepository {
       return rejected;
     }
     // Sayaç ve işaretçi değişmez: `commentCount` silinmemiş yorumları sayar.
-    return _firestore.update(_commentRef(commentId), {
-      FirestoreFields.isHidden: true,
-      FirestoreFields.hiddenBy: actorId,
-      FirestoreFields.hiddenAt: _firestore.serverTimestamp(),
-    });
+    return _firestore.update(_commentRef(commentId), _hidePayload(actorId));
   }
+
+  /// [hide]'ın batch karşılığı (T-37, şikayet çözümü "kaldırıldı" —
+  /// `AdminRepository.resolveReports`): [commentId] yorumunun gizleme
+  /// yazımını (`isHidden: true`, `hiddenBy: actorId`, `hiddenAt` +
+  /// `updatedAt` sunucu zamanı) [batch]'e **eşzamanlı** ekler; commit ve ağ
+  /// çağrısı yoktur. Arayüzde değildir (SDK tipi `WriteBatch` arayüze
+  /// sızmaz); yalnızca `gu_data` içindeki çözüm sınıfı çağırır.
+  ///
+  /// Kimlikleri çağıran önceden doğrular; geçersiz [commentId]
+  /// `ArgumentError` fırlatır ve `commitBatch` batch'i düşürür.
+  /// `commentCount` ve `lastCommentRef` değişmez; Rules (`isHideToggle`)
+  /// yorum zaten gizliyse yazımı reddeder — çağıran önce okur.
+  void addHideToBatch(
+    WriteBatch batch,
+    String commentId, {
+    required String actorId,
+  }) => batch.update(_commentRef(commentId), {
+    ..._hidePayload(actorId),
+    ...BaseFieldsPayload.update(),
+  });
+
+  /// Gizleme yazımının alanları ([hide] ve [addHideToBatch] ortak yükü).
+  Json _hidePayload(String actorId) => {
+    FirestoreFields.isHidden: true,
+    FirestoreFields.hiddenBy: actorId,
+    FirestoreFields.hiddenAt: _firestore.serverTimestamp(),
+  };
 
   /// Gönderinin sayaç yazımı: `commentCount` [delta] kadar değişir,
   /// `lastCommentRef` sayacı değiştiren [commentId] yorumunu gösterir

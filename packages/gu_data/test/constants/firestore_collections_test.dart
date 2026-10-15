@@ -202,13 +202,14 @@ void main() {
       expect(readRepoFile('docs/PLAN.md'), contains('`$built`'));
     });
 
-    test('koleksiyon grubu adı Rules taslağındaki private yolu ile aynı', () {
-      expect(
-        readRepoFile('docs/firestore-rules-spec.md'),
-        contains(
-          'match /{path=**}/${FirestoreCollections.privateSub}/{doc}',
-        ),
-      );
+    // T-37: ADM-05 e-posta araması (`collectionGroup(privateSub)`) — kural
+    // hem spesifikasyonda hem gerçek Rules'ta aynı koleksiyon grubu adıyla.
+    test('koleksiyon grubu adı Rules taslağındaki ve Rules dosyasındaki '
+        'private yolu ile aynı', () {
+      const match =
+          'match /{path=**}/${FirestoreCollections.privateSub}/{docId}';
+      expect(readRepoFile('docs/firestore-rules-spec.md'), contains(match));
+      expect(readRepoFile('firebase/firestore.rules'), contains(match));
     });
   });
 }

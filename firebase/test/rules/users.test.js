@@ -12,8 +12,8 @@
 //  7. Güvenlik incelemesi (CD-133 madde 14): profil ↔ hesap belgesi birlikte oluşur (`existsAfter`),
 //     `fcmTokens` eleman biçimi, `avatarSeed` / `avatarPath` / ad sınırları, `profileComplete` koşulu.
 //
-// Süper adminin askıya alma yolu (`users.status`, `account.suspendReason`) T-37'de, hesap silme
-// (`deleted` dalı, anonimleştirme) T-29'da açılır; bugün ikisi de reddedilir (matris satırları).
+// Süper adminin askıya alma yolu (`users.status` + `account.suspendReason` tek batch) T-37'de açıldı — tek başına
+// yazım reddedilir (matris satırları), tam batch `admin.test.js`; hesap silme (`deleted` dalı) T-29.
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {

@@ -34,6 +34,7 @@ import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
+import '../../../helpers/semantics_scan.dart';
 import '../../../helpers/test_l10n.dart';
 import '../notification_prefs_test_support.dart';
 
@@ -369,6 +370,34 @@ void main() {
           overrides: _overrides(state: state),
         );
       }
+    });
+  });
+
+  group('NTF-02 · Bildirim tercihleri · semantik', () {
+    testWidgets('kaydırma boyunca rol doğrulaması hatasız (hatırlatma '
+        'GuSegmented; yönetici + sessiz saat açık; iOS + Android)', (
+      tester,
+    ) async {
+      await expectSemanticsCleanWhileScrolling(
+        tester,
+        (platform) => tester.pumpApp(
+          const NotificationPrefsView(),
+          overrides: _overrides(
+            state: loadedPrefsState(
+              showManagement: true,
+              permissionGranted: true,
+              settings: const UserSettingsModel.defaults(
+                kPrefsUid,
+              ).copyWith(quiet: true),
+            ),
+          ),
+          // `SingleChildScrollView`: semantik kırpma tüm içeriği kapsar
+          // (önbellek kenarı yok); tarama kaydırılmış kareleri doğrular.
+          size: const Size(320, 568),
+          textScale: 1.6,
+          platform: platform,
+        ),
+      );
     });
   });
 

@@ -19,7 +19,8 @@ import 'package:gu_data/src/models/user_model.dart';
 /// iptal et, başvuru notunu düzenle, ayrıl, okumalar), hesap silme (T-29) ve
 /// **yönetici geçişleri** (T-30: onay, ret, kararı geri al, çıkar, çıkarmayı
 /// geri al, rol, başkanlık devri — M5, M6, M9–M12; sözleşme
-/// `docs/plans/T-30.md` §4). Danışman ataması (M13) T-37'dedir.
+/// `docs/plans/T-30.md` §4) ve danışman bağlama (T-37: M13 — [setAdvisor],
+/// süper admin; sözleşme `docs/plans/T-37.md` §4).
 ///
 /// **Yönetici geçişleri:** `actorId` oturumdaki yöneticidir; yetki ve
 /// hiyerarşiyi Security Rules uygular (başkan > yönetim kurulu > üye;
@@ -297,6 +298,33 @@ abstract interface class MembershipRepository {
     required String fromUserId,
     required String toUserId,
     required String actorId,
+  });
+
+  /// M13 (T-37, süper admin; K-A) — [userId] hesabını [clubId] kulübünün
+  /// danışmanı olarak bağlar ([active] `true`) ya da bağı kaldırır (`false`)
+  /// — **tek transaction**, `memberCount` değişmez (danışman sayılmaz).
+  ///
+  /// Bağlama: kulübün `advisor` kaydı (ad / ünvan) olmalıdır, yoksa
+  /// [FirestoreError.failedPrecondition]; hedefin hesabı etkin olmalıdır;
+  /// üyeliği yoksa ya da `left` / `cancelled` / `rejected` / `removed` ise
+  /// `active` + `advisor` yazılır (`applicant` anlık görüntüsü, `decidedAt` /
+  /// `decidedBy` / `retryAfter` / `rejectReason` boş) + `private/contact`
+  /// (hesap e-postası, not boş) + `clubs.advisor.userId = userId`. Üyelik
+  /// `active` / `pending` (danışman dışı) → [FirestoreError.conflict]; zaten
+  /// bağlıysa değişiklik yapılmadan başarı.
+  ///
+  /// Kaldırma: etkin `advisor` üyeliği → `status: left` +
+  /// `clubs.advisor.userId = null` (ad / ünvan kalır). Bayat bağ — üyelik
+  /// artık etkin danışman değil (danışman hesabını sildi; M14 / W-91) ama
+  /// `clubs.advisor.userId == userId` — yalnızca kulüp bağı ayrılır. İkisi
+  /// de değilse [FirestoreError.conflict].
+  ///
+  /// `tool/admin/set_advisor.js` (Admin SDK) aynı belgeleri aynı alanlarla
+  /// yazar.
+  Future<FirestoreResult<void>> setAdvisor({
+    required String clubId,
+    required String userId,
+    required bool active,
   });
 
   /// [clubId] kulübünün aktif üyelerinden bir sayfa (CLB-06, MGT-03).
