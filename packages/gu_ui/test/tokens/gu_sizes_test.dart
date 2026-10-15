@@ -24,8 +24,9 @@ import '../helpers/design_sources.dart';
 /// 401", `miniChartFillOpacity`'yi hâlâ 353'ün içinde sayar ve 2 K-46 ekini
 /// içermez.) + T-17 `myClubsAllTileWidth` 1 = 403
 /// + T-20 `commentsSheetMinHeight` 1 = 404
-/// + T-31 `activityRowAvatar`, `manageHeaderClubMaxWidth` 2 = 406.
-const int _gusizesCount = 406;
+/// + T-31 `activityRowAvatar`, `manageHeaderClubMaxWidth` 2 = 406
+/// + T-35 `scanHintMaxWidth` 1 = 407.
+const int _gusizesCount = 407;
 
 /// `GuOpacity`: §8.8 8 + `coverIcon` 1.
 const int _guOpacityCount = 9;
@@ -2863,6 +2864,9 @@ List<_Row> _sizesTable(CssMeasure css, _Js js) => [
     190,
     const [_JsRef('screens-manage.js', 9, 'style="max-width:190px"')],
   ),
+  _js('scanHintMaxWidth', GuSizes.scanHintMaxWidth, 260, const [
+    _JsRef('screens-manage.js', 152, 'max-width:260px'),
+  ]),
   _js('iconButtonTonal', GuSizes.iconButtonTonal, 44, const [
     _JsRef('cards.js', 176, "width: '44px', height: '44px'"),
   ]),

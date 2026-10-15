@@ -47,7 +47,13 @@ void main() {
             .map((e) => e.value as String)
             .where((v) => RegExp(r'\{\s*\w+\s*,\s*plural\s*,').hasMatch(v))
             .toList();
-        expect(plurals, hasLength(13), reason: '$lang çoğul anahtar sayısı');
+        // + T-35 `attendanceWindowNotOpen` / `attendanceWindowClosed` (EN
+        // saat çoğulu; TR'de çoğul eki yok).
+        expect(
+          plurals,
+          hasLength(lang == 'en' ? 15 : 13),
+          reason: '$lang çoğul anahtar sayısı',
+        );
         expect(plurals, everyElement(isNot(contains('#'))));
       }
     });

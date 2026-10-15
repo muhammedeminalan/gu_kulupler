@@ -33,7 +33,7 @@
 | `share_plus` | .ics / bağlantı paylaşma (`ShareService`, T-16; iOS SPM: `Package.swift` var; ek manifest / `Info.plist` girdisi gerekmez) | SHT-14, SHT-15 | — |
 | `path_provider` | .ics geçici dosyası | SHT-14 | — |
 | `permission_handler` | kamera/bildirim izni, "Ayarlara git" (`PermissionService`, T-14; galeri için izin istenmez — CD-16; iOS SPM: `Package.swift` var, izin modülü `Info.plist` anahtarından derlenir) | DLG-03/04/05, TST-32 | — |
-| `mobile_scanner` | QR okuma | MGT-07 | — |
+| `mobile_scanner` | QR okuma (`QrScannerService`, T-35; `^7.4.2`; iOS SPM ✓ — `darwin/mobile_scanner/Package.swift` iOS 12.0; Android eklenti manifest'i `CAMERA` + `android.hardware.camera required=false` birleştirir — `CAMERA` ve `NSCameraUsageDescription` (TR/EN `InfoPlist.strings`) T-14'ten; ML Kit bundled, `useUnbundled` yazılmaz — K-16) | MGT-07, SHT-24 | — |
 | `qr_flutter` | QR üretme | EVT-03 | — |
 | `image_picker` | kamera/galeri (`ImagePickerService`, T-14; `requestFullMetadata: false` — sistem fotoğraf izni istenmez, CD-16; iOS SPM ✓) | SHT-16 | Q-19 = yükle (kesin) |
 | `flutter_image_compress` | yükleme öncesi JPEG'e sıkıştırma (`ImagePickerService`, T-14: uzun kenar 1600 px, kalite 82; `keepExif` kapalı — EXIF / konum ayıklanır; yeniden kodlama düşerse özgün dosya **yüklenmez**, CD-135 madde 8c; iOS SPM ✓ — `SDWebImage`, `SDWebImageWebPCoder`, `libwebp` SPM bağımlılıklarıyla gelir) | SHT-16, AUT-05, PRF-02, FED-03, MGT-09 | Q-19 = yükle (kesin); `image` paketi kullanılmaz |

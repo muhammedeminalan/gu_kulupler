@@ -106,11 +106,12 @@ mixin ManageEventsViewMixin on ConsumerState<ManageEventsView> {
           eventId: outcome.eventId,
         ).go(context);
       case ManageEventNext.attendees:
-        // TODO(T-35): `AttendeesRoute(clubId:, eventId:)` (MGT-06).
-        break;
+        AttendanceRoute(
+          clubId: widget.clubId,
+          eventId: outcome.eventId,
+        ).go(context);
       case ManageEventNext.scan:
-        // TODO(T-35): `ScanRoute(clubId:, eventId:)` (MGT-07).
-        break;
+        ScanRoute(clubId: widget.clubId, eventId: outcome.eventId).go(context);
       case ManageEventNext.none || ManageEventNext.removed:
         break;
     }

@@ -359,12 +359,16 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
 
   /// "Katılımcılar" (`EVT-02.attendees`) → MGT-06.
   void openAttendees() {
-    // TODO(T-35): `AttendeesRoute(clubId:, eventId:)` (MGT-06).
+    final event = _state.event;
+    if (event == null) return;
+    AttendanceRoute(clubId: event.clubId, eventId: event.id).go(context);
   }
 
   /// "Yoklama başlat" (`EVT-02.scan`) → MGT-07.
   void openScan() {
-    // TODO(T-35): `ScanRoute(clubId:, eventId:)` (MGT-07).
+    final event = _state.event;
+    if (event == null) return;
+    ScanRoute(clubId: event.clubId, eventId: event.id).go(context);
   }
 
   // ────────────────────────────────── iç ────────────────────────────────────

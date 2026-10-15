@@ -111,7 +111,13 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
                 GoRoute(
                   path: 'events',
                   builder: (_, s) => stub(s),
-                  routes: [GoRoute(path: 'new', builder: (_, s) => stub(s))],
+                  routes: [
+                    GoRoute(path: 'new', builder: (_, s) => stub(s)),
+                    GoRoute(
+                      path: ':eventId/attendance',
+                      builder: (_, s) => stub(s),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -300,6 +306,17 @@ void main() {
       await tester.pumpAndSettle();
       await _tapKey(tester, GuKey.action('MGT-01.quick.event'));
       expect(_location(router), '$_managePath/events/new');
+    });
+
+    testWidgets('"Yoklama al" → en yakın etkinliğin MGT-06\'sı (W-39)', (
+      tester,
+    ) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, _quickAttendance);
+      expect(
+        _location(router),
+        matches(RegExp('^$_managePath/events/[^/]+/attendance\$')),
+      );
     });
 
     testWidgets('"Tümü" → MGT-10; geri → CLB-03', (tester) async {

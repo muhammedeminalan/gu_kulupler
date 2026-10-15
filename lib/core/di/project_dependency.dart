@@ -18,6 +18,7 @@ import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/qr_scanner_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -43,6 +44,7 @@ final class ProjectDependencyOverrides {
     this.imagePickerService,
     this.fileService,
     this.localReminderService,
+    this.qrScannerService,
     this.appPreferencesStore,
   });
 
@@ -87,6 +89,9 @@ final class ProjectDependencyOverrides {
 
   /// `LocalReminderService` yerine.
   final LocalReminderService? localReminderService;
+
+  /// `QrScannerService` yerine.
+  final QrScannerService? qrScannerService;
 
   /// `AppPreferencesStore` yerine.
   final AppPreferencesStore? appPreferencesStore;
@@ -350,6 +355,10 @@ abstract final class ProjectDependency {
       ..registerSingleton<LocalReminderService>(
         overrides.localReminderService ??
             FlutterLocalReminderService(clock: appClock),
+      )
+      // T-35 · QR tarayıcı (MGT-07, D-30)
+      ..registerSingleton<QrScannerService>(
+        overrides.qrScannerService ?? const MobileQrScannerService(),
       )
       // Depo burada yalnızca kaydedilir; `AppBootstrap` `load()` çağırır.
       ..registerSingleton<AppPreferencesStore>(

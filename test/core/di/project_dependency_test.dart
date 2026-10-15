@@ -22,6 +22,7 @@ import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/qr_scanner_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -34,6 +35,7 @@ import '../../fakes/fake_crash_service.dart';
 import '../../fakes/fake_firestore_service.dart';
 import '../../fakes/fake_image_picker_service.dart';
 import '../../fakes/fake_permission_service.dart';
+import '../../fakes/fake_qr_scanner_service.dart';
 import '../../fakes/fake_remote_config_service.dart';
 import '../../fakes/fake_share_service.dart';
 import '../../fakes/fake_storage_service.dart';
@@ -119,12 +121,15 @@ void main() {
         GetIt.I<LocalReminderService>(),
         isA<FlutterLocalReminderService>(),
       );
+      // T-35 · QR tarayıcı (aynı kural; kamera kurulumda açılmaz).
+      expect(GetIt.I<QrScannerService>(), isA<MobileQrScannerService>());
     });
 
-    test('PermissionService ve ImagePickerService verilen örneklerle '
-        'kaydedilir; mixin onları görür (T-14)', () async {
+    test('PermissionService, ImagePickerService (T-14) ve QrScannerService '
+        '(T-35) verilen örneklerle kaydedilir; mixin onları görür', () async {
       final permissions = FakePermissionService();
       final picker = FakeImagePickerService();
+      final scanner = FakeQrScannerService();
       await ProjectDependency.setup(
         navigatorKey: navigatorKey,
         toastController: toastController,
@@ -138,9 +143,11 @@ void main() {
           appPreferencesStore: prefs,
           permissionService: permissions,
           imagePickerService: picker,
+          qrScannerService: scanner,
         ),
       );
 
+      expect(GetIt.I<QrScannerService>(), same(scanner));
       expect(GetIt.I<PermissionService>(), same(permissions));
       expect(GetIt.I<ImagePickerService>(), same(picker));
       expect(_Consumer().permissionService, same(permissions));

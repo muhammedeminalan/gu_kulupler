@@ -479,6 +479,7 @@ Mock opaklıklar yazılmaz: `.homebar .85` css:117, durum çubuğu sinyal `.3` s
 | `commentsSheetMinHeight` (**ek**, T-20) | 200 | sheets.js:48 SHT-09 yorum listesi `<div style="min-height:200px">` (`CommentsSheet`; `GuSizes` N = 403 → **404**) |
 | `activityRowAvatar` (**ek**, T-31) | 36 | screens-manage.js:38 `ActivityRow` `Avatar size=${36}` (MGT-01 / MGT-10 faaliyet satırı; `avatarSizes` kümesinde) |
 | `manageHeaderClubMaxWidth` (**ek**, T-31) | 190 | screens-manage.js:9 `MgtHeader` kulüp değiştirme düğmesi `<span class="ellipsis" style="max-width:190px">` (`ManageHeader`; `GuSizes` N = 404 → **406**) |
+| `scanHintMaxWidth` (**ek**, T-35) | 260 | screens-manage.js:152 MGT-07 `Scanner` ipucu `<p class="t-body-s center" style="…max-width:260px">` (`ScanOverlay`; `GuSizes` N = 406 → **407**) |
 | `applicationRowMinHeight` (**ek**, K-31) | 64 | cards:172 `ApplicationRow` `padding:6px 8px 6px 16px;min-height:64px` |
 | `avatarBadgeBorder` (**ek**, CD-91) | 2 | screens-profile.js:11 PRF-01 kamera rozeti `border:2px solid var(--bg-canvas)`; konum `right:-2px;bottom:-2px` = −`avatarBadgeBorder` (ayrı sabit yok) |
 | `parallaxEmblemOverlap` (**ek**, K-46) | 36 | screens-clubs.js:89 CLB-03 amblem kapsayıcısı `margin-top:-36px` (amblem kapağın altına 36 px biner) |
