@@ -236,6 +236,12 @@ void main() {
       expect(_location(router), '/admin');
     });
 
+    testWidgets('bölme "Kullanıcılar" → ADM-05 (W-47)', (tester) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, _k('ADM-02.seg.ADM-05'));
+      expect(_location(router), '/admin/users');
+    });
+
     testWidgets('?tab=suspended → askıda sekmesi; sekme ve arama süzer', (
       tester,
     ) async {

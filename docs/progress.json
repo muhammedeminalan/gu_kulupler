@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T08:37:19.281Z",
+  "updated": "2026-10-15T08:55:06.052Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-41",
   "statusValues": [
     "pending",
     "planning",
@@ -541,8 +541,8 @@
       "notes": ""
     },
     "T-41": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-15T08:37:37.449Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1052,7 +1052,10 @@
       "resolveIn": [
         "T-41"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-41",
+      "closedAt": "2026-10-15T08:55:06.027Z",
+      "closeNote": "T-41: ADM-01 kpi.users + seg.ADM-05, ADM-02 / ADM-04 seg.ADM-05 → AdminUsersRoute().go (admin_{view,clubs_view,reports_view}_mixin openUsers); testler admin_*_view_test + test/flows/admin_users_flow_test.dart"
     },
     {
       "id": "W-48",
@@ -1703,11 +1706,14 @@
         "T-39",
         "T-41"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "ADM-03",
         "ADM-05"
-      ]
+      ],
+      "closedIn": "T-41",
+      "closedAt": "2026-10-15T08:55:06.052Z",
+      "closeNote": "(b) T-41: ADM-05 kendi satırında menüde yalnızca 'Profili gör' (AdminUserMenu.items self), AdminUsersViewModel.suspend/unsuspend kendi uid'inde yazmaz; testler admin_users_view_test + admin_users_flow_test"
     },
     {
       "id": "W-102",

@@ -30,6 +30,9 @@ import 'package:gu_ui/gu_ui.dart';
 ///   biyografi de çizilmez.
 /// * **Ortak kulüpler** (profil görünürken ve varsa): başlık + kulüp çipleri
 ///   (→ CLB-03).
+/// * **Süper admin bakışı** (T-41, `AdminUserProfileRoute`; kulüp bağlamı
+///   olmadan da): kart yalnızca e-posta + "Kopyala" (TST-08) satırıyla
+///   çizilir — e-posta `users/{uid}/private/account` (D-29).
 /// * **Yönetici bağlamı kartı** (açılış kulübünün yöneticisi / süper admini
 ///   ve kullanıcı o kulübün aktif üyesiyken; W-69, `screens-clubs.js:160–161`):
 ///   e-posta + "Kopyala" (TST-08), kulüpteki rol, üyelik tarihi; altında
@@ -153,7 +156,7 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
           _private(l10n)
         else if (state.showsDetails && state.sharedClubs.isNotEmpty)
           _commonClubs(state.sharedClubs, l10n),
-        if (state.showsManagerCard) ...[
+        if (state.showsContactCard) ...[
           // `.col.gap20`: ortak kulüplerden sonra 20.
           if (state.showsDetails && state.sharedClubs.isNotEmpty) GuGap.v20,
           _managerCard(state, l10n),
@@ -162,13 +165,14 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
     ),
   );
 
-  /// Yönetici bağlamı kartı (`screens-clubs.js:160–161`): e-posta, rol ve
-  /// üyelik tarihi satırları; altında rol / çıkarma düğmeleri.
+  /// E-posta / yönetici bağlamı kartı (`screens-clubs.js:160–161`): e-posta,
+  /// rol ve üyelik tarihi satırları; altında rol / çıkarma düğmeleri. Kulüp
+  /// bağlamı olmayan süper admin bakışında yalnızca e-posta satırı (T-41).
   Widget _managerCard(UserProfileState state, AppLocalizations l10n) {
     final gu = context.gu;
-    final membership = state.contextMembership!;
+    final membership = state.showsManagerCard ? state.contextMembership : null;
     final email = state.contactEmail;
-    final decidedAt = membership.decidedAt;
+    final decidedAt = membership?.decidedAt;
     Widget icon(GuIcons name) =>
         GuIcon(name, size: GuSizes.icon20, color: gu.colors.textMuted);
     return Padding(
@@ -197,21 +201,25 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
                       onPressed: copyEmail,
                     ),
                   ),
-                  const GuDivider(),
+                  if (membership != null) const GuDivider(),
                 ],
-                GuTile(
-                  title: MemberRow.roleBadge(l10n, membership.role).label,
-                  subtitle: l10n.userprofileRoleIn(state.contextClubName ?? ''),
-                  padding: GuTilePadding.inCard,
-                  leading: icon(GuIcons.shieldCheck),
-                ),
-                const GuDivider(),
-                GuTile(
-                  title: decidedAt == null ? '—' : formatDate(decidedAt),
-                  subtitle: l10n.userprofileMemberSince,
-                  padding: GuTilePadding.inCard,
-                  leading: icon(GuIcons.calendarCheck),
-                ),
+                if (membership != null) ...[
+                  GuTile(
+                    title: MemberRow.roleBadge(l10n, membership.role).label,
+                    subtitle: l10n.userprofileRoleIn(
+                      state.contextClubName ?? '',
+                    ),
+                    padding: GuTilePadding.inCard,
+                    leading: icon(GuIcons.shieldCheck),
+                  ),
+                  const GuDivider(),
+                  GuTile(
+                    title: decidedAt == null ? '—' : formatDate(decidedAt),
+                    subtitle: l10n.userprofileMemberSince,
+                    padding: GuTilePadding.inCard,
+                    leading: icon(GuIcons.calendarCheck),
+                  ),
+                ],
               ],
             ),
           ),

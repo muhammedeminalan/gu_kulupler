@@ -232,6 +232,22 @@ void main() {
       expect(_location(router), '/admin/clubs?tab=suspended');
     });
 
+    testWidgets(
+      '"Toplam kullanıcı" ve "Kullanıcılar" bölmesi → ADM-05 (W-47)',
+      (
+        tester,
+      ) async {
+        final router = await _pumpRoute(tester);
+        await _tapKey(tester, GuKey.action('ADM-01.kpi.users'));
+        expect(_location(router), '/admin/users');
+
+        router.go('/admin');
+        await tester.pumpAndSettle();
+        await _tapKey(tester, GuKey.action('ADM-01.seg.ADM-05'));
+        expect(_location(router), '/admin/users');
+      },
+    );
+
     testWidgets('hata → "Yeniden dene" yeniden okur', (tester) async {
       await _pump(tester, state: const AdminState(isError: true));
       await _tapKey(tester, _retry);

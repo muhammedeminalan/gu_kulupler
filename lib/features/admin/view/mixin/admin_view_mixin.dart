@@ -95,9 +95,7 @@ mixin AdminViewMixin on ConsumerState<AdminView> {
 
   /// "Toplam kullanıcı" (`ADM-01.kpi.users`) / "Kullanıcılar" bölmesi →
   /// ADM-05.
-  void openUsers() {
-    // TODO(T-41): `AdminUsersRoute().go(context)` (W-47).
-  }
+  void openUsers() => const AdminUsersRoute().go(context);
 
   /// En aktif kulüp satırı (`ADM-01.topClub.<id>`) → CLB-03.
   void openClub(String clubId) => ClubDetailRoute(clubId: clubId).go(context);

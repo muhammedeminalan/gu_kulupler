@@ -114,7 +114,7 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 | ADM-02 | `/admin/clubs` | `AdminClubsRoute` | ADM-01 | S |
 | ADM-03 | `/admin/clubs/new` · `/admin/clubs/:id/edit` | `AdminClubFormRoute` | ADM-02 | S |
 | ADM-04 | `/admin/reports?reportId=` | `AdminReportsRoute` | ADM-01 | S |
-| ADM-05 | `/admin/users` | `AdminUsersRoute` | ADM-01 | S |
+| ADM-05 | `/admin/users?filter=` | `AdminUsersRoute` | ADM-01 | S |
 | CLB-07 (paylaşılan) | `/admin/users/:userId` | `AdminUserProfileRoute` | ADM-05 | S |
 
 - Sekme çubuğu: `Kulüpler · Etkinlikler · Bildirimler · [Admin] · Profil`; **Admin yalnızca `isSuperAdmin`** (kabuk bunu gösterir/gizler; rota guard'ı yine de uygular). Bildirim rozeti: okunmamış sayısı, 9 üstü "9+".

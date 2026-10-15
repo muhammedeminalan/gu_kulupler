@@ -17,6 +17,8 @@ void main() {
       expect(state.contextMembership, isNull);
       expect(state.isSelf, isFalse);
       expect(state.isSuperAdmin, isFalse);
+      expect(state.isViewerSuperAdmin, isFalse);
+      expect(state.showsContactCard, isFalse);
       expect(state.isHiddenByPrivacy, isFalse);
       expect(state.isBlocked, isFalse);
       expect(state.isFetching, isFalse);
@@ -49,7 +51,7 @@ void main() {
 
     test('`props` tüm alanları taşır; her alan eşitliği bozar', () {
       const base = UserProfileState();
-      expect(base.props, hasLength(16));
+      expect(base.props, hasLength(17));
       final variants = [
         UserProfileState(user: kUser),
         const UserProfileState(sharedClubIds: [kSharedClubId]),
@@ -61,6 +63,7 @@ void main() {
         const UserProfileState(canAssignRoles: true),
         const UserProfileState(isSelf: true),
         const UserProfileState(isSuperAdmin: true),
+        const UserProfileState(isViewerSuperAdmin: true),
         const UserProfileState(isHiddenByPrivacy: true),
         const UserProfileState(isBlocked: true),
         const UserProfileState(isFetching: true),
@@ -88,6 +91,7 @@ void main() {
         canAssignRoles: true,
         isSelf: true,
         isSuperAdmin: true,
+        isViewerSuperAdmin: true,
         isHiddenByPrivacy: true,
         isBlocked: true,
         isFetching: true,
@@ -108,6 +112,7 @@ void main() {
           canAssignRoles: true,
           isSelf: true,
           isSuperAdmin: true,
+          isViewerSuperAdmin: true,
           isHiddenByPrivacy: true,
           isBlocked: true,
           isFetching: true,
@@ -144,6 +149,29 @@ void main() {
         expect(target.showsManagerActions, isFalse);
       }
       expect(const UserProfileState().showsManagerCard, isFalse);
+    });
+    test('e-posta kartı (T-41): yönetici kartında ya da süper admin bakışında '
+        'e-posta okunduysa; silinmiş kullanıcıda yok', () {
+      final admin = kVisibleState.copyWith(isViewerSuperAdmin: true);
+      expect(admin.showsContactCard, isFalse);
+      final withEmail = admin.copyWith(contactEmail: 'a@ogr.gumushane.edu.tr');
+      expect(withEmail.showsContactCard, isTrue);
+      expect(withEmail.showsManagerCard, isFalse);
+      expect(
+        kVisibleState
+            .copyWith(contactEmail: 'a@ogr.gumushane.edu.tr')
+            .showsContactCard,
+        isFalse,
+      );
+      expect(
+        kDeletedState
+            .copyWith(
+              isViewerSuperAdmin: true,
+              contactEmail: 'a@ogr.gumushane.edu.tr',
+            )
+            .showsContactCard,
+        isFalse,
+      );
     });
   });
 }

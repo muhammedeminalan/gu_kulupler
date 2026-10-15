@@ -576,4 +576,62 @@ void main() {
       expect(membershipsFake().callsTo('readContact'), isEmpty);
     });
   });
+  group('CLB-07 · UserProfileViewModel · süper admin bakışı (T-41)', () {
+    const email = 'yigit.kilic@ogr.gumushane.edu.tr';
+
+    void seedAccount() => usersFake().accounts[kUserId] = UserAccountModel(
+      email: email,
+      emailLower: email,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+    );
+
+    test('kulüp bağlamı olmadan: hesap e-postası (`getPrivateAccount`), '
+        'e-posta kartı; "Kopyala" → TST-08', () async {
+      seedProfile(shared: false);
+      seedAccount();
+      final container = await _container(
+        session: viewerSession(memberships: const [], isSuperAdmin: true),
+        clubId: null,
+      );
+      final provider = profileProvider(clubId: null);
+      final state = container.read(provider);
+      expect(state.isViewerSuperAdmin, isTrue);
+      expect(state.isHiddenByPrivacy, isFalse);
+      expect(state.showsManagerCard, isFalse);
+      expect(state.showsContactCard, isTrue);
+      expect(state.contactEmail, email);
+      expect(usersFake().callsTo('getPrivateAccount').single.args, [kUserId]);
+
+      await container.read(provider.notifier).copyEmail();
+      final share = GetIt.I<ShareService>() as FakeShareService;
+      expect(share.copied, [email]);
+      expect(feedbackFake().toasts, [ToastId.tst08]);
+    });
+
+    test(
+      'süper admin olmayan bakan hesap belgesini okumaz; kart yok',
+      () async {
+        seedProfile();
+        seedAccount();
+        final container = await _container(clubId: null);
+        final state = container.read(profileProvider(clubId: null));
+        expect(state.isViewerSuperAdmin, isFalse);
+        expect(state.showsContactCard, isFalse);
+        expect(state.contactEmail, isNull);
+        expect(usersFake().callsTo('getPrivateAccount'), isEmpty);
+      },
+    );
+
+    test('hesap belgesi yok: kart çizilmez', () async {
+      seedProfile(shared: false);
+      final container = await _container(
+        session: viewerSession(memberships: const [], isSuperAdmin: true),
+        clubId: null,
+      );
+      final state = container.read(profileProvider(clubId: null));
+      expect(state.contactEmail, isNull);
+      expect(state.showsContactCard, isFalse);
+    });
+  });
 }

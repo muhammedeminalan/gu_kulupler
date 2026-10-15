@@ -2,8 +2,8 @@ part of 'shell_route.dart';
 
 // T-11 dal kökünü kurdu; T-38 kök ekranı (ADM-01) bağladı; T-39 kulüpler
 // (ADM-02) ile kulüp oluştur / düzenle (ADM-03) rotalarını ekler; T-40
-// şikayetler (ADM-04). Kalan alt rotalar PLAN §13.3.6 tablosundaki task'ta
-// (T-41).
+// şikayetler (ADM-04); T-41 kullanıcılar (ADM-05) ile paylaşılan kullanıcı
+// profili (CLB-07) — admin dalı tamam (PLAN §13.3.6).
 
 /// Admin dalının rota ağacı (navigation.md §2.6). Alt rotalar sahip
 /// task'larında bu ağaca eklenir.
@@ -18,6 +18,14 @@ const TypedGoRoute<AdminRoute> adminRouteTree = TypedGoRoute<AdminRoute>(
       ],
     ),
     TypedGoRoute<AdminReportsRoute>(path: AdminReportsRoute.segment),
+    TypedGoRoute<AdminUsersRoute>(
+      path: AdminUsersRoute.segment,
+      routes: <TypedRoute<RouteData>>[
+        TypedGoRoute<AdminUserProfileRoute>(
+          path: AdminUserProfileRoute.segment,
+        ),
+      ],
+    ),
   ],
 );
 
@@ -122,4 +130,46 @@ final class AdminReportsRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       AdminReportsView(tab: tab, reportId: reportId);
+}
+
+/// ADM-05 Kullanıcılar — `/admin/users?filter=`. ADM-01'in alt rotasıdır
+/// (guard `S`: yalnızca süper admin, router'da). ADM-01 kullanıcı
+/// göstergesi ve `AdminSegmentBar` "Kullanıcılar" (W-47) `go` ile açar;
+/// geri ADM-01'e döner.
+final class AdminUsersRoute extends GoRouteData
+    with $AdminUsersRoute, PlatformPageMixin {
+  /// Kullanıcı listesi; [filter] ilk seçili süzgeç.
+  const AdminUsersRoute({this.filter});
+
+  /// `/admin` altındaki yol parçası.
+  static const String segment = 'users';
+
+  /// İlk seçili süzgeç (`?filter=all|managers|suspended`); `null` ya da
+  /// tanınmayan değer → tümü.
+  final AdminUsersFilter? filter;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AdminUsersView(filter: filter);
+}
+
+/// CLB-07 Kullanıcı profili (paylaşılan) — `/admin/users/:userId`. ADM-05'in
+/// alt rotasıdır (guard `S`). ADM-05 satırı / "Profili gör" menüsü `go` ile
+/// açar; geri ADM-05'e döner. View `ClubUserProfileRoute` ve
+/// `BlockedUserProfileRoute` ile paylaşılan `UserProfileView`'dır (kulüp
+/// bağlamı yok).
+final class AdminUserProfileRoute extends GoRouteData
+    with $AdminUserProfileRoute, PlatformPageMixin {
+  /// [userId] kullanıcısının profili.
+  const AdminUserProfileRoute({required this.userId});
+
+  /// `/admin/users` altındaki yol parçası.
+  static const String segment = ':userId';
+
+  /// Profili açılan kullanıcının kimliği (yol parametresi).
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UserProfileView(userId: userId);
 }
