@@ -1,0 +1,12 @@
+{
+  "collection": "pushReceipts",
+  "row": 21,
+  "match": "/pushReceipts/{notificationId}",
+  "owner": "T-42",
+  "note": "Yalnızca sunucu (Cloud Functions, Admin SDK — CD-165 b.1): istemciye tamamen kapalı. Vaka yoktur → deny_all.test.js kapalı koleksiyon bloğu her bağlam × get / list / create / update reddini, delete_denied.test.js delete reddini sınar; alıcının kendi makbuzu rules/push_receipts.test.js.",
+  "fixture": "base",
+  "docPath": "pushReceipts/notification_push_1",
+  "newDocPath": "pushReceipts/notification_push_new",
+  "listPath": "pushReceipts",
+  "cases": []
+}

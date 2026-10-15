@@ -65,3 +65,39 @@ final class EmulatorCrashService implements CrashService {
   @override
   Future<void> setCollectionEnabled(bool enabled) async {}
 }
+
+/// Emülatör ortamının push servisi (T-42, W-53, CD-165): **gerçek FCM'e
+/// bağlanmaz**. FCM'in emülatörü yoktur; `firebase_messaging` varsayılan
+/// (gerçek) Firebase uygulamasına kayıt olurdu. Bu uygulama sabit bir sahte
+/// jeton ([fakeToken]) döndürür: jeton yazımı (`fcmTokens`, Rules) ve
+/// fonksiyon emülatörünün kayıt tutan göndericisi yerelde sınanabilir.
+/// Dokunma akışları boştur; izin varsayılır.
+final class EmulatorMessagingService implements MessagingService {
+  /// Yalnızca yerelde çalışan servis.
+  const EmulatorMessagingService();
+
+  /// Emülatörde yazılan sahte jeton (gerçek cihaza karşılık gelmez).
+  static const String fakeToken = 'emulator-fcm-token';
+
+  @override
+  Future<bool> isAuthorized() async => true;
+
+  @override
+  Future<String?> token() async => fakeToken;
+
+  @override
+  Stream<String> get onTokenRefresh => const Stream<String>.empty();
+
+  @override
+  Future<void> invalidateToken() async {}
+
+  @override
+  Future<Map<String, String>?> initialMessageData() async => null;
+
+  @override
+  Stream<Map<String, String>> get openedMessageData =>
+      const Stream<Map<String, String>>.empty();
+
+  @override
+  Future<void> configureForeground() async {}
+}

@@ -49,6 +49,21 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+        <!-- T-42 (Mod F, CD-165): push (firebase_messaging). Sunucu `channelId` olarak
+             gu_push / gu_push_quiet gönderir (kanalları uygulama oturum açılınca kurar —
+             LocalReminderService.ensureChannel); kanal yoksa FCM bu varsayılana düşer.
+             Küçük ikon yerel hatırlatıcıyla aynı kaynak (T-46 tek renkli ikon). Otomatik
+             başlatma kapalı: jeton yalnızca etkin oturumda + izin varken açılır
+             (MessagingService.token / invalidateToken). -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="gu_push" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

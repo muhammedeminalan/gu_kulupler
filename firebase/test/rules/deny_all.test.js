@@ -7,6 +7,8 @@
 // kendi `rules/<koleksiyon>.test.js` matrisine taşınır; kalanlar kapalı kalmaya devam eder.
 // T-28 ile 19 satırın tamamı açıldı (T-30'un yan belgesi açık doğar): koleksiyon bazlı ret bloğu boş kalır (yalnızca tanımsız
 // yollar ve koleksiyon grupları kapalıdır — T-37 `private` grubunu yalnızca süper admine açtı; aşağıdaki bloklar onları sınar).
+// T-42 (Mod F, CD-165): 21. satır `pushReceipts` — yalnızca sunucunun (Admin SDK) koleksiyonu, istemciye KALICI olarak
+// kapalıdır; kapalı koleksiyon bloğu onu her bağlam × get / list / create / update ile sınar.
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -58,8 +60,8 @@ const groupMatches = matches.filter((m) => m.recursive && m.names.length > 0);
 const seedTarget = (exp) => seedDocs({ [exp.docPath]: targetDoc() });
 
 describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
-  test('20 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22, clubs/private — T-30)', () => {
-    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+  test('21 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22, clubs/private — T-30, pushReceipts — T-42)', () => {
+    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 21 }, (_, i) => i + 1));
     expect(expectations.map((e) => e.match).sort()).toEqual(collectionMatches.map((m) => m.pattern).sort());
   });
 
@@ -84,8 +86,8 @@ describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
 
 const CLOSED = expectations.filter((e) => !OPENED.includes(e.collection));
 
-test('T-28 sonrası kapalı koleksiyon satırı kalmadı (20 / 20 açık)', () => {
-  expect(CLOSED.map((e) => e.collection)).toEqual([]);
+test('kapalı koleksiyon satırı yalnızca sunucuya ait pushReceipts (T-42; 20 / 21 açık)', () => {
+  expect(CLOSED.map((e) => e.collection)).toEqual(['pushReceipts']);
 });
 
 // `describe.each` boş tabloyu reddeder: kapalı satır kalmadığında blok kurulmaz.
@@ -180,7 +182,7 @@ describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge y
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 
-  test('temel veri kümesi 20 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
+  test('temel veri kümesi 21 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
     const docs = baseDocs();
     for (const exp of expectations) expect(Object.keys(docs)).toContain(exp.docPath);
     await seedBase();

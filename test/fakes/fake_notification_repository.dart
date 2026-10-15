@@ -66,6 +66,21 @@ final class FakeNotificationRepository extends FakeBase
   }
 
   @override
+  Future<FirestoreResult<NotificationModel?>> getNotification(
+    String notificationId,
+  ) async {
+    record('getNotification', [notificationId]);
+    if (_rejected<NotificationModel?>([notificationId]) case final failure?) {
+      return failure;
+    }
+    final existing = notifications[notificationId];
+    if (existing != null && existing.isDeleted) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    return FirebaseSuccess(existing);
+  }
+
+  @override
   Future<FirestoreResult<void>> markRead(String notificationId) async {
     record('markRead', [notificationId]);
     if (_rejected<void>([notificationId]) case final failure?) return failure;

@@ -236,13 +236,33 @@ void main() {
       expect(ios.requestSoundPermission, isFalse);
       expect(plugin.initialized.single.android, isNotNull);
 
-      expect(plugin.android.channels, hasLength(2));
+      // Her çağrı: hatırlatıcı + iki push kanalı (T-42).
+      expect(plugin.android.channels, hasLength(6));
       final channel = plugin.android.channels.first;
       expect(channel.id, AppConstants.reminderChannelId);
       expect(channel.id, 'event_reminders');
       expect(channel.name, tr.eventReminder);
       expect(channel.description, tr.notifPrefsEventReminders);
-      expect(plugin.android.channels.last.name, en.eventReminder);
+      expect(plugin.android.channels[3].name, en.eventReminder);
+    });
+
+    test('T-42 · ensureChannel push kanallarını da kurar: gu_push (yüksek '
+        'önem) ve gu_push_quiet (sessiz saat — ses / titreşim yok)', () async {
+      await service.ensureChannel(tr);
+
+      final [_, push, quiet] = plugin.android.channels;
+      expect(push.id, 'gu_push');
+      expect(push.id, AppConstants.pushChannelId);
+      expect(push.name, tr.navNotifications);
+      expect(push.description, tr.notifPushChannelDesc);
+      expect(push.importance, Importance.high);
+      expect(push.playSound, isTrue);
+      expect(quiet.id, 'gu_push_quiet');
+      expect(quiet.id, AppConstants.pushQuietChannelId);
+      expect(quiet.name, tr.notifPrefsQuiet);
+      expect(quiet.description, tr.notifPrefsQuietDesc);
+      expect(quiet.playSound, isFalse);
+      expect(quiet.enableVibration, isFalse);
     });
 
     test('schedule: zonedSchedule — kararlı kimlik, Istanbul anı, inexact '

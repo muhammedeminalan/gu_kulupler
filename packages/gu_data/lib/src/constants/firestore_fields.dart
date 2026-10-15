@@ -89,7 +89,7 @@ abstract final class FirestoreFields {
   /// `private/contact`.
   static const String emailLower = 'emailLower';
 
-  /// FCM jetonları listesi (`FcmTokenModel`; Mod C'de hep boş — CD-62).
+  /// FCM jetonları listesi (`FcmTokenModel`; T-42 Mod F — CD-62, CD-165).
   static const String fcmTokens = 'fcmTokens';
 
   /// Son giriş anı (sunucu zamanı).
@@ -100,6 +100,10 @@ abstract final class FirestoreFields {
 
   /// `fcmTokens[]` elemanı: platform (`Limits.platforms`).
   static const String platform = 'platform';
+
+  /// `fcmTokens[]` elemanı: push metinlerinin dili (`FcmTokenModel.locales`;
+  /// isteğe bağlı, yoksa `'tr'` — T-42, CD-165).
+  static const String locale = 'locale';
 
   // ── clubs/{clubId} (§9.6.3) ──────────────────────────────────────────
 

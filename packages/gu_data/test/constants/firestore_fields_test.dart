@@ -35,6 +35,7 @@ const Map<String, String> _actual = {
   'lastLoginAt': FirestoreFields.lastLoginAt,
   'token': FirestoreFields.token,
   'platform': FirestoreFields.platform,
+  'locale': FirestoreFields.locale,
   'categoryId': FirestoreFields.categoryId,
   'iconName': FirestoreFields.iconName,
   'palette': FirestoreFields.palette,
@@ -183,7 +184,7 @@ const Map<String, String> _actual = {
 /// tekil ad sayısı. PLAN §4.2, §9.1, §9.5 ve §9.11 aynı sayıyı beyan eder
 /// (v1'deki 145 sayım hatasıydı — CD-129); beyan tablodan türeyen sayıyla
 /// karşılaştırılır.
-const int _tableDerivedCount = 144;
+const int _tableDerivedCount = 145;
 
 /// §9.6 alt bölüm sayısı (18 koleksiyon / alt belge tablosu + T-30 yan sayaç
 /// belgesi §9.6.19).
@@ -456,7 +457,7 @@ void main() {
 
     test('gömülü model anahtarları PLAN metniyle birebir', () {
       expect(schema.embedded, {
-        'FcmTokenModel': ['token', 'platform', 'updatedAt'],
+        'FcmTokenModel': ['token', 'platform', 'locale', 'updatedAt'],
         'ClubSocialModel': ['email', 'instagram', 'web'],
         'ClubAdvisorModel': ['name', 'title', 'userId'],
         'MembershipApplicantModel': [
@@ -590,7 +591,9 @@ void main() {
           reason: pattern.pattern,
         );
       }
-      expect(_plan, isNot(contains('145 tekil ad')));
+      // v1'in 145 sayım hatası (CD-129) T-42'de `locale` ile gerçek sayı
+      // oldu (CD-165): eski 144 beyanı kalmamalı.
+      expect(_plan, isNot(contains('144 tekil ad')));
     });
 
     test('docs/plans/T-08.md kapsam satırı aynı sayıları taşır', () {
@@ -727,8 +730,8 @@ void main() {
   });
 
   group('T-08 · FirestoreFields · adlar ve değerler', () {
-    test('toplam 166 sabit: 144 anahtar + 22 yol', () {
-      expect(_actual, hasLength(166));
+    test('toplam 167 sabit: 145 anahtar + 22 yol', () {
+      expect(_actual, hasLength(167));
       expect(_flat.length + _dotted.length, _actual.length);
     });
 
@@ -771,7 +774,7 @@ void main() {
       expect(_readSourceMembers(), _actual);
     });
 
-    test('kaynak sırası: önce 144 anahtar, sonra 22 yol', () {
+    test('kaynak sırası: önce 145 anahtar, sonra 22 yol', () {
       final values = _readSourceMembers().values.toList();
       final firstDotted = values.indexWhere((v) => v.contains('.'));
 

@@ -13,6 +13,7 @@ import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/storage_error.dart';
+import 'package:gu_data/src/models/fcm_token_model.dart';
 import 'package:gu_data/src/models/user_account_model.dart';
 import 'package:gu_data/src/models/user_model.dart';
 import 'package:gu_data/src/models/user_profile_patch.dart';
@@ -231,6 +232,46 @@ final class FirebaseUserRepository implements UserRepository {
   }
 
   @override
+  Future<FirestoreResult<void>> upsertFcmToken(
+    String uid,
+    FcmTokenModel token,
+  ) async {
+    if (RepositoryHelpers.rejectInvalidIds<void>({'uid': uid})
+        case final rejected?) {
+      return rejected;
+    }
+    if (FieldValidators.fcmToken(token.token) != null ||
+        !Limits.platforms.contains(token.platform) ||
+        !FcmTokenModel.locales.contains(token.locale)) {
+      return RepositoryHelpers.invalidArgument(
+        'upsertFcmToken: geçersiz jeton, platform ya da dil',
+      );
+    }
+    return _changeTokens(
+      uid,
+      (current) => FcmTokenModel.upserted(current, token),
+    );
+  }
+
+  @override
+  Future<FirestoreResult<void>> removeFcmToken(String uid, String token) async {
+    if (RepositoryHelpers.rejectInvalidIds<void>({'uid': uid})
+        case final rejected?) {
+      return rejected;
+    }
+    if (token.isEmpty) {
+      return RepositoryHelpers.invalidArgument('removeFcmToken: boş jeton');
+    }
+    return _changeTokens(
+      uid,
+      (current) => [
+        for (final item in current)
+          if (item.token != token) item,
+      ],
+    );
+  }
+
+  @override
   Future<FirestoreResult<List<UserModel>>> listByInterests(
     List<String> interestIds, {
     int limit = Limits.eventNewInterestFanOutMax,
@@ -337,6 +378,58 @@ final class FirebaseUserRepository implements UserRepository {
 
   DocumentReference<Json> _userRef(String uid) =>
       _firestore.doc(FirestoreCollections.users, uid);
+
+  /// [uid] hesabının `fcmTokens` listesini transaction içinde [change] ile
+  /// değiştirir (`fcmTokens` + `updatedAt`; Rules `canUpdateOwnAccount`).
+  /// Liste değişmezse yazılmaz; belge yoksa [FirestoreError.notFound].
+  /// Ayrıştırılamayan eleman (Rules biçimi sabitler; olmamalı) atılır.
+  Future<FirestoreResult<void>> _changeTokens(
+    String uid,
+    List<FcmTokenModel> Function(List<FcmTokenModel> current) change,
+  ) async {
+    final ref = _accountRef(uid);
+    final result = await _firestore.runTransaction<FirestoreResult<void>>((
+      tx,
+    ) async {
+      final data = (await tx.get(ref)).data();
+      if (data == null) {
+        return FirebaseFailure(
+          FirestoreError.notFound,
+          message: 'hesap belgesi yok: $uid',
+        );
+      }
+      final current = _tokensOf(data[FirestoreFields.fcmTokens]);
+      final next = change(current);
+      if (const ListEquality<FcmTokenModel>().equals(current, next)) {
+        return const FirebaseSuccess(null);
+      }
+      tx.update(ref, {
+        FirestoreFields.fcmTokens: [for (final item in next) item.toJson()],
+        ...BaseFieldsPayload.update(),
+      });
+      return const FirebaseSuccess(null);
+    });
+    return switch (result) {
+      FirebaseSuccess(:final data) => data,
+      FirebaseFailure(:final error, :final message, :final detail) =>
+        FirebaseFailure(error, message: message, detail: detail),
+    };
+  }
+
+  /// `fcmTokens` ham değerinin ayrıştırılabilen elemanları.
+  static List<FcmTokenModel> _tokensOf(Object? raw) => [
+    if (raw is List<Object?>)
+      for (final item in raw)
+        if (item is Map<Object?, Object?>) ?_tokenOrNull(item),
+  ];
+
+  static FcmTokenModel? _tokenOrNull(Map<Object?, Object?> raw) {
+    try {
+      return FcmTokenModel.fromJson(raw.cast<String, Object?>());
+    } on Object {
+      return null;
+    }
+  }
 
   DocumentReference<Json> _accountRef(String uid) => _firestore.doc(
     RepositoryHelpers.subcollectionPath(

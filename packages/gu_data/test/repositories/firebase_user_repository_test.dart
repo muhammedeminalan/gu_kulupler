@@ -119,16 +119,17 @@ void main() {
   });
 
   group('T-12 · UserRepository · sözleşme', () {
-    test('PLAN §10.4 tablosundaki T-12 üyeleri, updateAvatar (T-14) ve '
-        'listByInterests (T-25) arayüzde aynı imzayla var; başka üye yok', () {
+    test('PLAN §10.4 tablosundaki T-12 üyeleri, updateAvatar (T-14), '
+        'listByInterests (T-25) ve FCM jetonu (T-42) arayüzde aynı imzayla '
+        'var; başka üye yok', () {
       final members = interfaceMembers(_interface, '$UserRepository');
       final plan = readPlanRepositoryMembers('$UserRepository');
 
       expect(
         plan.where((row) => row.note.isNotEmpty).map((row) => row.member),
-        ['listByInterests'],
+        ['upsertFcmToken', 'removeFcmToken', 'listByInterests'],
       );
-      expect(plan, hasLength(8));
+      expect(plan, hasLength(10));
       expect(plan.map((row) => row.member), contains('updateAvatar'));
       expect(members.toSet(), {
         for (final row in plan) normalizeDartSource(row.signature),
@@ -1189,6 +1190,98 @@ void main() {
 
       expect(result.errorOrNull, FirestoreError.notFound);
     });
+  });
+
+  group('T-42 · UserRepository · FCM jetonu (CD-165)', () {
+    FcmTokenModel tokenOf(String token, int minute, {String locale = 'tr'}) =>
+        FcmTokenModel(
+          token: token,
+          platform: 'android',
+          locale: locale,
+          updatedAt: DateTime.utc(2026, 10, 8, 20, minute),
+        );
+
+    Future<List<FcmTokenModel>> tokens() async => [
+      for (final raw
+          in (await read(accountRef()))!['fcmTokens']! as List<Object?>)
+        FcmTokenModel.fromJson(raw! as Json),
+    ];
+
+    test(
+      'upsert: aynı jeton yinelenmez (dil güncellenir), yalnızca fcmTokens '
+      've updatedAt değişir; 10 sınırında en eski updatedAt atılır',
+      () async {
+        await create();
+        final before = (await read(accountRef()))!;
+
+        await repository.upsertFcmToken(_uid, tokenOf('t-a', 1));
+        await repository.upsertFcmToken(_uid, tokenOf('t-a', 2, locale: 'en'));
+
+        expect(await tokens(), [tokenOf('t-a', 2, locale: 'en')]);
+        expect(_changedKeys(before, (await read(accountRef()))!), {
+          'fcmTokens',
+        });
+
+        // 9 eski + t-a = 10; yeni jeton en eski (t-0, dakika 0) yerine girer.
+        for (var i = 0; i < 9; i++) {
+          await repository.upsertFcmToken(
+            _uid,
+            tokenOf('t-$i', i == 0 ? 0 : 10),
+          );
+        }
+        final result = await repository.upsertFcmToken(
+          _uid,
+          tokenOf('t-new', 30),
+        );
+
+        expect(result.isSuccess, isTrue);
+        final after = await tokens();
+        expect(after, hasLength(Limits.fcmTokensMax));
+        expect(after.map((t) => t.token), isNot(contains('t-0')));
+        expect(after.last.token, 't-new');
+      },
+    );
+
+    test(
+      'remove: yalnızca o jeton çıkar; listede olmayan jeton yazım '
+      'yapmaz; belge yoksa notFound; geçersiz girdi invalidArgument',
+      () async {
+        await create();
+        await repository.upsertFcmToken(_uid, tokenOf('t-a', 1));
+        await repository.upsertFcmToken(_uid, tokenOf('t-b', 2));
+
+        expect(
+          (await repository.removeFcmToken(_uid, 't-a')).isSuccess,
+          isTrue,
+        );
+        expect(await tokens(), [tokenOf('t-b', 2)]);
+        final stamp = (await read(accountRef()))!['updatedAt'];
+        expect(
+          (await repository.removeFcmToken(_uid, 't-x')).isSuccess,
+          isTrue,
+        );
+        expect((await read(accountRef()))!['updatedAt'], stamp);
+
+        expect(
+          (await repository.removeFcmToken('u_yok', 't-a')).errorOrNull,
+          FirestoreError.notFound,
+        );
+        expect(
+          (await repository.removeFcmToken(_uid, '')).errorOrNull,
+          FirestoreError.invalidArgument,
+        );
+        for (final bad in [
+          tokenOf('', 1),
+          tokenOf('t', 1).copyWith(platform: 'web'),
+          tokenOf('t', 1, locale: 'de'),
+        ]) {
+          expect(
+            (await repository.upsertFcmToken(_uid, bad)).errorOrNull,
+            FirestoreError.invalidArgument,
+          );
+        }
+      },
+    );
   });
 
   group('T-12 · UserRepository · geçersiz kimlik (W-54)', () {

@@ -8,7 +8,9 @@ import 'package:gu_data/src/models/user_settings_model.dart';
 /// Yazan taraf (dağıtıcı) tercihe bakmaz: başkasının `settings/{uid}`
 /// belgesi okunamaz, belge her alıcıya yazılır. Görünürlük burada, alıcının
 /// kendi tercihleriyle karar verilir; Mod F'de (sunucu tetikleyicisi — CD-147)
-/// süzgeç aynen kalır, sunucu yalnızca push teslimini ayrıca keser.
+/// süzgeç aynen kalır, sunucu yalnızca push teslimini ayrıca keser
+/// (T-42: `functions/src/lib/preference_filter.ts` birebir kopyadır; ortak
+/// sözleşme `firebase/test/contracts/push_contract.json` iki tarafı sınar).
 ///
 /// | Koşul | Sonuç |
 /// |---|---|

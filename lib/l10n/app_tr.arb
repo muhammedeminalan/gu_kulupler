@@ -3883,6 +3883,10 @@
   "@notifPrefsTitle": {
     "description": "Key notifPrefs.title"
   },
+  "notifPushChannelDesc": "Kulüp, etkinlik ve başvuru bildirimleri.",
+  "@notifPushChannelDesc": {
+    "description": "Key notif.pushChannelDesc"
+  },
   "notifTypeAnnouncementBody": "Duyuru: {post}",
   "@notifTypeAnnouncementBody": {
     "description": "Key notifType.announcement.body",

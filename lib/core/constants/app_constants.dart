@@ -58,6 +58,16 @@ abstract final class AppConstants {
   /// PLAN §14.10, §15.6 — tek tanım; kanal adı ARB `eventReminder`).
   static const String reminderChannelId = 'event_reminders';
 
+  /// Push bildirimlerinin Android kanalı (T-42, CD-165 — sunucu `channelId`
+  /// ile aynı; manifest `default_notification_channel_id`). Ad ARB
+  /// `navNotifications`, açıklama `notifPushChannelDesc`.
+  static const String pushChannelId = 'gu_push';
+
+  /// Sessiz saatte teslim edilen push'ların sessiz Android kanalı (T-42 —
+  /// sunucu sessiz saatte bu kanalı seçer). Ad ARB `notifPrefsQuiet`,
+  /// açıklama `notifPrefsQuietDesc`.
+  static const String pushQuietChannelId = 'gu_push_quiet';
+
   /// Hatırlatıcı seçeneklerinin başlangıçtan önceki süreleri (CD-34;
   /// `LocalReminderService.leadTimeOf`). `ReminderOption.none` süresizdir.
   static const Map<ReminderOption, Duration> reminderLeadTimes = {

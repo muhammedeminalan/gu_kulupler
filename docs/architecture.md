@@ -158,10 +158,20 @@ Bildirim türleri ve alıcıları `docs/domain-model.md §6`'dadır. İki çalı
 | Duyuru limiti (2/gün) | Rules + sayaç (Q-10 önerisi) veya Functions | Rules + sayaç |
 | Hesap silme temizliği | Q-11'e göre | Q-11'e göre |
 
-- `lib/` içinde **iki mod için ayrı kod dalı yok**: `NotificationDispatcher` arayüzü; `ClientFanOutDispatcher` (Mod C) ve `ServerSideDispatcher` (Mod F, istemcide no-op). Q-02 cevabıyla DI'da biri bağlanır.
-- Mod F'de `functions/` (TypeScript, Node 20, `firebase-functions` v2) yazılır: `functions/src/{triggers,scheduled,lib}`; her fonksiyon için emülatör testi. **Deploy kullanıcı onayıyla.**
-- FCM jetonu `users/{uid}/private/account.fcmTokens[]`; çıkışta jeton alanı `arrayRemove` ile temizlenir (alan silme hard delete değildir).
-- Bildirim tercihleri (`settings/{uid}`) ve sessiz saatler: Mod F'de sunucu uygular; Mod C'de istemci yazarken filtrelemez, **okuyan** taraf (liste) filtreler.
+**Uygulanan (Q-02 = Mod F, T-42 — CD-165, hibrit; sözleşme `docs/plans/T-42.md` §4).** Yukarıdaki Mod F sütunundan bilinçli sapmalar:
+
+| | Uygulanan |
+|---|---|
+| Bildirim dokümanı üretimi | **İstemci yazmaya devam eder** (`ClientFanOutDispatcher`, DI ve `notifications` Rules dalları değişmez; `ServerSideDispatcher` yazılmadı). Sunucu yalnızca istemcinin yapamadığını yazar: `new_report` (`notifyNewReport`, süper adminlere) ve otomatik `waitlist_promoted` |
+| Push (FCM) | `sendPushOnNotificationCreated` — her yeni bildirim belgesinden; `pushReceipts/{id}` ile bildirim başına en çok bir push; tercih süzgeci (`NotificationPreferenceFilter` kopyası), sessiz saat = sessiz teslim; metin kişisel veri taşımaz; `event_reminder` belgesine push yok; push freni (alıcı bağı + kapsam kilidi `pushReceipts/once_…` — `push_guard.ts`, T-42 güvenlik incelemesi) |
+| Etkinlik hatırlatıcısı | **Cihazda yerel kalır** (Q-07; zamanlanmış Function yok — çift bildirim olmasın) |
+| Bekleme listesi terfisi | `promoteWaitlistOnCancel` (`going → cancelled` geçişinde en eski bekleyen; manuel `promote` ile aynı yazımlar) + MGT-06 elle terfi sürer |
+| Hesap silme temizliği | `finishAccountDeletions` (günlük 03:30 Europe/Istanbul; 1–72 sa önce silinmiş, yarım kalan temizlik — W-91 betiğinin TS portu) |
+
+- `lib/` içinde **iki mod için ayrı kod dalı yok**: `NotificationDispatcher` arayüzü; DI'da `ClientFanOutDispatcher` bağlıdır (T-42 hibrit; `ServerSideDispatcher` yazılmadı — CD-165).
+- `functions/` (TypeScript, Node 22, `firebase-functions` v2): `functions/src/{triggers,scheduled,lib}`; gövdeler bağımlılığı dışarıdan verilen handler'lardır, testler ayrı portlu emülatörde (`firebase.functions-test.json`). Bölge tek sabit (`functions/src/lib/config.ts`). Emülatörde gerçek FCM çağrısı yok (`LoggingPushSender`); `tool/dev.sh` functions'ı derleyip emülatöre ekler, demo veriyi tetikleyiciler kapalıyken yükler. **Deploy kullanıcı onayıyla.**
+- FCM jetonu `users/{uid}/private/account.fcmTokens[]` (`{token, platform, locale?, updatedAt}`, ≤ 10); girişte / yenilemede / dil değişiminde upsert, çıkışta `signOut`'tan önce bu cihazın elemanı çıkarılır (alan silme hard delete değildir); sunucu yalnızca geçersiz jetonu çıkarır. Rules: `docs/firestore-rules-spec.md §3.2` (U'da yalnızca yeni elemanlar denetlenir — ifade bütçesi).
+- Bildirim tercihleri (`settings/{uid}`) ve sessiz saatler: istemci yazarken filtrelemez, **okuyan** taraf (liste) filtreler; push'u sunucu aynı tabloyla süzer, sessiz saatte sessiz teslim eder.
 
 ## 8. Hata modeli ve kullanıcı geri bildirimi
 

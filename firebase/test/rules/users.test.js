@@ -11,6 +11,8 @@
 //  6. Sorgu sözleşmesi (rules-spec §6 ADM-05; PLAN §10.4 `getUsers`).
 //  7. Güvenlik incelemesi (CD-133 madde 14): profil ↔ hesap belgesi birlikte oluşur (`existsAfter`),
 //     `fcmTokens` eleman biçimi, `avatarSeed` / `avatarPath` / ad sınırları, `profileComplete` koşulu.
+//  8. T-42 (Mod F, CD-165 d): `fcmTokens[i].locale` (isteğe bağlı `tr` / `en`) ve push jetonu yaşam döngüsü
+//     (girişte ekle → yenile / dil değişimi → 10 sınırında en eskiyi at → çıkışta bu cihazı çıkar).
 //
 // Süper adminin askıya alma yolu (`users.status` + `account.suspendReason` tek batch) T-37'de açıldı — tek başına
 // yazım reddedilir (matris satırları), tam batch `admin.test.js`; hesap silme (`deleted` dalı) T-29.
@@ -18,6 +20,8 @@ const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteField,
   doc,
@@ -26,6 +30,7 @@ const {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -53,6 +58,8 @@ const text = (length) => 'a'.repeat(length);
 const interests = (count) => Array.from({ length: count }, (_, i) => `i${String(i + 1).padStart(2, '0')}`);
 const tokens = (count) =>
   Array.from({ length: count }, (_, i) => ({ token: `token-${i}`, platform: 'android', updatedAt: clientTime() }));
+/** T-42: `locale` taşıyan jetonlar (CD-165 d). */
+const localized = (count) => tokens(count).map((t) => ({ ...t, locale: 'en' }));
 /** Tek geçerli `FcmTokenModel` elemanı (isteğe bağlı alan ezmesiyle). */
 const token = (extra) => ({ ...tokens(1)[0], ...extra });
 const omit = (object, keys) => Object.fromEntries(Object.entries(object).filter(([key]) => !keys.includes(key)));
@@ -317,6 +324,13 @@ describe('users/private/account · create — alan beyaz listesi, tipler, sını
     ['fcmTokens elemanında fazladan anahtar', { fcmTokens: [token({ evil: text(64) })] }, [], 'deny'],
     ['fcmTokens elemanında eksik anahtar (updatedAt yok)', { fcmTokens: [omit(token(), ['updatedAt'])] }, [], 'deny'],
     ['fcmTokens son eleman (indeks fcmTokensMax − 1) bozuk', { fcmTokens: [...tokens(limits.fcmTokensMax - 1), 42] }, [], 'deny'],
+    // T-42 (CD-165 d): `locale` isteğe bağlı — yoksa sunucu `tr` sayar (yukarıdaki satırlar anahtarsız biçimdir).
+    ['fcmTokens[].locale tr ve en (T-42)', { fcmTokens: [token({ locale: 'tr' }), token({ token: 'token-en', locale: 'en' })] }, [], 'allow'],
+    // İfade bütçesi (istek başına 1 000): en pahalı C — fcmTokensMax elemanın hepsi `locale` taşır.
+    ['fcmTokens fcmTokensMax, hepsi locale\'li (ifade bütçesi)', { fcmTokens: localized(limits.fcmTokensMax) }, [], 'allow'],
+    ['fcmTokens[].locale tablo dışı (de)', { fcmTokens: [token({ locale: 'de' })] }, [], 'deny'],
+    ['fcmTokens[].locale açık null (model varsayılanı tr yazar)', { fcmTokens: [token({ locale: null })] }, [], 'deny'],
+    ['fcmTokens[].locale büyük harf (TR)', { fcmTokens: [token({ locale: 'TR' })] }, [], 'deny'],
     ['beyaz liste dışı alan (phone)', { phone: '+90' }, [], 'deny'],
     ['isDeleted: true', { isDeleted: true }, [], 'deny'],
     ['createdAt istemci saati', { createdAt: clientTime() }, [], 'deny'],
@@ -342,6 +356,9 @@ describe('users/private/account · update (sahibi) — alan beyaz listesi ve sı
     ['fcmTokens fcmTokensMax + 1', touch({ fcmTokens: tokens(limits.fcmTokensMax + 1) }), 'deny'],
     ['fcmTokens elemanı map değil ([42])', touch({ fcmTokens: [42] }), 'deny'],
     ['fcmTokens ikinci eleman bozuk (fazladan anahtar)', touch({ fcmTokens: [token(), token({ evil: true })] }), 'deny'],
+    // T-42: U'da yalnızca saklı listede olmayan elemanlar denetlenir (`removeAll`); en pahalı U = hepsi yeni.
+    ['fcmTokens fcmTokensMax, hepsi yeni ve locale\'li (ifade bütçesi)', touch({ fcmTokens: localized(limits.fcmTokensMax) }), 'allow'],
+    ['fcmTokens saklı geçerli eleman + yeni bozuk eleman (locale de)', touch({ fcmTokens: [token(), token({ token: 'x', locale: 'de' })] }), 'deny', { patch: { [ACCOUNT]: { fcmTokens: [token()] } } }],
     ['lastLoginAt istemci saati', touch({ lastLoginAt: clientTime() }), 'deny'],
     ['lastLoginAt alanı kaldırılamaz', touch({ lastLoginAt: deleteField() }), 'deny', { patch: { [ACCOUNT]: { lastLoginAt: clientTime() } } }],
     ['updatedAt yok', { lastLoginAt: serverTimestamp() }, 'deny'],
@@ -357,6 +374,66 @@ describe('users/private/account · update (sahibi) — alan beyaz listesi ve sı
     const before = await readDoc(ACCOUNT);
     await expectWrite(updateDoc(doc(studentDb(), ACCOUNT), payload), expected);
     if (expected === 'deny') expect(await readDoc(ACCOUNT)).toEqual(before);
+  });
+});
+
+// ── T-42 · push jetonu yaşam döngüsü (CD-165 d) ──────────────────────────────────────────────
+
+describe('users/private/account · FCM jeton yaşam döngüsü (T-42, CD-165 d — sahibi U, ≤ fcmTokensMax)', () => {
+  /** Cihaz jetonu (istemci saati — dizi elemanında sunucu zamanı kullanılamaz). */
+  const device = (n, extra) => ({ token: `device-${n}`, platform: n % 2 ? 'ios' : 'android', locale: 'tr', updatedAt: clientTime(), ...extra });
+  const stored = async (path = ACCOUNT) => (await readDoc(path)).fcmTokens.map((t) => `${t.token}:${t.locale}`);
+
+  test('giriş → ikinci cihaz → yenileme → dil değişimi → 10 sınırında en eskiyi at → çıkış → boş', async () => {
+    await seedOnly([USER, ACCOUNT]);
+    const db = studentDb();
+    const ref = doc(db, ACCOUNT);
+    // Girişte upsert (B: transaction — oku → aynı jetonu çıkar → ekle).
+    await assertSucceeds(runTransaction(db, async (tx) => {
+      const current = (await tx.get(ref)).data().fcmTokens;
+      tx.update(ref, { fcmTokens: [...current.filter((t) => t.token !== 'device-1'), device(1)], ...payloads.baseUpdate() });
+    }));
+    // İkinci cihaz (`arrayUnion` biçimi de geçer).
+    await assertSucceeds(updateDoc(ref, { fcmTokens: arrayUnion(device(2, { locale: 'en' })), ...payloads.baseUpdate() }));
+    expect(await stored()).toEqual(['device-1:tr', 'device-2:en']);
+    // onTokenRefresh: eski jeton çıkar, yenisi eklenir.
+    await assertSucceeds(updateDoc(ref, { fcmTokens: [device(2, { locale: 'en' }), device(3)], ...payloads.baseUpdate() }));
+    // Dil değişimi: aynı jeton, yeni `locale`.
+    await assertSucceeds(updateDoc(ref, { fcmTokens: [device(2, { locale: 'tr' }), device(3)], ...payloads.baseUpdate() }));
+    expect(await stored()).toEqual(['device-2:tr', 'device-3:tr']);
+    // Sınır: fcmTokensMax geçer, + 1 reddedilir; en eskiyi atıp yenisini eklemek geçer.
+    const full = Array.from({ length: limits.fcmTokensMax }, (_, i) => device(10 + i));
+    await assertSucceeds(updateDoc(ref, { fcmTokens: full, ...payloads.baseUpdate() }));
+    await assertFails(updateDoc(ref, { fcmTokens: arrayUnion(device(99)), ...payloads.baseUpdate() }));
+    await assertSucceeds(updateDoc(ref, { fcmTokens: [...full.slice(1), device(99)], ...payloads.baseUpdate() }));
+    expect(await stored()).toHaveLength(limits.fcmTokensMax);
+    // 10 jetonlu belgede touchLastLogin (her girişte) — saklı elemanlar yeniden denetlenmez (ifade bütçesi).
+    await assertSucceeds(updateDoc(ref, payloads.accountTouchLastLogin()));
+    // Çıkış (signOut'tan ÖNCE): bu cihazın elemanı `arrayRemove` ile çıkarılır — saklanan eleman birebir.
+    const mine = (await readDoc(ACCOUNT)).fcmTokens.find((t) => t.token === 'device-99');
+    await assertSucceeds(updateDoc(ref, { fcmTokens: arrayRemove(mine), ...payloads.baseUpdate() }));
+    expect(await stored()).not.toContain('device-99:tr');
+    expect(await stored()).toHaveLength(limits.fcmTokensMax - 1);
+    await assertSucceeds(updateDoc(ref, { fcmTokens: [], ...payloads.baseUpdate() }));
+    expect(await stored()).toEqual([]);
+  });
+
+  test('askıdaki hesap çıkışta jetonunu çıkarabilir (sunucu askıdakine push göndermez, jeton yine temizlenir)', async () => {
+    const SUSP_ACCOUNT = 'users/u_susp/private/account';
+    await seedOnly(['users/u_susp', SUSP_ACCOUNT], { patch: { [SUSP_ACCOUNT]: { fcmTokens: [device(1), device(2)] } } });
+    const ref = doc(contextFor('susp').firestore(), SUSP_ACCOUNT);
+    await assertSucceeds(updateDoc(ref, { fcmTokens: [device(2)], ...payloads.baseUpdate() }));
+    expect(await stored(SUSP_ACCOUNT)).toEqual(['device-2:tr']);
+  });
+
+  test('başkasının jeton listesine ekleme / çıkarma reddedilir (süper admin dahil)', async () => {
+    await seedOnly([USER, ACCOUNT], { patch: { [ACCOUNT]: { fcmTokens: [device(1)] } } });
+    for (const role of ['member', 'super']) {
+      const ref = doc(contextFor(role).firestore(), ACCOUNT);
+      await assertFails(updateDoc(ref, { fcmTokens: arrayUnion(device(7)), ...payloads.baseUpdate() }));
+      await assertFails(updateDoc(ref, { fcmTokens: [], ...payloads.baseUpdate() }));
+    }
+    expect(await stored()).toEqual(['device-1:tr']);
   });
 });
 

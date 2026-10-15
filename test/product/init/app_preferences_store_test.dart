@@ -320,4 +320,30 @@ void main() {
       expect(store.recentSearches, isEmpty);
     });
   });
+
+  group('T-42 · SharedAppPreferencesStore · pushTokenUid', () {
+    test('anahtar adı; yazılır, yeni depo okur; null kaldırır; yanlış tip '
+        'null', () async {
+      expect(AppPreferenceKeys.pushTokenUid, 'pref.pushTokenUid');
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      expect(store.pushTokenUid, isNull);
+
+      expect(await store.setPushTokenUid('u1'), isTrue);
+      final reopened = SharedAppPreferencesStore();
+      await reopened.load();
+      expect(reopened.pushTokenUid, 'u1');
+
+      expect(await reopened.setPushTokenUid(null), isTrue);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(AppPreferenceKeys.pushTokenUid), isFalse);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.pushTokenUid: 7,
+      });
+      final broken = SharedAppPreferencesStore();
+      await broken.load();
+      expect(broken.pushTokenUid, isNull);
+    });
+  });
 }

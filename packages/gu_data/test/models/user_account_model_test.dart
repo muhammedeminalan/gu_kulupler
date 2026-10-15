@@ -196,6 +196,18 @@ void main() {
       expect(FcmTokenModel.fromJson(json), token);
     });
 
+    test('T-42 · locale: varsayılan tr; alanı olmayan eski eleman tr '
+        'okunur; yazımda her zaman bulunur (CD-165)', () {
+      expect(token.locale, FcmTokenModel.defaultLocale);
+      expect(FcmTokenModel.locales, {'tr', 'en'});
+      final legacy = token.toJson()..remove(FirestoreFields.locale);
+      expect(FcmTokenModel.fromJson(legacy).locale, 'tr');
+      expect(
+        token.copyWith(locale: 'en').toJson()[FirestoreFields.locale],
+        'en',
+      );
+    });
+
     test('eksik updatedAt CheckedFromJsonException fırlatır', () {
       expect(
         () => FcmTokenModel.fromJson(const {
@@ -212,7 +224,7 @@ void main() {
       );
     });
 
-    test('her alan copyWith ile değişir ve eşitliğe girer; props 3 alan '
+    test('her alan copyWith ile değişir ve eşitliğe girer; props 4 alan '
         'taşır', () {
       void check<V>(
         FcmTokenModel changed,
@@ -221,8 +233,9 @@ void main() {
       ) => expectFieldChange(token, changed, read, value);
 
       expect(token.copyWith(), token);
-      expect(token.props, hasLength(3));
+      expect(token.props, hasLength(4));
       check(token.copyWith(token: 't2'), (m) => m.token, 't2');
+      check(token.copyWith(locale: 'en'), (m) => m.locale, 'en');
       check(token.copyWith(platform: 'android'), (m) => m.platform, 'android');
       check(token.copyWith(updatedAt: later), (m) => m.updatedAt, later);
     });

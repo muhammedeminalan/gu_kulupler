@@ -25,6 +25,10 @@ rules_version = '2';
 // sayaç dalı + yan belge clubs/{id}/private/counter (W-64), `presidentId` devri, yönetim alanları; activity
 // yönetici türleri; notifications application_approved / application_rejected / removed_from_club /
 // role_changed (W-83); yoklama / terfi `clubLive`. Erişim bütçesi: budget/approve_budget, transfer_budget.
+// T-42 → Mod F (CD-165, hibrit): istemci dalları DEĞİŞMEDİ (bildirim belgelerini istemci yazmaya devam eder);
+// `fcmTokens[i].locale` (isteğe bağlı `tr` / `en` — push dili cihaz başına); `pushReceipts` yalnızca sunucunun
+// (Cloud Functions, Admin SDK — Rules'u atlar) koleksiyonudur → istemciye tamamen kapalı. Sunucunun yazdığı
+// `new_report` ve otomatik `waitlist_promoted` bildirimleri, terfi ve hesap silme temizliği Admin SDK'dır.
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -330,39 +334,49 @@ service cloud.firestore {
       // T-37: süper admin U (`suspendReason`, `users/{uid}.status` ile aynı batch; 1 erişim çağrısı: getAfter
       // users/{uid}) · ADM-05 e-posta araması koleksiyon grubu kuralıyladır (aşağıda `/{path=**}/private`).
       match /private/{docId} {
-        // `fcmTokens[i]` = FcmTokenModel {token, platform, updatedAt} (üçü de zorunlu). Belgeyi süper
-        // admin de okur (ADM-05): tek bozuk eleman onun okumasını ve e-posta araması sayfasını
-        // ayrıştırma hatasına düşürür → eleman biçimi burada sabitlenir.
+        // `fcmTokens[i]` = FcmTokenModel {token, platform, locale?, updatedAt} (`token`, `platform`,
+        // `updatedAt` zorunlu). Belgeyi süper admin de okur (ADM-05): tek bozuk eleman onun okumasını ve
+        // e-posta araması sayfasını ayrıştırma hatasına düşürür → eleman biçimi burada sabitlenir.
+        // T-42 (CD-165 d): `locale` isteğe bağlı (`tr` / `en`; yoksa sunucu `tr` sayar) — push metninin dili
+        // cihaz başınadır (uygulama dili cihaz tercihidir, sunucu göremez). Jetonu yalnızca sahibi ekler /
+        // yeniler / çıkarır (aşağıda `canUpdateOwnAccount`, ≤ 10); sunucu yalnızca geçersiz jetonu çıkarır.
+        // Map olmayan eleman `t.keys()`'te değerlendirme hatası verir (= ret); ayrı `is map` denetimi ifade bütçesi
+        // için yazılmaz (aşağıdaki not).
         function fcmTokenOk(t) {
-          return t is map && t.keys().hasOnly(['token', 'platform', 'updatedAt'])
+          return t.keys().hasOnly(['token', 'platform', 'locale', 'updatedAt'])
               && t.token is string && t.token.size() > 0 && t.token.size() <= 4096   // limit: fcmTokenMax
               && t.platform in ['ios', 'android']
+              && t.get('locale', 'tr') in ['tr', 'en']
               && t.updatedAt is timestamp;
         }
-        // Rules'ta döngü yoktur: liste baştan birer eleman soyularak denetlenir (ilk eleman + kuyruk).
-        function fcmHeadOk(l) { return l.size() == 0 || fcmTokenOk(l[0]); }
+        // Rules'ta döngü ve özyineleme yoktur: liste baştan ikişer eleman soyularak denetlenir (`l[0]`, `l[1]` +
+        // iki kez kesilmiş kuyruk; indeks yalnızca 0 / 1 — RP02). Eleman denetimi pahalıdır: istek başına 1 000
+        // ifade sınırında 10 elemanın tamamı ancak sığar (T-42 emülatör ölçümü: eski tekli `let t1…t9` zinciri
+        // `locale` denetimiyle 10 elemanda sınırı aştı; bu biçim 10'u geçirir, payı ~1 eleman). Bu yüzden U'da
+        // yalnızca YENİ elemanlar denetlenir (`accountShape`) — istemci tek istekte bir jeton yazar. Elemana koşul
+        // eklemeden önce users.test.js `fcmTokensMax` satırları (C ve tümü-yeni U) yeniden koşulmalıdır.
         function fcmTail(l) { return l.size() <= 1 ? [] : l[1:l.size()]; }
+        function fcmPairOk(l) { return l.size() == 0 || (fcmTokenOk(l[0]) && (l.size() == 1 || fcmTokenOk(l[1]))); }
         function fcmTokensOk(l) {
-          let t1 = fcmTail(l);
-          let t2 = fcmTail(t1);
-          let t3 = fcmTail(t2);
-          let t4 = fcmTail(t3);
-          let t5 = fcmTail(t4);
-          let t6 = fcmTail(t5);
-          let t7 = fcmTail(t6);
-          let t8 = fcmTail(t7);
-          let t9 = fcmTail(t8);
+          let t2 = fcmTail(fcmTail(l));
+          let t4 = fcmTail(fcmTail(t2));
+          let t6 = fcmTail(fcmTail(t4));
+          let t8 = fcmTail(fcmTail(t6));
           return l is list && l.size() <= 10   // limit: fcmTokensMax
-              && fcmHeadOk(l) && fcmHeadOk(t1) && fcmHeadOk(t2) && fcmHeadOk(t3) && fcmHeadOk(t4)
-              && fcmHeadOk(t5) && fcmHeadOk(t6) && fcmHeadOk(t7) && fcmHeadOk(t8) && fcmHeadOk(t9);
+              && fcmPairOk(l) && fcmPairOk(t2) && fcmPairOk(t4) && fcmPairOk(t6) && fcmPairOk(t8);
         }
 
-        // Sonuç belge: e-posta token'daki adresle aynıdır; `fcmTokens` üst sınırlı ve biçimlidir.
-        function accountShape() {
+        // Sonuç belge: e-posta token'daki adresle aynıdır; `fcmTokens` üst sınırlı (≤ fcmTokensMax) ve biçimlidir.
+        // `fresh` = biçimi denetlenecek elemanlar: C'de listenin tamamı; U'da yalnızca saklı listede OLMAYAN
+        // elemanlar (`removeAll` — T-42). Saklı elemanlar yazıldıkları istekte denetlendi; sahibinin her U'su
+        // (touchLastLogin dahil) 10 jetonlu belgede de sınırın çok altında kalır. Yeni eleman, saklı birinin
+        // aynısı değilse denetlenir → bozuk eleman hiçbir yoldan eklenemez (CD-133 madde 14).
+        function accountShape(fresh) {
           let d = request.resource.data;
           return d.email == request.auth.token.email
               && d.emailLower == request.auth.token.email.lower()
-              && fcmTokensOk(d.fcmTokens);
+              && d.fcmTokens is list && d.fcmTokens.size() <= 10   // limit: fcmTokensMax
+              && fcmTokensOk(fresh);
         }
 
         // Hesap belgesi, profil belgesi OLMADAN oluşturulamaz (`existsAfter`; bkz. canCreateUser).
@@ -374,7 +388,7 @@ service cloud.firestore {
               && baseCreate()
               && d.get('suspendReason', null) == null
               && (d.get('lastLoginAt', null) == null || d.lastLoginAt == request.time)
-              && accountShape()
+              && accountShape(d.fcmTokens)
               && existsAfter(userPath(uid));
         }
 
@@ -384,7 +398,8 @@ service cloud.firestore {
         function canUpdateOwnAccount() {
           return isOwner() && docId == 'account'
               && touches(['email', 'emailLower', 'fcmTokens', 'lastLoginAt'])
-              && accountShape()
+              && request.resource.data.fcmTokens is list
+              && accountShape(request.resource.data.fcmTokens.removeAll(resource.data.get('fcmTokens', [])))
               && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastLoginAt'])
                   || request.resource.data.lastLoginAt == request.time)
               && notDeletedUser();
@@ -2925,6 +2940,21 @@ service cloud.firestore {
       allow list: if seesMgmt(resource.data.clubId);
       allow create: if canOpenCounter();
       allow update: if canBumpCounter();
+      allow delete: if false;
+    }
+
+    // 21 · pushReceipts/{notificationId} — T-42 (Mod F, CD-165 b.1) · rules-spec §3.17
+    // YALNIZCA SUNUCU: `sendPushOnNotificationCreated` (Admin SDK — Rules'u atlar) her bildirim belgesi için
+    // önce bu makbuzu `create()` eder (zaten varsa çıkar → bildirim başına en çok bir push), sonra sonucu
+    // yazar (`userId, type, status, successCount, failureCount, createdAt, updatedAt`; silinmez — D-10).
+    // İstemci hiçbir koşulda okuyamaz ve yazamaz (alıcısı dahil): istemci makbuzu önceden yazsaydı kendi
+    // push'unu (ya da tahmin ettiği başkasınınkini) bastırırdı; okuma, teslim / jeton durumunu sızdırırdı.
+    // Varsayılan ret de kapatır; blok niyeti belgeler ve delete_denied / deny_all testlerine girer.
+    // Dart `FirestoreCollections`'ta sabiti YOKTUR (istemci bu yolu hiç kullanmaz — delete_denied.test.js
+    // `SERVER_ONLY_ROOTS`).
+    match /pushReceipts/{notificationId} {
+      allow read: if false;
+      allow create, update: if false;
       allow delete: if false;
     }
 

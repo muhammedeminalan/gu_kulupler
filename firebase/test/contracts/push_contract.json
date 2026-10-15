@@ -1,0 +1,197 @@
+{
+  "_doc": "T-42 (CD-165 c, d) — sunucu push'u ↔ istemci sözleşmesi. İki taraf AYNI dosyayı okur: (1) Dart — packages/gu_data/test/notifications/push_contract_test.dart (NotificationPreferenceFilter, NotificationType / NotificationRefsModel ayrıştırması = NotificationNavigator.openPush yolu, FcmTokenModel); (2) jest — functions/test/push_contract.test.ts (preference_filter.allows, push_payload.pushData / tokensFrom). `preferences`: settings/{uid} belgesi (null = belge yok → varsayılanlar) + bildirimin clubId'si → türe göre görünür / push gider mi. `payloads`: bildirim belgesinin refs'i → FCM data yükü (hepsi dizge; notificationId, type + dolu refs alanları). `tokens`: account.fcmTokens[] öğesi (Dart toJson biçimi; `@now` = istemci zamanı) → sunucunun okuduğu jeton + dil (locale yoksa tr). Bir taraf tek başına değişirse iki testten biri kırılır.",
+  "uid": "u_contract",
+  "preferences": [
+    {
+      "name": "varsayılan tercihler (belge yok): tanınan her tür görünür, tanınmayan gizli",
+      "settings": null,
+      "clubId": "c01",
+      "allowed": {
+        "application_received": true,
+        "application_approved": true,
+        "application_rejected": true,
+        "removed_from_club": true,
+        "role_changed": true,
+        "announcement": true,
+        "event_new": true,
+        "event_reminder": true,
+        "event_cancelled": true,
+        "waitlist_promoted": true,
+        "report_resolved": true,
+        "new_report": true,
+        "system": true,
+        "mystery_type": false
+      }
+    },
+    {
+      "name": "her şey kapalı + kulüp sessiz: yalnızca zorunlu türler",
+      "settings": {
+        "announcements": false,
+        "eventReminders": false,
+        "newEvents": false,
+        "applicationResults": false,
+        "management": false,
+        "system": false,
+        "clubs": { "c01": { "muted": true } }
+      },
+      "clubId": "c01",
+      "allowed": {
+        "application_received": false,
+        "application_approved": false,
+        "application_rejected": false,
+        "removed_from_club": true,
+        "role_changed": true,
+        "announcement": false,
+        "event_new": false,
+        "event_reminder": false,
+        "event_cancelled": true,
+        "waitlist_promoted": true,
+        "report_resolved": true,
+        "new_report": true,
+        "system": false
+      }
+    },
+    {
+      "name": "genel tür anahtarları tek tek",
+      "settings": { "management": false, "applicationResults": false },
+      "clubId": "c01",
+      "allowed": {
+        "application_received": false,
+        "application_approved": false,
+        "application_rejected": false,
+        "announcement": true
+      }
+    },
+    {
+      "name": "duyuru / yeni etkinlik / hatırlatıcı / sistem kapalı",
+      "settings": { "announcements": false, "newEvents": false, "eventReminders": false, "system": false },
+      "clubId": "c01",
+      "allowed": {
+        "announcement": false,
+        "event_new": false,
+        "event_reminder": false,
+        "system": false,
+        "application_received": true
+      }
+    },
+    {
+      "name": "kulüp sessiz: duyuru ve yeni etkinlik gizli, başvuru görünür",
+      "settings": { "clubs": { "c01": { "muted": true } } },
+      "clubId": "c01",
+      "allowed": { "announcement": false, "event_new": false, "application_received": true, "event_reminder": true }
+    },
+    {
+      "name": "sessiz kulüp başka kulübün bildirimini etkilemez",
+      "settings": { "clubs": { "c01": { "muted": true } } },
+      "clubId": "c02",
+      "allowed": { "announcement": true, "event_new": true }
+    },
+    {
+      "name": "kulüpte duyuru kapalı: yalnızca duyuru gizli",
+      "settings": { "clubs": { "c01": { "announcements": false } } },
+      "clubId": "c01",
+      "allowed": { "announcement": false, "event_new": true }
+    },
+    {
+      "name": "kulüpte etkinlik kapalı: yalnızca yeni etkinlik gizli; gönderi tercihi push'u etkilemez",
+      "settings": { "clubs": { "c01": { "events": false, "posts": false } } },
+      "clubId": "c01",
+      "allowed": { "announcement": true, "event_new": false }
+    },
+    {
+      "name": "sessiz saat listeyi / push'u engellemez (yalnızca sesi kapatır)",
+      "settings": { "quiet": true, "quietFrom": "00:00", "quietTo": "23:59" },
+      "clubId": "c01",
+      "allowed": { "announcement": true, "event_new": true, "system": true }
+    }
+  ],
+  "payloads": [
+    {
+      "notificationId": "role_changed_k0000000000000000001_u_contract",
+      "type": "role_changed",
+      "refs": { "clubId": "c01", "role": "board" },
+      "data": {
+        "notificationId": "role_changed_k0000000000000000001_u_contract",
+        "type": "role_changed",
+        "clubId": "c01",
+        "role": "board"
+      }
+    },
+    {
+      "notificationId": "event_cancelled_e01_u_contract",
+      "type": "event_cancelled",
+      "refs": { "clubId": "c01", "eventId": "e01" },
+      "data": {
+        "notificationId": "event_cancelled_e01_u_contract",
+        "type": "event_cancelled",
+        "clubId": "c01",
+        "eventId": "e01"
+      }
+    },
+    {
+      "notificationId": "application_received_c01_u_applicant_2_u_contract",
+      "type": "application_received",
+      "refs": { "clubId": "c01", "applicantId": "u_applicant" },
+      "data": {
+        "notificationId": "application_received_c01_u_applicant_2_u_contract",
+        "type": "application_received",
+        "clubId": "c01",
+        "applicantId": "u_applicant"
+      }
+    },
+    {
+      "notificationId": "announcement_p01_u_contract",
+      "type": "announcement",
+      "refs": { "clubId": "c01", "postId": "p01" },
+      "data": {
+        "notificationId": "announcement_p01_u_contract",
+        "type": "announcement",
+        "clubId": "c01",
+        "postId": "p01"
+      }
+    },
+    {
+      "notificationId": "new_report_0123456789abcdef0123_u_contract",
+      "type": "new_report",
+      "refs": { "reportId": "post_p01" },
+      "data": {
+        "notificationId": "new_report_0123456789abcdef0123_u_contract",
+        "type": "new_report",
+        "reportId": "post_p01"
+      }
+    },
+    {
+      "notificationId": "waitlist_promoted_0123456789abcdef0123_u_contract",
+      "type": "waitlist_promoted",
+      "refs": { "clubId": "c01", "eventId": "e01" },
+      "data": {
+        "notificationId": "waitlist_promoted_0123456789abcdef0123_u_contract",
+        "type": "waitlist_promoted",
+        "clubId": "c01",
+        "eventId": "e01"
+      }
+    },
+    {
+      "notificationId": "system_k0000000000000000002_u_contract",
+      "type": "system",
+      "refs": { "textKey": "welcome" },
+      "data": {
+        "notificationId": "system_k0000000000000000002_u_contract",
+        "type": "system",
+        "textKey": "welcome"
+      }
+    }
+  ],
+  "tokens": {
+    "stored": [
+      { "token": "tok_ios_en", "platform": "ios", "locale": "en", "updatedAt": "@now" },
+      { "token": "tok_android_tr", "platform": "android", "locale": "tr", "updatedAt": "@now" },
+      { "token": "tok_legacy", "platform": "android", "updatedAt": "@now" }
+    ],
+    "read": [
+      { "token": "tok_ios_en", "locale": "en" },
+      { "token": "tok_android_tr", "locale": "tr" },
+      { "token": "tok_legacy", "locale": "tr" }
+    ]
+  }
+}

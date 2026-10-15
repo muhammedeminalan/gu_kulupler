@@ -3,7 +3,8 @@
 // konum ve sekme; türün gerektirdiği kimlik eksikse SYS-04. Gecikmeli sheet
 // hedefleri: W-28 (T-32, MGT-02 `?applicant=`), W-29 (T-40, ADM-04
 // `?reportId=`).
-// `NotificationNavigator.open` / `openPayload`: okundu, bilet ayrımı
+// `NotificationNavigator.open` / `openPayload` / `openPush` (T-42): okundu,
+// bilet ayrımı
 // (going / attended → EVT-03; waitlist / kayıt yok → EVT-02), silinmiş /
 // gizli hedef → SYS-04, TST-17, hatırlatıcı liste belgesi, bozuk yük; gerçek
 // kabukta yığın `kök → … → hedef` (§13.5 tek liste).
@@ -407,6 +408,85 @@ void main() {
         expect(events.callsTo('getEvent'), isEmpty);
         expect(logs.where((l) => l.startsWith('[W]')), hasLength(3));
       });
+    });
+  });
+
+  group('T-42 · NotificationNavigator.openPush', () {
+    const uid = FakeSessionStates.uid;
+    late _RecordingRouter router;
+    late NotificationNavigator navigator;
+    late FakeNotificationRepository inbox;
+
+    setUp(() async {
+      await GetIt.I.reset();
+      registerDefaultFakes();
+      addTearDown(GetIt.I.reset);
+      inbox = GetIt.I<NotificationRepository>() as FakeNotificationRepository;
+      (GetIt.I<EventRepository>() as FakeEventRepository).put(
+        EventModelFixtures.e01,
+      );
+      router = _RecordingRouter();
+      navigator = NotificationNavigator(
+        router: router,
+        userId: uid,
+        isSuperAdmin: false,
+      );
+      final previous = debugPrint;
+      debugPrint = (message, {wrapWidth}) {};
+      addTearDown(() => debugPrint = previous);
+    });
+
+    NotificationModel put(String id, {String userId = uid}) {
+      final notification = NotificationModel(
+        id: id,
+        userId: userId,
+        type: NotificationType.eventNew,
+        refs: const NotificationRefsModel(clubId: 'c01', eventId: 'e01'),
+      );
+      inbox.put(notification);
+      return notification;
+    }
+
+    test('belge okunur → open ile aynı çözüm (hedef + okundu); yok / '
+        'silinmiş / başkasının / yetki yok → SYS-04', () async {
+      put('n_var');
+      put('n_baskasi', userId: 'u_baska');
+      inbox.put(put('n_silinmis').copyWith(isDeleted: true));
+
+      await navigator.openPush({'notificationId': 'n_var', 'type': 'x'});
+      await pumpEventQueue();
+      expect(router.gone, ['/events/e01']);
+      expect(inbox.notifications['n_var']!.read, isTrue);
+
+      router.gone.clear();
+      for (final id in ['n_yok', 'n_silinmis', 'n_baskasi', 'n_yetki']) {
+        if (id == 'n_yetki') inbox.failNext(FirestoreError.permissionDenied);
+        await navigator.openPush({'notificationId': id});
+      }
+      expect(router.gone, List.filled(4, '/not-found'));
+    });
+
+    test('ağ hatası → yükün type + refs alanlarıyla açılır; kimliksiz yük / '
+        'oturum yok → gezinme yok', () async {
+      inbox.failNext(FirestoreError.unavailable);
+      await navigator.openPush({
+        'notificationId': 'n_ag',
+        'type': 'event_cancelled',
+        'clubId': 'c01',
+        'eventId': 'e01',
+      });
+      expect(router.gone, ['/events/e01?showCancelled=true']);
+
+      router.gone.clear();
+      await navigator.openPush({'type': 'event_new', 'eventId': 'e01'});
+      await navigator.openPush({'notificationId': 'a/b'});
+      await NotificationNavigator(
+        router: router,
+        userId: null,
+        isSuperAdmin: false,
+      ).openPush({'notificationId': 'n_var'});
+      expect(router.gone, isEmpty);
+      expect(inbox.callsTo('getNotification'), hasLength(1));
     });
   });
 

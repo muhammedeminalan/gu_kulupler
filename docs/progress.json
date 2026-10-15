@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T09:13:02.694Z",
+  "updated": "2026-10-15T16:27:44.599Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-42",
   "statusValues": [
     "pending",
     "planning",
@@ -17,8 +17,8 @@
   ],
   "questionsAnswered": {
     "Q-02": {
-      "answer": "Önce yalnızca istemci (Mod C); T-43 başında yeniden sorulur",
-      "answeredAt": "2026-10-08T18:57:06.366Z"
+      "answer": "Functions (Blaze) — Mod F: push + Cloud Functions (kullanıcı kararı 2026-10-15, AskUserQuestion; önceki cevap Mod C idi)",
+      "answeredAt": "2026-10-15T15:12:16.931Z"
     },
     "Q-19": {
       "answer": "Storage'a yükle; bucket/Blaze durumu T-46 öncesi doğrulanır",
@@ -551,8 +551,8 @@
       "notes": ""
     },
     "T-42": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-15T15:12:17.005Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1737,6 +1737,33 @@
         "T-43"
       ],
       "status": "open"
+    },
+    {
+      "id": "W-104",
+      "declaredIn": "T-42",
+      "text": "Mod F canlıya geçiş (CD-165; docs/plans/T-42.md §5, kullanıcı 'yükle' deyince): Firestore konumu → functions/src/lib/config.ts REGION doğrulanır (eur3 ise europe-west1); Apple Developer APNs .p8 anahtarı → Firebase Console Cloud Messaging'e yüklenir; Xcode Team + Push Notifications / Background Modes; ÖNCE firestore:rules,firestore:indexes (fcmTokenOk locale, pushReceipts, users(status,deletedAt)), SONRA functions deploy; gerçek cihazda push + pushReceipts 'sent' + otomatik terfi doğrulanır; Blaze bütçe uyarısı",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-105",
+      "declaredIn": "T-42",
+      "text": "T-42 Mod F hibrit kalan riskler → T-45 raporu: (a) CD-49 çözülmedi — fan-out istemcide (ClientFanOutDispatcher), kalıcı kuyruk yok; push yalnızca yazılmış belgeye gider; (b) çevrimdışı çıkışta removeFcmToken + invalidateToken düşerse jeton eski hesabın fcmTokens listesinde kalır, aynı cihazda başka hesap açılınca aynı jeton iki listede olabilir → eski hesabın push'u (yalnızca kulüp adı / etkinlik başlığı) bu cihaza gider; çözüm önerisi: upsertFcmToken'da sunucu tarafı tekilleştirme (callable / tetikleyici) ya da kabul; (c) pushReceipts belgeleri silinmez (D-10) — büyüme / saklama ve maliyet ölçümü",
+      "resolveIn": [
+        "T-45"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-106",
+      "declaredIn": "T-42",
+      "text": "T-42 güvenlik incelemesi kabul edilen sınırlamalar → T-45 raporu: (a) herkese açık etkinlikte kötü niyetli yönetici, üye olmayan her kullanıcıya kulüp başına günde bir event_new push'u gönderebilir (başlık yöneticinin metni — kilit ekranında oltalama olasılığı); üyeye etkinlik başına bir; (b) gelen kutusu spam'i Rules'ta kotasız (K-J, CD-65) ve şikayet create kotasız — new_report push'u admin başına 15 dk'da bir, ama gelen kutusu belgeleri ve tetikleyici maliyeti sınırsız (öneri: reports (reporterId, createdAt) indeksiyle şikayetçi başına günlük sayım); (c) W-105 (b) kısmen giderildi: pref.pushTokenUid + dışarıdan kapanışta invalidateToken — yalnızca hem çıkış hem giriş çevrimdışıysa jeton eski hesapta kalır (sunucu jetonları hesaplar arasında tekilleştirmez); (d) role_changed (FORCED) başkanın rol aç-kapa döngüsüyle kendi üyesine yinelenebilir (gerçek geçişe bağlı, kilitsiz); (e) pushReceipts/once_ kilit belgeleri de silinmez (D-10) — W-105 (c) saklama ölçümüne dahil",
+      "resolveIn": [
+        "T-45"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [
@@ -1811,6 +1838,11 @@
       "date": "2026-10-15",
       "task": "T-35",
       "text": "W-93 (QR v2, D-30 değişikliği) T-35'ten T-43'e taşındı: kullanıcı bekleyen soruları Faz H'ye erteledi; T-35 QR v1 ile tamamlandı"
+    },
+    {
+      "date": "2026-10-15",
+      "task": "T-42",
+      "text": "Q-02 Mod C → Mod F (Functions, Blaze): kullanıcı 2026-10-15'te push + Cloud Functions'a EVET dedi; T-42 yapılır, CD-66 geçersiz"
     }
   ],
   "knownIssuesAdded": [

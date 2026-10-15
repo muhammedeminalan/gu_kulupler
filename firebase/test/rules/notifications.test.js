@@ -222,7 +222,7 @@ describe('notifications · yönetici kararları (application_approved / rejected
 });
 
 // `report_resolved` T-37'de açıldı (yalnızca süper admin, grup anahtarı — rules/admin.test.js).
-describe('notifications · kapalı türler (new_report hiç üretilmez — CD-37; system Admin SDK)', () => {
+describe('notifications · istemciye kapalı türler (new_report yalnızca sunucu — T-42 `notifyNewReport`, CD-165; system Admin SDK)', () => {
   test.each([
     ['new_report', 'member', 'u_super', { reportId: 'u_member_post_p01' }],
     ['new_report', 'super', 'u_member', { reportId: 'post_p01' }],

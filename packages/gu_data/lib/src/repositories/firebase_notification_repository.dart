@@ -98,6 +98,22 @@ final class FirebaseNotificationRepository
   }
 
   @override
+  Future<FirestoreResult<NotificationModel?>> getNotification(
+    String notificationId,
+  ) async {
+    if (RepositoryHelpers.rejectInvalidIds<NotificationModel?>({
+          'notificationId': notificationId,
+        })
+        case final rejected?) {
+      return rejected;
+    }
+    return RepositoryHelpers.parseOrNull(
+      await _firestore.getDoc(_byId(notificationId)),
+      _notificationOf,
+    );
+  }
+
+  @override
   Future<FirestoreResult<void>> markAllRead(
     String userId,
     List<String> unreadIds,

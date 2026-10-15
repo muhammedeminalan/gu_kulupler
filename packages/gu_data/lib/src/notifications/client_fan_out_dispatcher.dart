@@ -327,7 +327,9 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
     recipientIds: reporterIds,
   );
 
-  /// İstemcide üretilmez (süper admin kümesi bilinemez — CD-37).
+  /// İstemcide üretilmez (süper admin kümesi bilinemez — CD-37); Mod F'de
+  /// (T-42, CD-165) `functions/` içindeki `notifyNewReport` tetikleyicisi
+  /// şikayet belgesinden üretir.
   @override
   Future<FirestoreResult<DispatchReport>> notifyNewReport({
     required String reportId,

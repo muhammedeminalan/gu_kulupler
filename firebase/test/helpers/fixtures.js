@@ -376,6 +376,17 @@ function baseDocs(options = {}) {
     lastPostRef: null,
     updatedAt: serverTimestamp(),
   };
+  // T-42 (CD-165 b.1): sunucunun (Admin SDK) push makbuzu — istemciye tamamen kapalı; alıcısı da okuyamaz.
+  // BaseFields yok (makbuz silinmez — D-10).
+  docs['pushReceipts/notification_push_1'] = {
+    userId: 'u_student',
+    type: 'announcement',
+    status: 'sent',
+    successCount: 1,
+    failureCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
   return docs;
 }
 

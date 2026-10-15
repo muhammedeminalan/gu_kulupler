@@ -45,6 +45,11 @@ abstract interface class AppPreferencesStore {
   /// Dönen liste değiştirilemez.
   List<String> get recentSearches;
 
+  /// Bu cihazın push jetonunun en son yazıldığı hesap (T-42 güvenlik
+  /// incelemesi): başka hesap girince jeton önce geçersiz kılınır —
+  /// çevrimdışı çıkışta önceki hesapta kalan jeton yeni hesaba taşınmaz.
+  String? get pushTokenUid;
+
   /// Tema tercihini yazar.
   Future<bool> setThemeMode(ThemeMode mode);
 
@@ -66,6 +71,9 @@ abstract interface class AppPreferencesStore {
   /// Son aramaları [terms] ile değiştirir (en yeni önde); fazlası
   /// `Limits.recentSearchesMax`'te kesilir. Boş liste geçmişi temizler.
   Future<bool> setRecentSearches(List<String> terms);
+
+  /// Push jetonunun yazıldığı hesabı kaydeder; `null` kaydı kaldırır.
+  Future<bool> setPushTokenUid(String? uid);
 
   /// [clubId] kulübü için saklanan yazı taslağı (FED-03; CD-45): çağıranın
   /// yazdığı JSON metni, taslak yoksa `null`. Kulüp başına **tek** taslak
@@ -101,6 +109,9 @@ abstract final class AppPreferenceKeys {
   /// Son aramalar (CLB-02): metin listesi, en yeni önde.
   static const String recentSearches = 'pref.recentSearches';
 
+  /// Push jetonunun en son yazıldığı hesabın uid'i (T-42).
+  static const String pushTokenUid = 'pref.pushTokenUid';
+
   /// [clubId] kulübünün yazı taslağı (FED-03): JSON metni —
   /// `compose_draft_<clubId>` (CD-45).
   static String composeDraft(String clubId) => 'compose_draft_$clubId';
@@ -126,6 +137,7 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   bool _notificationPermissionAsked = false;
   bool _photoAccessExplained = false;
   List<String> _recentSearches = const <String>[];
+  String? _pushTokenUid;
 
   /// Bu oturumda yazılan / kaldırılan taslaklar (kulüp → JSON; `null` =
   /// kaldırıldı). Diskteki değerin önüne geçer: yazım başarısız olsa da
@@ -157,6 +169,9 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   List<String> get recentSearches => _recentSearches;
 
   @override
+  String? get pushTokenUid => _pushTokenUid;
+
+  @override
   Future<void> load() async {
     try {
       final prefs = await _open();
@@ -183,6 +198,7 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
       _recentSearches = _capped(
         _stringList(prefs, AppPreferenceKeys.recentSearches),
       );
+      _pushTokenUid = _string(prefs, AppPreferenceKeys.pushTokenUid);
       _prefs = prefs;
     } on Object catch (error, stack) {
       AppLogger.warn('Tercihler okunamadı', error: error, stackTrace: stack);
@@ -246,6 +262,16 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
     final capped = _recentSearches = _capped(terms);
     return _write(
       (prefs) => prefs.setStringList(AppPreferenceKeys.recentSearches, capped),
+    );
+  }
+
+  @override
+  Future<bool> setPushTokenUid(String? uid) {
+    _pushTokenUid = uid;
+    return _write(
+      (prefs) => uid == null
+          ? prefs.remove(AppPreferenceKeys.pushTokenUid)
+          : prefs.setString(AppPreferenceKeys.pushTokenUid, uid),
     );
   }
 

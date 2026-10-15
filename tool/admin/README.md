@@ -63,6 +63,8 @@ node tool/admin/send_system_notification.js --text-key welcome --email sen@ogr.g
 
 ## Yarım kalan hesap silme temizliği (`finish_account_deletion.js` — W-91)
 
+> **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon her birimi okunduğu andaki `lastUpdateTime` önkoşuluyla yazar (araya giren yazımda birim reddedilir); betiğin böyle bir önkoşulu yoktur → betiği fonksiyonun koşu saatinde (03:30 civarı) çalıştırma.
+
 Hesap silme (SET-03) istemcide en iyi çabayla koşar: `markDeleted` sonrası parçalar yarım kalırsa (ağ, Rules reddi) ve kullanıcı hiç geri dönmezse üyelik anlık görüntüsü / iletişim belgesi / açık katılımı kalabilir. Betik `users.status == 'deleted'` hesaplar için T-29 dizisinin eşdeğerini tamamlar (`lib/account_cleanup.js`):
 
 - açık katılım → `cancelled` + etkinlik sayacı −1 (biten etkinliğin kaydı korunur — W-80);

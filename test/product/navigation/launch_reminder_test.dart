@@ -11,6 +11,7 @@ import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 
 import '../../fakes/fake_event_repository.dart';
 import '../../fakes/fake_local_reminder_service.dart';
+import '../../fakes/fake_messaging_service.dart';
 import '../../fakes/fake_notification_repository.dart';
 import '../../fakes/fake_rsvp_repository.dart';
 import '../../fakes/fake_session_states.dart';
@@ -83,6 +84,55 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(app.locationLog, contains('/events/e01/ticket'));
+    });
+
+    testWidgets('T-42 · push: soğuk açılış yükü kabuk kurulunca bir kez, '
+        'arka plandan dokunma etkin oturumda → openPush (bildirim belgesi '
+        'okunur, hedefe gidilir)', (tester) async {
+      final app = await TestRouter.pump(
+        tester,
+        session: FakeSessionStates.signedOut,
+      );
+      final messaging = GetIt.I<MessagingService>() as FakeMessagingService;
+      final inbox =
+          GetIt.I<NotificationRepository>() as FakeNotificationRepository;
+      (GetIt.I<EventRepository>() as FakeEventRepository).put(
+        EventModelFixtures.e01,
+      );
+      for (final (id, type) in [
+        ('n_soguk', NotificationType.eventNew),
+        ('n_sicak', NotificationType.eventCancelled),
+      ]) {
+        inbox.put(
+          NotificationModel(
+            id: id,
+            userId: FakeSessionStates.uid,
+            type: type,
+            refs: const NotificationRefsModel(clubId: 'c01', eventId: 'e01'),
+          ),
+        );
+      }
+      messaging.launchData = {'notificationId': 'n_soguk'};
+
+      app.session = FakeSessionStates.active;
+      await tester.pumpAndSettle();
+      // Etkinlik detayına gidildi (detayın kendi durumları EVT-02
+      // testlerindedir; kabuk dışına çıkılmış olabilir).
+      expect(app.locationLog, contains('/events/e01'));
+
+      // Kabuk yeniden kurulur: soğuk açılış yükü yeniden kullanılmaz,
+      // arka plan dokunuşları dinlenir.
+      await app.go('/clubs');
+      expect(messaging.hasTapListener, isTrue);
+      messaging.tap({'notificationId': 'n_sicak'});
+      await tester.pumpAndSettle();
+      expect(app.locationLog, contains('/events/e01?showCancelled=true'));
+      expect(inbox.callsTo('getNotification'), hasLength(2));
+
+      app.session = FakeSessionStates.signedOut;
+      await tester.pumpAndSettle();
+      expect(messaging.hasTapListener, isFalse);
+      expect(messaging.callsTo('initialMessageData'), hasLength(1));
     });
 
     testWidgets('uygulama açıkken dokunma → openPayload (etkin oturumda)', (

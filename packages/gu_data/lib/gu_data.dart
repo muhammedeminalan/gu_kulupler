@@ -159,6 +159,7 @@ export 'src/services/auth_service.dart';
 export 'src/services/crash_service.dart';
 export 'src/services/firestore_service.dart';
 export 'src/services/firestore_types.dart';
+export 'src/services/messaging_service.dart';
 export 'src/services/remote_config_service.dart';
 export 'src/services/storage_service.dart';
 export 'src/utils/email_domain_validator.dart';

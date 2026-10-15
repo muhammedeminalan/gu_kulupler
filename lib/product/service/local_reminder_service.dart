@@ -11,7 +11,8 @@ import 'package:timezone/data/latest_10y.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 /// Cihazda planlı etkinlik hatırlatıcısı (Q-07; PLAN §10.2, §15.6; CD-08,
-/// CD-09). Push yoktur (Mod C).
+/// CD-09). Hatırlatıcı Mod F'de (T-42) de yereldir: sunucu `event_reminder`
+/// belgesine push göndermez (CD-165).
 ///
 /// * Konum uygulama katmanıdır: `gu_data` Firebase dışı eklenti bilmez,
 ///   repository'ler bu servisi **bilmez**. Planlama ViewModel'de, repository
@@ -33,6 +34,11 @@ abstract interface class LocalReminderService {
   /// `AppConstants.reminderChannelId`, ad `l10n.eventReminder`, açıklama
   /// `l10n.notifPrefsEventReminders`) ve [l10n]'u bildirim metinleri için
   /// saklar. Dil değişince yeniden çağrılır.
+  ///
+  /// T-42 (CD-165): uygulamanın tek `flutter_local_notifications` sahibi
+  /// olarak push kanallarını da aynı dille kurar
+  /// (`FlutterLocalReminderService.pushChannelsOf`: `gu_push` normal,
+  /// `gu_push_quiet` sessiz saat — sessiz); push'u sistem gösterir.
   Future<void> ensureChannel(AppLocalizations l10n);
 
   /// [rsvp] için hatırlatıcıyı planlar (aynı kimlikteki eski planın yerine).
@@ -213,6 +219,29 @@ final class FlutterLocalReminderService implements LocalReminderService {
         importance: Importance.high,
       );
 
+  /// Push kanalları (T-42, CD-165; sunucu `channelId` ile aynı kimlikler):
+  /// `AppConstants.pushChannelId` (ad `l10n.navNotifications`, açıklama
+  /// `l10n.notifPushChannelDesc`, yüksek önem) ve
+  /// `AppConstants.pushQuietChannelId` (ad `l10n.notifPrefsQuiet`, açıklama
+  /// `l10n.notifPrefsQuietDesc`; ses ve titreşim yok — sessiz saat).
+  static List<AndroidNotificationChannel> pushChannelsOf(
+    AppLocalizations l10n,
+  ) => [
+    AndroidNotificationChannel(
+      AppConstants.pushChannelId,
+      l10n.navNotifications,
+      description: l10n.notifPushChannelDesc,
+      importance: Importance.high,
+    ),
+    AndroidNotificationChannel(
+      AppConstants.pushQuietChannelId,
+      l10n.notifPrefsQuiet,
+      description: l10n.notifPrefsQuietDesc,
+      playSound: false,
+      enableVibration: false,
+    ),
+  ];
+
   /// Hatırlatıcı bildiriminin platform ayrıntıları ([channelOf] kanalında).
   static NotificationDetails detailsOf(AppLocalizations l10n) =>
       NotificationDetails(
@@ -231,11 +260,14 @@ final class FlutterLocalReminderService implements LocalReminderService {
     _l10n = l10n;
     await _guard('Hatırlatıcı kanalı kurulamadı', () async {
       await _initialize();
-      await _plugin
+      final android = _plugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(channelOf(l10n));
+          >();
+      if (android == null) return;
+      for (final channel in [channelOf(l10n), ...pushChannelsOf(l10n)]) {
+        await android.createNotificationChannel(channel);
+      }
     });
   }
 

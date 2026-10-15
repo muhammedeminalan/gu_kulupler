@@ -275,6 +275,50 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
     return const FirebaseSuccess(null);
   }
 
+  @override
+  Future<FirestoreResult<void>> upsertFcmToken(
+    String uid,
+    FcmTokenModel token,
+  ) async {
+    record('upsertFcmToken', [uid, token.token, token.platform, token.locale]);
+    if (_rejected<void>(uid) case final failure?) return failure;
+    final account = accounts[uid];
+    if (account == null) return const FirebaseFailure(FirestoreError.notFound);
+    if (token.token.isEmpty ||
+        !Limits.platforms.contains(token.platform) ||
+        !FcmTokenModel.locales.contains(token.locale)) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    accounts[uid] = account.copyWith(
+      fcmTokens: FcmTokenModel.upserted(account.fcmTokens, token),
+    );
+    return const FirebaseSuccess(null);
+  }
+
+  @override
+  Future<FirestoreResult<void>> removeFcmToken(String uid, String token) async {
+    record('removeFcmToken', [uid, token]);
+    if (_rejected<void>(uid) case final failure?) return failure;
+    final account = accounts[uid];
+    if (account == null) return const FirebaseFailure(FirestoreError.notFound);
+    if (token.isEmpty) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    accounts[uid] = account.copyWith(
+      fcmTokens: [
+        for (final item in account.fcmTokens)
+          if (item.token != token) item,
+      ],
+    );
+    return const FirebaseSuccess(null);
+  }
+
+  /// [uid] hesabındaki push jetonları (T-42); hesap yoksa boş.
+  List<String> tokensOf(String uid) => [
+    for (final item in accounts[uid]?.fcmTokens ?? const <FcmTokenModel>[])
+      item.token,
+  ];
+
   /// [patch] alanları [user] üzerine uygulanmış kopya.
   static UserModel _patched(UserModel user, UserProfilePatch patch) =>
       user.copyWith(

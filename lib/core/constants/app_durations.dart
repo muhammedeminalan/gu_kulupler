@@ -26,4 +26,10 @@ abstract final class AppDurations {
   /// (`SessionViewModel.onAppResumed`; T-37 sözleşme §4 d): sık arka plan /
   /// ön plan geçişi jeton yenileme ve okuma bütçesini tüketmez.
   static const Duration claimRefreshInterval = Duration(minutes: 10);
+
+  /// Çıkışta bu cihazın push jetonunu hesaptan çıkarma ve FCM'de geçersiz
+  /// kılma adımlarının her birinin en çok bekleyeceği süre
+  /// (`SessionPushSync.unregister`; T-42, CD-165): en iyi çabadır, çevrimdışı
+  /// çıkışı uzatmaz.
+  static const Duration pushTokenCleanupTimeout = Duration(seconds: 3);
 }

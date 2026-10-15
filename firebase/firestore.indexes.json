@@ -226,6 +226,14 @@
         { "fieldPath": "interests", "arrayConfig": "CONTAINS" },
         { "fieldPath": "isDeleted", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "deletedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
