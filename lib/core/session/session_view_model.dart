@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/constants/app_durations.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
+import 'package:gu_kulupler/core/error/app_error_handler.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_push_sync.dart';
@@ -105,6 +106,10 @@ final class SessionViewModel extends _$SessionViewModel
   /// kez)?
   bool _pushLaunchHandled = false;
 
+  /// Crashlytics raporlarına bağlı son uid (T-44 · D2-11): aynı kimlik
+  /// yeniden yazılmaz.
+  String? _crashUid;
+
   @override
   SessionState build() {
     final authSubscription = authRepository.watchAuthState().listen(
@@ -198,8 +203,13 @@ final class SessionViewModel extends _$SessionViewModel
   /// ([refreshUser]): oturum ortasında verilen / geri alınan süper admin
   /// yetkisi ve hesap askısı uygulama yeniden açılmadan yakalanır (canlı
   /// dinleyici yok — okuma bütçesi). Etkin olmayan ya da çözülmekte olan
-  /// oturumda etkisizdir.
+  /// oturumda etkisizdir; oturum kapalıysa yalnızca çevrimdışı çıkıştan
+  /// kalan push jetonu temizliği yeniden denenir (T-44 · A4-06).
   Future<void> onAppResumed() async {
+    if (state.status == AuthStatus.signedOut) {
+      unawaited(_push.retryPendingCleanup());
+      return;
+    }
     if (state.status != AuthStatus.active || state.isResolving) return;
     // İzin DLG-03 / sistem ayarlarından verildiyse jeton şimdi yazılır;
     // aynı jeton bu oturumda yeniden yazılmaz (T-42).
@@ -431,6 +441,12 @@ final class SessionViewModel extends _$SessionViewModel
 
   Future<void> _resolveFor(AuthUserInfo? user) async {
     final epoch = ++_epoch;
+    // Crashlytics raporları oturumun uid'ine bağlanır (e-posta değil); çıkış
+    // ve hesap değişimi de bu akıştan gelir (T-44 · D2-11).
+    if (user?.uid != _crashUid) {
+      _crashUid = user?.uid;
+      AppErrorHandler.setUser(_crashUid);
+    }
     // Tanıtım bayrağı her çözümün başında depodan okunur (CD-52).
     final onboardingSeen = appPreferencesStore.onboardingSeen;
     if (user == null) {
@@ -439,6 +455,8 @@ final class SessionViewModel extends _$SessionViewModel
       _stopMembershipWatch();
       _stopReminders();
       _stopPush();
+      // Çevrimdışı çıkıştan kalan jeton temizliği (açılış + çıkış olayı).
+      unawaited(_push.retryPendingCleanup());
       _launchHandled = true;
       _pushLaunchHandled = true;
       state = _withoutUser(
@@ -472,8 +490,23 @@ final class SessionViewModel extends _$SessionViewModel
     );
     final isSuperAdmin = await _readSuperAdmin(user.uid, epoch);
     if (isSuperAdmin == null) return;
-    final result = await userRepository.getUser(user.uid);
+    var result = await userRepository.getUser(user.uid);
     if (!_isCurrent(epoch)) return;
+    // Sunucuya ulaşılamadı (captive portal, zayıf sinyal): belge cihaz
+    // önbelleğindeyse oturum ondan çözülür (Q-12; T-44 · D2-02). Sunucu
+    // doğrulaması ilk öne gelişte (`onAppResumed`), üyelikler canlı
+    // dinleyiciyle ağ dönünce gelir. Önbellekte de yoksa SYS-02 (isError).
+    if (result case FirebaseFailure(
+      error: FirestoreError.timeout || FirestoreError.unavailable,
+    )) {
+      final cached = await userRepository.getUserFromCache(user.uid);
+      if (!_isCurrent(epoch)) return;
+      if (cached.isSuccess) {
+        AppLogger.warn('Kullanıcı belgesi sunucudan okunamadı; önbellekten');
+        _claimsCheckedAt = null;
+        result = cached;
+      }
+    }
     await _applyUser(
       result,
       epoch,
@@ -493,14 +526,17 @@ final class SessionViewModel extends _$SessionViewModel
   /// (Q-12), yetkiyi Rules uygular.
   Future<bool?> _readSuperAdmin(String uid, int epoch) async {
     final refresh = _claimsRefreshedFor != uid;
-    var result = await authRepository.isSuperAdmin(forceRefresh: refresh);
+    var result = await _claimWithin(forceRefresh: refresh);
     if (!_isCurrent(epoch)) return null;
     if (refresh) {
       if (result.isSuccess) {
         _claimsRefreshedFor = uid;
         _claimsCheckedAt = appClock.nowUtc();
       } else if (result.errorOrNull == AuthError.network) {
-        result = await authRepository.isSuperAdmin();
+        // Yenileme başarısız: işaretler yazılmaz, sonraki `onAppResumed`
+        // yeniden dener (yerel SDK'nın arka planda biten yenilemesi jetonu
+        // zaten günceller).
+        result = await _claimWithin(forceRefresh: false);
         if (!_isCurrent(epoch)) return null;
       }
     }
@@ -523,6 +559,16 @@ final class SessionViewModel extends _$SessionViewModel
         return null;
     }
   }
+
+  /// `superadmin` claim okuması, [AppDurations.sessionClaimTimeout] ile
+  /// sınırlı (T-44 · D2-02): süre dolması ağ hatası sayılır.
+  Future<AuthResult<bool>> _claimWithin({required bool forceRefresh}) =>
+      authRepository
+          .isSuperAdmin(forceRefresh: forceRefresh)
+          .timeout(
+            AppDurations.sessionClaimTimeout,
+            onTimeout: () => const FirebaseFailure(AuthError.network),
+          );
 
   /// `users/{uid}` okumasının [result] sonucunu duruma çevirir.
   /// [isFullResolve] tam çözümde (`_resolveFor`) `true`'dur: yalnızca yeni

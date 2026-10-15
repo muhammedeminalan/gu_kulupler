@@ -13,6 +13,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_feed_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_header.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_locked_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_members_tab.dart';
+import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/widget/club/club_cta.dart';
@@ -115,9 +116,25 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
     );
   }
 
+  /// Seçili sekmenin gövdesi — sliver: "Gönderiler" akışı kendi sliver
+  /// grubudur (kartlar tembel kurulur, T-44); öteki sekmeler kutudur.
   Widget _tabBody(ClubDetailState state) {
     final l10n = context.l10n;
     final club = state.club!;
+    if (state.tab == ClubDetailTab.posts && state.seesInside) {
+      return ClubFeedTab(
+        clubId: club.id,
+        commentsSheetBuilder: widget.commentsSheetBuilder,
+      );
+    }
+    return SliverToBoxAdapter(child: _boxTabBody(state, l10n, club));
+  }
+
+  Widget _boxTabBody(
+    ClubDetailState state,
+    AppLocalizations l10n,
+    ClubModel club,
+  ) {
     return switch (state.tab) {
       ClubDetailTab.about => ClubAboutTab(
         club: club,
@@ -155,16 +172,11 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
         joinKeyOf: (eventId) => GuKey.action('CLB-03.join.$eventId'),
         retryKey: GuKey.action('CLB-03.eventsRetry'),
       ),
-      ClubDetailTab.posts =>
-        state.seesInside
-            ? ClubFeedTab(
-                clubId: club.id,
-                commentsSheetBuilder: widget.commentsSheetBuilder,
-              )
-            : ClubLockedTab(
-                text: l10n.clubPostsLocked,
-                cta: _cta(state, inBar: false),
-              ),
+      // İçini görene akış [_tabBody]'de sliver olarak çizilir.
+      ClubDetailTab.posts => ClubLockedTab(
+        text: l10n.clubPostsLocked,
+        cta: _cta(state, inBar: false),
+      ),
       ClubDetailTab.members =>
         state.seesInside
             ? ClubMembersTab(
@@ -255,7 +267,10 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
                     isAdvisor: state.access == ClubAccess.advisor,
                     memberPreview: state.memberPreview,
                     coverImage: ref.clubCoverImage(club),
-                    logoImage: ref.clubLogoImage(club),
+                    logoImage: ref.clubLogoImage(
+                      club,
+                      displaySize: GuEmblemSize.lg.dimension,
+                    ),
                     onBack: back,
                     onShare: openShare,
                     onMenu: openMenu,
@@ -279,7 +294,7 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
                     'CLB-03.tab.${ClubDetailTab.values[index].name}',
                   ),
                 ),
-                SliverToBoxAdapter(child: _tabBody(state)),
+                _tabBody(state),
                 if (!hasBar)
                   SliverToBoxAdapter(
                     child: SizedBox(height: media.viewPadding.bottom),

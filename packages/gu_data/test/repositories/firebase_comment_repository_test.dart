@@ -13,6 +13,8 @@
 //
 // SDK sınıfları `@sealed` işaretlidir; test çifti bilerek uygular.
 // ignore_for_file: subtype_of_sealed_class
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -601,6 +603,27 @@ void main() {
         },
       );
     }
+  });
+
+  group('T-44 · A4-01 · sunucuya ulaşılamayınca yorum yazımı', () {
+    testWidgets('commit süre içinde dönmezse (yazım SDK kuyruğunda) sonuç '
+        'başarıdır ve kimlik döner: "yazılmadı" sanılıp yeniden '
+        'gönderilmez → yinelenen yorum / sayaç yok', (tester) async {
+      final firestore = StubFirestore();
+      final hanging = FirebaseCommentRepository(
+        FirebaseFirestoreService(firestore),
+        clock,
+      );
+      FirestoreResult<CommentModel>? result;
+      unawaited(add(hanging).then((r) => result = r));
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(result?.errorOrNull, isNull);
+      expect(result?.dataOrNull?.id, isNotEmpty);
+      expect(firestore.batches.single.commits, 1);
+      expect(firestore.batches.single.writes, 2);
+    });
   });
 }
 

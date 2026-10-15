@@ -17,6 +17,19 @@ int _trWeight(String char) {
   return code < base ? code : code + _trAlphabet.length;
 }
 
+/// Önceden [TurkishCaseX.trLower] ile küçültülmüş iki metnin Türkçe alfabe
+/// karşılaştırması ([TurkishCaseX.trCompareTo] ile aynı sonuç). Çok satırlı
+/// sıralamada her ad bir kez küçültülür, karşılaştırma başına iki `trLower`
+/// (altı metin ayırması) yapılmaz (T-44 · P1-07).
+int trCompareLowered(String a, String b) {
+  final n = a.length < b.length ? a.length : b.length;
+  for (var i = 0; i < n; i++) {
+    final diff = _trWeight(a[i]) - _trWeight(b[i]);
+    if (diff != 0) return diff.sign;
+  }
+  return (a.length - b.length).sign;
+}
+
 /// Türkçe büyük/küçük harf dönüşümleri (CD-11; PLAN §7.0, §7.10).
 ///
 /// Dart'ın `toUpperCase()` / `toLowerCase()` çağrıları yerelden bağımsızdır:
@@ -39,16 +52,7 @@ extension TurkishCaseX on String {
   /// n o ö p q r s ş t u ü v w x y z`. Alfabe dışı karakterler kod birimine
   /// göre — harften küçük olanlar (boşluk, rakam) önce gelir. Eşit önekte
   /// kısa olan önce. `['Ömer', 'Zeynep', 'Ilgaz']` → `Ilgaz, Ömer, Zeynep`.
-  int trCompareTo(String other) {
-    final a = trLower();
-    final b = other.trLower();
-    final n = a.length < b.length ? a.length : b.length;
-    for (var i = 0; i < n; i++) {
-      final diff = _trWeight(a[i]) - _trWeight(b[i]);
-      if (diff != 0) return diff.sign;
-    }
-    return (a.length - b.length).sign;
-  }
+  int trCompareTo(String other) => trCompareLowered(trLower(), other.trLower());
 
   /// Yerele göre büyük harf (CSS `text-transform: uppercase` karşılığı:
   /// `overline`, `dateBadgeMonth`). `languageCode == 'tr'` → [trUpper],

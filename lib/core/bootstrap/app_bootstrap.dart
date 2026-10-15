@@ -59,13 +59,14 @@ abstract final class AppBootstrap {
     runApp(ProviderScope(child: appBuilder(toastController)));
   }
 
-  /// Crashlytics toplamayı yalnızca **üretim ortamının release olmayan-debug
-  /// dışı** derlemelerinde açar ([crashCollectionEnabled]).
+  /// Crashlytics toplamayı yalnızca üretim ortamının **release** derlemesinde
+  /// açar ([crashCollectionEnabled]).
   ///
   /// Yerel SDK varsayılan (gerçek) Firebase uygulamasıyla kendiliğinden
-  /// başlar; emülatör ortamında ve debug derlemede toplama **kapatılır** ki
-  /// geliştirme oturumlarının çökmeleri gerçek projeye gitmesin (W-53). Çağrı
-  /// yereldir (ağ isteği yapmaz). Hatası açılışı durdurmaz.
+  /// başlar; emülatör ortamında, debug ve profile derlemede toplama
+  /// **kapatılır** ki geliştirme oturumlarının çökmeleri gerçek projeye
+  /// gitmesin (W-53). Çağrı yereldir (ağ isteği yapmaz). Hatası açılışı
+  /// durdurmaz.
   ///
   /// Yerel SDK bu çağrıdan **önce** açıldığı için otomatik toplama platform
   /// dosyalarında kapalı başlar (Android debug manifest
@@ -89,9 +90,12 @@ abstract final class AppBootstrap {
     }
   }
 
-  /// Çökme raporu toplansın mı: debug derlemede ve emülatör ortamında hayır.
+  /// Çökme raporu toplansın mı: yalnızca release derleme + üretim ortamı.
+  /// Debug ve profile derlemede (performans ölçümü — T-44) ve emülatör
+  /// ortamında hayır; `AppLogger`'ın profile'ı release saymamasıyla uyumlu
+  /// (architecture §12).
   static const bool crashCollectionEnabled =
-      !kDebugMode && !AppEnvironment.isEmulator;
+      kReleaseMode && !AppEnvironment.isEmulator;
 
   static Future<void> _applyCrashCollection({required bool enabled}) =>
       FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(enabled);

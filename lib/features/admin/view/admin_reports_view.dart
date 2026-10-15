@@ -10,6 +10,7 @@ import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_group_row.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Admin şikayetler — `AdminReportsRoute` (`/admin/reports?tab=&reportId=`;
@@ -101,6 +102,8 @@ class _AdminReportsViewState extends ConsumerState<AdminReportsView>
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(

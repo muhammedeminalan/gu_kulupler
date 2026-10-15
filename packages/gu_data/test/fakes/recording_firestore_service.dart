@@ -71,6 +71,11 @@ final class RecordingFirestoreService implements FirestoreService {
       _inner.getDoc(ref);
 
   @override
+  Future<FirestoreResult<FirestoreDoc?>> getDocFromCache(
+    DocumentReference<Json> ref,
+  ) => _inner.getDocFromCache(ref);
+
+  @override
   Future<FirestoreResult<List<FirestoreDoc>>> getList(Query<Json> query) =>
       _inner.getList(query);
 
@@ -157,6 +162,10 @@ final class RecordingFirestoreService implements FirestoreService {
 
   @override
   Object serverTimestamp() => _inner.serverTimestamp();
+
+  @override
+  Future<FirestoreResult<void>> setNetworkEnabled({required bool enabled}) =>
+      _inner.setNetworkEnabled(enabled: enabled);
 }
 
 /// Okuma ve yazımları kaydedip [_inner] transaction'ına ileten sarmalayıcı.

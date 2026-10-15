@@ -129,7 +129,8 @@ void main() {
         plan.where((row) => row.note.isNotEmpty).map((row) => row.member),
         ['upsertFcmToken', 'removeFcmToken', 'listByInterests'],
       );
-      expect(plan, hasLength(10));
+      // T-44 · D2-02: getUserFromCache (oturumun önbellek düşüşü).
+      expect(plan, hasLength(11));
       expect(plan.map((row) => row.member), contains('updateAvatar'));
       expect(members.toSet(), {
         for (final row in plan) normalizeDartSource(row.signature),
@@ -425,6 +426,36 @@ void main() {
     });
   });
 
+  group('T-44 · UserRepository · getUserFromCache (D2-02)', () {
+    test('önbellekteki belge modele çevrilir', () async {
+      await userRef().set({
+        'name': 'Ayşe Işık',
+        'nameLower': 'ayşe ışık',
+        'avatarSeed': _uid,
+        ...BaseFieldsPayload.create(),
+      });
+
+      final result = await repository.getUserFromCache(_uid);
+
+      expect(result.dataOrNull?.uid, _uid);
+      expect(result.dataOrNull?.name, 'Ayşe Işık');
+    });
+
+    test('önbellekte yoksa unavailable (ağa gidilmez); geçersiz kimlik '
+        'invalidArgument', () async {
+      final stubbed = repositoryOn(FirebaseFirestoreService(StubFirestore()));
+
+      expect(
+        (await stubbed.getUserFromCache(_uid)).errorOrNull,
+        FirestoreError.unavailable,
+      );
+      expect(
+        (await repository.getUserFromCache('a/b')).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+    });
+  });
+
   group('T-12 · UserRepository · getUser', () {
     test('belge yoksa başarı null', () async {
       final result = await repository.getUser(_uid);
@@ -546,6 +577,50 @@ void main() {
       final result = await failing('permission-denied').getUsers(['u1']);
 
       expect(result.errorOrNull, FirestoreError.permissionDenied);
+    });
+
+    test('T-44 · D3-01 bellek önbelleği: TTL içinde okunan profil yeniden '
+        'okunmaz, yalnızca eksikler okunur; forceRefresh, süre dolması ve '
+        'kendi yazımı (servis kancası) yeniden okutur', () async {
+      await seed(['u1', 'u2']);
+      final clock = FakeAppClock(_now);
+      final service = FirebaseFirestoreService(db);
+      final caches = RepositoryReadCaches(clock);
+      addTearDown(caches.dispose);
+      service.addWriteListener(caches.onWrite);
+      final cached = FirebaseUserRepository(
+        service,
+        storage,
+        clock,
+        SequenceRandom(_randomBytes),
+        cache: caches,
+      );
+      Future<List<String>> names(
+        List<String> uids, {
+        bool forceRefresh = false,
+      }) async => [
+        for (final user in (await cached.getUsers(
+          uids,
+          forceRefresh: forceRefresh,
+        )).dataOrNull!)
+          user.name,
+      ];
+
+      expect(await names(['u1']), ['Ad u1']);
+      // Servisi atlayan değişiklik: bellekteki u1 görünür, u2 okunur.
+      await userRef('u1').update({'name': 'Dolaylı'});
+      expect(await names(['u2', 'u1']), ['Ad u2', 'Ad u1']);
+
+      expect(await names(['u1'], forceRefresh: true), ['Dolaylı']);
+
+      await service.update(service.doc(FirestoreCollections.users, 'u2'), {
+        'name': 'Yazıldı',
+      });
+      expect(await names(['u2']), ['Yazıldı']);
+
+      await userRef('u1').update({'name': 'Süre'});
+      clock.advance(CachePolicy.userTtl);
+      expect(await names(['u1']), ['Süre']);
     });
   });
 
@@ -1241,6 +1316,42 @@ void main() {
         expect(after.last.token, 't-new');
       },
     );
+
+    test('T-44 · D2-06 upserted: aynı jeton + platform + dil 7 günden '
+        'yeniyse liste aynen döner (yazım yok); 7 gün dolunca ya da dil '
+        'değişince updatedAt tazelenir', () {
+      final first = tokenOf('t-a', 1);
+      final current = [tokenOf('t-b', 0), first];
+      FcmTokenModel later(Duration by, {String locale = 'tr'}) =>
+          first.copyWith(updatedAt: first.updatedAt.add(by), locale: locale);
+
+      expect(
+        FcmTokenModel.upserted(current, later(const Duration(days: 6))),
+        same(current),
+      );
+      final stale = later(FcmTokenModel.refreshInterval);
+      expect(FcmTokenModel.upserted(current, stale), [
+        tokenOf('t-b', 0),
+        stale,
+      ]);
+      final english = later(const Duration(hours: 1), locale: 'en');
+      expect(FcmTokenModel.upserted(current, english).last, english);
+      final ios = later(const Duration(hours: 1)).copyWith(platform: 'ios');
+      expect(FcmTokenModel.upserted(current, ios).last, ios);
+    });
+
+    test('T-44 · D2-06 upsert: her açılışta aynı jeton yazılmaz — '
+        'updatedAt ve belge değişmez', () async {
+      await create();
+      await repository.upsertFcmToken(_uid, tokenOf('t-a', 1));
+      final before = (await read(accountRef()))!;
+
+      final again = await repository.upsertFcmToken(_uid, tokenOf('t-a', 5));
+
+      expect(again.isSuccess, isTrue);
+      expect(await tokens(), [tokenOf('t-a', 1)]);
+      expect(_changedKeys(before, (await read(accountRef()))!), isEmpty);
+    });
 
     test(
       'remove: yalnızca o jeton çıkar; listede olmayan jeton yazım '

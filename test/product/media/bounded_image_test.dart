@@ -128,6 +128,54 @@ void main() {
     });
   });
 
+  testWidgets('T-44 · coverEdgePx: kısa kenar kutu kenarına iner (kaplama '
+      'germez); uzun kenar maxEdge sınırında; büyütme yok', (tester) async {
+    await tester.runAsync(() async {
+      Future<(int, int)> decoded(int w, int h) async => _decodedSize(
+        BoundedImage(MemoryImage(await _png(w, h)), coverEdgePx: 120),
+      );
+
+      expect(await decoded(1600, 1200), (160, 120));
+      expect(await decoded(1600, 1600), (120, 120));
+      expect(await decoded(100, 100), (100, 100));
+      // Dikey: kısa kenar 120, uzun kenar oranla (213,3 → 214).
+      expect(await decoded(900, 1600), (120, 214));
+    });
+  });
+
+  test('T-44 · coverTarget: uzun kenar maxEdge, kısa kenar ≥ kutu', () {
+    expect(
+      BoundedImage.coverTarget(4000, 1000, coverEdge: 120, maxEdge: 1600),
+      isA<ui.TargetImageSize>()
+          .having((t) => t.width, 'width', 480)
+          .having((t) => t.height, 'height', 120),
+    );
+    // Kutu maxEdge'den büyükse yalnızca maxEdge sınırı (varsayılan çözüm).
+    expect(
+      BoundedImage.coverTarget(3200, 1600, coverEdge: 2000, maxEdge: 1600),
+      isA<ui.TargetImageSize>()
+          .having((t) => t.width, 'width', 1600)
+          .having((t) => t.height, 'height', 800),
+    );
+  });
+
+  testWidgets('T-44 · coverEdgePx verilse de piksel sınırı aşan görsel '
+      'çözülmeden reddedilir', (tester) async {
+    await tester.runAsync(() async {
+      final bytes = await _png(40, 30);
+      await expectLater(
+        _decodedSize(
+          BoundedImage(
+            MemoryImage(bytes),
+            maxSourcePixels: 1199,
+            coverEdgePx: 10,
+          ),
+        ),
+        throwsA(isA<ImageTooLargeException>()),
+      );
+    });
+  });
+
   test('uygulamanın kendi yüklediği görsel (uzun kenar ≤ seçici sınırı) ne '
       'reddedilir ne küçültülür', () {
     const edge = DeviceImagePickerService.maxEdgePx;
@@ -152,6 +200,16 @@ void main() {
       isNot(BoundedImage(image, maxSourcePixels: 10)),
     );
     expect(BoundedImage(image), isNot(BoundedImage(MemoryImage(Uint8List(1)))));
+    // Her gösterim boyutu ayrı kayıttır (T-44).
+    expect(
+      BoundedImage(image, coverEdgePx: 120),
+      BoundedImage(image, coverEdgePx: 120),
+    );
+    expect(
+      BoundedImage(image, coverEdgePx: 120).hashCode,
+      BoundedImage(image, coverEdgePx: 120).hashCode,
+    );
+    expect(BoundedImage(image), isNot(BoundedImage(image, coverEdgePx: 120)));
   });
 
   testWidgets('reddedilen görselin hücresi yer tutucuda kalır (hata yüzeye '

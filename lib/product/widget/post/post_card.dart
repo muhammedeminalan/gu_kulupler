@@ -255,7 +255,7 @@ class PostCard extends ConsumerStatefulWidget {
 }
 
 class _PostCardState extends ConsumerState<PostCard>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   /// `@keyframes pop` (css:419): %0 1 → %40 1.35 → %100 1; eğri her aralığa
   /// ayrı uygulanır (CSS `animation-timing-function`).
   static const double _popPeakAt = 40;
@@ -307,7 +307,16 @@ class _PostCardState extends ConsumerState<PostCard>
     super.dispose();
   }
 
-  void _showMore() => setState(() => _more = true);
+  /// Tembel listede (FED-01) yalnızca metni açılmış kart ekran dışına
+  /// kaydırılınca canlı tutulur: geri gelince "devamını gör" açık kalır
+  /// (T-44). Öteki kartlar serbest kalır; liste dışında etkisizdir.
+  @override
+  bool get wantKeepAlive => _more;
+
+  void _showMore() {
+    setState(() => _more = true);
+    updateKeepAlive();
+  }
 
   void _comment() {
     if (!widget.expanded) widget.onComment?.call();
@@ -315,6 +324,7 @@ class _PostCardState extends ConsumerState<PostCard>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final post = widget.post;
     final title = post.title;
     final hasTitle = title != null && title.isNotEmpty;

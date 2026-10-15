@@ -285,7 +285,7 @@ final class ManageContentViewModel extends _$ManageContentViewModel
   Future<void> _load() async {
     final generation = ++_generation;
     final (club, page) = await (
-      clubRepository.getClub(clubId),
+      clubRepository.getClub(clubId, forceRefresh: true),
       postRepository.listForManagement(clubId, const PageRequest()),
     ).wait;
     if (!ref.mounted || generation != _generation) return;

@@ -84,10 +84,10 @@ final class AdminClubFormViewModel extends _$AdminClubFormViewModel
     final id = clubId;
     if (id == null || !ref.mounted) return;
     state = state.copyWith(isLoading: true, isError: false);
-    var result = await clubRepository.getClub(id);
+    var result = await clubRepository.getClub(id, forceRefresh: true);
     if (result.errorOrNull == FirestoreError.permissionDenied &&
         await _claimsStillValid()) {
-      result = await clubRepository.getClub(id);
+      result = await clubRepository.getClub(id, forceRefresh: true);
     }
     if (!ref.mounted) return;
     switch (result) {

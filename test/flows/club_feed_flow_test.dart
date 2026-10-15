@@ -120,10 +120,11 @@ Future<void> _go(WidgetTester tester, String location) async {
 }
 
 Future<void> _tap(WidgetTester tester, Key key) async {
-  final finder = find.byKey(key);
-  await tester.ensureVisible(finder);
+  // Akış tembel bir sliver grubudur (T-44): hedef önbellek alanında kurulu
+  // ama "sahne dışı" olabilir (ekranın hemen üstünde / altında).
+  await tester.ensureVisible(find.byKey(key, skipOffstage: false));
   await tester.pump();
-  await tester.tap(finder);
+  await tester.tap(find.byKey(key));
   await tester.pumpAndSettle();
 }
 

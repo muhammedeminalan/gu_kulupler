@@ -211,7 +211,7 @@ class _ComposeFormState extends ConsumerState<ComposeForm> {
           initials: name.initials,
           seed: me?.avatarSeed ?? name,
           size: _avatarSize,
-          image: ref.userAvatarImage(me),
+          image: ref.userAvatarImage(me, displaySize: _avatarSize),
         ),
         Expanded(
           child: Column(

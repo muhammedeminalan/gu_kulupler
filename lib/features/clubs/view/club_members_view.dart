@@ -9,6 +9,7 @@ import 'package:gu_kulupler/features/clubs/view/mixin/club_members_view_mixin.da
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Üyeler ekranı — `ClubMembersRoute` (`/clubs/:clubId/members`); prototip
@@ -108,7 +109,10 @@ class _ClubMembersViewState extends ConsumerState<ClubMembersView>
               key: ValueKey<String>(userId),
               membership: membership,
               user: state.users[userId],
-              avatarImage: ref.userAvatarImage(state.users[userId]),
+              avatarImage: ref.userAvatarImage(
+                state.users[userId],
+                displaySize: GuSizes.avatar,
+              ),
               actionKey: GuKey.action('CLB-06.member.$userId'),
               onTap: () => openProfile(userId),
               menuActionKey: hasMenu
@@ -189,6 +193,9 @@ class _ClubMembersViewState extends ConsumerState<ClubMembersView>
                 controller: scrollController,
                 slivers: [
                   ...switch (status) {
+                    _ when OfflineListFallback.applies(ref, status) => [
+                      OfflineListFallback.sliver(onReload: retry),
+                    ],
                     GuListStatus.error => [
                       SliverToBoxAdapter(
                         child: GuErrorState(
@@ -227,7 +234,9 @@ class _ClubMembersViewState extends ConsumerState<ClubMembersView>
                             bottom: GuSpacing.s16,
                           ),
                           child: Text(
-                            l10n.membersTotal(state.totalCount),
+                            l10n.membersTotal(
+                              ClubMembersState.countOf(groups),
+                            ),
                             style: gu.text.caption.copyWith(
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),

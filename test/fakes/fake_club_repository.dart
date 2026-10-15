@@ -20,6 +20,10 @@ final class FakeClubRepository extends FakeBase implements ClubRepository {
   /// `isNameTaken` çağrılarının `nameLower` argümanları, sırasıyla.
   final List<String> isNameTakenCalls = <String>[];
 
+  /// `forceRefresh: true` ile yapılan okumaların metot adları, sırasıyla
+  /// (T-44 · D3-01; çağrı günlüğü [calls] değişmez).
+  final List<String> forcedReads = <String>[];
+
   /// [id] kimlikli bir kulüp kurar ve döndürür (varsayılan: aktif, onaylı,
   /// başvuruya açık, not zorunlu değil).
   ClubModel put(
@@ -54,8 +58,11 @@ final class FakeClubRepository extends FakeBase implements ClubRepository {
   }
 
   @override
-  Future<FirestoreResult<List<ClubModel>>> fetchActiveClubs() async {
+  Future<FirestoreResult<List<ClubModel>>> fetchActiveClubs({
+    bool forceRefresh = false,
+  }) async {
     record('fetchActiveClubs');
+    if (forceRefresh) forcedReads.add('fetchActiveClubs');
     if (_failure() case final error?) return FirebaseFailure(error);
     final live = [
       for (final club in clubs.values)
@@ -65,8 +72,12 @@ final class FakeClubRepository extends FakeBase implements ClubRepository {
   }
 
   @override
-  Future<FirestoreResult<ClubModel>> getClub(String clubId) async {
+  Future<FirestoreResult<ClubModel>> getClub(
+    String clubId, {
+    bool forceRefresh = false,
+  }) async {
     record('getClub', [clubId]);
+    if (forceRefresh) forcedReads.add('getClub');
     if (_failure() case final error?) return FirebaseFailure(error);
     if (!RepositoryHelpers.isValidId(clubId)) {
       return const FirebaseFailure(FirestoreError.invalidArgument);
@@ -79,9 +90,11 @@ final class FakeClubRepository extends FakeBase implements ClubRepository {
 
   @override
   Future<FirestoreResult<List<ClubModel>>> getClubs(
-    List<String> clubIds,
-  ) async {
+    List<String> clubIds, {
+    bool forceRefresh = false,
+  }) async {
     record('getClubs', [clubIds]);
+    if (forceRefresh) forcedReads.add('getClubs');
     if (_failure() case final error?) return FirebaseFailure(error);
     if (!clubIds.every(RepositoryHelpers.isValidId)) {
       return const FirebaseFailure(FirestoreError.invalidArgument);

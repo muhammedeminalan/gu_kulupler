@@ -1,11 +1,14 @@
 // T-20 · ImageGrid + PostImage (widget-catalog P14) — gönderi görselleri
 // ızgarası: 1 / 2 / 3 / 4 (+ fazlası) yerleşimleri, aralık ve dış köşe, yer
-// tutucu (kulüp paleti / varsayılan — K-18), görsel çözücü (yükleniyor / hata
-// → yer tutucu altta kalır), dokunma → hücre sırası, anahtarlar,
+// tutucu (kulüp paleti / varsayılan — K-18), görsel çözücü (yer tutucu
+// yalnızca yükleniyor / hata sırasında — T-44), dokunma → hücre sırası,
+// anahtarlar,
 // erişilebilirlik. Kaynak: prototip `cards.js:92–95`, css:407–408.
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/post/image_grid.dart';
@@ -36,6 +39,21 @@ Future<void> _pump(
 
 Rect _cell(WidgetTester tester, int index) =>
     tester.getRect(find.byKey(_imageKey(index)));
+
+/// Gerçek kod çözücünün sonucu için beklenen süre.
+const Duration _decodeSettle = Duration(milliseconds: 200);
+
+/// 2 × 2 opak (siyah) PNG — gerçek kodlayıcıyla.
+Future<Uint8List> _opaquePng() async {
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder).drawRect(const Rect.fromLTWH(0, 0, 2, 2), Paint());
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(2, 2);
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+  picture.dispose();
+  return data!.buffer.asUint8List();
+}
 
 void main() {
   group('T-20 · ImageGrid · yerleşim', () {
@@ -155,9 +173,8 @@ void main() {
       expect(cover.icon, GuIcons.image);
     });
 
-    testWidgets('görsel çözücü: görsel yer tutucunun üstüne çizilir; çözücü '
-        '`null` dönerse ve görsel yüklenemezse yer tutucu kalır (hata '
-        'fırlatılmaz)', (tester) async {
+    testWidgets('görsel çözücü: görsel yüklenemezse `errorBuilder` hücreye '
+        'yer tutucuyu çizer (hata fırlatılmaz)', (tester) async {
       final images = imagesOf(2);
       // Bozuk baytlar: çözümleme hatası → `errorBuilder`.
       final broken = MemoryImage(Uint8List.fromList([0, 1, 2, 3]));
@@ -169,20 +186,69 @@ void main() {
           imageOf: (image) => image == images.first ? broken : null,
         ),
       );
-      await tester.pumpAndSettle();
+      // Gerçek kod çözücünün hatası gerçek zamanda gelir.
+      await tester.runAsync(() => Future<void>.delayed(_decodeSettle));
+      await tester.pump();
 
-      final covers = tester.widgetList<GuCover>(find.byType(GuCover)).toList();
-      expect(covers.first.overlays, hasLength(1));
-      expect(covers.last.overlays, isEmpty);
+      expect(tester.takeException(), isNull);
       final photo = tester.widget<Image>(find.byType(Image));
       expect(photo.image, broken);
       expect(photo.fit, BoxFit.cover);
-      expect(photo.errorBuilder, isNotNull);
-      expect(tester.takeException(), isNull);
-      // Yer tutucu iki hücrede de çizili.
+      expect(
+        find.descendant(of: find.byType(Image), matching: find.byType(GuCover)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(Image),
+          matching: find.byType(RawImage),
+        ),
+        findsNothing,
+      );
+      final covers = tester.widgetList<GuCover>(find.byType(GuCover)).toList();
+      expect(covers, hasLength(2));
       expect(covers.map((cover) => cover.palette).toSet(), {
         CoverMapper.palette(kClub.palette),
       });
+    });
+
+    testWidgets('görsel çözücü `null` dönerse hücre yalnızca yer tutucudur', (
+      tester,
+    ) async {
+      await pumpPost(
+        tester,
+        ImageGrid(images: imagesOf(1), club: kClub, imageOf: (_) => null),
+      );
+      expect(find.byType(GuCover), findsOneWidget);
+      expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('T-44 · P1-04: opak görselin ilk karesi gelince yer tutucu '
+        '(SVG) çizilmez; yüklenirken yer tutucu görünür', (tester) async {
+      late final Uint8List bytes;
+      await tester.runAsync(() async => bytes = await _opaquePng());
+      final photo = MemoryImage(bytes);
+      await pumpPost(
+        tester,
+        ImageGrid(images: imagesOf(1), club: kClub, imageOf: (_) => photo),
+      );
+      // Kare gelmeden: yer tutucu + görsel katmanı.
+      expect(find.byType(GuCover), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+
+      await tester.runAsync(
+        () => precacheImage(photo, tester.element(find.byType(Image))),
+      );
+      await tester.pump();
+
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byType(GuCover), findsNothing);
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(
+        tester.widget<RawImage>(find.byType(RawImage)).image,
+        isNotNull,
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -10,24 +10,34 @@ import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 ///
 /// `null` döner (çağıran baş harfleri çizer): kullanıcı yok, silinmiş ya da
 /// anonimleştirilmiş, fotoğraf yok ya da indirme adresi henüz gelmedi
-/// ([storageImageResolver] adres gelince yeni çözücü yayar, izleyen widget
-/// yeniden çizilir). Ortak widget'lar saf kalır: görseli çağıran çözer ve
-/// `ImageProvider?` olarak verir.
+/// (adres gelince yalnızca o yolu izleyen widget yeniden çizilir —
+/// [StorageImageRefX.storageImage]). Ortak widget'lar saf kalır: görseli
+/// çağıran çözer ve `ImageProvider?` olarak verir.
 ///
 /// Okuma yetkisi Storage Rules'tadır (`users/` — doğrulanmış kullanıcı, tek
 /// dosya `get`; D-29: avatar `users/{uid}` ile aynı görünürlüktedir).
 extension UserAvatarResolverX on StorageImageResolver {
-  /// [user]'ın profil fotoğrafı; yoksa `null`.
-  ImageProvider? userAvatar(UserModel? user) {
+  /// [user]'ın profil fotoğrafı; yoksa `null`. [coverEdgePx] avatarın
+  /// cihaz pikseli çapıdır ([decodePx]).
+  ImageProvider? userAvatar(UserModel? user, {int? coverEdgePx}) {
     if (user == null || user.isDeleted || user.isAnonymized) return null;
-    return this(user.avatarPath);
+    return this(user.avatarPath, coverEdgePx: coverEdgePx);
   }
 }
 
 /// `build` içinde kısa yol:
-/// `UserRow(user: user, avatarImage: ref.userAvatarImage(user))`.
+/// `UserRow(user: user, avatarImage: ref.userAvatarImage(user,
+/// displaySize: GuSizes.avatar))`.
 extension UserAvatarImageRefX on WidgetRef {
-  /// [user]'ın profil fotoğrafı ([storageImageResolverProvider] izlenir).
-  ImageProvider? userAvatarImage(UserModel? user) =>
-      watch(storageImageResolverProvider).userAvatar(user);
+  /// [user]'ın profil fotoğrafı (yalnızca bu yolun sağlayıcısı izlenir).
+  /// [displaySize] avatarın çapıdır (dp): fotoğraf bu boyutta çözülür
+  /// (1600 piksel kaynak 40 dp satırda tam boy çözülmez).
+  ImageProvider? userAvatarImage(UserModel? user, {double? displaySize}) =>
+      this.storageImage(_avatarPathOf(user), displaySize: displaySize);
 }
+
+/// Silinmiş / anonimleştirilmiş kullanıcının fotoğrafı istenmez.
+String? _avatarPathOf(UserModel? user) =>
+    user == null || user.isDeleted || user.isAnonymized
+    ? null
+    : user.avatarPath;

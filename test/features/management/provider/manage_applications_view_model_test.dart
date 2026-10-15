@@ -18,8 +18,10 @@ import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/navigation/applications_tab.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
 import '../../../fakes/fake_club_repository.dart';
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_management_repository.dart';
 import '../../../fakes/fake_membership_repository.dart';
@@ -313,6 +315,79 @@ void main() {
       expect(feedback.toasts, [ToastId.tst54]);
       expect(feedback.toastParams.single.open, isTrue);
       expect(clubs.clubs[kManageClubId]!.applicationsOpen, isTrue);
+    });
+  });
+
+  group('MGT-02 · çevrimdışı (T-44)', () {
+    FakeConnectivityService connectivity() =>
+        GetIt.I<ConnectivityService>() as FakeConnectivityService;
+
+    test('onay: TST-24, yazım yok, satır yerinde', () async {
+      final container = await loaded();
+      final before = container.read(provider);
+      connectivity().isOffline = true;
+
+      final outcome = await container.read(provider.notifier).approve('u_cem');
+
+      expect(outcome, DecisionOutcome.blocked);
+      expect(management.callsTo('approveApplication'), isEmpty);
+      expect(container.read(provider), before);
+      expect(
+        container.read(provider).visible.map((m) => m.userId),
+        contains('u_cem'),
+      );
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('toplu onay: DLG-17 onaylansa da TST-24; approveMany yok, seçim ve '
+        'bekleyenler değişmez', () async {
+      final container = await loaded();
+      final vm = container.read(provider.notifier)
+        ..toggleSelect('u035')
+        ..toggleSelect('u039');
+      final before = container.read(provider);
+      feedback.dialogResults[DialogId.dlg17] = true;
+      connectivity().isOffline = true;
+
+      expect(await vm.bulkApprove(), isNull);
+
+      expect(feedback.dialogs, [DialogId.dlg17]);
+      expect(management.callsTo('approveMany'), isEmpty);
+      expect(container.read(provider), before);
+      expect(container.read(provider).selectedIds, {'u035', 'u039'});
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('"Başvuruları aç": TST-24, kulüp ayarı yazılmaz', () async {
+      clubs.clubs[kManageClubId] = kManageClub.copyWith(
+        applicationsOpen: false,
+      );
+      final container = await loaded();
+      connectivity().isOffline = true;
+
+      expect(
+        await container.read(provider.notifier).openApplications(),
+        isFalse,
+      );
+      expect(management.callsTo('updateClubSettings'), isEmpty);
+      expect(clubs.clubs[kManageClubId]!.applicationsOpen, isFalse);
+      expect(container.read(provider).applicationsClosed, isTrue);
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('geri al: çevrimdışıyken blocked; undoDecision yazılmaz', () async {
+      final container = await loaded();
+      await container.read(provider.notifier).approve('u_cem');
+      connectivity().isOffline = true;
+
+      final outcome = await container
+          .read(provider.notifier)
+          .undoDecision('u_cem');
+
+      expect(outcome, DecisionOutcome.blocked);
+      expect(management.callsTo('undoDecision'), isEmpty);
+      expect(statusOf('u_cem'), MembershipStatus.active);
+      expect(feedback.toasts.last, ToastId.tst24);
     });
   });
 }

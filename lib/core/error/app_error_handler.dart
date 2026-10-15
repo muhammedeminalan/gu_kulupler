@@ -51,6 +51,18 @@ abstract final class AppErrorHandler {
     _record(error, stack, fatal: true, reason: 'runZonedGuarded');
   }
 
+  /// Crashlytics raporlarına oturum kimliğini (uid — e-posta değil;
+  /// architecture §12) bağlar; `null` temizler (çıkış). Fırlatmaz; DI yoksa
+  /// etkisiz (T-44 · D2-11).
+  static void setUser(String? uid) {
+    try {
+      if (!GetIt.I.isRegistered<CrashService>()) return;
+      unawaited(GetIt.I<CrashService>().setUserId(uid));
+    } on Object catch (_) {
+      // Kimlik bağlanamadı: rapor kimliksiz gider.
+    }
+  }
+
   static void _record(
     Object error,
     StackTrace? stack, {

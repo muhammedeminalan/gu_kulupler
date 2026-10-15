@@ -184,7 +184,7 @@ final class ManageEventsViewModel extends _$ManageEventsViewModel
   /// okunamazsa liste yine gösterilir.
   Future<void> _load() async {
     final (club, events) = await (
-      clubRepository.getClub(clubId),
+      clubRepository.getClub(clubId, forceRefresh: true),
       eventRepository.listClubEvents(
         clubId,
         const PageRequest(limit: Limits.upcomingEventsFetchMax),

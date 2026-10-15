@@ -26,12 +26,26 @@ abstract interface class UserRepository {
   /// [FirestoreError.parse].
   Future<FirestoreResult<UserModel?>> getUser(String uid);
 
+  /// [getUser]'ın **yalnızca yerel önbellekten** okuyan eşi (ağa gidilmez):
+  /// yalnızca oturum çözümü, sunucuya ulaşılamayınca (`timeout` /
+  /// `unavailable`) kullanır (Q-12, T-44 · D2-02). Belge önbellekte yoksa
+  /// [FirestoreError.unavailable].
+  Future<FirestoreResult<UserModel?>> getUserFromCache(String uid);
+
   /// [uids] kullanıcılarının profilleri (yorum/üye satırı yazarları).
   ///
   /// Sonuç [uids] sırasındadır; tekrarlar tekilleştirilir, belgesi olmayan
   /// kimlik atlanır, silinmiş kullanıcılar dahildir. Boş liste sorgu
   /// yapmadan boş döner.
-  Future<FirestoreResult<List<UserModel>>> getUsers(List<String> uids);
+  ///
+  /// Bellek içi önbellekten gelebilir (T-44 · D3-01, `CachePolicy.userTtl`):
+  /// önbellekteki profiller bellekten, yalnızca eksikler okunur;
+  /// [forceRefresh] `true` ise (yönetim / admin — `status` taze olmalı) hepsi
+  /// sunucudan okunur.
+  Future<FirestoreResult<List<UserModel>>> getUsers(
+    List<String> uids, {
+    bool forceRefresh = false,
+  });
 
   /// Yeni kullanıcının üç belgesini **tek batch** ile oluşturur:
   /// `users/{uid}` (`status: active`, `profileComplete: false`,

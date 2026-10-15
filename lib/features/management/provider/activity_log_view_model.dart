@@ -169,7 +169,7 @@ final class ActivityLogViewModel extends _$ActivityLogViewModel
     if (!ref.mounted) return;
     final generation = ++_generation;
     final clubRead = withClub
-        ? clubRepository.getClub(clubId)
+        ? clubRepository.getClub(clubId, forceRefresh: true)
         : Future<FirestoreResult<ClubModel>?>.value();
     final (club, page) = await (
       clubRead,
@@ -235,7 +235,7 @@ final class ActivityLogViewModel extends _$ActivityLogViewModel
     }
     if (userIds.isEmpty && eventIds.isEmpty) return const ActivityLookups();
     final (users, events) = await (
-      userRepository.getUsers(userIds.toList()),
+      userRepository.getUsers(userIds.toList(), forceRefresh: true),
       eventRepository.getEvents(eventIds.toList()),
     ).wait;
     final missing = <String>{};

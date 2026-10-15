@@ -247,7 +247,8 @@ final class ClubMembersViewModel extends _$ClubMembersViewModel
   /// gösterilir (alt başlık ve toplam sayaç olmadan).
   Future<_Loaded?> _read() async {
     final (club, managers, advisors, members) = await (
-      clubRepository.getClub(clubId),
+      // Çek-yenile bellek önbelleğini atlar (T-44 · D3-01).
+      clubRepository.getClub(clubId, forceRefresh: state.isRefreshing),
       membershipRepository.listManagers(clubId),
       membershipRepository.listActiveMembers(
         clubId,

@@ -104,4 +104,18 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
   @override
   Future<bool> setComposeDraft(String clubId, String? json) =>
       inner.setComposeDraft(clubId, json);
+
+  @override
+  Set<String> reminderDoneEvents(String uid) => inner.reminderDoneEvents(uid);
+
+  @override
+  Future<bool> setReminderDoneEvents(String uid, Set<String> eventIds) =>
+      inner.setReminderDoneEvents(uid, eventIds);
+
+  @override
+  Map<String, ({String url, DateTime at})> get imageUrls => inner.imageUrls;
+
+  @override
+  Future<bool> setImageUrls(Map<String, ({String url, DateTime at})> entries) =>
+      inner.setImageUrls(entries);
 }

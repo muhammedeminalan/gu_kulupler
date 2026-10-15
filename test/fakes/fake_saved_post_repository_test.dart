@@ -98,6 +98,35 @@ void main() {
       },
     );
 
+    test('T-44 · D3-03 savedAmong: verilen gönderilerden yalnızca '
+        'yürürlükteki kendi kayıtları; çağrı ve hata kaydedilir', () async {
+      await fake.save(userId: _me, postId: 'p01', clubId: _club);
+      await fake.save(userId: _me, postId: 'p02', clubId: _club);
+      await fake.softDeleteSaved(userId: _me, postId: 'p02');
+
+      final result = await fake.savedAmong(
+        userId: _me,
+        postIds: ['p01', 'p02', 'p03'],
+      );
+
+      expect(result.dataOrNull, {'p01'});
+      expect(fake.callsTo('savedAmong').single.args, [
+        _me,
+        'p01',
+        'p02',
+        'p03',
+      ]);
+      fake.failNext(FirestoreError.unavailable);
+      expect(
+        (await fake.savedAmong(userId: _me, postIds: ['p01'])).errorOrNull,
+        FirestoreError.unavailable,
+      );
+      expect(
+        (await fake.savedAmong(userId: _me, postIds: ['a/b'])).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+    });
+
     test('kuralların reddettiği yazımlar permissionDenied döner ve hiçbir '
         'şey değişmez', () async {
       posts

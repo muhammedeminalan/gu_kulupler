@@ -15,7 +15,9 @@ import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/post_actions_mixin.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_post_repository.dart';
 import '../../../fakes/register_fakes.dart';
@@ -200,6 +202,27 @@ void main() {
       expect(posts.callsTo('pin'), isEmpty);
       expect(posts.callsTo('softDeletePost'), isEmpty);
       expect(feedback.toasts, [ToastId.tst26, ToastId.tst26, ToastId.tst26]);
+    });
+  });
+
+  group('MGT-08 · çevrimdışı (T-44)', () {
+    test('sabitle ve sil: TST-24; DLG-10 açılmaz, pin / softDeletePost '
+        'yazılmaz, liste değişmez', () async {
+      final c = await loaded();
+      final before = c.read(provider);
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+      feedback.nextDialogResult = true;
+
+      await run(c, PostMenuAction.pin, 'p10');
+      await run(c, PostMenuAction.remove, 'p12');
+
+      expect(feedback.dialogs, isEmpty);
+      expect(posts.callsTo('pin'), isEmpty);
+      expect(posts.callsTo('softDeletePost'), isEmpty);
+      expect(c.read(provider), before);
+      expect(pinnedIds(c), ['p08']);
+      expect(feedback.toasts, [ToastId.tst24, ToastId.tst24]);
     });
   });
 }

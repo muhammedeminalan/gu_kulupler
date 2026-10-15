@@ -336,4 +336,62 @@ void main() {
       expect((failed as FirebaseFailure).message, 'ham');
     });
   });
+
+  group('T-44 · RepositoryHelpers · ayrıştırma hatası kancası (D2-03)', () {
+    late List<(Object, StackTrace, String)> reported;
+
+    setUp(() {
+      reported = [];
+      RepositoryHelpers.onParseError = (error, stack, reason) =>
+          reported.add((error, stack, reason));
+      addTearDown(() => RepositoryHelpers.onParseError = null);
+    });
+
+    test('atan fromDoc → kanca orijinal hata ve maskelenmiş yolla çağrılır; '
+        'sonuç yine parse', () async {
+      final ref = service.doc('clubs/abc/events', 'x');
+      await service.set(ref, {'text': 'bozuk'});
+      final doc = (await service.getDoc(ref)).dataOrNull!;
+      final boom = StateError('alan eksik');
+
+      final result = RepositoryHelpers.parse<String>(doc, (_) => throw boom);
+
+      expect(result.errorOrNull, FirestoreError.parse);
+      expect(reported.single.$1, same(boom));
+      expect(reported.single.$3, 'firestore:parse:clubs/*/events/*');
+      expect(reported.single.$3, isNot(contains('abc')));
+    });
+
+    test('kimlik / alan doğrulaması kancayı çağırmaz (kullanıcı girdisi)', () {
+      expect(
+        RepositoryHelpers.rejectInvalidIds<void>({'uid': 'a/b'})?.errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+      expect(
+        RepositoryHelpers.invalidArgument<void>('x').errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+      expect(reported, isEmpty);
+    });
+
+    test('kanca fırlatsa da sonuç döner', () async {
+      RepositoryHelpers.onParseError = (_, _, _) => throw StateError('rapor');
+      final doc = await docOf('p1', {'text': 'x'});
+      expect(
+        RepositoryHelpers.parse<int>(
+          doc,
+          (_) => throw StateError('x'),
+        ).errorOrNull,
+        FirestoreError.parse,
+      );
+    });
+
+    test('collectionPattern kimlik parçalarını maskeler', () {
+      expect(RepositoryHelpers.collectionPattern('users/u1'), 'users/*');
+      expect(
+        RepositoryHelpers.collectionPattern('users/u1/private/account'),
+        'users/*/private/*',
+      );
+    });
+  });
 }

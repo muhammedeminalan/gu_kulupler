@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 import 'package:gu_data/gu_data.dart';
-import 'package:gu_ui/gu_ui.dart' show TurkishCaseX;
+import 'package:gu_ui/gu_ui.dart' show TurkishCaseX, trCompareLowered;
 
 /// MGT-03 rol süzgeci — çip başına bir değer (`MGT-03.filter.<id>`; prototip
 /// `screens-manage.js:69`, sıra tasarımdaki gibi).
@@ -189,23 +189,35 @@ final class ManageMembersState extends Equatable {
 
   /// Ekranda listelenen üyelikler: süzgece ve aramaya uyan, hesabı
   /// silinmemiş üyeler, [sort]'a göre.
+  ///
+  /// Her çağrıda baştan hesaplanır: view bir build'de **bir kez** okur ve
+  /// sayacı [totalCountFor] ile aynı listeden türetir. Ad anahtarı satır
+  /// başına bir kez küçültülür; arama ve ad sıralaması onu paylaşır
+  /// (T-44 · P1-07).
   List<MembershipModel> get visible {
     final term = needle;
+    final keys = <String, String>{};
+    String keyOf(MembershipModel m) => keys[m.userId] ??= nameOf(m).trLower();
     final rows = [
       for (final m in all)
         if (roleFilter.includes(m.role) &&
             !isDeletedUser(m) &&
-            (term.isEmpty || nameOf(m).trLower().contains(term)))
+            (term.isEmpty || keyOf(m).contains(term)))
           m,
     ];
-    return rows..sort(_compare);
+    return rows..sort(
+      (a, b) => _compare(a, b, (x, y) => trCompareLowered(keyOf(x), keyOf(y))),
+    );
   }
 
   /// "{count} kişi": görünen satırlar; sayfalama sürerken ve arama yokken
   /// sıradan üyeler kulübün üye sayacından türetilir (`memberCount` başkan +
   /// yönetim kurulu + üyeleri sayar, danışmanı saymaz).
-  int get totalCount {
-    final shown = visible.length;
+  int get totalCount => totalCountFor(visible.length);
+
+  /// [totalCount]'un, görünen satır sayısı [shown] önceden bilinen hâli
+  /// ([visible] ikinci kez hesaplanmaz).
+  int totalCountFor(int shown) {
     final club = this.club;
     if (club == null || !wantsMore || needle.isNotEmpty) return shown;
     final memberTotal = club.memberCount - managers.length;
@@ -236,19 +248,20 @@ final class ManageMembersState extends Equatable {
   static DateTime? joinedAt(MembershipModel m) =>
       m.decidedAt ?? m.appliedAt ?? m.createdAt;
 
-  int _compare(MembershipModel a, MembershipModel b) => switch (sort) {
-    MemberSort.name => _byName(a, b),
+  int _compare(
+    MembershipModel a,
+    MembershipModel b,
+    int Function(MembershipModel a, MembershipModel b) byName,
+  ) => switch (sort) {
+    MemberSort.name => byName(a, b),
     MemberSort.joined => _millis(b).compareTo(_millis(a)),
     MemberSort.role => switch (roleOrder
         .indexOf(a.role)
         .compareTo(roleOrder.indexOf(b.role))) {
-      0 => _byName(a, b),
+      0 => byName(a, b),
       final order => order,
     },
   };
-
-  int _byName(MembershipModel a, MembershipModel b) =>
-      nameOf(a).trCompareTo(nameOf(b));
 
   static int _millis(MembershipModel m) =>
       joinedAt(m)?.millisecondsSinceEpoch ?? 0;

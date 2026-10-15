@@ -403,13 +403,19 @@ void main() {
     });
 
     test(
-      'showJoined (SHT-05 katılımla kapandı): TST-34 + liste yenilenir',
+      'showJoined (SHT-05 katılımla kapandı): TST-34 + kartın üye sayısı '
+      'yerelde +1, liste yeniden okunmaz (T-44 · D3-04)',
       () async {
         final container = await loaded(kVisitorSession);
-        vmOf(container).showJoined();
+        final club = stateOf(container).clubs.first;
+        vmOf(container).showJoined(club.id);
         await pumpEventQueue();
         expect(feedback.toasts, [ToastId.tst34]);
-        expect(clubs.callsTo('fetchActiveClubs'), hasLength(1));
+        expect(clubs.callsTo('fetchActiveClubs'), isEmpty);
+        expect(
+          stateOf(container).clubById(club.id)!.memberCount,
+          club.memberCount + 1,
+        );
       },
     );
   });

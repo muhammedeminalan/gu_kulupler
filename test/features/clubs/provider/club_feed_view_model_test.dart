@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/clubs/provider/club_detail_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_feed_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_feed_view_model.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
@@ -21,6 +22,7 @@ import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../fakes/fake_membership_repository.dart';
 import '../../../fakes/fake_post_repository.dart';
 import '../../../fakes/fake_saved_post_repository.dart';
 import '../../../fakes/fake_user_repository.dart';
@@ -218,6 +220,64 @@ void main() {
       expect(state.hasMore, isTrue);
       expect(state.posts, hasLength(Limits.pageSize));
     });
+  });
+
+  group('T-44 · FED-01 · okuma maliyeti (D3-03, D3-08)', () {
+    test(
+      'kayıt durumları sayfa başına tek savedAmong (gönderi başına isSaved '
+      'yok); roller CLB-03 kurulundan — akış listManagers çağırmaz',
+      () async {
+        final memberships =
+            GetIt.I<MembershipRepository>() as FakeMembershipRepository;
+        final container = containerOf();
+        await pumpEventQueue();
+
+        expect(saved.callsTo('savedAmong'), hasLength(1));
+        expect(saved.callsTo('isSaved'), isEmpty);
+        expect(stateOf(container).savedPostIds, kFeedSavedIds);
+        expect(stateOf(container).roles, kFeedRoles);
+        // Tek okuma CLB-03'ündür (kulüp sekmesi); akış yeniden okumaz.
+        expect(memberships.callsTo('listManagers'), hasLength(1));
+      },
+    );
+
+    test('loadMore tek savedAmong çağırır; savedAmong okunamazsa kayıt '
+        'durumları önceki değerde kalır', () async {
+      extraFeedPosts(18).forEach(posts.put);
+      final container = await loaded();
+      final before = stateOf(container).savedPostIds;
+
+      saved.failNext(FirestoreError.unavailable);
+      await vmOf(container).loadMore();
+
+      expect(saved.callsTo('savedAmong'), hasLength(1));
+      expect(saved.callsTo('isSaved'), isEmpty);
+      expect(stateOf(container).savedPostIds, before);
+      expect(stateOf(container).isError, isFalse);
+    });
+
+    test(
+      'CLB-03 kurulu değişince (yenileme) yazar rolleri güncellenir',
+      () async {
+        final memberships =
+            GetIt.I<MembershipRepository>() as FakeMembershipRepository;
+        final container = await loaded();
+        final president = kClubManagers.firstWhere(
+          (m) => m.role == ClubRole.president,
+        );
+        final board = kClubManagers.firstWhere((m) => m.role == ClubRole.board);
+        // Kurul üyesi üyeliğe düşürüldü: CLB-03 yenilemesi yeni kurulu okur.
+        memberships.put(board.copyWith(role: ClubRole.member));
+
+        await container
+            .read(clubDetailViewModelProvider(kFeedClubId).notifier)
+            .refresh();
+        await pumpEventQueue();
+
+        expect(stateOf(container).roles[president.userId], ClubRole.president);
+        expect(stateOf(container).roles.containsKey(board.userId), isFalse);
+      },
+    );
   });
 
   group('FED-01 · ClubFeedViewModel · süzgeç ve engel', () {

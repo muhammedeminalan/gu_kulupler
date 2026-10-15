@@ -178,7 +178,7 @@ final class ManageViewModel extends _$ManageViewModel
       counter,
       members,
     ) = await (
-      clubRepository.getClub(clubId),
+      clubRepository.getClub(clubId, forceRefresh: true),
       _collect(
         (page) => membershipRepository.listPending(clubId, page),
       ),
@@ -376,7 +376,7 @@ final class ManageViewModel extends _$ManageViewModel
     };
     final unknownEvents = eventIds.difference(titles.keys.toSet()).toList();
     final (users, events) = await (
-      userRepository.getUsers(userIds.toList()),
+      userRepository.getUsers(userIds.toList(), forceRefresh: true),
       eventRepository.getEvents(unknownEvents),
     ).wait;
     final missing = <String>{};

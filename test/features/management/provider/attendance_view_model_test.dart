@@ -15,8 +15,10 @@ import 'package:gu_kulupler/features/management/provider/attendance_view_model.d
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
 import '../../../fakes/fake_attendance_repository.dart';
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/register_fakes.dart';
@@ -304,5 +306,68 @@ void main() {
       expect(feedback.toasts, [ToastId.tstX15]);
       expect(events.events[kAttendanceEventId]?.registrationOpen, isFalse);
     });
+  });
+
+  group('MGT-06 · çevrimdışı (T-44)', () {
+    void goOffline() =>
+        (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+            true;
+
+    /// Yoklama yazımları (okumalar hariç).
+    List<String> writes() => [
+      for (final call in attendance.calls)
+        if (!call.method.startsWith('watch') && !call.method.startsWith('list'))
+          call.method,
+    ];
+
+    test(
+      '"Katıldı" anahtarı: TST-24, iyimser değişiklik yok, yazım yok',
+      () async {
+        final container = await loaded();
+        final id = firstGoing(container);
+        final before = state(container);
+        goOffline();
+
+        expect(await vm(container).setAttended(id, true), isFalse);
+
+        expect(writes(), isEmpty);
+        expect(state(container), before);
+        expect(statusOf(container, id), RsvpStatus.going);
+        expect(feedback.toasts, [ToastId.tst24]);
+      },
+    );
+
+    test('"Kayıtlıya al": TST-24, promote yazılmaz', () async {
+      final container = await loaded(extra: [waitlisted('u_mehmet')]);
+      final before = state(container);
+      goOffline();
+
+      expect(await vm(container).promote('u_mehmet'), isFalse);
+
+      expect(writes(), isEmpty);
+      expect(state(container), before);
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test(
+      'DLG-17 toplu yoklama onaylansa da TST-24; ilerleme başlamaz',
+      () async {
+        final container = await loaded();
+        final before = state(container);
+        feedback.dialogResults[DialogId.dlg17] = true;
+        goOffline();
+
+        expect(
+          await vm(container).markAllAttended(allLabel: 'Tüm kayıtlılar'),
+          isFalse,
+        );
+
+        expect(feedback.dialogs, [DialogId.dlg17]);
+        expect(writes(), isEmpty);
+        expect(state(container), before);
+        expect(state(container).bulkProgress, isNull);
+        expect(feedback.toasts, [ToastId.tst24]);
+      },
+    );
   });
 }

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T17:47:22.918Z",
+  "updated": "2026-10-15T19:23:11.821Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -572,11 +572,13 @@
       "notes": ""
     },
     "T-44": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-15T17:48:46.232Z",
+      "finishedAt": "2026-10-15T19:23:11.820Z",
+      "commits": [
+        "56fcbf5"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-45": {
@@ -1775,7 +1777,7 @@
     {
       "id": "W-106",
       "declaredIn": "T-42",
-      "text": "T-42 güvenlik incelemesi kabul edilen sınırlamalar → T-45 raporu: (a) herkese açık etkinlikte kötü niyetli yönetici, üye olmayan her kullanıcıya kulüp başına günde bir event_new push'u gönderebilir (başlık yöneticinin metni — kilit ekranında oltalama olasılığı); üyeye etkinlik başına bir; (b) gelen kutusu spam'i Rules'ta kotasız (K-J, CD-65) ve şikayet create kotasız — new_report push'u admin başına 15 dk'da bir, ama gelen kutusu belgeleri ve tetikleyici maliyeti sınırsız (öneri: reports (reporterId, createdAt) indeksiyle şikayetçi başına günlük sayım); (c) W-105 (b) kısmen giderildi: pref.pushTokenUid + dışarıdan kapanışta invalidateToken — yalnızca hem çıkış hem giriş çevrimdışıysa jeton eski hesapta kalır (sunucu jetonları hesaplar arasında tekilleştirmez); (d) role_changed (FORCED) başkanın rol aç-kapa döngüsüyle kendi üyesine yinelenebilir (gerçek geçişe bağlı, kilitsiz); (e) pushReceipts/once_ kilit belgeleri de silinmez (D-10) — W-105 (c) saklama ölçümüne dahil",
+      "text": "T-42 güvenlik incelemesi kabul edilen sınırlamalar → T-45 raporu: (a) herkese açık etkinlikte kötü niyetli yönetici, üye olmayan her kullanıcıya kulüp başına günde bir event_new push'u gönderebilir (başlık yöneticinin metni — kilit ekranında oltalama olasılığı); üyeye etkinlik başına bir; (b) gelen kutusu spam'i Rules'ta kotasız (K-J, CD-65) ve şikayet create kotasız — new_report push'u admin başına 15 dk'da bir, ama gelen kutusu belgeleri ve tetikleyici maliyeti sınırsız (öneri: reports (reporterId, createdAt) indeksiyle şikayetçi başına günlük sayım); (c) W-105 (b) kısmen giderildi: pref.pushTokenUid + dışarıdan kapanışta invalidateToken; T-44 · A4-06: çevrimdışı çıkışta geçersiz kılınamayan jeton için pushTokenUid dolu kalır ve oturum kapalıyken açılışta / öne gelişte yeniden denenir — pencere bir sonraki uygulama açılışına / öne gelişine ya da başka hesabın girişine kadar sürer (sunucu jetonları hesaplar arasında tekilleştirmez); (d) role_changed (FORCED) başkanın rol aç-kapa döngüsüyle kendi üyesine yinelenebilir (gerçek geçişe bağlı, kilitsiz); (e) pushReceipts/once_ kilit belgeleri de silinmez (D-10) — W-105 (c) saklama ölçümüne dahil",
       "resolveIn": [
         "T-45"
       ],
@@ -1785,6 +1787,15 @@
       "id": "W-107",
       "declaredIn": "T-35",
       "text": "QR v1 gerçek cihazda denenir (kullanıcı kararı 2026-10-15: 'v1 kalsın, deneyelim, olmazsa geçeriz'): kopyalanmış bilet kodu sorunu görülürse QR v2 gu:ticket:v2:{eventId}:{userId}:{code} → rsvps/{eventId}_{userId} tekil get + kod karşılaştırma (D-30 değişikliği, ~1 sa) — W-99 devamı",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-108",
+      "declaredIn": "T-44",
+      "text": "Gerçek cihazda profil ölçümü (docs/reports/T-44-perf.md komutları): açılış, CLB-01 ve FED-01 kaydırma — 90p kare < 16 ms; ayrıca gerçek projede Crashlytics test hatası konsolda görünür",
       "resolveIn": [
         "T-46"
       ],

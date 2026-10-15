@@ -18,6 +18,7 @@ import 'package:gu_kulupler/product/widget/manage/manage_header.dart';
 import 'package:gu_kulupler/product/widget/member/application_row.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Başvurular — `ManageApplicationsRoute`
@@ -189,7 +190,10 @@ class _ManageApplicationsViewState extends ConsumerState<ManageApplicationsView>
       key: ValueKey<String>(userId),
       application: m,
       user: user,
-      avatarImage: ref.userAvatarImage(user),
+      avatarImage: ref.userAvatarImage(
+        user,
+        displaySize: GuSizes.applicationRowAvatar,
+      ),
       note: state.contacts[userId]?.note,
       timeLabel: relative.format(m.appliedAt ?? m.createdAt ?? now),
       actionKey: GuKey.action('MGT-02.row.$userId'),
@@ -233,7 +237,7 @@ class _ManageApplicationsViewState extends ConsumerState<ManageApplicationsView>
       key: ValueKey<String>(userId),
       name: state.nameOf(m),
       avatarSeed: seed.isEmpty ? userId : seed,
-      avatarImage: ref.userAvatarImage(user),
+      avatarImage: ref.userAvatarImage(user, displaySize: GuSizes.avatar),
       sub: sub,
       sub2: rejected && reason != null
           ? Text(
@@ -266,6 +270,8 @@ class _ManageApplicationsViewState extends ConsumerState<ManageApplicationsView>
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(

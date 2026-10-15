@@ -148,6 +148,15 @@ final class _RulesLikeFirestoreService implements FirestoreService {
 
   @override
   Object serverTimestamp() => _inner.serverTimestamp();
+
+  @override
+  Future<FirestoreResult<FirestoreDoc?>> getDocFromCache(
+    DocumentReference<Json> ref,
+  ) => _inner.getDocFromCache(ref);
+
+  @override
+  Future<FirestoreResult<void>> setNetworkEnabled({required bool enabled}) =>
+      _inner.setNetworkEnabled(enabled: enabled);
 }
 
 SupportAttachment _image({String contentType = 'image/png', int length = 3}) =>

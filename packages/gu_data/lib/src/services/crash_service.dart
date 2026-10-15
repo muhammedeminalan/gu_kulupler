@@ -25,7 +25,7 @@ abstract interface class CrashService {
   /// kimliği temizler (çıkış).
   Future<void> setUserId(String? uid);
 
-  /// Rapor toplamayı açar/kapatır (debug derlemede kapalı).
+  /// Rapor toplamayı açar/kapatır (yalnızca release'te açık).
   Future<void> setCollectionEnabled(bool enabled);
 }
 
@@ -43,7 +43,15 @@ final class FirebaseCrashService implements CrashService {
     bool fatal = false,
     String? reason,
   }) => _quietly(
-    () => _crashlytics.recordError(error, stack, reason: reason, fatal: fatal),
+    // Konsol dökümünü `AppErrorHandler` yazar; SDK'nın ikinci
+    // "FIREBASE CRASHLYTICS" bloğu kapalı (T-44 · D2-12).
+    () => _crashlytics.recordError(
+      error,
+      stack,
+      reason: reason,
+      fatal: fatal,
+      printDetails: false,
+    ),
   );
 
   @override

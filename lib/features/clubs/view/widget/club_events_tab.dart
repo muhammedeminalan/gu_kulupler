@@ -4,6 +4,7 @@ import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/product/widget/event/event_card.dart';
 import 'package:gu_kulupler/product/widget/event/event_card_status.dart';
 import 'package:gu_kulupler/product/widget/event/event_cta.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// CLB-03 "Etkinlikler" sekmesinin dilimi (`CLB-03.eventSeg.*`).
@@ -173,19 +174,29 @@ class ClubEventsTab extends StatelessWidget {
             skeletonCount: skeletonCount,
             skeletonVariant: GuSkeletonVariant.card,
             skeletonSemanticLabel: l10n.commonLoading,
-            errorBuilder: (_) => GuErrorState(
-              title: l10n.sysErrorTitle,
-              description: l10n.sysErrorDesc,
-              retryLabel: l10n.commonRetry,
-              onRetry: onRetry,
-              retryActionKey: retryKey,
-              inline: true,
+            // Çevrimdışı + önbellekte etkinlik yok → SYS-03 (T-44 · A4-03);
+            // dilim boşsa ama kulübün etkinliği varsa boş durum kalır.
+            errorBuilder: (_) => OfflineListFallback(
+              onReload: onRetry,
+              child: GuErrorState(
+                title: l10n.sysErrorTitle,
+                description: l10n.sysErrorDesc,
+                retryLabel: l10n.commonRetry,
+                onRetry: onRetry,
+                retryActionKey: retryKey,
+                inline: true,
+              ),
             ),
-            emptyBuilder: (_) => GuEmptyState(
-              illustration: GuIllustrations.emptyEvents,
-              title: l10n.eventEmptyTitle,
-              compact: true,
-            ),
+            emptyBuilder: (_) {
+              final empty = GuEmptyState(
+                illustration: GuIllustrations.emptyEvents,
+                title: l10n.eventEmptyTitle,
+                compact: true,
+              );
+              return events.isEmpty
+                  ? OfflineListFallback(onReload: onRetry, child: empty)
+                  : empty;
+            },
             dataBuilder: (_) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: GuSpacing.s12,

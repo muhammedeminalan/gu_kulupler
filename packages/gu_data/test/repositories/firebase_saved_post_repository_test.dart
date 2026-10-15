@@ -100,7 +100,7 @@ void main() {
         'üye yok', () {
       final plan = readPlanRepositoryMembers('$SavedPostRepository');
 
-      expect(plan, hasLength(5));
+      expect(plan, hasLength(6));
       expect(interfaceMembers(_interface, '$SavedPostRepository').toSet(), {
         for (final row in plan) normalizeDartSource(row.signature),
       });
@@ -331,6 +331,60 @@ void main() {
       expect(await isSaved(_me, 'p_kaldirilmis'), isFalse);
       expect(await isSaved(_me, 'p_yok'), isFalse);
       expect(await isSaved(_other), isFalse);
+    });
+
+    test('T-44 · D3-03 savedAmong: sayfadaki gönderilerden yalnızca '
+        "yürürlükteki kendi kayıtları; 30'luk parçalar, tekilleştirme, boş "
+        'liste sorgusuz', () async {
+      await seed(_me, 'p01');
+      await seed(_me, 'p02', isDeleted: true);
+      await seed(_other, 'p03');
+      for (var i = 0; i < 35; i++) {
+        if (i.isEven) await seed(_me, 'q$i');
+      }
+      final page = [
+        'p01',
+        'p02',
+        'p03',
+        'p01',
+        for (var i = 0; i < 35; i++) 'q$i',
+      ];
+
+      final result = await repository.savedAmong(userId: _me, postIds: page);
+
+      expect(result.dataOrNull, {
+        'p01',
+        for (var i = 0; i < 35; i += 2) 'q$i',
+      });
+      // Boş liste: sorgu yapılmaz (yapılsaydı permission-denied dönerdi).
+      final none = await failing(
+        'permission-denied',
+      ).savedAmong(userId: _me, postIds: const []);
+      expect(none.dataOrNull, isEmpty);
+      expect(
+        (await failing(
+          'unavailable',
+        ).savedAmong(userId: _me, postIds: ['p01'])).errorOrNull,
+        FirestoreError.unavailable,
+      );
+      for (final id in _invalidIds) {
+        expect(
+          (await repository.savedAmong(
+            userId: id,
+            postIds: ['p01'],
+          )).errorOrNull,
+          FirestoreError.invalidArgument,
+          reason: id,
+        );
+        expect(
+          (await repository.savedAmong(
+            userId: _me,
+            postIds: [id],
+          )).errorOrNull,
+          FirestoreError.invalidArgument,
+          reason: id,
+        );
+      }
     });
 
     test(

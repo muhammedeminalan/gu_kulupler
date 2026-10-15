@@ -11,6 +11,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
+import '../fakes/fake_app_clock.dart';
 import '../fakes/sdk_firestore_stubs.dart';
 import '../helpers/plan_repository_table.dart';
 import '../helpers/plan_service_table.dart';
@@ -54,6 +55,42 @@ final class _IdListDeniedService implements FirestoreService {
     return deniedIds.contains(ref.id)
         ? Future.value(const FirebaseFailure(FirestoreError.permissionDenied))
         : _inner.getDoc(ref);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Okuma sayacı: tekil ve liste okumalarını sayar, [_inner] servisine iletir.
+/// Yazımlar doğrudan iç servisten yapılır (yazım kancası oradadır).
+final class _CountingReads implements FirestoreService {
+  _CountingReads(this._inner);
+
+  final FirestoreService _inner;
+
+  /// `getDoc` çağrı sayısı.
+  int docReads = 0;
+
+  /// `getList` çağrı sayısı.
+  int listReads = 0;
+
+  @override
+  DocumentReference<Json> doc(String collectionPath, String id) =>
+      _inner.doc(collectionPath, id);
+
+  @override
+  Query<Json> collection(String path) => _inner.collection(path);
+
+  @override
+  Future<FirestoreResult<FirestoreDoc?>> getDoc(DocumentReference<Json> ref) {
+    docReads++;
+    return _inner.getDoc(ref);
+  }
+
+  @override
+  Future<FirestoreResult<List<FirestoreDoc>>> getList(Query<Json> query) {
+    listReads++;
+    return _inner.getList(query);
   }
 
   @override
@@ -295,6 +332,135 @@ void main() {
       for (final result in results) {
         expect(result.errorOrNull, FirestoreError.permissionDenied);
       }
+    });
+  });
+
+  group('T-44 · ClubRepository · bellek önbelleği (D3-01)', () {
+    late FakeAppClock clock;
+    late FirebaseFirestoreService service;
+    late _CountingReads reads;
+    late ClubRepository cached;
+
+    setUp(() async {
+      clock = FakeAppClock(DateTime.utc(2026, 10, 15, 9));
+      service = FirebaseFirestoreService(db);
+      final caches = RepositoryReadCaches(clock);
+      addTearDown(caches.dispose);
+      service.addWriteListener(caches.onWrite);
+      reads = _CountingReads(service);
+      cached = FirebaseClubRepository(reads, cache: caches);
+      await seed('c01');
+      await seed('c02');
+    });
+
+    Future<String?> nameOf(String id) async =>
+        (await cached.getClub(id)).dataOrNull?.name;
+
+    test(
+      'TTL içinde etkin liste ve kulüp ikinci kez okunmaz; liste okuması '
+      'kulüpleri de yazar; süre dolunca ve forceRefresh ile okunur',
+      () async {
+        expect((await cached.fetchActiveClubs()).dataOrNull, hasLength(2));
+        expect((await cached.fetchActiveClubs()).dataOrNull, hasLength(2));
+        expect(await nameOf('c01'), 'Kulüp c01');
+        expect((reads.listReads, reads.docReads), (1, 0));
+
+        await cached.fetchActiveClubs(forceRefresh: true);
+        await cached.getClub('c01', forceRefresh: true);
+        expect((reads.listReads, reads.docReads), (2, 1));
+
+        clock.advance(CachePolicy.clubTtl);
+        await cached.getClub('c02');
+        await cached.fetchActiveClubs();
+        expect((reads.listReads, reads.docReads), (3, 2));
+      },
+    );
+
+    test(
+      'dönen liste kopyadır: çağıranın değişikliği önbelleği bozmaz',
+      () async {
+        final first = (await cached.fetchActiveClubs()).dataOrNull!..clear();
+        expect(first, isEmpty);
+        expect((await cached.fetchActiveClubs()).dataOrNull, hasLength(2));
+      },
+    );
+
+    test('servis üzerinden kulübe tekil yazım, batch ve transaction ilgili '
+        'kulübü ve etkin listeyi eşzamanlı geçersiz kılar', () async {
+      await cached.fetchActiveClubs();
+      final c01 = service.doc(FirestoreCollections.clubs, 'c01');
+      final c02 = service.doc(FirestoreCollections.clubs, 'c02');
+
+      await service.update(c01, {'name': 'Tekil'});
+      expect(await nameOf('c01'), 'Tekil');
+      expect(reads.docReads, 1);
+
+      await service.commitBatch(
+        (batch) => batch.update(c02, {'name': 'Batch'}),
+      );
+      expect(await nameOf('c02'), 'Batch');
+      expect(reads.docReads, 2);
+
+      await service.runTransaction((tx) async {
+        await tx.get(c01);
+        tx.update(c01, {'memberCount': 7});
+      });
+      expect((await cached.getClub('c01')).dataOrNull?.memberCount, 7);
+      expect(reads.docReads, 3);
+
+      // Liste de yeniden okunur ve yazımları görür.
+      final list = (await cached.fetchActiveClubs()).dataOrNull!;
+      expect(reads.listReads, 2);
+      expect({for (final club in list) club.name}, {'Tekil', 'Batch'});
+    });
+
+    test('getClubs: önbellekteki kulüp bellekten, yalnızca eksik olan okunur; '
+        'forceRefresh hepsini okur', () async {
+      await cached.getClub('c01');
+      // Servisi atlayan değişiklik (kanca yok): bellekteki kopya görünür.
+      await db.collection('clubs').doc('c01').update({'name': 'Dolaylı'});
+
+      final both = (await cached.getClubs(['c02', 'c01'])).dataOrNull!;
+      expect([for (final club in both) club.id], ['c02', 'c01']);
+      expect(both.last.name, 'Kulüp c01');
+      expect(reads.listReads, 1);
+
+      // İkisi de artık bellekte: okuma yok.
+      await cached.getClubs(['c01', 'c02']);
+      expect(reads.listReads, 1);
+
+      final fresh = (await cached.getClubs([
+        'c01',
+      ], forceRefresh: true)).dataOrNull!;
+      expect(fresh.single.name, 'Dolaylı');
+      expect(reads.listReads, 2);
+    });
+
+    test('olmayan kulüp (notFound) ve hata önbelleğe yazılmaz; eşzamanlı '
+        'aynı okuma birleşir', () async {
+      expect(
+        (await cached.getClub('c_yok')).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(
+        (await cached.getClub('c_yok')).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(reads.docReads, 2);
+
+      final results = await Future.wait([
+        cached.getClub('c02'),
+        cached.getClub('c02'),
+      ]);
+      expect(results.map((r) => r.dataOrNull?.id), ['c02', 'c02']);
+      expect(reads.docReads, 3);
+    });
+
+    test('önbelleksiz repository (cache: null) her çağrıda okur', () async {
+      final plain = FirebaseClubRepository(reads);
+      await plain.getClub('c01');
+      await plain.getClub('c01');
+      expect(reads.docReads, 2);
     });
   });
 }

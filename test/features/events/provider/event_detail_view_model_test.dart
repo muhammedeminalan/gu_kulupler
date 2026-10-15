@@ -263,6 +263,40 @@ void main() {
     });
   });
 
+  group('T-44 · EVT-02 · SHT-12 çakışma (D3-02)', () {
+    test('yalnızca going / attended kayıtları okunur; zamanı çakışan going '
+        'kayıt çakışmadır, bekleme listesi sayılmaz', () async {
+      final overlapping = kEvent.copyWith(id: 'e_cakisan');
+      final waitlistOnly = kEvent.copyWith(id: 'e_bekleme');
+      seedEvents(events: [kEvent, overlapping, waitlistOnly]);
+      final c = await loaded(session: memberSession());
+      rsvps.put(
+        kGoing.copyWith(
+          id: FirestoreIds.rsvp(waitlistOnly.id, kUid),
+          eventId: waitlistOnly.id,
+          status: RsvpStatus.waitlist,
+        ),
+      );
+      expect(await vmOf(c).hasConflict(), isFalse);
+
+      rsvps.put(
+        kGoing.copyWith(
+          id: FirestoreIds.rsvp(overlapping.id, kUid),
+          eventId: overlapping.id,
+        ),
+      );
+      expect(await vmOf(c).hasConflict(), isTrue);
+      expect(
+        rsvps.callsTo('listMine').map((call) => call.args),
+        everyElement([
+          kUid,
+          {RsvpStatus.going, RsvpStatus.attended},
+          null,
+        ]),
+      );
+    });
+  });
+
   group('EVT-02 · hatırlatıcı (SHT-13)', () {
     test('kayıt yok → TST-X7', () async {
       seedEvents();

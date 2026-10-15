@@ -854,6 +854,67 @@ void main() {
       );
     });
 
+    test('T-44 · D3-02 listMine süzgeçli kip: statuses yalnızca o '
+        'durumları, clubId yalnızca o kulübü döndürür; boş küme sorgusuz boş, '
+        'geçersiz clubId invalidArgument', () async {
+      DateTime day(int day) => DateTime.utc(2026, 10, day);
+      await seedRsvp(RsvpStatus.going, createdAt: day(2));
+      await seedRsvp(RsvpStatus.cancelled, eventId: 'e02', createdAt: day(5));
+      await seedRsvp(RsvpStatus.attended, eventId: 'e03', createdAt: day(3));
+      await seedRsvp(
+        RsvpStatus.going,
+        eventId: 'e05',
+        clubId: 'c02',
+        createdAt: day(4),
+      );
+      await seedRsvp(
+        RsvpStatus.going,
+        eventId: 'e04',
+        createdAt: day(6),
+        isDeleted: true,
+      );
+      await seedRsvp(RsvpStatus.going, userId: _other, createdAt: day(7));
+
+      Set<String> ids(FirestoreResult<List<RsvpModel>> result) => {
+        for (final rsvp in result.dataOrNull!) rsvp.eventId,
+      };
+
+      expect(
+        ids(await repository.listMine(_uid, statuses: {RsvpStatus.going})),
+        {'e01', 'e05'},
+      );
+      expect(
+        ids(
+          await repository.listMine(
+            _uid,
+            statuses: {RsvpStatus.going, RsvpStatus.attended},
+          ),
+        ),
+        {'e01', 'e03', 'e05'},
+      );
+      expect(ids(await repository.listMine(_uid, clubId: 'c02')), {'e05'});
+      expect(
+        ids(
+          await repository.listMine(
+            _uid,
+            clubId: _clubId,
+            statuses: {RsvpStatus.attended},
+          ),
+        ),
+        {'e03'},
+      );
+
+      // Boş küme: sorgu yapılmaz (yapılsaydı permission-denied dönerdi).
+      final denied = failing('permission-denied');
+      final none = await denied.listMine(_uid, statuses: {});
+      expect(none.isSuccess, isTrue);
+      expect(none.dataOrNull, isEmpty);
+      expect(
+        (await repository.listMine(_uid, clubId: 'a/b')).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+    });
+
     test('waitlistPosition: aynı etkinlik ve kulüpte daha önce girmiş '
         'bekleyenler + 1 (waitlistAt artan sıra)', () async {
       DateTime minute(int minute) => DateTime.utc(2026, 10, 14, 8, minute);
@@ -992,6 +1053,34 @@ void main() {
       });
       expect(ticket.lessThan, isEmpty);
       expect(ticket.limits, [2]);
+    });
+
+    test('T-44 · D3-02 süzgeçli listMine: yalnızca eşitlik / in, sırasız '
+        've limitsiz (indeksler rules-spec §8)', () async {
+      final queries = _QueryRecordingService();
+      final target = repositoryOn(queries);
+
+      await target.listMine(_uid, clubId: _clubId);
+      await target.listMine(
+        _uid,
+        statuses: {RsvpStatus.going, RsvpStatus.attended},
+      );
+
+      final [byClub, byStatus] = queries.queries;
+      expect(byClub.equalities, {
+        'userId': _uid,
+        'isDeleted': false,
+        'clubId': _clubId,
+      });
+      expect(byClub.inValues, isEmpty);
+      expect(byStatus.equalities, {'userId': _uid, 'isDeleted': false});
+      expect(byStatus.inValues, {
+        'status': unorderedEquals(['going', 'attended']),
+      });
+      for (final query in [byClub, byStatus]) {
+        expect(query.orders, isEmpty);
+        expect(query.limits, isEmpty);
+      }
     });
   });
 
@@ -1334,6 +1423,9 @@ final class _RecordingQuery implements Query<Json> {
   /// Alan → `isLessThan` değeri.
   final Map<Object, Object?> lessThan = {};
 
+  /// Alan → `whereIn` değerleri.
+  final Map<Object, List<Object?>> inValues = {};
+
   /// `orderBy` çağrıları: `[alan, azalan mı]`.
   final List<List<Object?>> orders = [];
 
@@ -1355,7 +1447,9 @@ final class _RecordingQuery implements Query<Json> {
     Iterable<Object?>? whereNotIn,
     bool? isNull,
   }) {
-    if (isLessThan != null) {
+    if (whereIn != null) {
+      inValues[field] = whereIn.toList();
+    } else if (isLessThan != null) {
       lessThan[field] = isLessThan;
     } else {
       equalities[field] = isEqualTo;

@@ -96,7 +96,10 @@ class _ComposeViewState extends ConsumerState<ComposeView>
       PostCard(
         post: post,
         author: session.user,
-        authorAvatar: ref.userAvatarImage(session.user),
+        authorAvatar: ref.userAvatarImage(
+          session.user,
+          displaySize: GuSizes.postAvatar,
+        ),
         role: session.roleIn(widget.clubId),
         club: state.club,
         hideActions: true,

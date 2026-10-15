@@ -50,6 +50,9 @@ final class FakeLocalReminderService extends FakeBase
   /// `rescheduleAll` çağrı sayısı.
   int rescheduleCalls = 0;
 
+  /// Son `rescheduleAll` çağrısına verilen etkinlik haritası (T-44 · D2-06).
+  Map<String, EventModel> lastEvents = const {};
+
   /// `cancelAll` çağrı sayısı.
   int cancelAllCalls = 0;
 
@@ -126,6 +129,7 @@ final class FakeLocalReminderService extends FakeBase
     record('rescheduleAll', [myGoing.length]);
     _throwPending();
     rescheduleCalls++;
+    lastEvents = Map.unmodifiable(events);
   }
 
   @override

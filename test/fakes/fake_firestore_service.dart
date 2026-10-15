@@ -43,6 +43,16 @@ final class FakeFirestoreService extends FakeBase implements FirestoreService {
     return _run(() => _real.getDoc(ref));
   }
 
+  /// T-44 · D2-02: `fake_cloud_firestore` önbellek ayrımı yapmaz; okuma
+  /// bellekteki veritabanından gelir (çağrı ayrı adla kaydedilir).
+  @override
+  Future<FirestoreResult<FirestoreDoc?>> getDocFromCache(
+    DocumentReference<Json> ref,
+  ) {
+    record('getDocFromCache', [ref.path]);
+    return _run(() => _real.getDocFromCache(ref));
+  }
+
   @override
   Future<FirestoreResult<List<FirestoreDoc>>> getList(Query<Json> query) {
     record('getList');
@@ -141,6 +151,19 @@ final class FakeFirestoreService extends FakeBase implements FirestoreService {
 
   @override
   Object serverTimestamp() => _real.serverTimestamp();
+
+  /// [setNetworkEnabled] değerleri, sırasıyla (T-44 · A4-08). Bellekteki
+  /// veritabanının ağı yoktur: çağrı yalnızca kaydedilir.
+  final List<bool> networkEnabledCalls = <bool>[];
+
+  @override
+  Future<FirestoreResult<void>> setNetworkEnabled({required bool enabled}) {
+    record('setNetworkEnabled', [enabled]);
+    return _run(() async {
+      networkEnabledCalls.add(enabled);
+      return const FirebaseSuccess(null);
+    });
+  }
 
   /// Bekleyen hata varsa onu döndürür (gerçek servise gidilmez), yoksa
   /// [action] sonucunu.

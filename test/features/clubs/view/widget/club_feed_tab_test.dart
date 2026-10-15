@@ -15,7 +15,10 @@
 //   `pumpApp` ile çizilir, ViewModel durumu ezilir (okuma yapılmaz).
 // * **Akış kipi** (aksiyon sonuçları): sekme gerçek ViewModel, sahte depolar
 //   ve yer tutucu hedef rotalarla açılır.
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -36,13 +39,17 @@ import 'package:gu_kulupler/product/feedback/catalogs/sheets/post_menu.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
 import 'package:gu_ui/gu_ui.dart';
 
+import '../../../../fakes/fake_club_repository.dart';
 import '../../../../fakes/fake_connectivity_service.dart';
 import '../../../../fakes/fake_feedback_service.dart';
+import '../../../../fakes/fake_membership_repository.dart';
+import '../../../../fakes/fake_storage_service.dart';
 import '../../../../helpers/a11y_guidelines.dart';
 import '../../../../helpers/action_inventory.dart';
 import '../../../../helpers/device_matrix.dart';
@@ -67,6 +74,9 @@ Key _image(String id, int index) => GuKey.action('FED-01.image.$id.$index');
 Key _vote(String id, String optionId) =>
     GuKey.action('FED-01.vote.$id.$optionId');
 
+/// Tembel listede sona kaydırma adımı (dp).
+const double _scrollStep = 400;
+
 /// Yedi kartın tamamı ekranda olsun diye uzun yüzey.
 const Size _tall = Size(390, 4200);
 
@@ -88,9 +98,14 @@ Widget _commentsStub(String clubId, String postId) =>
     Text('comments:$clubId/$postId');
 
 /// Sekmenin test kabuğu: tasarım yakalamasındaki "Akış" başlık çubuğu +
-/// CLB-03'teki gibi tek kaydırma alanı.
+/// CLB-03'teki gibi tek kaydırma alanı (`CustomScrollView`; sekme bir sliver
+/// grubudur, kartlar tembel kurulur — T-44). [cacheExtent] verilirse ekran
+/// dışındaki kartlar da yerleşir (cihaz matrisi tüm kartların taşmasını
+/// denetler).
 class _Host extends StatelessWidget {
-  const _Host();
+  const _Host({this.cacheExtent});
+
+  final ScrollCacheExtent? cacheExtent;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -100,17 +115,23 @@ class _Host extends StatelessWidget {
       onBack: () {},
       backSemanticLabel: context.l10n.a11yBack,
     ),
-    body: const SafeArea(
+    body: SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        child: ClubFeedTab(
-          clubId: kFeedClubId,
-          commentsSheetBuilder: _commentsStub,
-        ),
+      child: CustomScrollView(
+        scrollCacheExtent: cacheExtent,
+        slivers: const [
+          ClubFeedTab(
+            clubId: kFeedClubId,
+            commentsSheetBuilder: _commentsStub,
+          ),
+        ],
       ),
     ),
   );
 }
+
+/// Cihaz matrisinde yedi kartın hepsinin yerleşmesi için önbellek alanı.
+const ScrollCacheExtent _matrixCacheExtent = ScrollCacheExtent.pixels(10000);
 
 /// Durum kipi: oturum + ViewModel durumu ezilir; saat tasarım yakalamasının
 /// anıdır.
@@ -148,6 +169,7 @@ Future<GoRouter> _pumpRoute(
   SessionState? session,
   void Function()? seed,
   Size size = _tall,
+  List<Override> overrides = const [],
 }) async {
   GoRouter? created;
   await tester.pumpAppRouter(
@@ -181,6 +203,7 @@ Future<GoRouter> _pumpRoute(
       sessionViewModelProvider.overrideWithBuild(
         (ref, notifier) => session ?? feedSession(),
       ),
+      ...overrides,
     ],
   );
   final router = created!;
@@ -222,6 +245,84 @@ Future<void> _tapKey(WidgetTester tester, Key key) async {
   await tester.pump();
   await tester.tap(finder);
   await tester.pump();
+}
+
+/// Ağ ve disk önbelleği olmadan Storage görseli: 1 × 1 saydam PNG (T-44
+/// testleri; `storageImageFactoryProvider` ezilir).
+final Uint8List _onePixelPng = Uint8List.fromList(const [
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, //
+  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+  0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+]);
+
+ImageProvider _memoryImage(String url, String path, {int? coverEdgePx}) =>
+    MemoryImage(_onePixelPng);
+
+FakeClubRepository _clubs() => GetIt.I<ClubRepository>() as FakeClubRepository;
+
+FakeMembershipRepository _memberships() =>
+    GetIt.I<MembershipRepository>() as FakeMembershipRepository;
+
+FakeStorageService _storage() =>
+    GetIt.I<StorageService>() as FakeStorageService;
+
+/// [count] görselli gönderi (her biri tek, ayrı yollu görsel; en yeni başta).
+List<PostModel> _imagePosts(int count) => [
+  for (var index = 0; index < count; index++)
+    kImagePost.copyWith(
+      id: 'pi${index.toString().padLeft(2, '0')}',
+      images: [
+        PostImageModel(
+          path: 'posts/pi$index/20261013T090000Z_000000000000000$index.jpg',
+          w: 1600,
+          h: 900,
+        ),
+      ],
+      createdAt: kFeedNowUtc.subtract(Duration(minutes: index + 1)),
+    ),
+];
+
+/// CLB-03'ü gerçek ViewModel'lerle açar ([tab] ilk sekme); yönlendirici
+/// döner (`/start` ↔ kulüp).
+Future<GoRouter> _pumpClubDetail(
+  WidgetTester tester, {
+  ClubDetailTab? tab = ClubDetailTab.posts,
+}) async {
+  GoRouter? created;
+  await tester.pumpAppRouter(
+    routerOf: (_) => created ??= GoRouter(
+      initialLocation: '/start',
+      routes: [
+        GoRoute(path: '/start', builder: (_, _) => const _Stub('/start')),
+        GoRoute(
+          path: '/clubs/:clubId',
+          builder: (_, state) => ClubDetailView(
+            clubId: state.pathParameters['clubId']!,
+            tab: tab,
+            commentsSheetBuilder: _commentsStub,
+          ),
+        ),
+        GoRoute(
+          path: '/not-found',
+          builder: (_, _) => const _Stub('/not-found'),
+        ),
+      ],
+    ),
+    overrides: [
+      sessionViewModelProvider.overrideWithBuild(
+        (ref, notifier) => feedSession(),
+      ),
+    ],
+  );
+  final router = created!;
+  addTearDown(router.dispose);
+  seedFeed();
+  router.go(_feedPath);
+  await tester.pumpAndSettle();
+  return router;
 }
 
 void main() {
@@ -628,6 +729,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(_stateOf(tester).hasMore, isFalse);
       expect(_stateOf(tester).posts, hasLength(kFeedPosts.length + 18));
+      // Liste tembel kurulur (T-44): liste sonu yeni sonda çizilir.
+      await tester.scrollUntilVisible(
+        find.byType(GuListEnd),
+        _scrollStep,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.byType(GuListEnd), findsOneWidget);
     });
 
@@ -674,6 +781,83 @@ void main() {
   });
 
   group('FED-01 · Akış · CLB-03 içinde', () {
+    testWidgets('T-44 · D3-05: Gönderiler → Hakkında → Gönderiler akışı '
+        'yeniden okumaz, iskelet çizilmez', (tester) async {
+      await _pumpClubDetail(tester);
+      expect(find.byType(ClubFeedTab), findsOneWidget);
+      final feedReads = feedPosts().callsTo('listFeed').length;
+      final clubReads = _clubs().callsTo('getClub').length;
+      final managerReads = _memberships().callsTo('listManagers').length;
+      expect(feedReads, 1);
+
+      await _tapKey(tester, GuKey.action('CLB-03.tab.about'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ClubFeedTab), findsNothing);
+      await _tapKey(tester, GuKey.action('CLB-03.tab.posts'));
+      // İlk karede iskelet yok: akış canlı kaldı.
+      expect(find.byType(GuSkeletonList), findsNothing);
+      expect(find.byType(PostCard), findsWidgets);
+      await tester.pumpAndSettle();
+
+      expect(feedPosts().callsTo('listFeed'), hasLength(feedReads));
+      expect(_clubs().callsTo('getClub'), hasLength(clubReads));
+      expect(
+        _memberships().callsTo('listManagers'),
+        hasLength(managerReads),
+      );
+    });
+
+    testWidgets('T-44 · D3-05: sekmeden çıkınca süzgeç "Tümü"ne döner', (
+      tester,
+    ) async {
+      await _pumpClubDetail(tester);
+      await _tapKey(tester, _filter(FeedFilter.polls));
+      expect(_stateOf(tester).filter, FeedFilter.polls);
+
+      await _tapKey(tester, GuKey.action('CLB-03.tab.events'));
+      await tester.pumpAndSettle();
+      await _tapKey(tester, GuKey.action('CLB-03.tab.posts'));
+      await tester.pumpAndSettle();
+      expect(_stateOf(tester).filter, FeedFilter.all);
+      expect(
+        tester.widget<GuChip>(find.byKey(_filter(FeedFilter.all))).selected,
+        isTrue,
+      );
+      expect(feedPosts().callsTo('listFeed'), hasLength(1));
+    });
+
+    testWidgets('T-44 · D3-05: erişim kaybında ve CLB-03 kapanınca akış '
+        'ViewModel’i atılır; yeniden açınca akış okunur', (tester) async {
+      final router = await _pumpClubDetail(tester);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClubDetailView)),
+      );
+      await _tapKey(tester, GuKey.action('CLB-03.tab.about'));
+      await tester.pumpAndSettle();
+      expect(container.exists(_provider), isTrue);
+
+      // Kulüpten çıkarıldı: içini görmez → akış bırakılır.
+      container.read(sessionViewModelProvider.notifier).state = feedSession()
+          .copyWith(memberships: const {});
+      await tester.pumpAndSettle();
+      expect(container.exists(_provider), isFalse);
+
+      // Üyelik geri gelir, akış yeniden okunur; sayfa kapanınca atılır.
+      container.read(sessionViewModelProvider.notifier).state = feedSession();
+      await tester.pumpAndSettle();
+      await _tapKey(tester, GuKey.action('CLB-03.tab.posts'));
+      await tester.pumpAndSettle();
+      expect(feedPosts().callsTo('listFeed'), hasLength(2));
+      router.go('/start');
+      await tester.pumpAndSettle();
+      expect(container.exists(_provider), isFalse);
+
+      router.go(_feedPath);
+      await tester.pumpAndSettle();
+      expect(find.byType(ClubFeedTab), findsOneWidget);
+      expect(feedPosts().callsTo('listFeed'), hasLength(3));
+    });
+
     testWidgets('"Gönderiler" sekmesi akışı çizer; CLB-03 kaydırma alanının '
         'sonuna gelince sonraki sayfa okunur', (tester) async {
       GoRouter? created;
@@ -725,8 +909,143 @@ void main() {
     });
   });
 
+  group('FED-01 · Akış · performans (T-44)', () {
+    testWidgets('tembel liste: 60 görselli gönderiden yalnızca görünen ve '
+        'önbellek alanındaki kartlar kurulur; adres istekleri onlarla '
+        'sınırlı', (tester) async {
+      final posts = _imagePosts(60);
+      await _pump(
+        tester,
+        size: const Size(390, 844),
+        state: loadedFeedState().copyWith(posts: posts, clearPinned: true),
+      );
+      final built = tester
+          .widgetList<PostCard>(find.byType(PostCard, skipOffstage: false))
+          .toList();
+      expect(built, isNotEmpty);
+      expect(built.length, lessThan(10));
+      final requested = {
+        for (final call in _storage().callsTo('downloadUrl')) call.args.first,
+      };
+      expect(requested, {
+        for (final card in built)
+          for (final image in card.post.images) image.path,
+      });
+      expect(requested.length, lessThan(posts.length));
+    });
+
+    testWidgets('tek beğeni yalnızca kurulu (görünen + önbellek) kartları '
+        'yeniden kurar', (tester) async {
+      await _pumpRoute(
+        tester,
+        seed: () => extraFeedPosts(18).forEach(feedPosts().put),
+        size: const Size(390, 844),
+      );
+      expect(_stateOf(tester).posts, hasLength(Limits.pageSize));
+      final like = find.byKey(_like(kPinnedPost.id));
+      await tester.ensureVisible(like);
+      await tester.pump();
+      final mounted = tester
+          .widgetList<PostCard>(find.byType(PostCard, skipOffstage: false))
+          .map((card) => card.post.id)
+          .toSet();
+      expect(mounted.length, lessThan(Limits.pageSize));
+
+      final rebuilt = <String>[];
+      debugOnRebuildDirtyWidget = (element, _) {
+        final widget = element.widget;
+        if (widget is PostCard) rebuilt.add(widget.post.id);
+      };
+      addTearDown(() => debugOnRebuildDirtyWidget = null);
+      await tester.tap(like);
+      await tester.pump();
+      // Yalnızca kurulu kartlar, her biri bir kez.
+      expect(rebuilt, isNotEmpty);
+      expect(rebuilt.toSet(), mounted);
+      expect(rebuilt, hasLength(mounted.length));
+    });
+
+    testWidgets('adres gelişi yalnızca o görselin kartını yeniden kurar '
+        '(ClubFeedTab ve öteki kartlar kurulmaz)', (tester) async {
+      await _pumpRoute(
+        tester,
+        overrides: [
+          storageImageFactoryProvider.overrideWithValue(_memoryImage),
+        ],
+      );
+      final path = kImagePost.images.first.path;
+      // İlk istek dosya yokken düştü; dosya yüklenir, yeniden deneme süresi
+      // dolar ve adres istenir (çizimdeki yenilemeyle aynı yol).
+      await _storage().upload(
+        path: path,
+        bytes: Uint8List(3),
+        contentType: 'image/png',
+      );
+      feedClock().advance(const Duration(minutes: 1));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ClubFeedTab)),
+      );
+      final counts = <Type, int>{};
+      final rebuiltCards = <String>[];
+      debugOnRebuildDirtyWidget = (element, _) {
+        final widget = element.widget;
+        counts[widget.runtimeType] = (counts[widget.runtimeType] ?? 0) + 1;
+        if (widget is PostCard) rebuiltCards.add(widget.post.id);
+      };
+      addTearDown(() => debugOnRebuildDirtyWidget = null);
+      // Sahte depo eşzamanlı tamamlanır: adres mikro görevde gelir.
+      await container.read(imageUrlCacheProvider).request(path);
+      await tester.pump();
+      await tester.pump();
+
+      expect(counts[ClubFeedTab] ?? 0, 0);
+      expect(rebuiltCards, [kImagePost.id]);
+      final card = tester.widget<PostCard>(
+        find.byWidgetPredicate(
+          (w) => w is PostCard && w.post.id == kImagePost.id,
+        ),
+      );
+      expect(card.imageOf!(kImagePost.images.first), isA<MemoryImage>());
+    });
+
+    testWidgets('"Devamı" ile açılan kart ekran dışına kaydırılıp geri '
+        'gelince açık kalır', (tester) async {
+      final long = kImagePost.copyWith(
+        id: 'plong',
+        text: List.filled(80, 'Kulüp').join(' '),
+        images: const [],
+        createdAt: kFeedNowUtc.subtract(const Duration(seconds: 30)),
+      );
+      await _pumpRoute(
+        tester,
+        seed: () {
+          extraFeedPosts(18).forEach(feedPosts().put);
+          feedPosts().put(long);
+        },
+        size: const Size(390, 844),
+      );
+      final more = GuKey.action('FED-01.more.${long.id}');
+      await _tapKey(tester, more);
+      await tester.pumpAndSettle();
+      expect(find.byKey(more), findsNothing);
+
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.byKey(_post(long.id)), findsNothing);
+      position.jumpTo(0);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(_post(long.id)), findsOneWidget);
+      expect(find.byKey(more), findsNothing);
+    });
+  });
+
   group('FED-01 · Akış · cihaz matrisi', () {
-    Widget view(BuildContext context) => const _Host();
+    Widget view(BuildContext context) =>
+        const _Host(cacheExtent: _matrixCacheExtent);
 
     testWidgets('üye bakışı (dolu akış)', (tester) async {
       await DeviceMatrix.run(tester, view, overrides: _overrides());

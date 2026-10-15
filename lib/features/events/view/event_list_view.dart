@@ -14,6 +14,7 @@ import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 import 'package:gu_kulupler/product/widget/event/event_card.dart';
 import 'package:gu_kulupler/product/widget/event/event_card_status.dart';
 import 'package:gu_kulupler/product/widget/event/event_cta.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// "Etkinlikler" ekranı — Etkinlikler sekmesinin kökü, `EventsRoute`
@@ -37,7 +38,7 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Kart durumu ve hızlı eylemi `EventCardStatus.of` / `EventCtaKind.of`
 /// ile katılım kayıtlarından türetilir (W-81: bekleme kararı
-/// `joinsWaitlist`); kapak görseli `storageImageResolverProvider`'dan.
+/// `joinsWaitlist`); kapak görseli `ref.storageImage` ile (yol başına).
 /// Davranış `EventListViewMixin`'dedir.
 ///
 /// Design: EVT-01
@@ -66,7 +67,6 @@ class _EventListViewState extends ConsumerState<EventListView>
     EventModel event, {
     required DateTime nowUtc,
     required bool superAdmin,
-    required StorageImageResolver coverOf,
     bool compact = false,
   }) {
     final status = EventCardStatus.of(
@@ -82,7 +82,14 @@ class _EventListViewState extends ConsumerState<EventListView>
       status: status,
       registeredCount: event.goingCount,
       compact: compact,
-      coverImage: compact ? null : coverOf(event.coverPath),
+      // 48 dp kare küçük kapak: gösterim boyutunda çözülür; yalnızca bu
+      // yolun adresi gelince yeniden çizilir (T-44).
+      coverImage: compact
+          ? null
+          : ref.storageImage(
+              event.coverPath,
+              displaySize: GuSizes.dateBadgeWidth,
+            ),
       quickAction: kind == null
           ? null
           : EventQuickAction(
@@ -132,6 +139,9 @@ class _EventListViewState extends ConsumerState<EventListView>
       isEmpty: visible.isEmpty,
     );
     return switch (status) {
+      _ when OfflineListFallback.applies(ref, status) => [
+        OfflineListFallback.sliver(onReload: retry),
+      ],
       GuListStatus.error => [_errorSliver(l10n)],
       GuListStatus.loading => [
         SliverToBoxAdapter(
@@ -190,7 +200,6 @@ class _EventListViewState extends ConsumerState<EventListView>
       sessionViewModelProvider.select((session) => session.isSuperAdmin),
     );
     final clock = ref.watch(appClockProvider);
-    final coverOf = ref.watch(storageImageResolverProvider);
     final nowUtc = clock.nowUtc();
     final today = EventListState.istanbulCalendarDay(nowUtc);
     final listMode = state.mode == EventListMode.list;
@@ -200,7 +209,6 @@ class _EventListViewState extends ConsumerState<EventListView>
       event,
       nowUtc: nowUtc,
       superAdmin: superAdmin,
-      coverOf: coverOf,
     );
 
     Widget compactCard(BuildContext _, EventModel event) => _card(
@@ -208,7 +216,6 @@ class _EventListViewState extends ConsumerState<EventListView>
       event,
       nowUtc: nowUtc,
       superAdmin: superAdmin,
-      coverOf: coverOf,
       compact: true,
     );
 

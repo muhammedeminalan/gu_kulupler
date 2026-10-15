@@ -411,7 +411,7 @@ final class SearchViewModel extends _$SearchViewModel
   /// Kulübü yeniden okur (katılım çakışması / başvurular kapandı). Okunamazsa
   /// ya da ViewModel kapandıysa `null`.
   Future<ClubModel?> _reloadClub(String clubId) async {
-    final result = await clubRepository.getClub(clubId);
+    final result = await clubRepository.getClub(clubId, forceRefresh: true);
     if (!ref.mounted) return null;
     switch (result) {
       case FirebaseSuccess(:final data):

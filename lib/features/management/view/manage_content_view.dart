@@ -10,6 +10,7 @@ import 'package:gu_kulupler/features/management/view/widget/manage_content_row.d
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/managed_club_picker_sheet.dart';
 import 'package:gu_kulupler/product/widget/manage/manage_header.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// İçerik yönetimi — `ManageContentRoute` (`/clubs/:clubId/manage/content`);
@@ -82,6 +83,8 @@ class _ManageContentViewState extends ConsumerState<ManageContentView>
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(

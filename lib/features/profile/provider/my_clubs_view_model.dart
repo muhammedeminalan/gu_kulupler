@@ -280,7 +280,8 @@ final class MyClubsViewModel extends _$MyClubsViewModel
         if (force || !state.clubs.containsKey(id)) id,
     ];
     if (ids.isEmpty) return true;
-    switch (await clubRepository.getClubs(ids)) {
+    // `force` (yenileme) bellek önbelleğini de atlar (T-44 · D3-01).
+    switch (await clubRepository.getClubs(ids, forceRefresh: force)) {
       case FirebaseSuccess(:final data):
         if (ref.mounted) {
           state = state.copyWith(

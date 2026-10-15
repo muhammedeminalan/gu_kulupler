@@ -271,16 +271,30 @@ final class FakeRsvpRepository extends FakeBase implements RsvpRepository {
   }
 
   @override
-  Future<FirestoreResult<List<RsvpModel>>> listMine(String userId) async {
-    record('listMine', [userId]);
-    if (_rejected<List<RsvpModel>>([userId]) case final failure?) {
+  Future<FirestoreResult<List<RsvpModel>>> listMine(
+    String userId, {
+    Set<RsvpStatus>? statuses,
+    String? clubId,
+  }) async {
+    // Süzgeçsiz çağrının günlüğü değişmez; süzgeçli kip (T-44 · D3-02)
+    // süzgeçleri de kaydeder.
+    record('listMine', [
+      userId,
+      if (statuses != null || clubId != null) ...[statuses, clubId],
+    ]);
+    if (_rejected<List<RsvpModel>>([userId, ?clubId]) case final failure?) {
       return failure;
     }
-    // Vazgeçilmişler dahil, en yeni üstte.
+    // Vazgeçilmişler dahil, en yeni üstte; süzgeçli kip gerçek sorgu gibi
+    // yalnızca istenen durum / kulüp.
     return FirebaseSuccess(
       [
         for (final rsvp in rsvps.values)
-          if (rsvp.userId == userId && !rsvp.isDeleted) rsvp,
+          if (rsvp.userId == userId &&
+              !rsvp.isDeleted &&
+              (statuses == null || statuses.contains(rsvp.status)) &&
+              (clubId == null || rsvp.clubId == clubId))
+            rsvp,
       ]..sort(_newestFirst),
     );
   }

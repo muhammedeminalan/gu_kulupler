@@ -17,9 +17,11 @@ import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
+import '../../fakes/fake_connectivity_service.dart';
 import '../../fakes/fake_messaging_service.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
@@ -141,6 +143,8 @@ void main() {
         AuthStatus.signedOut,
       );
       expect(users.callsTo('upsertFcmToken'), hasLength(1));
+      // T-44 · A4-06: temizlik tamam — bekleyen iş yok, ikinci çağrı yok.
+      expect(GetIt.I<AppPreferencesStore>().pushTokenUid, isNull);
     });
 
     test('silinmiş hesap: hesap belgesine yazılmaz (jetonlar markDeleted ile '
@@ -215,6 +219,100 @@ void main() {
       expect(taps, [
         {'notificationId': 'n2'},
       ]);
+    });
+  });
+
+  group('T-44 · push jetonu · çevrimdışı çıkış temizliği (A4-06)', () {
+    String? pushTokenUid() => GetIt.I<AppPreferencesStore>().pushTokenUid;
+
+    test('çevrimdışı çıkış (hesaptan çıkarma ve geçersiz kılma başarısız): '
+        'çıkış başarılı, pushTokenUid dolu kalır; öne gelince temizlik bir '
+        'kez yeniden denenir ve pushTokenUid temizlenir', () async {
+      final container = await resolvedActive();
+      messaging.invalidateResult = false;
+      users.failNext(FirestoreError.unavailable);
+
+      expect(await notifierOf(container).signOut(), isTrue);
+      await pumpEventQueue();
+      expect(
+        container.read(sessionViewModelProvider).status,
+        AuthStatus.signedOut,
+      );
+      expect(pushTokenUid(), 'u1');
+
+      final before = messaging.callsTo('invalidateToken').length;
+      messaging.invalidateResult = true;
+      await notifierOf(container).onAppResumed();
+      await pumpEventQueue();
+
+      expect(messaging.callsTo('invalidateToken'), hasLength(before + 1));
+      expect(pushTokenUid(), isNull);
+
+      await notifierOf(container).onAppResumed();
+      await pumpEventQueue();
+      expect(messaging.callsTo('invalidateToken'), hasLength(before + 1));
+    });
+
+    test('bekleyen temizlik: oturumsuz açılışta jeton bir kez geçersiz '
+        'kılınır ve pushTokenUid temizlenir', () async {
+      final store = GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore;
+      store.values[AppPreferenceKeys.pushTokenUid] = 'u1';
+
+      createContainer().read(sessionViewModelProvider);
+      await pumpEventQueue();
+
+      expect(messaging.callsTo('invalidateToken'), hasLength(1));
+      expect(store.pushTokenUid, isNull);
+      expect(users.callsTo('removeFcmToken'), isEmpty);
+    });
+
+    test('cihaz çevrimdışı biliniyorsa çıkış ağ adımlarını beklemez: hesaba '
+        'yazılmaz, pushTokenUid dolu kalır', () async {
+      final container = await resolvedActive();
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+      messaging.invalidateResult = false;
+
+      expect(await notifierOf(container).signOut(), isTrue);
+      await pumpEventQueue();
+
+      expect(users.callsTo('removeFcmToken'), isEmpty);
+      expect(auth.callsTo('signOut'), hasLength(1));
+      expect(pushTokenUid(), 'u1');
+    });
+
+    test('temizlik sürerken başlayan giriş onu bekler; yeni jeton yazılır '
+        've temizlik onu geçersiz kılmaz', () async {
+      final store = GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore;
+      store.values[AppPreferenceKeys.pushTokenUid] = 'u0';
+      final gate = Completer<void>();
+      messaging.invalidateGate = gate;
+      final container = createContainer()..read(sessionViewModelProvider);
+      await pumpEventQueue();
+      expect(messaging.callsTo('invalidateToken'), hasLength(1));
+
+      users.putActive('u1');
+      const user = AuthUserInfo(
+        uid: 'u1',
+        email: 'mehmet@ogr.gumushane.edu.tr',
+        emailVerified: true,
+      );
+      auth
+        ..currentUser = user
+        ..watchAuthStateController.add(user);
+      await pumpEventQueue();
+      expect(
+        container.read(sessionViewModelProvider).status,
+        AuthStatus.active,
+      );
+      expect(users.callsTo('upsertFcmToken'), isEmpty);
+
+      gate.complete();
+      await pumpEventQueue();
+
+      expect(messaging.callsTo('invalidateToken'), hasLength(1));
+      expect(tokensOf('u1').single.token, messaging.nextToken);
+      expect(store.pushTokenUid, 'u1');
     });
   });
 }

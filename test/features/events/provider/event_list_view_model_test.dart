@@ -169,6 +169,61 @@ void main() {
     });
   });
 
+  group('T-44 · EVT-01 · karttan katılım sonrası (D3-04)', () {
+    test('onRsvpChanged yalnızca o etkinliği ve kaydı okur; kulüpler, '
+        'yaklaşanlar ve katılım geçmişi yeniden okunmaz', () async {
+      final c = await loaded(kMemberSession);
+      final before = stateOf(c);
+      final target = before.events.firstWhere(
+        (e) => !before.rsvps.containsKey(e.id),
+      );
+      final other = before.events.firstWhere((e) => e.id != target.id);
+      events.put(target.copyWith(goingCount: target.goingCount + 1));
+      final mine = RsvpModel(
+        eventId: target.id,
+        clubId: target.clubId,
+        userId: kUid,
+        ticketCode: 'GU-ABCD-2345',
+      );
+      rsvps.put(mine);
+      for (final fake in [events, clubs, rsvps]) {
+        fake.calls.clear();
+      }
+
+      await vmOf(c).onRsvpChanged(target.id);
+
+      expect(clubs.callsTo('fetchActiveClubs'), isEmpty);
+      expect(events.callsTo('listPublicUpcoming'), isEmpty);
+      expect(events.callsTo('listMembersUpcoming'), isEmpty);
+      expect(rsvps.callsTo('listMine'), isEmpty);
+      expect(events.callsTo('getEvent').single.args, [target.id]);
+      expect(rsvps.callsTo('getMine'), hasLength(1));
+      final after = stateOf(c);
+      expect(
+        after.events.firstWhere((e) => e.id == target.id).goingCount,
+        target.goingCount + 1,
+      );
+      expect(after.events.firstWhere((e) => e.id == other.id), other);
+      expect(after.rsvps[target.id], mine);
+      expect(after.isRefreshing, isFalse);
+    });
+
+    test('etkinlik okunamazsa tam yenilemeye düşer', () async {
+      final c = await loaded(kMemberSession);
+      final target = stateOf(c).events.first;
+      for (final fake in [events, clubs, rsvps]) {
+        fake.calls.clear();
+      }
+      events.failNext(FirestoreError.unavailable);
+
+      await vmOf(c).onRsvpChanged(target.id);
+
+      expect(clubs.callsTo('fetchActiveClubs'), hasLength(1));
+      expect(events.callsTo('listPublicUpcoming'), hasLength(1));
+      expect(stateOf(c).isError, isFalse);
+    });
+  });
+
   group('EVT-01 · süzgeç, çip, kip', () {
     test('çipler: bugün / bu hafta / kulüplerim / herkese açık', () async {
       final c = await loaded(kMemberSession);

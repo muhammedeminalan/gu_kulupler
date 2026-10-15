@@ -273,7 +273,10 @@ final class MyEventsViewModel extends _$MyEventsViewModel
     }.toList();
     final names = <String, String>{};
     if (clubIds.isNotEmpty) {
-      switch (await clubRepository.getClubs(clubIds)) {
+      switch (await clubRepository.getClubs(
+        clubIds,
+        forceRefresh: state.isRefreshing,
+      )) {
         case FirebaseSuccess(:final data):
           for (final club in data) {
             names[club.id] = club.name;

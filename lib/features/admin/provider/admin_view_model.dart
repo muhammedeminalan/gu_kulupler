@@ -17,7 +17,7 @@ part 'admin_view_model.g.dart';
 /// | Bölüm | Kaynak |
 /// |---|---|
 /// | Aktif kulüp · Toplam kullanıcı · Açık şikayet | `adminRepository.stats()` (dört `count()`; açık şikayet CD-37) |
-/// | Askıdaki kulüp · En aktif 5 kulüp | `clubRepository.fetchActiveClubs()` (askıdakiler dahil; etkinler `memberCount ↓`) |
+/// | Askıdaki kulüp · En aktif 5 kulüp | `clubRepository.fetchActiveClubs(forceRefresh: true)` (askıdakiler dahil; etkinler `memberCount ↓`) |
 /// | Grafik | `activityRepository.countByWeek` — son 8 hafta, tüm kulüpler (CD-46: 8 `count()`) |
 /// | "+x yeni" | aynı metrik, seçili pencere ([AdminRange]; `countByWeek` kovaları toplanır) |
 /// | Katılım oranı | `eventRepository.listPublicUpcoming(fromUtc: pencere başı)` → yayındaki, bitmiş etkinliklerin sayaçları |
@@ -154,7 +154,7 @@ final class AdminViewModel extends _$AdminViewModel
 
     final (stats, clubs, chart, ranged) = await (
       adminRepository.stats(),
-      clubRepository.fetchActiveClubs(),
+      clubRepository.fetchActiveClubs(forceRefresh: true),
       activityRepository.countByWeek(
         kinds: growthKinds,
         fromUtc: chartStart(now),

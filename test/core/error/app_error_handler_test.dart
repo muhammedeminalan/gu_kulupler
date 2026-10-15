@@ -1,10 +1,13 @@
 // T-11 · AppErrorHandler: üç hata kaynağı → CrashService (D-23).
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/env/emulator_services.dart';
 import 'package:gu_kulupler/core/error/app_error_handler.dart';
 import 'package:gu_kulupler/core/error/error_boundary.dart';
 
@@ -201,6 +204,49 @@ void main() {
 
       expect(crash.recorded.map((r) => r.$1), [error, error]);
       expect(crash.fatals, [false, true]);
+    });
+
+    test('T-44 · gerçek runZonedGuarded bölgesinde atılan zaman uyumsuz hata '
+        'ölümcül raporlanır', () async {
+      final error = StateError('bölge içi');
+      runZonedGuarded(() {
+        unawaited(Future<void>(() => throw error));
+      }, AppErrorHandler.onZoneError);
+      await pumpEventQueue();
+
+      expect(crash.recorded.single.$1, error);
+      expect(crash.fatals, [true]);
+      expect(crash.reasons, ['runZonedGuarded']);
+    });
+
+    test('T-44 · emülatör servisi kayıtlıyken bölge hatası konsola tam bir '
+        'kez yazılır (D2-12)', () async {
+      await GetIt.I.reset();
+      GetIt.I.registerSingleton<CrashService>(const EmulatorCrashService());
+      AppErrorHandler.onZoneError(StateError('tek'), StackTrace.empty);
+      await pumpEventQueue();
+
+      expect(console.single, startsWith('[E] runZonedGuarded'));
+    });
+  });
+
+  group('T-44 · AppErrorHandler · setUser (D2-11)', () {
+    test("uid ve çıkıştaki null CrashService.setUserId'ye iletilir", () async {
+      AppErrorHandler.setUser('u1');
+      AppErrorHandler.setUser(null);
+      await pumpEventQueue();
+
+      expect(
+        crash.callsTo('setUserId').map((c) => c.args.single),
+        ['u1', null],
+      );
+      expect(crash.userId, isNull);
+    });
+
+    test('CrashService kayıtlı değilken etkisiz, fırlatmaz', () async {
+      await GetIt.I.reset();
+      expect(() => AppErrorHandler.setUser('u1'), returnsNormally);
+      expect(crash.callsTo('setUserId'), isEmpty);
     });
   });
 }

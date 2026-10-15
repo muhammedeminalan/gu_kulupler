@@ -14,6 +14,7 @@ import 'package:gu_kulupler/product/feedback/catalogs/sheets/member_actions_shee
 import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/manage/manage_header.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Üye yönetimi — `ManageMembersRoute`
@@ -102,7 +103,7 @@ class _ManageMembersViewState extends ConsumerState<ManageMembersView>
       key: ValueKey<String>(userId),
       membership: m,
       user: user,
-      avatarImage: ref.userAvatarImage(user),
+      avatarImage: ref.userAvatarImage(user, displaySize: GuSizes.avatar),
       sub: context.l10n.mgtMembersSince(
         formats.monthYear(ManageMembersState.joinedAt(m) ?? now),
       ),
@@ -162,14 +163,19 @@ class _ManageMembersViewState extends ConsumerState<ManageMembersView>
     );
   }
 
-  List<Widget> _slivers(ManageMembersState state, AppLocalizations l10n) {
-    final rows = state.visible;
+  List<Widget> _slivers(
+    ManageMembersState state,
+    List<MembershipModel> rows,
+    AppLocalizations l10n,
+  ) {
     final status = GuListStatus.resolve(
       isError: state.isError,
       isLoading: state.isFetching,
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(
@@ -235,6 +241,8 @@ class _ManageMembersViewState extends ConsumerState<ManageMembersView>
       ),
     );
     final showCount = !state.isFetching && !state.isError;
+    // Süzme + sıralama build başına bir kez (satırlar ve sayaç paylaşır).
+    final rows = state.visible;
 
     return Scaffold(
       backgroundColor: gu.colors.bgCanvas,
@@ -297,7 +305,7 @@ class _ManageMembersViewState extends ConsumerState<ManageMembersView>
               children: [
                 if (showCount)
                   Text(
-                    l10n.membersTotal(state.totalCount),
+                    l10n.membersTotal(state.totalCountFor(rows.length)),
                     maxLines: 1,
                     style: gu.text.labelL.copyWith(
                       color: gu.colors.textSecondary,
@@ -325,7 +333,7 @@ class _ManageMembersViewState extends ConsumerState<ManageMembersView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  ..._slivers(state, l10n),
+                  ..._slivers(state, rows, l10n),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),

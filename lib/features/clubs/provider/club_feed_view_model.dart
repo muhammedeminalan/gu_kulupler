@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/clubs/provider/club_detail_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_feed_state.dart';
 import 'package:gu_kulupler/product/mixin/block_user_mixin.dart';
 import 'package:gu_kulupler/product/mixin/external_link_mixin.dart';
@@ -23,21 +25,23 @@ typedef _Loaded = ({
   ClubModel? club,
   PageResult<PostModel> page,
   PostModel? pinned,
-  Map<String, ClubRole>? roles,
   _Extras extras,
 });
 
 /// FED-01 "Akış" — CLB-03 "Gönderiler" sekmesinin ViewModel'i (PLAN §12.6,
 /// CD-10; prototip `Feed`, `screens-clubs.js:59–72`).
 ///
-/// * Açılışta üç okuma birlikte yapılır: kulüp (`pinnedPostId`), akışın ilk
-///   sayfası (`postRepository.listFeed`, 20 + imleç) ve yöneticiler (yazar
-///   rozetleri). Sabit gönderi ilk sayfada değilse ayrıca okunur
+/// * Açılışta iki okuma birlikte yapılır: kulüp (`pinnedPostId`; bellek
+///   önbelleğinden gelebilir, yenilemede atlanır — T-44 · D3-01) ve akışın
+///   ilk sayfası (`postRepository.listFeed`, 20 + imleç). Yazar rozetlerinin
+///   rolleri CLB-03'ün `managers` listesinden gelir (aynı liste yeniden
+///   okunmaz — T-44 · D3-08). Sabit gönderi ilk sayfada değilse ayrıca okunur
 ///   (`getPost`); okunamayan, gizlenmiş ya da silinmiş sabit gönderi "sabit
 ///   yok" sayılır, hata gösterilmez (W-70 a). Kalan sayfalar [loadMore] ile
 ///   gelir.
 /// * Her sayfayla birlikte yazar belgeleri toplu (`userRepository.getUsers`),
-///   kayıt durumları (`savedPostRepository.isSaved`) ve anketlerin oy durumu
+///   kayıt durumları tek sorguyla (`savedPostRepository.savedAmong` — T-44 ·
+///   D3-03) ve anketlerin oy durumu
 ///   (`PostActionsMixin.loadPollState`) okunur; bunlar okunamazsa gönderiler
 ///   yine çizilir.
 /// * Tür süzgeci ve engellenen yazarların süzülmesi istemcidedir
@@ -87,9 +91,18 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
       );
     });
     _session = ref.read(sessionViewModelProvider.notifier);
+    // Yazar rozetlerinin rolleri CLB-03'ün yönetim kurulundan (T-44 · D3-08):
+    // FED-01 o sekmenin içindedir, aynı liste yeniden okunmaz. Kurul
+    // değişince (katıl / ayrıl / devret — CLB-03 yeniden okur) roller de
+    // güncellenir; akışın çek-yenilemesi rolleri yenilemez.
+    final board = ref.listen(
+      clubDetailViewModelProvider(clubId).select((s) => s.managers),
+      (_, managers) => state = state.copyWith(roles: _rolesOf(managers)),
+    );
     // Akış ilk karede okunmaya başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_load));
     return ClubFeedState(
+      roles: _rolesOf(board.read()),
       blockedUserIds: ref.read(sessionViewModelProvider).blockedUserIds,
       isFetching: true,
     );
@@ -363,7 +376,6 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
       posts: loaded.page.items,
       pinned: loaded.pinned,
       clearPinned: loaded.pinned == null,
-      roles: loaded.roles,
       users: {...state.users, ...loaded.extras.users},
       savedPostIds: _mergedSaved(loaded.extras.saved),
       cursor: loaded.page.next,
@@ -375,20 +387,17 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
     );
   }
 
-  /// Kulüp, akışın ilk sayfası, yöneticiler, sabit gönderi ve sayfanın ek
-  /// verisi. Akış okunamazsa `null`; ötekiler okunamazsa akış yine gösterilir
-  /// (sabit gönderi / rozet / yer tutucu paleti olmadan).
+  /// Kulüp, akışın ilk sayfası, sabit gönderi ve sayfanın ek verisi. Akış
+  /// okunamazsa `null`; ötekiler okunamazsa akış yine gösterilir (sabit
+  /// gönderi / yer tutucu paleti olmadan). Çek-yenile bellek önbelleğini
+  /// atlar (`pinnedPostId` taze okunur).
   Future<_Loaded?> _read() async {
-    final (club, page, managers) = await (
-      clubRepository.getClub(clubId),
+    final (club, page) = await (
+      clubRepository.getClub(clubId, forceRefresh: state.isRefreshing),
       postRepository.listFeed(clubId, const PageRequest()),
-      membershipRepository.listManagers(clubId),
     ).wait;
     if (club case FirebaseFailure(:final error)) {
       AppLogger.warn('Akış: kulüp okunamadı: ${error.name}');
-    }
-    if (managers case FirebaseFailure(:final error)) {
-      AppLogger.warn('Akış: yöneticiler okunamadı: ${error.name}');
     }
     if (page case FirebaseFailure(:final error, :final message)) {
       AppLogger.warn('Akış okunamadı: ${error.name}', error: message);
@@ -403,17 +412,18 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
       ...posts.items,
       if (pinned != null && !posts.items.contains(pinned)) pinned,
     ], reread: true);
-    final managerList = managers.dataOrNull;
     return (
       club: club.dataOrNull,
       page: posts,
       pinned: pinned,
-      roles: managerList == null
-          ? null
-          : {for (final manager in managerList) manager.userId: manager.role},
       extras: extras,
     );
   }
+
+  /// Yönetici üyeliklerinden yazar rozeti rolleri.
+  static Map<String, ClubRole> _rolesOf(List<MembershipModel> managers) => {
+    for (final manager in managers) manager.userId: manager.role,
+  };
 
   /// Kulübün sabit gönderisi. İlk sayfadaysa oradaki kopya kullanılır;
   /// değilse [pinnedId] okunur. Okunamayan (üyeye gizlenmiş gönderi
@@ -464,13 +474,16 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
         if (reread || !state.users.containsKey(post.authorId)) post.authorId,
     }.toList();
     final (users, saved, _) = await (
-      userRepository.getUsers(authorIds),
+      // Yazar belgeleri bellek önbelleğinden gelebilir; çek-yenile atlar.
+      userRepository.getUsers(authorIds, forceRefresh: state.isRefreshing),
+      // Sayfanın kayıt durumları tek sorgu (gönderi başına okuma yok —
+      // T-44 · D3-03).
       uid == null
-          ? Future.value(const <FirestoreResult<bool>>[])
-          : Future.wait([
-              for (final post in posts)
-                savedPostRepository.isSaved(userId: uid, postId: post.id),
-            ]),
+          ? Future<FirestoreResult<Set<String>>?>.value()
+          : savedPostRepository.savedAmong(
+              userId: uid,
+              postIds: [for (final post in posts) post.id],
+            ),
       Future.wait([
         for (final post in posts)
           if (post.isPoll) loadPollState(post),
@@ -479,14 +492,20 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
     if (users case FirebaseFailure(:final error)) {
       AppLogger.warn('Gönderi yazarları okunamadı: ${error.name}');
     }
+    if (saved case FirebaseFailure(:final error)) {
+      AppLogger.warn('Kayıt durumları okunamadı: ${error.name}');
+    }
     return (
       users: {
         for (final user in users.dataOrNull ?? const <UserModel>[])
           user.uid: user,
       },
-      saved: {
-        for (final (index, result) in saved.indexed)
-          if (result case FirebaseSuccess(:final data)) posts[index].id: data,
+      // Okunamazsa önceki kayıt durumları korunur (boş değişiklik kümesi).
+      saved: switch (saved) {
+        FirebaseSuccess(data: final ids) => {
+          for (final post in posts) post.id: ids.contains(post.id),
+        },
+        _ => const <String, bool>{},
       },
     );
   }

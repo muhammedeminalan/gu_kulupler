@@ -8,6 +8,7 @@ import 'package:gu_kulupler/features/events/view/mixin/my_events_view_mixin.dart
 import 'package:gu_kulupler/features/events/view/widget/my_event_tile.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/widget/event/event_card_status.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// "Etkinliklerim" ekranı — `MyEventsRoute` (`/events/mine`); prototip
@@ -144,6 +145,9 @@ class _MyEventsViewState extends ConsumerState<MyEventsView>
                 controller: scrollController,
                 slivers: [
                   ...switch (status) {
+                    _ when OfflineListFallback.applies(ref, status) => [
+                      OfflineListFallback.sliver(onReload: retry),
+                    ],
                     GuListStatus.error => [
                       SliverToBoxAdapter(
                         child: GuErrorState(

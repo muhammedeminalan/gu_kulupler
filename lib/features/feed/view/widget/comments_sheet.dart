@@ -115,7 +115,10 @@ class CommentsSheet extends ConsumerWidget {
             key: ValueKey<String>(comment.id),
             comment: comment,
             author: state.authorOf(comment.authorId),
-            authorAvatar: ref.userAvatarImage(state.authorOf(comment.authorId)),
+            authorAvatar: ref.userAvatarImage(
+              state.authorOf(comment.authorId),
+              displaySize: GuSizes.commentAvatar,
+            ),
           ),
       ],
     );

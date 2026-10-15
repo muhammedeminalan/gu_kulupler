@@ -74,7 +74,7 @@ final class ClubListViewModel extends _$ClubListViewModel
   Future<void> refresh() async {
     if (!ref.mounted || _isLoading || state.isRefreshing) return;
     state = state.copyWith(isRefreshing: true);
-    final result = await clubRepository.fetchActiveClubs();
+    final result = await clubRepository.fetchActiveClubs(forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data):
@@ -224,10 +224,11 @@ final class ClubListViewModel extends _$ClubListViewModel
   }
 
   /// SHT-05 onaysız kulüpte katılımla kapandı: TST-34 ([onOpenClub] "Kulübe
-  /// git") ve listenin yenilenmesi (üye sayısı).
-  void showJoined({VoidCallback? onOpenClub}) {
+  /// git") ve [clubId] kartının üye sayısı yerelde +1 (liste yeniden
+  /// okunmaz — T-44 · D3-04; SRC-01 ile aynı).
+  void showJoined(String clubId, {VoidCallback? onOpenClub}) {
     feedback.showToast(ToastId.tst34, onAction: onOpenClub);
-    unawaited(refresh());
+    state = state.copyWith(clubs: _withMemberDelta(clubId, 1));
   }
 
   static Set<String> _memberClubIds(SessionState session) => {

@@ -382,7 +382,7 @@ final class EventFormViewModel extends _$EventFormViewModel
   }
 
   Future<void> _loadClub() async {
-    final result = await clubRepository.getClub(clubId);
+    final result = await clubRepository.getClub(clubId, forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data):

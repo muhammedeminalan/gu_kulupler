@@ -256,20 +256,45 @@ final class FirebaseRsvpRepository implements RsvpRepository {
   }
 
   @override
-  Future<FirestoreResult<List<RsvpModel>>> listMine(String userId) async {
-    if (RepositoryHelpers.rejectInvalidIds<List<RsvpModel>>({'userId': userId})
+  Future<FirestoreResult<List<RsvpModel>>> listMine(
+    String userId, {
+    Set<RsvpStatus>? statuses,
+    String? clubId,
+  }) async {
+    if (RepositoryHelpers.rejectInvalidIds<List<RsvpModel>>({
+          'userId': userId,
+          'clubId': ?clubId,
+        })
         case final rejected?) {
       return rejected;
     }
+    // Boş `whereIn` geçersiz bir sorgudur; boş küme = eşleşme yok.
+    if (statuses != null && statuses.isEmpty) return const FirebaseSuccess([]);
+    final mine = _rsvps
+        .where(FirestoreFields.userId, isEqualTo: userId)
+        .notDeleted();
     // Sorgu sözleşmesi (rules-spec §6, EVT-04 / PRF-03): sahibi + silinmemiş,
-    // en yeni üstte; vazgeçilmiş kayıtlar dahildir.
+    // en yeni üstte; vazgeçilmiş kayıtlar dahildir. Süzgeçli kip (T-44 ·
+    // D3-02) yalnızca eşitlik / `in` taşır ve sırasızdır (indeksler rules-spec
+    // §8).
+    final Query<Json> query;
+    if (statuses == null && clubId == null) {
+      query = mine.orderBy(FirestoreFields.createdAt, descending: true);
+    } else {
+      var filtered = mine;
+      if (clubId != null) {
+        filtered = filtered.where(FirestoreFields.clubId, isEqualTo: clubId);
+      }
+      if (statuses != null) {
+        filtered = filtered.where(
+          FirestoreFields.status,
+          whereIn: [for (final status in statuses) status.json],
+        );
+      }
+      query = filtered;
+    }
     return RepositoryHelpers.parseAll(
-      await _firestore.getList(
-        _rsvps
-            .where(FirestoreFields.userId, isEqualTo: userId)
-            .notDeleted()
-            .orderBy(FirestoreFields.createdAt, descending: true),
-      ),
+      await _firestore.getList(query),
       _rsvpOf,
     );
   }

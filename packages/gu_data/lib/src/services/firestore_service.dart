@@ -10,14 +10,20 @@ import 'package:gu_data/src/core/page_cursor.dart';
 import 'package:gu_data/src/core/page_request.dart';
 import 'package:gu_data/src/core/page_result.dart';
 import 'package:gu_data/src/core/soft_delete.dart';
+import 'package:gu_data/src/core/unexpected_error_listener.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
+import 'package:gu_data/src/services/firestore_write_source.dart';
 
 /// Firestore erişiminin tek kapısı (PLAN §10.2, D-34).
 ///
 /// Yalnızca `firebase_<alan>_repository.dart` uygulamaları çağırır; ViewModel
 /// bu servisi ve SDK tiplerini görmez. Sonuç döndüren her metot istisna
 /// **fırlatmaz**: hata [FirebaseFailure] olarak döner
-/// ([FirestoreError.fromCode], zaman aşımı → [FirestoreError.timeout]).
+/// ([FirestoreError.fromCode]; okuma / transaction zaman aşımı →
+/// [FirestoreError.timeout]). Transaction dışı yazımda (`add`, `set`,
+/// `update`, `commitBatch`, batch'siz `softDelete` / `restore`) zaman aşımı
+/// **başarıdır**: yazım SDK'nın yerel kuyruğundadır ve bağlantı dönünce
+/// işlenir — hata sayılırsa yeniden deneme yazımı ikiler (T-44 · D2-01).
 /// Yol/sorgu kurucuları ([doc], [newId], [collection], [collectionGroup],
 /// [serverTimestamp]) ağ çağrısı yapmaz.
 ///
@@ -55,6 +61,16 @@ abstract interface class FirestoreService {
 
   /// [ref] belgesini okur; belge yoksa başarı `null` döner.
   Future<FirestoreResult<FirestoreDoc?>> getDoc(DocumentReference<Json> ref);
+
+  /// [ref] belgesini **yalnızca yerel önbellekten** okur (ağa gidilmez):
+  /// oturum çözümünün çevrimdışı düşüşü (Q-12, T-44 · D2-02). Belge
+  /// önbellekte yoksa [FirestoreError.unavailable]; önbellekte "yok" olarak
+  /// biliniyorsa başarı `null`. Genel okumalarda kullanılmaz: [getDoc]
+  /// önbelleğe yalnızca sunucu süre aşımından sonra bir kez düşer (A4-05);
+  /// bu metot ağı hiç beklemez (oturum çözümünün `unavailable` düşüşü).
+  Future<FirestoreResult<FirestoreDoc?>> getDocFromCache(
+    DocumentReference<Json> ref,
+  );
 
   /// [query] sonucunun tamamını okur; boş liste başarıdır.
   Future<FirestoreResult<List<FirestoreDoc>>> getList(Query<Json> query);
@@ -150,23 +166,78 @@ abstract interface class FirestoreService {
   /// Sunucu zamanı nöbetçi değeri. `Object` döner; modeller ve ViewModel
   /// `FieldValue` tipini görmez.
   Object serverTimestamp();
+
+  /// Yalnızca DebugMenu çevrimdışı simülasyonu (T-44 · A4-08): ağ çağrısı
+  /// değil, SDK ağ anahtarı. `false` iken okumalar önbellekten gelir,
+  /// yazımlar yerel kuyrukta bekler; `true` ağı yeniden açar.
+  Future<FirestoreResult<void>> setNetworkEnabled({required bool enabled});
 }
 
 /// [FirestoreService] uygulaması: `cloud_firestore` SDK'sını sarar.
-final class FirebaseFirestoreService implements FirestoreService {
-  /// Verilen `FirebaseFirestore` örneğini sarar; her ağ çağrısı `timeout`
-  /// (varsayılan [Limits.firestoreTimeout]) içinde dönmezse
-  /// [FirestoreError.timeout] ile sonuçlanır.
+///
+/// **Okuma zaman aşımında önbellek (Q-12, T-44 · A4-05):** sunucu `timeout`
+/// içinde dönmezse (arayüz açık ama sunucuya ulaşılamıyor; SDK önbelleğe
+/// ancak kendi 10 sn'lik çevrimiçi zaman aşımından sonra düşer) okuma bir
+/// kez kalıcı önbellekten denenir. Önbellekte belge yoksa, liste boşsa ya da
+/// sonraki sayfa isteniyorsa asıl hata ([FirestoreError.timeout]) döner —
+/// boş önbellek "boş durum", eksik sayfa "liste sonu" sayılmaz.
+///
+/// Yazımlar [addWriteListener] ile duyurulur (bellek içi okuma önbelleğinin
+/// eşzamanlı geçersiz kılınması — T-44 · D3-01).
+final class FirebaseFirestoreService
+    implements FirestoreService, FirestoreWriteSource {
+  /// Verilen `FirebaseFirestore` örneğini sarar. Okuma ve transaction
+  /// `timeout` (varsayılan [Limits.firestoreTimeout]) içinde dönmezse
+  /// [FirestoreError.timeout] ile sonuçlanır; transaction dışı yazımda süre
+  /// dolması başarıdır (yazım kuyrukta — sınıf açıklaması).
+  ///
+  /// `onUnexpected` beklenmeyen hatayı ([FirestoreError.isUnexpected])
+  /// orijinal yığınıyla alır (Crashlytics `nonFatal` — T-44 · D2-03).
   FirebaseFirestoreService(
     this._firestore, {
     this._timeout = Limits.firestoreTimeout,
+    this._onUnexpected,
   });
 
   final FirebaseFirestore _firestore;
   final Duration _timeout;
+  final UnexpectedErrorListener? _onUnexpected;
 
   /// Transaction'ın SDK tarafındaki en çok deneme sayısı (PLAN §10.2).
   static const int transactionMaxAttempts = 3;
+
+  /// Yalnızca yerel (kalıcı) önbellekten okuma.
+  static const GetOptions _fromCache = GetOptions(source: Source.cache);
+
+  final List<FirestoreWriteListener> _writeListeners = [];
+
+  @override
+  void addWriteListener(FirestoreWriteListener listener) =>
+      _writeListeners.add(listener);
+
+  /// [paths] yazımlarını dinleyicilere duyurur; dinleyici hatası yutulur.
+  void _announce(Iterable<String> paths) {
+    for (final path in paths) {
+      for (final listener in List.of(_writeListeners)) {
+        try {
+          listener(path);
+        } on Object catch (_) {
+          // Önbellek kancası yazımın sonucunu etkilemez.
+        }
+      }
+    }
+  }
+
+  /// [write] yazımını duyurarak çalıştırır: yollar yazım başlarken (yerel
+  /// önbellek yazımı hemen yansıtır) ve sunucu onayında (süre dolmuş olsa da)
+  /// duyurulur.
+  Future<void> Function() _announced(
+    Iterable<String> paths,
+    Future<void> Function() write,
+  ) => () {
+    _announce(paths);
+    return write().then((_) => _announce(paths));
+  };
 
   @override
   DocumentReference<Json> doc(String collectionPath, String id) {
@@ -189,53 +260,107 @@ final class FirebaseFirestoreService implements FirestoreService {
 
   @override
   Future<FirestoreResult<FirestoreDoc?>> getDoc(DocumentReference<Json> ref) =>
-      _guard(() async => FirestoreDoc.fromSnapshot(await ref.get()));
+      _guardRead(
+        () async => FirestoreDoc.fromSnapshot(await ref.get()),
+        // Önbellekte olmayan belge "yok" sayılmaz: `null` → asıl hata.
+        () async => FirestoreDoc.fromSnapshot(await ref.get(_fromCache)),
+      );
+
+  @override
+  Future<FirestoreResult<FirestoreDoc?>> getDocFromCache(
+    DocumentReference<Json> ref,
+  ) => _guard(
+    () async => FirestoreDoc.fromSnapshot(
+      await ref.get(const GetOptions(source: Source.cache)),
+    ),
+  );
 
   @override
   Future<FirestoreResult<List<FirestoreDoc>>> getList(Query<Json> query) =>
-      _guard(() async => _docsOf(await query.get()));
+      _guardRead(() async => _docsOf(await query.get()), () async {
+        // Boş önbellek "boş durum" değildir: `null` → asıl hata.
+        final docs = _docsOf(await query.get(_fromCache));
+        return docs.isEmpty ? null : docs;
+      });
 
   @override
   Future<FirestoreResult<PageResult<FirestoreDoc>>> getPage(
     Query<Json> query,
     PageRequest page,
-  ) => _guard(() async {
+  ) {
     final after = page.after;
-    final start = after == null
-        ? query
-        : query.startAfterDocument(after.snapshot);
-    final snapshot = await start.limit(page.limit).get();
-    final docs = snapshot.docs;
-    return PageResult(
-      items: _docsOf(snapshot),
-      next: docs.length == page.limit ? PageCursor(docs.last) : null,
+    PageResult<FirestoreDoc> pageOf(QuerySnapshot<Json> snapshot) {
+      final docs = snapshot.docs;
+      return PageResult(
+        items: _docsOf(snapshot),
+        next: docs.length == page.limit ? PageCursor(docs.last) : null,
+      );
+    }
+
+    return _guardRead(
+      () async {
+        final start = after == null
+            ? query
+            : query.startAfterDocument(after.snapshot);
+        return pageOf(await start.limit(page.limit).get());
+      },
+      // Yalnızca ilk sayfa: önbellekten eksik gelen sonraki sayfa yanlış bir
+      // "liste sonu" üretirdi.
+      after != null
+          ? null
+          : () async {
+              final snapshot = await query.limit(page.limit).get(_fromCache);
+              return snapshot.docs.isEmpty ? null : pageOf(snapshot);
+            },
     );
-  });
+  }
 
   @override
   Stream<FirestoreResult<FirestoreDoc?>> watchDoc(
     DocumentReference<Json> ref,
-  ) => _results(ref.snapshots().map(FirestoreDoc.fromSnapshot));
+  ) => _results(
+    ref.snapshots().map((snapshot) {
+      // Önbellekte olmayan belge çevrimdışıyken `exists: false, fromCache:
+      // true` gelir: "yok" değil, "bilinmiyor" (T-44 · A4-02; SDK `get()`
+      // de unavailable verir). Akış kapanmaz; sunucu olayı başarı getirir.
+      if (!snapshot.exists && snapshot.metadata.isFromCache) {
+        throw FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'unavailable',
+          message: 'çevrimdışı: belge önbellekte yok',
+        );
+      }
+      return FirestoreDoc.fromSnapshot(snapshot);
+    }),
+  );
 
   @override
   Stream<FirestoreResult<List<FirestoreDoc>>> watchList(Query<Json> query) =>
       _results(query.snapshots().map(_docsOf));
 
   @override
-  Future<FirestoreResult<String>> add(String collectionPath, Json data) =>
-      _guard(() async {
-        final ref = _firestore.collection(collectionPath).doc();
-        await ref.set(data);
-        return ref.id;
-      });
+  Future<FirestoreResult<String>> add(String collectionPath, Json data) async {
+    // Kimlik yazımdan önce alınır: süre dolsa da (yazım kuyrukta) döner.
+    final DocumentReference<Json> ref;
+    try {
+      ref = _firestore.collection(collectionPath).doc();
+    } on Object catch (error, stack) {
+      return _report(error, stack);
+    }
+    return _guardWrite(_announced([ref.path], () => ref.set(data)), ref.id);
+  }
 
   @override
   Future<FirestoreResult<void>> set(
     DocumentReference<Json> ref,
     Json data, {
     bool merge = false,
-  }) => _guard(
-    () => merge ? ref.set(data, SetOptions(merge: true)) : ref.set(data),
+  }) => _guardWrite(
+    _announced(
+      [ref.path],
+      () => merge ? ref.set(data, SetOptions(merge: true)) : ref.set(data),
+    ),
+    null,
   );
 
   @override
@@ -247,53 +372,76 @@ final class FirebaseFirestoreService implements FirestoreService {
     if (fields.isEmpty) {
       return _invalidArgument('update: güncellenecek alan yok');
     }
-    return _guard(
-      () => ref.update({
-        ...fields,
-        if (touchUpdatedAt) ...BaseFieldsPayload.update(),
-      }),
+    return _guardWrite(
+      _announced(
+        [ref.path],
+        () => ref.update({
+          ...fields,
+          if (touchUpdatedAt) ...BaseFieldsPayload.update(),
+        }),
+      ),
+      null,
     );
   }
 
   @override
   Future<FirestoreResult<T>> runTransaction<T>(
     Future<T> Function(Transaction tx) body,
-  ) => _guard(
-    () => _firestore.runTransaction<T>(
-      (tx) => body(_GuardedTransaction(tx)),
-      timeout: _timeout,
-      maxAttempts: transactionMaxAttempts,
-    ),
-  );
+  ) async {
+    // Gövdenin yazdığı yollar (yeniden denemelerde birikir; fazla duyuru
+    // zararsızdır) yalnızca işlem başarıyla bitince duyurulur.
+    final paths = <String>{};
+    final result = await _guard(
+      () => _firestore.runTransaction<T>(
+        (tx) => body(_GuardedTransaction(tx, paths)),
+        timeout: _timeout,
+        maxAttempts: transactionMaxAttempts,
+      ),
+    );
+    if (result.isSuccess) _announce(paths);
+    return result;
+  }
 
   @override
   Future<FirestoreResult<void>> commitBatch(
     void Function(WriteBatch batch) build,
-  ) => _guard(() async {
-    final inner = _firestore.batch();
-    final batch = _GuardedWriteBatch(inner);
-    // `async` bir gövde de bu tipe atanabilir; dönen değerden yakalanır.
-    final Object? Function(WriteBatch) run = build;
-    final returned = run(batch);
-    if (returned is Future<Object?>) {
-      // Batch reddedildi; gövdenin geç gelen hatası ayrıca raporlanmaz.
-      returned.ignore();
-      throw _invalid('commitBatch: gövde eşzamanlı olmalı (async verilmiş)');
+  ) async {
+    // Doğrulama eşzamanlıdır ve hatası hemen döner; yalnızca commit süre
+    // sınırına girer (süre dolması başarıdır — `_guardWrite`). Tek zamanlayıcı:
+    // dış bir `timeout` iç zamanlayıcıyla aynı anda dolup `timeout` döndürürdü.
+    final WriteBatch inner;
+    final int writeCount;
+    final Set<String> paths;
+    try {
+      inner = _firestore.batch();
+      final batch = _GuardedWriteBatch(inner);
+      paths = batch.paths;
+      // `async` bir gövde de bu tipe atanabilir; dönen değerden yakalanır.
+      final Object? Function(WriteBatch) run = build;
+      final returned = run(batch);
+      if (returned is Future<Object?>) {
+        // Batch reddedildi; gövdenin geç gelen hatası ayrıca raporlanmaz.
+        returned.ignore();
+        throw _invalid('commitBatch: gövde eşzamanlı olmalı (async verilmiş)');
+      }
+      final poison = batch.poison;
+      if (poison != null) {
+        // Batch'e eklenemeyen soft delete / geri alma: eşlik eden yazımlar
+        // (sayaç vb.) tek başına işlenmez.
+        Error.throwWithStackTrace(poison, StackTrace.current);
+      }
+      writeCount = batch.writeCount;
+      if (writeCount > Limits.batchMaxWrites) {
+        throw _invalid(
+          'commitBatch: $writeCount yazım, sınır ${Limits.batchMaxWrites}',
+        );
+      }
+    } on Object catch (error, stack) {
+      return _report(error, stack);
     }
-    final poison = batch.poison;
-    if (poison != null) {
-      // Batch'e eklenemeyen soft delete / geri alma: eşlik eden yazımlar
-      // (sayaç vb.) tek başına işlenmez.
-      Error.throwWithStackTrace(poison, StackTrace.current);
-    }
-    if (batch.writeCount > Limits.batchMaxWrites) {
-      throw _invalid(
-        'commitBatch: ${batch.writeCount} yazım, sınır '
-        '${Limits.batchMaxWrites}',
-      );
-    }
-    if (batch.writeCount > 0) await inner.commit();
-  });
+    if (writeCount == 0) return const FirebaseSuccess(null);
+    return _guardWrite(_announced(paths, inner.commit), null);
+  }
 
   @override
   Future<FirestoreResult<void>> softDelete(
@@ -320,6 +468,13 @@ final class FirebaseFirestoreService implements FirestoreService {
   @override
   Object serverTimestamp() => FieldValue.serverTimestamp();
 
+  @override
+  Future<FirestoreResult<void>> setNetworkEnabled({required bool enabled}) =>
+      _guard(
+        () =>
+            enabled ? _firestore.enableNetwork() : _firestore.disableNetwork(),
+      );
+
   /// [payload] yükünü [batch] verilmişse batch'e ekler (eşzamanlı; çağıran
   /// `commitBatch` gövdesinde beklemeden kullanabilir), verilmemişse hemen
   /// yazar.
@@ -328,12 +483,17 @@ final class FirebaseFirestoreService implements FirestoreService {
     Json payload,
     WriteBatch? batch,
   ) {
-    if (batch == null) return _guard(() => ref.update(payload));
+    if (batch == null) {
+      return _guardWrite(
+        _announced([ref.path], () => ref.update(payload)),
+        null,
+      );
+    }
     try {
       batch.update(ref, payload);
       return Future.value(const FirebaseSuccess(null));
-    } on Object catch (error) {
-      return _rejected(error, batch);
+    } on Object catch (error, stack) {
+      return _rejected(error, batch, stack);
     }
   }
 
@@ -341,22 +501,83 @@ final class FirebaseFirestoreService implements FirestoreService {
   /// `commitBatch` batch'iyse onu geçersiz kılar: dönen sonuç gövdede
   /// beklenemediği için hata commit'te yeniden yükseltilir ve batch'in geri
   /// kalanı (ör. aynı işlemin sayaç yazımı) uygulanmaz.
-  static Future<FirestoreResult<void>> _rejected(
+  Future<FirestoreResult<void>> _rejected(
     Object error,
-    WriteBatch? batch,
-  ) {
+    WriteBatch? batch, [
+    StackTrace? stack,
+  ]) {
     if (batch is _GuardedWriteBatch) batch.poison ??= error;
-    return Future.value(_failure(error));
+    return Future.value(_report(error, stack ?? StackTrace.current));
   }
 
-  /// [action] çağrısını zaman aşımıyla sarar ve her hatayı [FirebaseFailure]'a
-  /// çevirir (PLAN §10.1).
+  /// Okuma / transaction: [action] çağrısını zaman aşımıyla sarar ve her
+  /// hatayı [FirebaseFailure]'a çevirir (PLAN §10.1; süre dolması →
+  /// [FirestoreError.timeout]).
   Future<FirestoreResult<T>> _guard<T>(Future<T> Function() action) async {
     try {
       return FirebaseSuccess(await action().timeout(_timeout));
-    } on Object catch (error) {
-      return _failure(error);
+    } on Object catch (error, stack) {
+      return _report(error, stack);
     }
+  }
+
+  /// Okuma: [server] okumasını zaman aşımıyla dener; **yalnızca** süre
+  /// dolarsa [cache] okumasını bir kez (aynı süreyle) dener ve `null` olmayan
+  /// sonucu başarı sayar (Q-12, T-44 · A4-05). Önbellek okuması başarısız ya
+  /// da `null` ise asıl hata ([FirestoreError.timeout]) döner. Başka hatalar
+  /// (unavailable, Rules …) için önbellek denenmez: SDK çevrimdışıyken
+  /// varsayılan okuma zaten önbelleğe bakar.
+  Future<FirestoreResult<T>> _guardRead<T>(
+    Future<T> Function() server,
+    Future<T?> Function()? cache,
+  ) async {
+    try {
+      return FirebaseSuccess(await server().timeout(_timeout));
+    } on TimeoutException catch (error, stack) {
+      if (cache != null) {
+        try {
+          final cached = await cache().timeout(_timeout);
+          if (cached != null) return FirebaseSuccess(cached);
+        } on Object catch (_) {
+          // Önbellekte yok ya da okunamadı: asıl hata döner.
+        }
+      }
+      return _report(error, stack);
+    } on Object catch (error, stack) {
+      return _report(error, stack);
+    }
+  }
+
+  /// Transaction dışı yazım: yerel SDK yazımı kuyruğa alır, gelecek yalnızca
+  /// sunucu onayıyla tamamlanır. Süre dolarsa yazım kuyrukta kalır ve
+  /// bağlantı dönünce işlenir; bu bir hata değildir (yeniden deneme yazımı
+  /// ikilerdi — T-44 · D2-01). Gerçek SDK hataları (Rules, not-found …)
+  /// süre içinde gelirse yine [FirebaseFailure] olur.
+  Future<FirestoreResult<T>> _guardWrite<T>(
+    Future<void> Function() write,
+    T value,
+  ) async {
+    try {
+      await write().timeout(_timeout, onTimeout: () {});
+      return FirebaseSuccess(value);
+    } on Object catch (error, stack) {
+      return _report(error, stack);
+    }
+  }
+
+  /// [error] hatasını sonuca çevirir; beklenmeyen hataysa
+  /// ([FirestoreError.isUnexpected]) [_onUnexpected]'a orijinal yığınla
+  /// bildirir (T-44 · D2-03). Dinleyicinin hatası yutulur.
+  FirestoreResult<T> _report<T>(Object error, StackTrace stack) {
+    final result = _failure<T>(error);
+    if (result case FirebaseFailure(error: final code) when code.isUnexpected) {
+      try {
+        _onUnexpected?.call(error, stack, 'firestore:${code.name}');
+      } on Object catch (_) {
+        // Raporlama başarısız: sonucu etkilemez.
+      }
+    }
+    return result;
   }
 
   /// [source] akışının olaylarını sonuca sarar; hata olayları akışı
@@ -364,7 +585,7 @@ final class FirebaseFirestoreService implements FirestoreService {
   Stream<FirestoreResult<T>> _results<T>(Stream<T> source) => source.transform(
     StreamTransformer<T, FirestoreResult<T>>.fromHandlers(
       handleData: (data, sink) => sink.add(FirebaseSuccess(data)),
-      handleError: (error, _, sink) => sink.add(_failure(error)),
+      handleError: (error, stack, sink) => sink.add(_report(error, stack)),
     ),
   );
 
@@ -422,16 +643,21 @@ final class _GuardedWriteBatch implements WriteBatch {
   /// batch commit edilmez (`commitBatch` bu hatayı döndürür).
   Object? poison;
 
+  /// Batch'e eklenen yazımların belge yolları (commit'te duyurulur).
+  final Set<String> paths = {};
+
   @override
   void set<T>(DocumentReference<T> document, T data, [SetOptions? options]) {
     writeCount++;
     _inner.set(document, data, options);
+    paths.add(document.path);
   }
 
   @override
   void update<T>(DocumentReference<T> document, T data) {
     writeCount++;
     _inner.update(document, data);
+    paths.add(document.path);
   }
 
   @override
@@ -442,9 +668,12 @@ final class _GuardedWriteBatch implements WriteBatch {
 /// `runTransaction` gövdesine verilen transaction: okuma, `set` ve `update`
 /// çağrılarını iletir, silmeyi reddeder.
 final class _GuardedTransaction implements Transaction {
-  _GuardedTransaction(this._inner);
+  _GuardedTransaction(this._inner, this._paths);
 
   final Transaction _inner;
+
+  /// Gövdenin yazdığı belge yolları (işlem başarısında duyurulur).
+  final Set<String> _paths;
 
   @override
   Future<DocumentSnapshot<T>> get<T extends Object?>(
@@ -458,6 +687,7 @@ final class _GuardedTransaction implements Transaction {
     SetOptions? options,
   ]) {
     _inner.set(documentReference, data, options);
+    _paths.add(documentReference.path);
     return this;
   }
 
@@ -467,6 +697,7 @@ final class _GuardedTransaction implements Transaction {
     Map<Object, Object?> data,
   ) {
     _inner.update(documentReference, data);
+    _paths.add(documentReference.path);
     return this;
   }
 

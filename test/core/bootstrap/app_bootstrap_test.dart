@@ -68,13 +68,14 @@ void main() {
       expect(AppBootstrap.crashCollectionEnabled, isFalse);
     });
 
-    test('toplama anahtarı emülatör ortamını ve debug derlemeyi dışlar', () {
+    test("toplama yalnızca release + production'da açık (T-44 · D2-10: "
+        'profile ve emülatör kapalı)', () {
       final source = readText('lib/core/bootstrap/app_bootstrap.dart');
       expect(
         source.replaceAll(RegExp(r'\s+'), ' '),
         contains(
           'static const bool crashCollectionEnabled = '
-          '!kDebugMode && !AppEnvironment.isEmulator;',
+          'kReleaseMode && !AppEnvironment.isEmulator;',
         ),
       );
     });

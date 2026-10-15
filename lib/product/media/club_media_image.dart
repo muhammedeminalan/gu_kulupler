@@ -11,30 +11,42 @@ import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 ///
 /// `null` döner (çağıran şablon kapağı / ikonlu amblemi çizer — K-C): kulüp
 /// yok ya da silinmiş, görsel yüklenmemiş ya da indirme adresi henüz gelmedi
-/// ([storageImageResolver] adres gelince yeni çözücü yayar, izleyen widget
-/// yeniden çizilir). Ortak widget'lar saf kalır: görseli çağıran çözer ve
-/// `ImageProvider?` olarak verir.
+/// (adres gelince yalnızca o yolu izleyen widget yeniden çizilir —
+/// [StorageImageRefX.storageImage]). Ortak widget'lar saf kalır: görseli
+/// çağıran çözer ve `ImageProvider?` olarak verir.
 ///
 /// Okuma yetkisi Storage Rules'tadır (`clubs/` — doğrulanmış kullanıcı, tek
 /// dosya `get`; D-29).
 extension ClubMediaResolverX on StorageImageResolver {
-  /// [club] kulübünün logosu; yoksa `null`.
-  ImageProvider? clubLogo(ClubModel? club) =>
-      club == null || club.isDeleted ? null : this(club.logoPath);
+  /// [club] kulübünün logosu; yoksa `null`. [coverEdgePx] amblemin cihaz
+  /// pikseli kenarıdır ([decodePx]).
+  ImageProvider? clubLogo(ClubModel? club, {int? coverEdgePx}) =>
+      club == null || club.isDeleted
+      ? null
+      : this(club.logoPath, coverEdgePx: coverEdgePx);
 
   /// [club] kulübünün kapağı; yoksa `null`.
-  ImageProvider? clubCover(ClubModel? club) =>
-      club == null || club.isDeleted ? null : this(club.coverPath);
+  ImageProvider? clubCover(ClubModel? club, {int? coverEdgePx}) =>
+      club == null || club.isDeleted
+      ? null
+      : this(club.coverPath, coverEdgePx: coverEdgePx);
 }
 
 /// `build` içinde kısa yol:
 /// `ClubCard(club: club, coverImage: ref.clubCoverImage(club), …)`.
 extension ClubMediaImageRefX on WidgetRef {
-  /// [club] kulübünün logosu ([storageImageResolverProvider] izlenir).
-  ImageProvider? clubLogoImage(ClubModel? club) =>
-      watch(storageImageResolverProvider).clubLogo(club);
+  /// [club] kulübünün logosu (yalnızca bu yolun sağlayıcısı izlenir).
+  /// [displaySize] amblemin kenarıdır (dp; `GuEmblemSize.dimension`): logo
+  /// bu boyutta çözülür.
+  ImageProvider? clubLogoImage(ClubModel? club, {double? displaySize}) =>
+      club == null || club.isDeleted
+      ? null
+      : this.storageImage(club.logoPath, displaySize: displaySize);
 
-  /// [club] kulübünün kapağı ([storageImageResolverProvider] izlenir).
-  ImageProvider? clubCoverImage(ClubModel? club) =>
-      watch(storageImageResolverProvider).clubCover(club);
+  /// [club] kulübünün kapağı (yalnızca bu yolun sağlayıcısı izlenir).
+  /// [displaySize] verilmezse sınırlı tam boy (kart / başlık kapağı).
+  ImageProvider? clubCoverImage(ClubModel? club, {double? displaySize}) =>
+      club == null || club.isDeleted
+      ? null
+      : this.storageImage(club.coverPath, displaySize: displaySize);
 }

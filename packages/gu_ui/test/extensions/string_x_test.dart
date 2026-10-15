@@ -110,4 +110,34 @@ void main() {
       expect('a b'.trCompareTo('ab'), -1);
     });
   });
+
+  group('T-44 · trCompareLowered (P1-07)', () {
+    test('önceden küçültülmüş anahtarla karşılaştırma trCompareTo ile '
+        'birebir aynı', () {
+      const names = [
+        'Işıl',
+        'İbrahim',
+        'Çağrı',
+        'Özge',
+        'ılgaz',
+        'Irmak',
+        'Ali Can',
+        'ali',
+        'Şule',
+        'Zeynep',
+      ];
+      for (final a in names) {
+        for (final b in names) {
+          expect(
+            trCompareLowered(a.trLower(), b.trLower()),
+            a.trCompareTo(b),
+            reason: '$a ↔ $b',
+          );
+        }
+      }
+      final sorted = [...names]
+        ..sort((a, b) => trCompareLowered(a.trLower(), b.trLower()));
+      expect(sorted, [...names]..sort((a, b) => a.trCompareTo(b)));
+    });
+  });
 }

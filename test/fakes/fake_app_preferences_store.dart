@@ -158,6 +158,39 @@ final class FakeAppPreferencesStore extends FakeBase
     return takeFailure() == null;
   }
 
+  @override
+  Set<String> reminderDoneEvents(String uid) =>
+      switch (values[AppPreferenceKeys.reminderDone(uid)]) {
+        final List<Object?> ids => Set.unmodifiable(ids.whereType<String>()),
+        _ => const <String>{},
+      };
+
+  @override
+  Future<bool> setReminderDoneEvents(String uid, Set<String> eventIds) =>
+      _write(
+        'setReminderDoneEvents',
+        [uid, ...eventIds],
+        AppPreferenceKeys.reminderDone(uid),
+        eventIds.toList(),
+      );
+
+  /// Gerçek depoyla aynı JSON kodlaması (`ImageUrlsCodec`).
+  @override
+  Map<String, ({String url, DateTime at})> get imageUrls =>
+      ImageUrlsCodec.decode(switch (values[AppPreferenceKeys.imageUrls]) {
+        final String json => json,
+        _ => null,
+      });
+
+  @override
+  Future<bool> setImageUrls(Map<String, ({String url, DateTime at})> entries) =>
+      _write(
+        'setImageUrls',
+        entries.length,
+        AppPreferenceKeys.imageUrls,
+        ImageUrlsCodec.encode(entries),
+      );
+
   /// Gerçek depo gibi: bellekteki değer her durumda güncellenir; bekleyen
   /// hata yalnızca dönüş değerini `false` yapar.
   Future<bool> _write(

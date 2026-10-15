@@ -43,6 +43,14 @@ void main() {
       },
     );
 
+    test('T-44 · D2-12 · recordError SDK konsol dökümünü kapatır '
+        '(printDetails: false; dökümü AppErrorHandler yazar)', () async {
+      await service.recordError(StateError('x'), null);
+      await service.recordError('y', StackTrace.current, fatal: true);
+
+      expect(crashlytics.printDetailsFlags, [false, false]);
+    });
+
     test('log: satır SDK günlüğüne yazılır', () async {
       service
         ..log('ilk')

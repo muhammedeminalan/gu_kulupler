@@ -148,5 +148,26 @@ void main() {
       expect(fake.isLoaded, isTrue);
       expect(fake.callsTo('load'), hasLength(2));
     });
+
+    test('T-44 · görsel adresleri ve bitmiş etkinlikler gerçek depoyla aynı '
+        'kodlamayla tutulur', () async {
+      final fake = FakeAppPreferencesStore();
+      final at = DateTime.utc(2026, 10, 15, 9);
+      expect(fake.imageUrls, isEmpty);
+      expect(
+        await fake.setImageUrls({'posts/p1/a.jpg': (url: 'https://x', at: at)}),
+        isTrue,
+      );
+      expect(fake.imageUrls['posts/p1/a.jpg'], (url: 'https://x', at: at));
+      expect(fake.values[AppPreferenceKeys.imageUrls], isA<String>());
+
+      expect(fake.reminderDoneEvents('u1'), isEmpty);
+      await fake.setReminderDoneEvents('u1', {'e01'});
+      expect(fake.reminderDoneEvents('u1'), {'e01'});
+      expect(fake.reminderDoneEvents('u2'), isEmpty);
+      expect(fake.callsTo('setReminderDoneEvents').single.args, [
+        ['u1', 'e01'],
+      ]);
+    });
   });
 }

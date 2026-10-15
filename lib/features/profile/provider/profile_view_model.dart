@@ -229,8 +229,15 @@ final class ProfileViewModel extends _$ProfileViewModel
       _requestedClubIds
         ..clear()
         ..addAll(clubIds);
-      final clubsFuture = clubRepository.getClubs(clubIds);
-      final rsvpsFuture = rsvpRepository.listMine(uid);
+      final clubsFuture = clubRepository.getClubs(
+        clubIds,
+        forceRefresh: state.isRefreshing,
+      );
+      // Yalnızca "katıldı" kayıtları sayılır (T-44 · D3-02).
+      final rsvpsFuture = rsvpRepository.listMine(
+        uid,
+        statuses: {RsvpStatus.attended},
+      );
       final clubs = await clubsFuture;
       final rsvps = await rsvpsFuture;
       if (!ref.mounted) return;

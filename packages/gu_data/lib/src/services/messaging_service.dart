@@ -43,7 +43,11 @@ abstract interface class MessagingService {
   /// Bu cihazın jetonunu geçersiz kılar (çıkış; FCM `deleteToken`) ve
   /// otomatik başlatmayı kapatır (jeton kendiliğinden yeniden üretilmez).
   /// Sonraki [token] yeni jeton üretir.
-  Future<void> invalidateToken();
+  ///
+  /// Jeton silindiyse `true`; `deleteToken` başarısızsa (çoğunlukla ağ yok)
+  /// `false` — çağıran temizliği sonra yeniden dener (T-44 · A4-06).
+  /// Otomatik başlatmayı kapatma hatası sonucu değiştirmez.
+  Future<bool> invalidateToken();
 
   /// Uygulamayı push'a dokunarak (soğuk) açtıran mesajın `data` yükü; yoksa
   /// `null`. Aynı mesaj ikinci kez dönmez.
@@ -117,17 +121,21 @@ final class FirebaseMessagingService implements MessagingService {
       _sdk.onTokenRefresh.handleError((Object _) {});
 
   @override
-  Future<void> invalidateToken() async {
+  Future<bool> invalidateToken() async {
+    var deleted = true;
     try {
       await _sdk.deleteToken();
     } on Object {
-      // En iyi çaba: sunucu geçersiz jetonu ilk gönderimde çıkarır.
+      // En iyi çaba: sunucu geçersiz jetonu ilk gönderimde çıkarır; çağıran
+      // `false` ile temizliği sonra yeniden dener.
+      deleted = false;
     }
     try {
       await _sdk.setAutoInitEnabled(false);
     } on Object {
-      // En iyi çaba.
+      // En iyi çaba (sonucu değiştirmez).
     }
+    return deleted;
   }
 
   @override

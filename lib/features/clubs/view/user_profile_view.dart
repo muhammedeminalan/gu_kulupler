@@ -154,7 +154,10 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
           showDetails: state.showsDetails,
           isSuperAdmin: state.isSuperAdmin,
           roles: state.roles,
-          avatarImage: ref.userAvatarImage(user),
+          avatarImage: ref.userAvatarImage(
+            user,
+            displaySize: UserProfileHeader.avatarSize,
+          ),
         ),
         if (state.isHiddenByPrivacy)
           _private(l10n)

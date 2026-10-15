@@ -274,11 +274,14 @@ class ReportDetailSheet extends ConsumerWidget {
         return PostCard(
           post: post,
           author: author,
-          authorAvatar: ref.userAvatarImage(author),
+          authorAvatar: ref.userAvatarImage(
+            author,
+            displaySize: GuSizes.postAvatar,
+          ),
           club: preview.club,
           showClub: true,
           hideActions: true,
-          imageOf: ref.watch(postImageResolverProvider),
+          imageOf: ref.postImagesOf(post.images),
         );
       case ReportTargetType.comment:
         final comment = preview.comment;
@@ -286,7 +289,10 @@ class ReportDetailSheet extends ConsumerWidget {
         return _CommentPreview(
           comment: comment,
           author: preview.author,
-          avatar: ref.userAvatarImage(preview.author),
+          avatar: ref.userAvatarImage(
+            preview.author,
+            displaySize: GuSizes.commentAvatar,
+          ),
         );
       case ReportTargetType.user:
         final user = preview.user;
@@ -301,7 +307,10 @@ class ReportDetailSheet extends ConsumerWidget {
               year: user.year,
             ),
             inCard: true,
-            avatarImage: ref.userAvatarImage(user),
+            avatarImage: ref.userAvatarImage(
+              user,
+              displaySize: GuSizes.avatar,
+            ),
           ),
         );
       case ReportTargetType.club:
@@ -336,7 +345,10 @@ class ReportDetailSheet extends ConsumerWidget {
           _ReporterRow(
             report: report,
             reporter: reporters[report.reporterId],
-            avatar: ref.userAvatarImage(reporters[report.reporterId]),
+            avatar: ref.userAvatarImage(
+              reporters[report.reporterId],
+              displaySize: GuSizes.commentAvatar,
+            ),
             time: switch (report.createdAt) {
               final at? => relative.format(at),
               null => l10n.timeJustNow,

@@ -156,10 +156,11 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
   }
 
   /// Yüklenmiş kapak görseli (`event.coverPath`); adresi henüz bilinmiyorsa
-  /// `null` (şablon kapak). Adres gelince görsel çözücüsü yeniden yayılır ve
-  /// ekran yeniden çizilir.
+  /// `null` (şablon kapak). Yalnızca bu yolun adresi gelince ekran yeniden
+  /// çizilir (`ref.storageImage`, T-44); 220 dp başlık kapağı sınırlı tam
+  /// boy çözülür.
   ImageProvider? coverImageOf(EventModel event) =>
-      ref.watch(storageImageResolverProvider)(event.coverPath);
+      ref.storageImage(event.coverPath);
 
   // ──────────────────────────────── eylemler ────────────────────────────────
 

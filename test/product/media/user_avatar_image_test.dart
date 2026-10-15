@@ -17,7 +17,7 @@ final ImageProvider _image = MemoryImage(Uint8List(0));
 
 void main() {
   final requested = <String?>[];
-  ImageProvider? resolve(String? path) {
+  ImageProvider? resolve(String? path, {int? coverEdgePx}) {
     requested.add(path);
     return path == null ? null : _image;
   }

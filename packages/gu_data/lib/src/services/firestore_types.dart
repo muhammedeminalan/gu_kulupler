@@ -42,6 +42,10 @@ final class FirestoreDoc {
   /// için.
   final DocumentSnapshot<Json> snapshot;
 
+  /// Belge sunucu yerine yerel (kalıcı) önbellekten mi geldi? Bellek içi
+  /// okuma önbelleği yalnızca sunucudan gelen belgeyi saklar (T-44 · D3-01).
+  bool get isFromCache => snapshot.metadata.isFromCache;
+
   @override
   String toString() => 'FirestoreDoc($path)';
 }

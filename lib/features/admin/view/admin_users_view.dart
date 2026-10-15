@@ -8,6 +8,7 @@ import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_user_row.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Admin kullanıcılar — `AdminUsersRoute` (`/admin/users?filter=`; guard
@@ -76,6 +77,8 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView>
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(

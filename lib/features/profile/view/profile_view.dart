@@ -341,7 +341,10 @@ class _ProfileViewState extends ConsumerState<ProfileView>
                         user: user,
                         avatarImage: preview != null
                             ? MemoryImage(preview)
-                            : ref.userAvatarImage(user),
+                            : ref.userAvatarImage(
+                                user,
+                                displaySize: ProfileHeader.avatarSize,
+                              ),
                         isSuperAdmin: state.isSuperAdmin,
                         onAvatar: changePhoto,
                         onEdit: openEdit,

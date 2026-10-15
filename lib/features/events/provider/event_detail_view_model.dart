@@ -189,7 +189,11 @@ final class EventDetailViewModel extends _$EventDetailViewModel
     final uid = _uid;
     final event = state.event;
     if (uid == null || event == null) return false;
-    final mine = await rsvpRepository.listMine(uid);
+    // Yalnızca çakışabilecek kayıtlar okunur (T-44 · D3-02).
+    final mine = await rsvpRepository.listMine(
+      uid,
+      statuses: {RsvpStatus.going, RsvpStatus.attended},
+    );
     final otherIds = [
       for (final rsvp in mine.dataOrNull ?? const <RsvpModel>[])
         if (rsvp.eventId != eventId &&
@@ -478,7 +482,11 @@ final class EventDetailViewModel extends _$EventDetailViewModel
       }
       final uid = _uid;
       final (clubResult, rsvpResult) = await (
-        clubRepository.getClub(event.clubId),
+        // Çek-yenile ve katılım sonrası yenileme bellek önbelleğini atlar.
+        clubRepository.getClub(
+          event.clubId,
+          forceRefresh: state.isRefreshing,
+        ),
         uid == null
             ? Future<FirestoreResult<RsvpModel?>>.value(
                 const FirebaseSuccess(null),

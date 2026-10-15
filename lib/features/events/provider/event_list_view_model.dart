@@ -36,7 +36,8 @@ part 'event_list_view_model.g.dart';
 /// | katılım kayıtları | — | günlüğe düşer, kartlar durumsuz |
 ///
 /// Katılım akışı ve gezinme view'dadır (`runEventJoinFlow`, T-23); akış kayıt
-/// yazdıysa view [refresh] çağırır.
+/// yazdıysa view [onRsvpChanged] çağırır (yalnızca o etkinlik ve kayıt
+/// okunur — T-44 · D3-04).
 ///
 /// Design: EVT-01
 @riverpod
@@ -77,6 +78,35 @@ final class EventListViewModel extends _$EventListViewModel
     if (!ref.mounted || _isLoading || state.isRefreshing) return;
     state = state.copyWith(isRefreshing: true);
     await _load(refreshing: true);
+  }
+
+  /// Karttan katılım akışı kayıt yazdıktan sonra (T-44 · D3-04): yalnızca o
+  /// etkinlik (sayaçlar) ve kullanıcının o kaydı okunur — kulüpler, yaklaşan
+  /// listeler ve tüm katılım geçmişi yeniden okunmaz (N + E + k + R yerine 2
+  /// okuma). Biri okunamazsa tam yenilemeye ([refresh]) düşülür; listede
+  /// olmayan etkinlik listeye eklenmez.
+  Future<void> onRsvpChanged(String eventId) async {
+    final uid = ref.read(sessionViewModelProvider).uid;
+    if (!ref.mounted || uid == null) return;
+    final (event, rsvp) = await (
+      eventRepository.getEvent(eventId),
+      rsvpRepository.getMine(eventId: eventId, userId: uid),
+    ).wait;
+    if (!ref.mounted) return;
+    switch ((event, rsvp)) {
+      case (
+        FirebaseSuccess(data: final fresh),
+        FirebaseSuccess(data: final mine),
+      ):
+        state = state.copyWith(
+          events: [
+            for (final item in state.events) item.id == eventId ? fresh : item,
+          ],
+          rsvps: mine == null ? null : {...state.rsvps, eventId: mine},
+        );
+      default:
+        await refresh();
+    }
   }
 
   /// Liste ↔ takvim (`EVT-01.view.<kip>`).
@@ -179,7 +209,7 @@ final class EventListViewModel extends _$EventListViewModel
       session,
     ).take(memberQueriesMax).toList(growable: false);
     final (clubs, publicEvents, memberEvents, rsvps) = await (
-      clubRepository.fetchActiveClubs(),
+      clubRepository.fetchActiveClubs(forceRefresh: refreshing),
       eventRepository.listPublicUpcoming(fromUtc: from),
       Future.wait([
         for (final clubId in memberClubIds)

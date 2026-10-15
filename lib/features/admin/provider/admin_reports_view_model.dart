@@ -475,7 +475,7 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
       missing.isEmpty
           ? Future.value(const <UserModel>[])
           : userRepository
-                .getUsers(missing)
+                .getUsers(missing, forceRefresh: true)
                 .then((result) => result.dataOrNull ?? const <UserModel>[]),
     ).wait;
     if (!ref.mounted || state.openGroupKey != key) return;
@@ -501,7 +501,7 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
             // Yazar ve gönderinin kulübü (`PostCard` başlığı) birlikte.
             final (author, club) = await (
               userRepository.getUser(data.authorId),
-              clubRepository.getClub(data.clubId),
+              clubRepository.getClub(data.clubId, forceRefresh: true),
             ).wait;
             return ReportTargetPreview(
               post: data,
@@ -530,7 +530,7 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
           FirebaseFailure() => fallback,
         };
       case ReportTargetType.club:
-        return switch (await clubRepository.getClub(id)) {
+        return switch (await clubRepository.getClub(id, forceRefresh: true)) {
           FirebaseSuccess(:final data) => ReportTargetPreview(club: data),
           FirebaseFailure(:final error) =>
             _gone(error) ? const ReportTargetPreview() : fallback,
@@ -558,14 +558,14 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
       _readMany<UserModel>(
         ReportTargetType.user,
         ids[ReportTargetType.user] ?? const [],
-        userRepository.getUsers,
+        (uids) => userRepository.getUsers(uids, forceRefresh: true),
         (user) => user.uid,
         (user) => ReportTargetPreview(user: user),
       ),
       _readMany<ClubModel>(
         ReportTargetType.club,
         ids[ReportTargetType.club] ?? const [],
-        clubRepository.getClubs,
+        (clubIds) => clubRepository.getClubs(clubIds, forceRefresh: true),
         (club) => club.id,
         (club) => ReportTargetPreview(club: club),
       ),

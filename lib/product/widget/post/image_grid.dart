@@ -13,10 +13,13 @@ typedef PostImageResolver = ImageProvider? Function(PostImageModel image);
 /// ortak çizimi (prototip `coverArtSVG(seed, club.iconName, club.palette)`,
 /// `cards.js:94`, `sheets.js:161`).
 ///
-/// Altta her zaman yer tutucu vardır: [club] kulübünün palet × desen şablonu
-/// (kulüp yoksa `slate` + `image` ikonu). [imageOf] bir görsel verirse onun
-/// üstüne çizilir; görsel yüklenene kadar ve yüklenemezse yer tutucu görünür
-/// (Storage `posts/` okuma kuralı T-21'de açılır).
+/// Yer tutucu [club] kulübünün palet × desen şablonudur (kulüp yoksa
+/// `slate` + `image` ikonu). [imageOf] görsel vermezse yalnızca yer tutucu
+/// çizilir; görsel verirse yer tutucu **yalnızca yükleme / hata sırasında**
+/// görünür — görselin ilk karesi gelince alttaki SVG çizilmez (T-44 · P1-04:
+/// opak görsel hücreyi `BoxFit.cover` ile tamamen örter; kaydırmada her
+/// karede boşa SVG boyanmaz). Saydam görselin altında `bg.surfaceMuted`
+/// zemin kalır (eski `GuCover` zemini).
 ///
 /// Üst öğenin verdiği alanı doldurur (`GuCoverRatio.fill`); boyutu çağıran
 /// belirler.
@@ -33,38 +36,37 @@ class PostImage extends StatelessWidget {
   /// Görsel çözücü; `null` → yalnızca yer tutucu.
   final PostImageResolver? imageOf;
 
-  static Widget _failed(
-    BuildContext context,
-    Object error,
-    StackTrace? stackTrace,
-  ) => const SizedBox.shrink();
-
   @override
   Widget build(BuildContext context) {
     final club = this.club;
-    final provider = imageOf?.call(image);
-    final overlays = <Widget>[
-      if (provider != null)
-        Image(
-          image: provider,
-          fit: BoxFit.cover,
-          excludeFromSemantics: true,
-          errorBuilder: _failed,
-        ),
-    ];
-    return club == null
-        ? GuCover.template(
+    final Widget placeholder = club == null
+        ? const GuCover.template(
             palette: GuCoverPalette.slate,
             pattern: GuCoverPattern.dots,
             icon: GuIcons.image,
             ratio: GuCoverRatio.fill,
-            overlays: overlays,
           )
-        : CoverMapper.club(
-            club,
-            ratio: GuCoverRatio.fill,
-            overlays: overlays,
-          );
+        : CoverMapper.club(club, ratio: GuCoverRatio.fill);
+    final provider = imageOf?.call(image);
+    if (provider == null) return placeholder;
+    final muted = context.gu.colors.bgSurfaceMuted;
+    return RepaintBoundary(
+      child: Image(
+        image: provider,
+        fit: BoxFit.cover,
+        excludeFromSemantics: true,
+        // Eşzamanlı önbellek isabetinde ilk yapımda kare zaten 0'dır: yer
+        // tutucu hiç çizilmez.
+        frameBuilder: (context, child, frame, _) => Stack(
+          fit: StackFit.expand,
+          children: [
+            if (frame == null) placeholder else ColoredBox(color: muted),
+            child,
+          ],
+        ),
+        errorBuilder: (context, error, stackTrace) => placeholder,
+      ),
+    );
   }
 }
 
@@ -77,7 +79,8 @@ class PostImage extends StatelessWidget {
 ///   4, dış köşe 14.
 /// * [images] gönderinin Storage görselleridir (`posts.images[]`; Q-19).
 ///   Hücre [PostImage]'dır: [imageOf] görsel vermezse, görsel yüklenene kadar
-///   ya da yüklenemezse [club] paletinden üretilen yer tutucu desendir (K-18).
+///   ya da yüklenemezse [club] paletinden üretilen yer tutucu desendir (K-18);
+///   yer tutucu yalnızca yükleme / hata sırasında çizilir.
 /// * Hücreye dokunma [onOpen] (hücre sırası) → SHT-34 `ImageViewerSheet`.
 /// * Anahtarı çağıran verir (D-18, CD-86): [imageKey]
 ///   `<ID>.image.<postId>.<index>`.

@@ -10,6 +10,7 @@ import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// SET-02 "Engellenen kullanıcılar" — `BlockedRoute`
@@ -64,7 +65,7 @@ class BlockedUsersView extends ConsumerWidget {
                 department: user.department,
                 year: user.year,
               ),
-        avatarImage: ref.userAvatarImage(user),
+        avatarImage: ref.userAvatarImage(user, displaySize: GuSizes.avatar),
         actionKey: GuKey.action('SET-02.user.$userId'),
         onTap: () => BlockedUserProfileRoute(userId: userId).go(context),
         trailing: GuButton(
@@ -107,6 +108,9 @@ class BlockedUsersView extends ConsumerWidget {
               ),
             ),
             ...switch (status) {
+              _ when OfflineListFallback.applies(ref, status) => [
+                OfflineListFallback.sliver(onReload: viewModel.fetch),
+              ],
               GuListStatus.error => [
                 SliverToBoxAdapter(
                   child: GuErrorState(

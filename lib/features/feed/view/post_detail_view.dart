@@ -125,7 +125,10 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
             key: ValueKey<String>(comment.id),
             comment: comment,
             author: state.authorOf(comment.authorId),
-            authorAvatar: ref.userAvatarImage(state.authorOf(comment.authorId)),
+            authorAvatar: ref.userAvatarImage(
+              state.authorOf(comment.authorId),
+              displaySize: GuSizes.commentAvatar,
+            ),
             role: state.roles[comment.authorId],
             authorKey: GuKey.action('FED-02.author.${comment.id}'),
             // Silinmiş kullanıcının profili yoktur: avatar düz kalır.
@@ -158,7 +161,10 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
           PostCard(
             post: post,
             author: author,
-            authorAvatar: ref.userAvatarImage(author),
+            authorAvatar: ref.userAvatarImage(
+              author,
+              displaySize: GuSizes.postAvatar,
+            ),
             role: state.roles[post.authorId],
             club: state.club,
             liked: uid != null && post.likedBy(uid),
@@ -187,8 +193,8 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
             onVote: vote,
             onImage: openImage,
             // Görseller Storage'dan çözülür; adres gelene dek yer tutucu
-            // (K-18).
-            imageOf: ref.watch(postImageResolverProvider),
+            // (K-18). Yalnızca bu gönderinin yolları izlenir (T-44).
+            imageOf: ref.postImagesOf(post.images),
           ),
           Semantics(
             header: true,
@@ -236,7 +242,10 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
               initials: name.initials,
               seed: me?.avatarSeed ?? name,
               size: _composerAvatarSize,
-              image: ref.userAvatarImage(me),
+              image: ref.userAvatarImage(
+                me,
+                displaySize: _composerAvatarSize,
+              ),
             ),
             onSent: onCommentSent,
           ),

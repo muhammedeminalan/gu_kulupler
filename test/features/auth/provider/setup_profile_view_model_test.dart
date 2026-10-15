@@ -950,8 +950,14 @@ final class _AvatarFailingUsers implements UserRepository {
       _inner.getUser(uid);
 
   @override
-  Future<FirestoreResult<List<UserModel>>> getUsers(List<String> uids) =>
-      _inner.getUsers(uids);
+  Future<FirestoreResult<UserModel?>> getUserFromCache(String uid) =>
+      _inner.getUserFromCache(uid);
+
+  @override
+  Future<FirestoreResult<List<UserModel>>> getUsers(
+    List<String> uids, {
+    bool forceRefresh = false,
+  }) => _inner.getUsers(uids, forceRefresh: forceRefresh);
 
   @override
   Future<FirestoreResult<void>> createProfile({
