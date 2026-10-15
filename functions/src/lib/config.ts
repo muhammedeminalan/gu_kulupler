@@ -6,10 +6,10 @@
  */
 
 /**
- * Tek bölge sabiti. Firestore konumu deploy öncesi kullanıcı tarafından konsoldan doğrulanır:
- * `eur3` çıkarsa `europe-west1` yapılır (PLAN §21; CD-165).
+ * Tek bölge sabiti. Firestore `(default)` konumu `nam5` (ABD çoklu bölge; 2026-10-16 CLI ile okundu, kullanıcı kararı H-16:
+ * ABD'de kalır) → Firestore tetikleyicileri `us-central1`'de olmalı (PLAN §21; CD-165).
  */
-export const REGION = 'europe-west3';
+export const REGION = 'us-central1';
 
 /** Sessiz saat ve zamanlanmış görevlerin saat dilimi (Istanbul günü — domain-model §7). */
 export const TIME_ZONE = 'Europe/Istanbul';

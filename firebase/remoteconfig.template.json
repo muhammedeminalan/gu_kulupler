@@ -1,0 +1,24 @@
+{
+  "parameters": {
+    "min_supported_build": {
+      "defaultValue": { "value": "1" },
+      "description": "DLG-26: bu derleme numarasının altındaki sürümler güncellemeye zorlanır (RemoteConfigKeys.minSupportedBuild).",
+      "valueType": "NUMBER"
+    },
+    "maintenance_message": {
+      "defaultValue": { "value": "" },
+      "description": "Bakım bandı metni; boşsa bant görünmez (RemoteConfigKeys.maintenanceMessage).",
+      "valueType": "STRING"
+    },
+    "announcement_daily_limit": {
+      "defaultValue": { "value": "2" },
+      "description": "Kulüp başına günlük duyuru sınırı — istemci gösterimi; zorlayıcı sınır Rules (Limits.announcementDailyLimit).",
+      "valueType": "NUMBER"
+    },
+    "reapply_cooldown_days": {
+      "defaultValue": { "value": "7" },
+      "description": "Ret sonrası yeniden başvuru bekleme süresi, gün (Limits.reapplyCooldown).",
+      "valueType": "NUMBER"
+    }
+  }
+}
