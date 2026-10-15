@@ -31,6 +31,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseCrashlyticsCollectionEnabled</key>
 	<false/>
+	<key>FirebaseMessagingAutoInitEnabled</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -60,8 +62,6 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>FirebaseMessagingAutoInitEnabled</key>
-	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
