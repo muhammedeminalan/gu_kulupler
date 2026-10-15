@@ -42,6 +42,8 @@
 // `AdminClubFormRoute` (`/admin/clubs/new`) + `AdminClubEditRoute`
 // (`/admin/clubs/:clubId/edit`) — tek `AdminClubFormView` (ADM-03, CD-54).
 // T-40 · `AdminReportsRoute` (`/admin/reports?tab=&reportId=`, ADM-04).
+// T-41 · `AdminUsersRoute` (`/admin/users?filter=`, ADM-05),
+// `AdminUserProfileRoute` (`/admin/users/:userId`, CLB-07 paylaşılan).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
@@ -57,7 +59,8 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39 + T-40).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39 + T-40 +
+/// T-41).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -123,6 +126,9 @@ const Map<GoRouteData, String> _routes = {
   AdminClubEditRoute(clubId: _clubId): '/admin/clubs/:clubId/edit',
   // T-40: ADM-04
   AdminReportsRoute(): '/admin/reports',
+  // T-41: ADM-05, CLB-07 (paylaşılan)
+  AdminUsersRoute(): '/admin/users',
+  AdminUserProfileRoute(userId: _userId): '/admin/users/:userId',
   ProfileRoute(): '/profile',
   // Profil dalı (T-27: PRF-02, PRF-03, PRF-04)
   EditProfileRoute(): '/profile/edit',
@@ -207,14 +213,51 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 57 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
         'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2, '
-        'T-39: +3, T-40: +1)', () {
+        'T-39: +3, T-40: +1, T-41: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(55));
+      expect(_routes, hasLength(57));
     });
+
+    test(
+      "T-41 · ADM-05 ADM-01'in altındadır (`filter` sorgu parametresi); "
+      "CLB-07 (paylaşılan) ADM-05'in altındadır; ikisi de süper admin (S) "
+      'ister',
+      () {
+        expect(AdminUsersRoute.segment, 'users');
+        expect(AdminUserProfileRoute.segment, ':userId');
+        expect(AdminUsersFilter.values.map((filter) => filter.name), [
+          'all',
+          'managers',
+          'suspended',
+        ]);
+        const plain = AdminUsersRoute();
+        expect(plain.filter, isNull);
+        final deep = Uri.parse(
+          const AdminUsersRoute(filter: AdminUsersFilter.suspended).location,
+        );
+        expect(deep.path, '/admin/users');
+        expect(deep.queryParameters, {'filter': 'suspended'});
+        for (final MapEntry(key: route, value: location)
+            in <GoRouteData, String>{
+              plain: '/admin/users',
+              const AdminUserProfileRoute(userId: _userId): '/admin/users/u01',
+            }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, RouteAccess.superAdmin, reason: name);
+        }
+        expect(
+          const AdminUserProfileRoute(userId: 'a/b').location,
+          '/admin/users/a%2Fb',
+        );
+      },
+    );
 
     test(
       "T-40 · ADM-04 ADM-01'in altındadır (`tab` + `reportId` sorgu "

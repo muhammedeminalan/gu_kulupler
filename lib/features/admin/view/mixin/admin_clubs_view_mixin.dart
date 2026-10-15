@@ -66,9 +66,7 @@ mixin AdminClubsViewMixin on ConsumerState<AdminClubsView> {
   void openReports() => const AdminReportsRoute().go(context);
 
   /// "Kullanıcılar" bölmesi → ADM-05.
-  void openUsers() {
-    // TODO(T-41): `AdminUsersRoute().go(context)` (W-47).
-  }
+  void openUsers() => const AdminUsersRoute().go(context);
 
   /// Sekme (`ADM-02.tab.<name>`): liste başa döner.
   void selectTab(String name) {

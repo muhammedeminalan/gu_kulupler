@@ -142,7 +142,13 @@ class _GuSegment extends StatelessWidget {
       duration: duration,
       curve: GuMotion.easeCss,
       constraints: const BoxConstraints(minHeight: GuSizes.segmentHeight),
-      padding: GuInsets.sym(h: GuSizes.segmentPaddingX),
+      // Koyu seçili kenarlık (1 px) içeriği daraltmasın: CSS `border-box`
+      // gibi yatay iç boşluktan düşülür (ADM-05 "Kullanıcılar" kesilmez).
+      padding: GuInsets.sym(
+        h: darkSelected
+            ? GuSizes.segmentPaddingX - GuSizes.chipBorder
+            : GuSizes.segmentPaddingX,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: GuRadius.borderChip,

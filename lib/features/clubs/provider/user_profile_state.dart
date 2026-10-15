@@ -20,6 +20,7 @@ final class UserProfileState extends Equatable {
     this.canAssignRoles = false,
     this.isSelf = false,
     this.isSuperAdmin = false,
+    this.isViewerSuperAdmin = false,
     this.isHiddenByPrivacy = false,
     this.isBlocked = false,
     this.isFetching = false,
@@ -56,9 +57,10 @@ final class UserProfileState extends Equatable {
   /// yoksa ya da okunamadıysa `null`.
   final String? contextClubName;
 
-  /// Kullanıcının açılış kulübü üyeliğindeki e-postası
-  /// (`memberships/{id}/private/contact` — D-29; yalnızca yönetim okur);
-  /// okunmadıysa / yoksa `null` (W-69).
+  /// Kullanıcının e-postası (D-29; yalnızca yönetim okur): yönetici kartında
+  /// açılış kulübü üyeliğinin `memberships/{id}/private/contact` belgesinden
+  /// (W-69); bakan süper adminse ve kart yoksa `users/{uid}/private/account`
+  /// belgesinden (T-41). Okunmadıysa / yoksa `null`.
   final String? contactEmail;
 
   /// Bakan açılış kulübünde rol atayabilir mi (başkan / süper admin —
@@ -72,6 +74,11 @@ final class UserProfileState extends Equatable {
   /// yalnızca kişinin kendi oturumunda okunabildiği için yalnızca [isSelf]
   /// iken `true` olabilir.
   final bool isSuperAdmin;
+
+  /// Bakan (oturumdaki kullanıcı) süper admin mi: kulüp bağlamı olmadan da
+  /// e-posta kartı çizilir (prototip `managerCtx || isSuper`,
+  /// `screens-clubs.js:160`; T-41 — `AdminUserProfileRoute`).
+  final bool isViewerSuperAdmin;
 
   /// Profil gizli mi: ortak kulüp yok ve bakan süper admin, açılış kulübünün
   /// yöneticisi ya da kullanıcının kendisi değil (D-29).
@@ -112,6 +119,13 @@ final class UserProfileState extends Equatable {
   bool get showsManagerCard =>
       contextMembership?.status == MembershipStatus.active && !isDeletedUser;
 
+  /// E-posta kartı çizilir mi: yönetici kartı ([showsManagerCard]) ya da
+  /// bakan süper admin ve e-posta okundu (yalnızca e-posta satırı;
+  /// `screens-clubs.js:160`). Silinmiş kullanıcıda çizilmez.
+  bool get showsContactCard =>
+      showsManagerCard ||
+      (isViewerSuperAdmin && contactEmail != null && !isDeletedUser);
+
   /// Kartın altındaki "Rolü değiştir" / "Kulüpten çıkar": hedef başkan ya da
   /// danışman değilse (`screens-clubs.js:161`).
   bool get showsManagerActions =>
@@ -133,6 +147,7 @@ final class UserProfileState extends Equatable {
     canAssignRoles,
     isSelf,
     isSuperAdmin,
+    isViewerSuperAdmin,
     isHiddenByPrivacy,
     isBlocked,
     isFetching,
@@ -156,6 +171,7 @@ final class UserProfileState extends Equatable {
     bool? canAssignRoles,
     bool? isSelf,
     bool? isSuperAdmin,
+    bool? isViewerSuperAdmin,
     bool? isHiddenByPrivacy,
     bool? isBlocked,
     bool? isFetching,
@@ -179,6 +195,7 @@ final class UserProfileState extends Equatable {
     canAssignRoles: canAssignRoles ?? this.canAssignRoles,
     isSelf: isSelf ?? this.isSelf,
     isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
+    isViewerSuperAdmin: isViewerSuperAdmin ?? this.isViewerSuperAdmin,
     isHiddenByPrivacy: isHiddenByPrivacy ?? this.isHiddenByPrivacy,
     isBlocked: isBlocked ?? this.isBlocked,
     isFetching: isFetching ?? this.isFetching,

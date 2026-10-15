@@ -40,14 +40,16 @@ part 'user_profile_view_model.g.dart';
 /// | [toggleBlock] | engelle: onay → yazıldı | DLG-13 → TST-09 ("Geri al") |
 /// | | engeli kaldır: yazıldı | TST-09 ("Geri al") |
 /// | [submitReport] → [showReportReceived] | yazıldı / zaten bildirilmiş | DLG-12 (→ DLG-13) |
-/// | [copyEmail] (yönetici kartı, W-69) | panoya kopyalandı | TST-08 |
+/// | [copyEmail] (yönetici kartı, W-69; süper admin kartı, T-41) | panoya kopyalandı | TST-08 |
 /// | [changeRole] | SHT-22 → DLG-20 → yazıldı | rol iyimser; TST-46 |
 /// | [remove] | DLG-19 → yazıldı | TST-47 "Geri al"; view önceki sayfaya döner |
 /// | yazan her işlem | çevrimdışı / ağ · yetki yok | TST-24 · TST-X18 |
 ///
 /// Yönetici kartı yalnızca açılış kulübünün yöneticisi / süper admini için
 /// okunur: e-posta `readContact` (D-29), kulüp adı ortak kulüplerden ya da
-/// `getClub`. Rol ve çıkarma `ManageMemberActionsMixin`'dedir (hiyerarşi
+/// `getClub`. Bakan süper adminse kulüp bağlamı olmadan da e-posta kartı
+/// çizilir (`managerCtx || isSuper`, `screens-clubs.js:160`; T-41
+/// `AdminUserProfileRoute`): e-posta `userRepository.getPrivateAccount`. Rol ve çıkarma `ManageMemberActionsMixin`'dedir (hiyerarşi
 /// tek yerde).
 ///
 /// Design: CLB-07
@@ -346,8 +348,13 @@ final class UserProfileViewModel extends _$UserProfileViewModel
         ? await _loadManagerCard(contextClubId!, sharedClubs)
         : null;
     if (!ref.mounted) return;
+    // Süper admin bakışı (T-41): kart e-postası yoksa hesap e-postası.
+    final accountEmail = session.isSuperAdmin && card?.email == null
+        ? await _loadAccountEmail()
+        : null;
+    if (!ref.mounted) return;
 
-    state = state.copyWith(
+    final next = state.copyWith(
       user: user,
       sharedClubIds: sharedClubIds,
       sharedClubs: sharedClubs,
@@ -368,10 +375,36 @@ final class UserProfileViewModel extends _$UserProfileViewModel
           ),
       isSelf: isSelf,
       isSuperAdmin: isSelf && session.isSuperAdmin,
+      isViewerSuperAdmin: session.isSuperAdmin,
       isHiddenByPrivacy: isHidden,
       isFetching: false,
       isError: false,
     );
+    // `clearContextMembership` e-postayı da siler: hesap e-postası sonra.
+    state = accountEmail == null
+        ? next
+        : next.copyWith(contactEmail: accountEmail);
+  }
+
+  /// Süper admin bakışında kullanıcının hesap e-postası
+  /// (`users/{uid}/private/account` — D-29, CD-133; yalnızca sahibi ve süper
+  /// admin okur). Okunamazsa `null` (kart çizilmez); `permissionDenied` claim
+  /// geri alınmış olabilir → `refreshClaims` (CD-160).
+  Future<String?> _loadAccountEmail() async {
+    final result = await userRepository.getPrivateAccount(userId);
+    switch (result) {
+      case FirebaseSuccess(:final data):
+        final email = data?.email.trim();
+        return email == null || email.isEmpty ? null : email;
+      case FirebaseFailure(:final error):
+        AppLogger.warn('Hesap e-postası okunamadı: ${error.name}');
+        if (error == FirestoreError.permissionDenied && ref.mounted) {
+          unawaited(
+            ref.read(sessionViewModelProvider.notifier).refreshClaims(),
+          );
+        }
+        return null;
+    }
   }
 
   /// Yönetici kartının e-postası (`readContact`) ve [clubId] kulübünün adı

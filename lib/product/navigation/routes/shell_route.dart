@@ -4,6 +4,7 @@ import 'package:gu_data/gu_data.dart' show PostType;
 import 'package:gu_kulupler/features/admin/view/admin_club_form_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_clubs_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_reports_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_users_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_application_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
@@ -45,6 +46,7 @@ import 'package:gu_kulupler/features/settings/view/settings_view.dart';
 import 'package:gu_kulupler/features/settings/view/support_view.dart';
 import 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart';
 import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
+import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/applications_tab.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
@@ -60,6 +62,8 @@ export 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart'
     show AdminClubsTab;
 export 'package:gu_kulupler/product/navigation/admin_reports_tab.dart'
     show AdminReportsTab;
+export 'package:gu_kulupler/product/navigation/admin_users_filter.dart'
+    show AdminUsersFilter;
 export 'package:gu_kulupler/product/navigation/applications_tab.dart'
     show ApplicationsTab;
 export 'package:gu_kulupler/product/navigation/club_detail_tab.dart'

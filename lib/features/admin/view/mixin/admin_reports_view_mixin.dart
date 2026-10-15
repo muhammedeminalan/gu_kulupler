@@ -98,9 +98,7 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
   }
 
   /// "Kullanıcılar" bölmesi → ADM-05.
-  void openUsers() {
-    // TODO(T-41): `AdminUsersRoute().go(context)` (W-47).
-  }
+  void openUsers() => const AdminUsersRoute().go(context);
 
   /// Sekme (`ADM-04.tab.<name>`): liste başa döner.
   void selectTab(String name) {

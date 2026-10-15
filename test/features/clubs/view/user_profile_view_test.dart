@@ -446,6 +446,62 @@ void main() {
     });
   });
 
+  group('CLB-07 · Profil · süper admin bakışı (T-41)', () {
+    const email = 'yigit.kilic@ogr.gumushane.edu.tr';
+    final admin = kVisibleState.copyWith(
+      isViewerSuperAdmin: true,
+      contactEmail: email,
+    );
+    final copy = GuKey.action('CLB-07.copyEmail');
+
+    testWidgets('kulüp bağlamı olmadan: kartta yalnızca e-posta + "Kopyala"; '
+        'rol, üyelik tarihi ve yönetici düğmeleri yok; envanter', (
+      tester,
+    ) async {
+      await _pump(tester, admin);
+      final l10n = tester.l10n;
+      expect(find.text(email), findsOneWidget);
+      expect(find.text(l10n.authEmail), findsOneWidget);
+      expect(find.byKey(copy), findsOneWidget);
+      expect(find.byType(GuDivider), findsNothing);
+      expect(find.text(l10n.userprofileMemberSince), findsNothing);
+      expect(find.byKey(GuKey.action('CLB-07.changeRole')), findsNothing);
+      expect(find.byKey(GuKey.action('CLB-07.remove')), findsNothing);
+      expectActionInventory(tester, 'CLB-07');
+
+      // E-posta okunamadıysa kart çizilmez.
+      await _pump(tester, kVisibleState.copyWith(isViewerSuperAdmin: true));
+      expect(find.byKey(copy), findsNothing);
+    });
+
+    testWidgets('"Kopyala" → TST-08', (tester) async {
+      await _pump(tester, admin);
+      await tester.ensureVisible(find.byKey(copy));
+      await _tap(tester, copy);
+      expect(feedbackFake().toasts, [ToastId.tst08]);
+    });
+
+    testWidgets('cihaz matrisi: e-posta kartı taşmaz', (tester) async {
+      await DeviceMatrix.run(
+        tester,
+        (_) => _view,
+        overrides: stateOverride(admin),
+        safeAreas: true,
+      );
+    });
+
+    testWidgets('golden: süper admin bakışı — açık + koyu (TR)', (
+      tester,
+    ) async {
+      await goldenForThemes(
+        tester,
+        'CLB-07__admin',
+        _view,
+        overrides: stateOverride(admin),
+      );
+    });
+  });
+
   group('CLB-07 · Profil · golden', () {
     testWidgets('golden: görünür profil — açık + koyu (TR)', (tester) async {
       await goldenForThemes(

@@ -278,7 +278,8 @@ void main() {
   });
 
   group('ADM-04 · Admin şikayetler · aksiyonlar', () {
-    testWidgets('bölme "Genel" → ADM-01; "Kulüpler" → ADM-02', (tester) async {
+    testWidgets('bölme "Genel" → ADM-01; "Kulüpler" → ADM-02; "Kullanıcılar" → '
+        'ADM-05', (tester) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _k('ADM-04.seg.ADM-01'));
       expect(_location(router), '/admin');
@@ -287,6 +288,11 @@ void main() {
       await tester.pumpAndSettle();
       await _tapKey(tester, _k('ADM-04.seg.ADM-02'));
       expect(_location(router), '/admin/clubs');
+
+      router.go('/admin/reports');
+      await tester.pumpAndSettle();
+      await _tapKey(tester, _k('ADM-04.seg.ADM-05'));
+      expect(_location(router), '/admin/users');
     });
 
     testWidgets('sekme "Çözüldü" ve süzgeç "Kullanıcı"', (tester) async {
