@@ -6,10 +6,13 @@
 //    olmalı,
 //  * 44 × 44 dokunma hedefi (`iOSTapTargetGuideline` ölçüsü; D-22
 //    `GuTapTarget`) — bağlantı (`isLink`) düğümleri yönerge gereği muaf,
-//  * isteğe bağlı `textContrastGuideline` (AA; [contrast]).
+//  * `textContrastGuideline` (AA 4.5 / büyük metin 3.0) — T-45'te varsayılan
+//    açık ([contrast]; K-91 ile `textMuted/bgSurfaceMuted` 4.61 oldu).
 //
 // Tasarım gereği küçük hedefler (ör. satır içi metin bağlantısı) etiketleriyle
-// [smallTargetLabels]'a gerekçeli verilir; rapor: `docs/reports/T-43-audit.md`.
+// [smallTargetLabels]'a, tasarım kaynaklı ya da yanlış pozitif kontrast
+// bulguları [lowContrastLabels]'a gerekçeli verilir; rapor:
+// `docs/reports/T-43-audit.md` (C-1 … C-3).
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,15 +20,19 @@ import 'package:flutter_test/flutter_test.dart';
 /// platform ölçüsüyle ayrıca sağlanır).
 const Size kA11yMinTapTarget = Size(44, 44);
 
-/// Ekranın o anki karesinde etiketli dokunma hedefi + 44 dp hedef (+
-/// isteğe bağlı metin kontrastı) yönergelerini doğrular.
+/// Ekranın o anki karesinde etiketli dokunma hedefi + 44 dp hedef + metin
+/// kontrastı yönergelerini doğrular.
 ///
 /// [smallTargetLabels]: tasarım gereği 44 dp altında kalabilen düğümlerin
 /// semantik etiketleri (tam eşleşme; gerekçe çağrı yerinde yorumla yazılır).
+/// [lowContrastLabels]: kontrast denetiminden muaf düğüm etiketleri (tam
+/// eşleşme; gerekçe çağrı yerinde). [contrast] `false` → kontrast hiç
+/// denetlenmez.
 Future<void> expectA11yGuidelines(
   WidgetTester tester, {
-  bool contrast = false,
+  bool contrast = true,
   Set<String> smallTargetLabels = const {},
+  Set<String> lowContrastLabels = const {},
 }) async {
   final handle = tester.ensureSemantics();
   try {
@@ -33,7 +40,7 @@ Future<void> expectA11yGuidelines(
     final guidelines = <AccessibilityGuideline>[
       labeledTapTargetGuideline,
       _TapTargetGuideline(smallTargetLabels),
-      if (contrast) textContrastGuideline,
+      if (contrast) _TextContrastGuideline(lowContrastLabels),
     ];
     final failures = <String>[];
     for (final guideline in guidelines) {
@@ -66,4 +73,16 @@ final class _TapTargetGuideline extends MinimumTapTargetGuideline {
     final label = node.getSemanticsData().label;
     return label.isNotEmpty && exemptLabels.contains(label);
   }
+}
+
+/// `textContrastGuideline` + etiketle muafiyet.
+final class _TextContrastGuideline extends MinimumTextContrastGuideline {
+  const _TextContrastGuideline(this.exemptLabels);
+
+  final Set<String> exemptLabels;
+
+  @override
+  bool shouldSkipNode(SemanticsData data) =>
+      super.shouldSkipNode(data) ||
+      (data.label.isNotEmpty && exemptLabels.contains(data.label));
 }

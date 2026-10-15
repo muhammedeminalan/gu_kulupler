@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:flutter/foundation.dart' show setEquals;
 
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/l10n/app_l10n_lookup.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 
@@ -179,15 +179,5 @@ final class SessionReminderSync with ProjectDependencyMixin {
 
   /// Bildirim metinlerinin dili: uygulama tercihi, yoksa cihaz dili
   /// (desteklenmeyen dil → Türkçe — PLAN §14.10).
-  AppLocalizations _l10n() {
-    final code =
-        (appPreferencesStore.locale ?? PlatformDispatcher.instance.locale)
-            .languageCode;
-    final supported = AppLocalizations.supportedLocales.any(
-      (locale) => locale.languageCode == code,
-    );
-    return lookupAppLocalizations(Locale(supported ? code : _fallbackLanguage));
-  }
-
-  static const String _fallbackLanguage = 'tr';
+  AppLocalizations _l10n() => appL10nOf(appPreferencesStore.locale);
 }

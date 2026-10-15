@@ -979,6 +979,10 @@
   "@authSetupPhotoTitle": {
     "description": "Key auth.setup.photoTitle"
   },
+  "authSetupPlaceholderName": "Kullanıcı",
+  "@authSetupPlaceholderName": {
+    "description": "Key auth.setup.placeholderName"
+  },
   "authSetupProgress": "Adım {step}/{total}",
   "@authSetupProgress": {
     "description": "Key auth.setup.progress",
@@ -4587,6 +4591,10 @@
   "sht09SeeAll": "Tümünü gör",
   "@sht09SeeAll": {
     "description": "Key sht.09.seeAll"
+  },
+  "sht10DailyLimit": "Bugün için şikayet sınırına ulaştın. Yarın tekrar deneyebilirsin.",
+  "@sht10DailyLimit": {
+    "description": "Key sht.10.dailyLimit"
   },
   "sht10Desc": "Şikayetin kampüs yönetimine iletilir; kimliğin paylaşılmaz.",
   "@sht10Desc": {

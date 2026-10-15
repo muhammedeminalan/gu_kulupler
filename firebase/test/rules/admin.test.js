@@ -12,6 +12,7 @@
 //  6. collectionGroup('private') e-posta araması (yalnızca süper admin; başka private belgeleri açılmaz).
 //  7. Askının etkisi: askıdaki kulüpte ve askıdaki kullanıcıyla yazım ret (roadmap).
 // Erişim bütçesi: budget/admin_budget.test.js. İndeks: queries.test.js (`adminUpcomingEvents`).
+const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const {
   Timestamp,
@@ -33,6 +34,8 @@ const admin = require('../helpers/admin_payloads');
 const { getTestEnv } = require('../setup/env');
 
 const { ADMIN, ADVISOR, NEW_CLUB, REASON, MEDIA_PATH } = admin;
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const LIMITS = require(path.join(REPO_ROOT, 'tool', 'lib', 'dart_sources.js')).readLimits(REPO_ROOT).ints;
 const CLUB = 'c01';
 const OTHER = 'c02';
 
@@ -180,6 +183,11 @@ describe('admin · createClub (tek batch: kulüp + başkan üyeliği + contact; 
     ['bilinmeyen kategori', () => withData(W(), 'club', { categoryId: 'k99' })],
     ['ad yalnızca boşluk', () => withData(W(), 'club', { name: '   ' })],
     ['ad 61 karakter', () => withData(W(), 'club', { name: 'x'.repeat(61) })],
+    // T-45 F1: kimlik / danışman / kapak alanları üst sınırlı (kulüp belgesi doğrulanmış herkese açık).
+    [`iconName ${LIMITS.iconNameMax + 1} karakter (iconNameMax)`, () => withData(W(), 'club', { iconName: 'x'.repeat(LIMITS.iconNameMax + 1) })],
+    [`advisor.title ${LIMITS.advisorTitleMax + 1} karakter (advisorTitleMax)`, () => withData(W(), 'club', { advisor: { ...ADVISOR, title: 'x'.repeat(LIMITS.advisorTitleMax + 1) } })],
+    [`coverSeed ${LIMITS.coverSeedMax + 1} karakter (coverSeedMax)`, () => withData(W(), 'club', { coverSeed: 'x'.repeat(LIMITS.coverSeedMax + 1) })],
+    [`social.web ${LIMITS.socialWebMax + 1} karakter (socialWebMax)`, () => withData(W(), 'club', { social: { web: `https://gu.edu.tr/${'a'.repeat(LIMITS.socialWebMax + 1 - 18)}` } })],
     ['başkan üyeliği member rolünde', () => withData(W(), 'membership', { role: 'member' })],
     ['başkanın anlık görüntüsü profille uyuşmuyor', () => withData(W(), 'membership', { applicant: { ...payloads.applicantOf('u_student'), name: 'Sahte Ad' } })],
     ['contact başka e-posta', () => withData(W(), 'contact', { email: 'baska@ogr.gumushane.edu.tr', emailLower: 'baska@ogr.gumushane.edu.tr' })],
@@ -190,6 +198,17 @@ describe('admin · createClub (tek batch: kulüp + başkan üyeliği + contact; 
     await seed();
     await assertFails(commit('super', build()));
     expect(await readDoc(`clubs/${NEW_CLUB}`)).toBeNull();
+  });
+
+  // T-45 (F5 / F1): sınırın tam değeri geçer (N+1 ret satırları yukarıda).
+  test.each([
+    [`ad ${LIMITS.clubNameMax} karakter (clubNameMax)`, () => withData(W(), 'club', { name: 'x'.repeat(LIMITS.clubNameMax), nameLower: 'x'.repeat(LIMITS.clubNameMax) })],
+    [`iconName ${LIMITS.iconNameMax} karakter (iconNameMax)`, () => withData(W(), 'club', { iconName: 'x'.repeat(LIMITS.iconNameMax) })],
+    [`advisor.title ${LIMITS.advisorTitleMax} karakter (advisorTitleMax)`, () => withData(W(), 'club', { advisor: { ...ADVISOR, title: 'x'.repeat(LIMITS.advisorTitleMax) } })],
+    [`coverSeed ${LIMITS.coverSeedMax} karakter (coverSeedMax)`, () => withData(W(), 'club', { coverSeed: 'x'.repeat(LIMITS.coverSeedMax) })],
+  ])('%s → allow', async (_title, build) => {
+    await seed();
+    await assertSucceeds(commit('super', build()));
   });
 
   // CD-63 (kilitli): ad benzersizliği Rules'ta DENETLENMEZ — istemcinin `nameLower` eşitlik sorgusu (yalnızca süper
@@ -219,9 +238,23 @@ describe('admin · updateClubIdentity / updateClubMedia / askı (§4 a.2, a.5, g
     ['conditions (yönetim alanı — beyaz listede yok)', { conditions: ['Kural.'] }],
     ['logoPath (medya dalında)', { logoPath: MEDIA_PATH(CLUB) }],
     ['ad 61 karakter', { name: 'x'.repeat(61) }],
+    // T-45 F1
+    [`iconName ${LIMITS.iconNameMax + 1} karakter`, { iconName: 'x'.repeat(LIMITS.iconNameMax + 1) }],
+    [`advisor.title ${LIMITS.advisorTitleMax + 1} karakter`, { advisor: { ...ADVISOR, title: 'x'.repeat(LIMITS.advisorTitleMax + 1), userId: 'u_advisor' } }],
+    [`coverSeed ${LIMITS.coverSeedMax + 1} karakter`, { coverSeed: 'x'.repeat(LIMITS.coverSeedMax + 1) }],
   ])('kimlik yamasında %s → deny', async (_title, extra) => {
     await seed();
     await assertFails(commit('super', admin.identityWrites({}, extra)));
+  });
+
+  test.each([
+    [`ad ${LIMITS.clubNameMax} karakter`, { name: 'x'.repeat(LIMITS.clubNameMax), nameLower: 'x'.repeat(LIMITS.clubNameMax) }],
+    [`iconName ${LIMITS.iconNameMax} karakter`, { iconName: 'x'.repeat(LIMITS.iconNameMax) }],
+    [`advisor.title ${LIMITS.advisorTitleMax} karakter`, { advisor: { ...ADVISOR, title: 'x'.repeat(LIMITS.advisorTitleMax), userId: 'u_advisor' } }],
+    [`coverSeed ${LIMITS.coverSeedMax} karakter`, { coverSeed: 'x'.repeat(LIMITS.coverSeedMax) }],
+  ])('kimlik yamasında %s → allow (sınırın tam değeri — T-45)', async (_title, extra) => {
+    await seed();
+    await assertSucceeds(commit('super', admin.identityWrites({}, extra)));
   });
 
   // W-102 — ClubIdentityPatch.clearCoverPath: yüklenmiş kapak bırakılır (SHT-31 şablona dönüş); süper dal
@@ -540,7 +573,7 @@ describe('admin · askının etkisi (roadmap: askıdaki kulüpte yazım ret, ask
     await seedFixture('base');
     await assertSucceeds(commit('super', admin.suspendUserWrites()));
     await assertFails(commit('member', payloads.addCommentWrites({ club: CLUB, uid: 'u_member' })));
-    await assertFails(commit('member', { r: { op: 'set', path: 'reports/u_member_post_p02', data: payloads.reportCreate('u_member', { type: 'post', id: 'p02', clubId: CLUB }) } }));
+    await assertFails(commit('member', payloads.reportWrites({ uid: 'u_member', target: { type: 'post', id: 'p02', clubId: CLUB } })));
     await assertFails(commit('member', payloads.applyWrites({ club: OTHER, uid: 'u_member', email: payloads.emailOf('member') })));
     await assertFails(commit('member', payloads.rsvpJoinWrites({ club: CLUB, uid: 'u_member', eventId: 'e_members' })));
     await assertFails(updateDoc(doc(dbOf('member'), 'users/u_member'), payloads.userProfileUpdate('u_member')));

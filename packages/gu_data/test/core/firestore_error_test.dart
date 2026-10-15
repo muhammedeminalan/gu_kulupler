@@ -55,7 +55,7 @@ const Set<FirestoreError> _appOnly = {
   FirestoreError.ruleViolation,
 };
 
-/// PLAN §10.1 `ruleViolation` satırındaki sırayla 12 üye.
+/// PLAN §10.1 `ruleViolation` satırındaki sırayla 13 üye.
 const List<String> _ruleCodes = [
   'applicationsClosed',
   'retryCooldown',
@@ -69,6 +69,8 @@ const List<String> _ruleCodes = [
   'eventHasRegistrations',
   'attendanceWindowClosed',
   'notMember',
+  // T-45 · günlük şikayet sınırı (kullanıcı kararı 3)
+  'reportLimit',
 ];
 
 void main() {
@@ -221,9 +223,9 @@ void main() {
   });
 
   group('T-08 · FirestoreRuleCode', () {
-    test('12 üye, PLAN sırasıyla', () {
+    test('13 üye, PLAN sırasıyla', () {
       expect([for (final c in FirestoreRuleCode.values) c.name], _ruleCodes);
-      expect(FirestoreRuleCode.values, hasLength(12));
+      expect(FirestoreRuleCode.values, hasLength(13));
     });
 
     test('PLAN §10.1 ruleViolation satırındaki liste ile birebir', () {
@@ -232,13 +234,13 @@ void main() {
       ]);
     });
 
-    test('PLAN §4.2 ağaç satırı: 12 üye, aynı ad ve sıra', () {
+    test('PLAN §4.2 ağaç satırı: 13 üye, aynı ad ve sıra', () {
       final tree = readPlanTreeEnum(
         file: 'firestore_error.dart',
         enumName: 'FirestoreRuleCode',
       );
 
-      expect(tree.count, 12);
+      expect(tree.count, 13);
       expect(tree.members, [for (final c in FirestoreRuleCode.values) c.name]);
     });
 

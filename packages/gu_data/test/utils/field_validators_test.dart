@@ -21,6 +21,9 @@ const FieldError _range = FieldError.outOfRange;
 /// [n] karakterlik metin.
 String _x(int n) => 'x' * n;
 
+/// [n] karakterlik, biçimce geçerli adres (yerel kısım 64 — üst sınır).
+String _email(int n) => '${_x(64)}@${'y' * (n - 64 - 1 - 3)}.tr';
+
 /// [n] öğeli liste.
 List<String> _items(int n, [String item = 'x']) => List.filled(n, item);
 
@@ -138,6 +141,22 @@ Map<String, List<_Case>> _table() => {
     ('2', FieldValidators.clubNameLower('xx'), null),
     ('1', FieldValidators.clubNameLower('x'), _short),
   ],
+  'iconName': [
+    ('40', FieldValidators.iconName(_x(40)), null),
+    ('boş', FieldValidators.iconName(''), _empty),
+    ('41', FieldValidators.iconName(_x(41)), _long),
+  ],
+  'coverSeed': [
+    ('64', FieldValidators.coverSeed(_x(64)), null),
+    ('club-<id>', FieldValidators.coverSeed('club-c01'), null),
+    ('boş', FieldValidators.coverSeed(''), _empty),
+    ('65', FieldValidators.coverSeed(_x(65)), _long),
+  ],
+  'advisorTitle': [
+    ('boş', FieldValidators.advisorTitle(''), null),
+    ('60', FieldValidators.advisorTitle(_x(60)), null),
+    ('61', FieldValidators.advisorTitle(_x(61)), _long),
+  ],
   'categoryId': [
     ('k01', FieldValidators.categoryId('k01'), null),
     ('tabloda yok', FieldValidators.categoryId('k99'), _format),
@@ -168,6 +187,9 @@ Map<String, List<_Case>> _table() => {
   'socialEmail': [
     ('serbest alan', FieldValidators.socialEmail('iletisim@kulup.org'), null),
     ('bozuk', FieldValidators.socialEmail('kulup.org'), _format),
+    // T-45: 254 (RFC 5321) geçer, 255 `tooLong` — biçimden önce ölçülür.
+    ('254', FieldValidators.socialEmail(_email(254)), null),
+    ('255', FieldValidators.socialEmail(_email(255)), _long),
   ],
   'instagram': [
     ('@ ile', FieldValidators.instagram('@gu_kulupler'), null),
@@ -180,6 +202,10 @@ Map<String, List<_Case>> _table() => {
     ('şemasız', FieldValidators.web('gumushane.edu.tr'), _format),
     ('alan adı yok', FieldValidators.web('https://'), _format),
     ('ayrışmayan', FieldValidators.web('http://[::1'), _format),
+    // T-45: önek `https://gu.edu.tr/` 18 karakter; 200 geçer, 201 `tooLong`.
+    ('200', FieldValidators.web('https://gu.edu.tr/${_x(182)}'), null),
+    ('201', FieldValidators.web('https://gu.edu.tr/${_x(183)}'), _long),
+    ('büyük harf şema', FieldValidators.web('HTTPS://gu.edu.tr'), null),
   ],
   'applicationNote': [
     (

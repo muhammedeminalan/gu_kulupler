@@ -11,8 +11,10 @@ import 'package:gu_kulupler/features/auth/provider/register_view_model.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/form/form_field_error.dart';
+import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
+import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_auth_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
@@ -364,6 +366,28 @@ void main() {
       expect(_state(container).submitError, isNull);
       expect(_state(container).errors, isEmpty);
       expect(_feedback().toasts, isEmpty);
+    });
+
+    test('T-45 · F2 · görünen ad yazılamazsa kırpılmış ad hesabın bekleyen '
+        'adı olarak cihaza yazılır; başarılı ad yazımında yazılmaz', () async {
+      final prefs = GetIt.I<AppPreferencesStore>() as FakeAppPreferencesStore;
+      var container = _container();
+      _fillValid(_viewModel(container));
+      expect(await _viewModel(container).submit(), RegisterOutcome.success);
+      expect(prefs.callsTo('setPendingDisplayName'), isEmpty);
+      expect(prefs.pendingDisplayName(_auth().service.uid), isNull);
+
+      _auth().service
+        ..uid = 'u2'
+        ..failDisplayNameWrite = true;
+      container = _container();
+      final viewModel = _viewModel(container);
+      _fillValid(viewModel);
+      viewModel.setName('  $_name ');
+      expect(await viewModel.submit(), RegisterOutcome.success);
+      expect(_auth().currentUser!.displayName, isNull);
+      expect(prefs.pendingDisplayName('u2'), _name);
+      expect(prefs.callsTo('setPendingDisplayName'), hasLength(1));
     });
 
     test('başarı: profil belgesi oluşturulmaz (CD-134, W-56a)', () async {

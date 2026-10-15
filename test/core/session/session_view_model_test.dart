@@ -1856,4 +1856,60 @@ void main() {
       expect(crash.callsTo('setUserId'), isEmpty);
     });
   });
+
+  group('T-45 · SessionViewModel · son aramalar hesaba özeldir (A3-02)', () {
+    const terms = ['hackathon', 'satranç'];
+
+    test('signOut son aramaları sessizce siler (toast yok)', () async {
+      final container = await resolvedActive();
+      store.values[AppPreferenceKeys.recentSearches] = terms;
+
+      expect(await notifierOf(container).signOut(), isTrue);
+      await pumpEventQueue();
+
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      expect(store.recentSearches, isEmpty);
+      expect(
+        (GetIt.I<FeedbackService>() as FakeFeedbackService).toasts,
+        isEmpty,
+      );
+    });
+
+    test('oturum dışarıdan kapanınca da silinir', () async {
+      final container = await resolvedActive();
+      store.values[AppPreferenceKeys.recentSearches] = terms;
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      expect(store.recentSearches, isEmpty);
+    });
+
+    test('hesap değişiminde (A → B, arada çıkış olayı olmadan) silinir; aynı '
+        'hesabın yeniden çözümünde korunur', () async {
+      final container = await resolvedActive();
+      store.values[AppPreferenceKeys.recentSearches] = terms;
+      await notifierOf(container).resolve();
+      await notifierOf(container).refreshUser();
+      expect(store.recentSearches, terms);
+      expect(store.callsTo('setRecentSearches'), isEmpty);
+
+      users.putActive('u2');
+      auth
+        ..currentUser = _user(uid: 'u2')
+        ..watchAuthStateController.add(_user(uid: 'u2'));
+      await pumpEventQueue();
+
+      expect(stateOf(container).uid, 'u2');
+      expect(store.recentSearches, isEmpty);
+    });
+
+    test('boş liste yeniden yazılmaz (oturumsuz açılış)', () async {
+      await resolved();
+      expect(store.callsTo('setRecentSearches'), isEmpty);
+    });
+  });
 }

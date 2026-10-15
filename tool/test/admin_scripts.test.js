@@ -319,3 +319,29 @@ test('system bildirimi: kimlik system_{eventKey}_{uid}, refs yalnızca textKey, 
   assert.throws(() => buildSystemNotifications({ textKey: 'welcome', uids: [], eventKey: key }), /alıcı yok/);
   assert.throws(() => buildSystemNotifications({ textKey: 'welcome', uids: ['a/b'], eventKey: key }), /geçersiz uid/);
 });
+
+test('T-45 · S4-02 · tool/admin bağımlılıkları kilitli: package-lock.json commit edilir (CD-40), firebase-admin ana '
+  + 'sürümü 13, her paket npm kayıt defterinden bütünlük karmasıyla; kurulum yönergesi `npm ci --ignore-scripts`', () => {
+  const fs = require('node:fs');
+  const adminDir = path.join(TOOL_DIR, 'admin');
+  const manifest = require(path.join(adminDir, 'package.json'));
+  const lockPath = path.join(adminDir, 'package-lock.json');
+  assert.ok(fs.existsSync(lockPath), 'tool/admin/package-lock.json yok (npm install --package-lock-only --ignore-scripts)');
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assert.ok(lock.lockfileVersion >= 2, `lockfileVersion ${lock.lockfileVersion}`);
+  assert.deepEqual(lock.packages[''].dependencies, manifest.dependencies, 'kilit dosyası package.json ile eşleşmiyor');
+  const admin = lock.packages['node_modules/firebase-admin'];
+  assert.ok(admin, 'firebase-admin kilitli değil');
+  assert.equal(admin.version.split('.')[0], '13');
+  for (const [name, entry] of Object.entries(lock.packages)) {
+    if (!name || entry.link) continue;
+    assert.match(entry.resolved || '', /^https:\/\/registry\.npmjs\.org\//, `${name}: kayıt defteri dışı kaynak`);
+    assert.match(entry.integrity || '', /^sha512-/, `${name}: bütünlük karması yok`);
+  }
+  const hints = ['README.md', 'lib/admin_runtime.js', 'set_superadmin.js']
+    .map((file) => fs.readFileSync(path.join(adminDir, file), 'utf8'));
+  for (const text of hints) {
+    assert.match(text, /npm ci --ignore-scripts/);
+    assert.doesNotMatch(text, /cd tool\/admin && npm install\b/);
+  }
+});

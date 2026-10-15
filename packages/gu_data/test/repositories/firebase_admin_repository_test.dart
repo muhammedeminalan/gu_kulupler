@@ -388,9 +388,42 @@ void main() {
           palette: ClubPalette.red,
           pattern: ClubPattern.dots,
         ),
+        // T-45 F1: Rules ile aynı üst sınırlar (kulüp belgesi herkese açık).
+        ClubCreateInput(
+          name: 'Ad',
+          nameLower: 'ad',
+          categoryId: 'k01',
+          iconName: 'x' * (Limits.iconNameMax + 1),
+          founded: 2020,
+          palette: ClubPalette.red,
+          pattern: ClubPattern.dots,
+        ),
+        ClubCreateInput(
+          name: 'Ad',
+          nameLower: 'ad',
+          categoryId: 'k01',
+          iconName: 'camera',
+          founded: 2020,
+          palette: ClubPalette.red,
+          pattern: ClubPattern.dots,
+          coverSeed: 'x' * (Limits.coverSeedMax + 1),
+        ),
       ]) {
         expect(await create(input: input), FirestoreError.invalidArgument);
       }
+      expect(
+        (await repository.createClub(
+          _input,
+          presidentUserId: _target,
+          presidentUser: _user(_target),
+          presidentEmail: 'u_ayse@ogr.gumushane.edu.tr',
+          advisor: AdvisorInput(
+            name: 'Ad Soyad',
+            title: 'x' * (Limits.advisorTitleMax + 1),
+          ),
+        )).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
       auth.currentUser = null;
       expect(await create(), FirestoreError.unauthenticated);
       expect(service.outsideWrites, 0);
@@ -465,10 +498,19 @@ void main() {
         )).errorOrNull,
         FirestoreError.failedPrecondition,
       );
-      for (final patch in const [
-        ClubIdentityPatch(),
-        ClubIdentityPatch(name: 'Ad'),
-        ClubIdentityPatch(founded: 1800),
+      for (final patch in [
+        const ClubIdentityPatch(),
+        const ClubIdentityPatch(name: 'Ad'),
+        const ClubIdentityPatch(founded: 1800),
+        // T-45 F1
+        ClubIdentityPatch(iconName: 'x' * (Limits.iconNameMax + 1)),
+        ClubIdentityPatch(coverSeed: 'x' * (Limits.coverSeedMax + 1)),
+        ClubIdentityPatch(
+          advisor: AdvisorInput(
+            name: 'Ad Soyad',
+            title: 'x' * (Limits.advisorTitleMax + 1),
+          ),
+        ),
       ]) {
         expect(
           (await repository.updateClubIdentity(_clubId, patch)).errorOrNull,

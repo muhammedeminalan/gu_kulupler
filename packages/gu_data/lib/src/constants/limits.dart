@@ -132,6 +132,29 @@ abstract final class Limits {
   /// isteğe bağlı). Rules `matches` ile aynı desen (RP03, CD-30).
   static const String instagramHandlePattern = r'^@?[A-Za-z0-9._]{1,30}$';
 
+  /// Kulüp iletişim e-postası en çok uzunluğu (`clubs.social.email`; RFC
+  /// 5321 adres sınırı); Rules `// limit: socialEmailMax` (T-45). Kulüp
+  /// belgesi doğrulanmış her kullanıcıya açık olduğundan üst sınırsız alan
+  /// başkalarının listelerini şişirir ([avatarSeedMax] ile aynı gerekçe).
+  static const int socialEmailMax = 254;
+
+  /// Kulüp web adresi en çok uzunluğu (`clubs.social.web`); Rules
+  /// `// limit: socialWebMax` (T-45).
+  static const int socialWebMax = 200;
+
+  /// Kulüp kapak tohumu en çok uzunluğu (`clubs.coverSeed`; değer
+  /// `club-<clubId>` ya da kısa bir şablon dizgisidir); Rules
+  /// `// limit: coverSeedMax` (T-45).
+  static const int coverSeedMax = 64;
+
+  /// Kulüp amblem ikonu adı en çok uzunluğu (`clubs.iconName`; Lucide adı);
+  /// Rules `// limit: iconNameMax` (T-45).
+  static const int iconNameMax = 40;
+
+  /// Danışman unvanı en çok uzunluğu (`clubs.advisor.title`); Rules
+  /// `// limit: advisorTitleMax` (T-45).
+  static const int advisorTitleMax = 60;
+
   // ── Üyelik ───────────────────────────────────────────────────────────
 
   /// Başvuru notu en çok uzunluğu (`memberships/{id}/private/contact.note`,
@@ -236,11 +259,21 @@ abstract final class Limits {
   /// `// limit: announcementDailyLimit`.
   static const int announcementDailyLimit = 2;
 
+  /// Kullanıcı başına günlük (Istanbul günü) şikayet sınırı
+  /// (`reportCounters.count`; T-45, kullanıcı kararı 3); Rules
+  /// `// limit: reportDailyLimit`.
+  static const int reportDailyLimit = 20;
+
   // ── Ayarlar ──────────────────────────────────────────────────────────
 
   /// `HH:mm` saat deseni (`settings.quietFrom/quietTo`); Rules ile aynı
   /// (RP03).
   static const String timeOfDayPattern = r'^([01]\d|2[0-3]):[0-5]\d$';
+
+  /// `settings.clubs` haritasının en çok kayıt sayısı (kulüp başına bildirim
+  /// tercihi); Rules `// limit: settingsClubsMax` (T-45). Belge boyutu
+  /// sınırıdır (zaman içi kota değil): sunucu her push'ta belgeyi okur.
+  static const int settingsClubsMax = 200;
 
   /// Sessiz saat başlangıcı varsayılanı (`UserSettingsModel.defaults`).
   static const String quietFromDefault = '22:00';

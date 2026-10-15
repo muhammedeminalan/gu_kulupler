@@ -48,7 +48,7 @@ Key _key(String action) => FeedbackKeys.of(SheetId.sht10.designId, action);
 
 SheetHarness<ReportReasonResult> _harness({
   ReportTarget target = _club,
-  Future<bool> Function(ReportReasonResult result)? onSubmit,
+  Future<ReportSubmitOutcome> Function(ReportReasonResult result)? onSubmit,
 }) => SheetHarness<ReportReasonResult>(
   SheetId.sht10,
   (_) => ReportReasonSheet(target: target, onSubmit: onSubmit),
@@ -534,9 +534,9 @@ void main() {
       );
     });
 
-    testWidgets('onSubmit `true`: beklerken düğme meşgul, sayfa açık; sonra '
+    testWidgets('onSubmit `sent`: beklerken düğme meşgul, sayfa açık; sonra '
         'sonuçla kapanır', (tester) async {
-      final gate = Completer<bool>();
+      final gate = Completer<ReportSubmitOutcome>();
       final received = <ReportReasonResult>[];
       final h = _harness(
         onSubmit: (result) {
@@ -568,20 +568,20 @@ void main() {
       expect(h.isClosed, isFalse);
       expect(_feedback().dialogs, isEmpty);
 
-      gate.complete(true);
+      gate.complete(ReportSubmitOutcome.sent);
       await tester.pumpAndSettle();
       expect(find.byType(GuSheetFrame), findsNothing);
       expect(h.result, expected);
     });
 
-    testWidgets('onSubmit `false`: sayfa açık kalır, meşgul görünüm kalkar, '
+    testWidgets('onSubmit `failed`: sayfa açık kalır, meşgul görünüm kalkar, '
         'seçim korunur; yeniden gönderilebilir', (tester) async {
-      var accept = false;
+      var outcome = ReportSubmitOutcome.failed;
       var calls = 0;
       final h = _harness(
         onSubmit: (_) async {
           calls++;
-          return accept;
+          return outcome;
         },
       );
       await h.pump(tester);
@@ -596,7 +596,7 @@ void main() {
       expect(_selected(tester), ReportReason.other);
       expect(_noteText(tester), 'açıklama');
 
-      accept = true;
+      outcome = ReportSubmitOutcome.sent;
       await _submit(tester);
       expect(calls, 2);
       expect(
@@ -609,12 +609,48 @@ void main() {
       );
     });
 
+    testWidgets('onSubmit `dailyLimit` (T-45): sayfa açık kalır, hata '
+        'satırında günlük sınır metni (canlı bölge, tehlike rengi); seçim '
+        'korunur, yeni seçim hatayı siler — TR ve EN', (tester) async {
+      for (final locale in [_tr, _en]) {
+        var calls = 0;
+        final h = _harness(
+          onSubmit: (_) async {
+            calls++;
+            return ReportSubmitOutcome.dailyLimit;
+          },
+        );
+        await h.pump(tester, locale: locale);
+        await h.open(tester);
+        final l10n = tester.l10nFor(locale);
+
+        await _select(tester, ReportReason.spam);
+        await _submit(tester);
+
+        expect(calls, 1);
+        expect(h.isClosed, isFalse);
+        expect(_submitButton(tester).loading, isFalse);
+        expect(_selected(tester), ReportReason.spam);
+        final error = find.text(l10n.sht10DailyLimit);
+        expect(error, findsOneWidget);
+        final gu = tester.element(error).gu;
+        expect(tester.widget<Text>(error).style!.color, gu.colors.stateDanger);
+        final live = tester.widget<Semantics>(
+          find.ancestor(of: error, matching: find.byType(Semantics)).first,
+        );
+        expect(live.properties.liveRegion, isTrue);
+
+        await _select(tester, ReportReason.harassment);
+        expect(find.text(l10n.sht10DailyLimit), findsNothing);
+      }
+    });
+
     testWidgets('doğrulama geçmeden onSubmit çağrılmaz', (tester) async {
       var calls = 0;
       final h = _harness(
         onSubmit: (_) async {
           calls++;
-          return true;
+          return ReportSubmitOutcome.sent;
         },
       );
       await h.pump(tester);

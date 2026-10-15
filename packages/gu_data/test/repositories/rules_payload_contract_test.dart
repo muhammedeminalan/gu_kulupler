@@ -1659,6 +1659,16 @@ void main() {
     final fixtures = t15['fixtures']! as Map<String, Object?>;
     final scenarios = (t15['scenarios']! as List<Object?>)
         .cast<Map<String, Object?>>();
+    // T-45: şikayet sayacının günü (`reportCounters/{uid}_{yyyyMMdd}`) —
+    // senaryo saatinin Istanbul günü sözleşmede yer tutucudur (jest
+    // emülatörün gününü koyar; T-19 ile aynı nöbetçiler).
+    final clock = FakeAppClock(_scenarioNow);
+    final dayKey = clock.istanbulDayKey(_scenarioNow);
+    final day = clock.istanbulDay(_scenarioNow);
+    String withDay(String text) =>
+        text.replaceAll(_dayKeyToken, dayKey).replaceAll(_dayToken, day);
+    String dayless(String text) =>
+        text.replaceAll(dayKey, _dayKeyToken).replaceAll(day, _dayToken);
     // Başvuran profili sözleşmedeki kullanıcı belgesinden gelir: Rules
     // `applicant` anlık görüntüsünü bu belgeyle karşılaştırır.
     final student = UserModel.fromJson(
@@ -1765,7 +1775,7 @@ void main() {
         FakeNotificationDispatcher(),
         FakeAppClock(_scenarioNow),
       );
-      reports = FirebaseReportRepository(service);
+      reports = FirebaseReportRepository(service, clock);
       blocks = FirebaseBlockRepository(service);
     });
 
@@ -1777,6 +1787,8 @@ void main() {
       );
       expect(t15['autoId'], _autoId);
       expect(t15['increment'], _increment);
+      expect(t15['dayKey'], _dayKeyToken);
+      expect(t15['day'], _dayToken);
       expect(student.profileComplete, isTrue);
     });
 
@@ -1785,14 +1797,17 @@ void main() {
       test('$call — okumalar ve yazımlar sözleşmeyle birebir', () async {
         final seed = scenario['seed']! as Map<String, Object?>;
         for (final MapEntry(key: path, value: entry) in seed.entries) {
-          db.docs[path] = _seedDoc(fixtures, entry);
+          db.docs[withDay(path)] = _seedDoc(
+            fixtures,
+            _mapStrings(entry, withDay),
+          );
         }
 
         final result = await calls[call]!();
 
         expect(result.isSuccess, isTrue, reason: '$result');
-        expect(db.reads, scenario['reads']);
-        expect(_normalized(db.log), scenario['writes']);
+        expect(db.reads.map(dayless), scenario['reads']);
+        expect(_mapStrings(_normalized(db.log), dayless), scenario['writes']);
         // Çok belgeli geçişler tek transaction'dır (üyelik + sayaç + günlük).
         expect(db.transactions, scenario['tx'] == true ? 1 : 0);
       });

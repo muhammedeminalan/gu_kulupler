@@ -17,7 +17,7 @@ function loadAdmin(name) {
   try {
     return require('firebase-admin');
   } catch (e) {
-    return fail(name, 'firebase-admin kurulu değil: (cd tool/admin && npm install)', 2);
+    return fail(name, 'firebase-admin kurulu değil: (cd tool/admin && npm ci --ignore-scripts)', 2);
   }
 }
 

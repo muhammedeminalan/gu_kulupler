@@ -100,7 +100,7 @@ async function seedEvent(capacity: number, going: number, waitlist: number) {
 }
 
 describe('uçtan uca — bağlı tetikleyiciler (Functions emülatörü, sahte FCM)', () => {
-  test('istemcinin yazdığı bildirim → push makbuzu: gönderilir / hatırlatıcı atlanır / tercih süzer', async () => {
+  test('istemcinin yazdığı bildirim → push makbuzu: gönderilir / hatırlatıcı makbuzsuz atlanır / tercih süzer', async () => {
     const uid = uniq('u');
     await seedUser(uid, [
       { token: 'e2e-tr', platform: 'android', locale: 'tr' },
@@ -119,8 +119,10 @@ describe('uçtan uca — bağlı tetikleyiciler (Functions emülatörü, sahte F
     await db.doc(`notifications/${filtered}`).create(clientNotification(uid, 'announcement', { clubId: 'c01', postId: 'p' }));
 
     expect(await receiptOf(sent)).toMatchObject({ userId: uid, type: 'event_cancelled', status: 'sent', successCount: 2, failureCount: 0 });
-    expect(await receiptOf(reminder)).toMatchObject({ status: 'skipped_type', successCount: 0 });
     expect(await receiptOf(filtered)).toMatchObject({ status: 'filtered', successCount: 0 });
+    // T-45: push üretmeyen tür makbuzdan önce elenir → hatırlatıcı için `pushReceipts` yazılmaz.
+    await settle();
+    expect((await db.doc(`pushReceipts/${reminder}`).get()).exists).toBe(false);
   });
 
   test('rsvp iptali (going → cancelled) → en eski bekleyen terfi eder + waitlist_promoted + push; zincir kendini yeniden tetiklemez', async () => {

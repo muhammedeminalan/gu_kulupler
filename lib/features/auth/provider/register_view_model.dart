@@ -18,7 +18,8 @@ part 'register_view_model.g.dart';
 ///   çağrı yapılmaz; gönderilemezse AUT-03'te yeniden gönderilir);
 /// * ad kimlik hesabının görünen adında taşınır, profil belgesi burada
 ///   **oluşturulmaz** (CD-134, W-56a — belge yalnızca doğrulanmış oturumda
-///   yazılabilir);
+///   yazılabilir); görünen ad yazılamazsa ad cihazda bekler
+///   (`AppPreferencesStore.pendingDisplayName` — T-45 · F2);
 /// * ekran değiştirmek bu sınıfın işi değildir: oturum akışı
 ///   `SessionViewModel`'i `unverified` yapar, router AUT-03'e yönlendirir.
 @riverpod
@@ -107,13 +108,23 @@ final class RegisterViewModel extends _$RegisterViewModel
     if (!validate()) return RegisterOutcome.invalid;
     if (!ensureOnline()) return RegisterOutcome.offline;
     state = state.copyWith(isSubmitting: true, clearSubmitError: true);
+    final name = state.name.trim();
     final result = await authRepository.register(
       email: state.email.trim(),
       password: state.password,
-      name: state.name.trim(),
+      name: name,
     );
     switch (result) {
-      case FirebaseSuccess():
+      case FirebaseSuccess(:final data):
+        // Görünen ad yazılamadıysa (CD-134 madde 2) ad cihazda bekler; AUT-05
+        // profili ondan yazar. E-postadan ad türetilmez (D-29; T-45 · F2).
+        if (data.displayName?.trim().isEmpty ?? true) {
+          final saved = await appPreferencesStore.setPendingDisplayName(
+            data.uid,
+            name,
+          );
+          if (!saved) AppLogger.warn('Bekleyen ad cihaza yazılamadı');
+        }
         return RegisterOutcome.success;
       case FirebaseFailure(:final error, :final message):
         // Oturum olayı ekranı kapatmış olabilir; kapanmış state'e yazılmaz.

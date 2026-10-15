@@ -979,6 +979,10 @@
   "@authSetupPhotoTitle": {
     "description": "Key auth.setup.photoTitle"
   },
+  "authSetupPlaceholderName": "User",
+  "@authSetupPlaceholderName": {
+    "description": "Key auth.setup.placeholderName"
+  },
   "authSetupProgress": "Step {step}/{total}",
   "@authSetupProgress": {
     "description": "Key auth.setup.progress",
@@ -4587,6 +4591,10 @@
   "sht09SeeAll": "See all",
   "@sht09SeeAll": {
     "description": "Key sht.09.seeAll"
+  },
+  "sht10DailyLimit": "You've reached today's report limit. Try again tomorrow.",
+  "@sht10DailyLimit": {
+    "description": "Key sht.10.dailyLimit"
   },
   "sht10Desc": "Your report goes to campus administration; your identity is not shared.",
   "@sht10Desc": {

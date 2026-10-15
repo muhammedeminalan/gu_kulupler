@@ -616,7 +616,7 @@ final class FirebaseManagementRepository implements ManagementRepository {
       if (web != null)
         _socialField(FirestoreFields.web): FieldValidators.web(web),
       if (coverSeed != null)
-        FirestoreFields.coverSeed: FieldValidators.requiredId(coverSeed),
+        FirestoreFields.coverSeed: FieldValidators.coverSeed(coverSeed),
     });
   }
 

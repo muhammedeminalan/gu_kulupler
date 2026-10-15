@@ -80,3 +80,23 @@ int parseCssColor(String value) {
   }
   throw FormatException('Desteklenmeyen CSS rengi: $value');
 }
+
+/// Registry renklerinden bilinçli sapmalar: (registry anahtarı, tema indeksi
+/// 0 = açık / 1 = koyu) → (tasarım değeri, uygulama ARGB). Tasarım değeri
+/// hâlâ kaynakta olmalı (yeni dışa aktarım düzeltirse `gu_colors_test`
+/// kırmızı → kayıt kaldırılır). token-map §1, design-known-issues.
+const Map<(String, int), (String, int)> designColorDeviations = {
+  // K-91 — T-45 kullanıcı kararı (2026-10-15): AA, bgSurfaceMuted 4.35 → 4.61.
+  ('text.muted', 0): ('#62748E', 0xFF5E708A),
+};
+
+/// Registry rengi [key] için uygulamanın beklenen ARGB'si: sapma varsa
+/// uygulama değeri, yoksa registry değeri ([themeIndex] 0 açık / 1 koyu).
+int registryColorArgb(String key, int themeIndex) {
+  final deviation = designColorDeviations[(key, themeIndex)];
+  if (deviation != null) return deviation.$2;
+  final colors = registryTokens()['COLORS'] as Map<String, dynamic>;
+  final pair = colors[key] as List<dynamic>?;
+  if (pair == null) throw ArgumentError.value(key, 'key', 'registry rengi yok');
+  return parseCssColor(pair[themeIndex] as String);
+}

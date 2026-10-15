@@ -1,6 +1,6 @@
 // T-01 · GuColors — token-map §1 / §12. Beklentiler tasarım kaynaklarından
 // OKUNUR (registry.json, colors/tokens.json, component-css.css); sabit
-// beklenti yalnızca `brightness` için.
+// beklenti yalnızca `brightness` ve bilinçli sapmalar (`_deviations`) için.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_ui/src/tokens/gu_colors.dart';
@@ -45,6 +45,9 @@ Map<String, Object?> _allFields(GuColors c) => {
   'brightness': c.brightness,
   ..._fields(c),
 };
+
+/// Tasarımdan bilinçli sapmalar (`design_sources.dart`; K-91).
+const Map<(String, int), (String, int)> _deviations = designColorDeviations;
 
 /// `brand.primaryText` → `brandPrimaryText` (design-contract §4).
 String _fieldName(String registryKey) => registryKey.replaceAllMapped(
@@ -115,9 +118,10 @@ void main() {
       ('açık', GuColors.light, 0),
       ('koyu', GuColors.dark, 1),
     ]) {
-      test('$label: 27 alan ARGB == registry hex/rgba', () {
+      test('$label: 27 alan ARGB == registry hex/rgba (sapmalar hariç)', () {
         final fields = _fields(theme);
         for (final key in regColors.keys) {
+          if (_deviations.containsKey((key, index))) continue;
           final (light, dark) = regPair(key);
           final expected = parseCssColor(index == 0 ? light : dark);
           expect(
@@ -128,7 +132,8 @@ void main() {
         }
       });
 
-      test('$label: 27 alan ARGB == CSS değişkeni (component-css.css)', () {
+      test('$label: 27 alan ARGB == CSS değişkeni (component-css.css; '
+          'sapmalar hariç)', () {
         final block = _cssThemeBlock(css, index == 0 ? 'light' : 'dark');
         final fields = _fields(theme);
         for (final key in regColors.keys) {
@@ -136,14 +141,45 @@ void main() {
             '${RegExp.escape(_cssVar(key))}:\\s*([^;]+);',
           ).firstMatch(block);
           expect(m, isNotNull, reason: '${_cssVar(key)} ($label) yok');
+          final deviation = _deviations[(key, index)];
           expect(
             fields[_fieldName(key)]!.toARGB32(),
-            parseCssColor(m!.group(1)!),
+            deviation?.$2 ?? parseCssColor(m!.group(1)!),
             reason: '${_cssVar(key)} ($label)',
           );
+          if (deviation != null) {
+            expect(
+              parseCssColor(m!.group(1)!),
+              parseCssColor(deviation.$1),
+              reason: '${_cssVar(key)} ($label) tasarım değeri değişti',
+            );
+          }
         }
       });
     }
+
+    test('bilinçli sapmalar (K-91): tasarım değeri registry içinde, uygulama '
+        'değeri tokenda', () {
+      expect(_deviations, hasLength(1));
+      for (final MapEntry(key: (key, index), value: (design, app))
+          in _deviations.entries) {
+        final (light, dark) = regPair(key);
+        expect(
+          parseCssColor(index == 0 ? light : dark),
+          parseCssColor(design),
+          reason: '$key: registry tasarım değeri değişti → sapmayı kaldır',
+        );
+        final theme = index == 0 ? GuColors.light : GuColors.dark;
+        expect(_fields(theme)[_fieldName(key)]!.toARGB32(), app, reason: key);
+        expect(app, isNot(parseCssColor(design)), reason: key);
+      }
+    });
+
+    test('K-91: textMuted koyu tasarımdaki gibi (#AEB5BF)', () {
+      expect(GuColors.dark.textMuted.toARGB32(), 0xFFAEB5BF);
+      final (_, dark) = regPair('text.muted');
+      expect(GuColors.dark.textMuted.toARGB32(), parseCssColor(dark));
+    });
 
     test('overlayScrim alfa: .48 → 0x7A, .60 → 0x99 (round(a × 255))', () {
       expect(GuColors.light.overlayScrim.toARGB32() >>> 24, 0x7A);

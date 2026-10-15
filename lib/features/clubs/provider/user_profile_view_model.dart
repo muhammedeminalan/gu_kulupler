@@ -138,14 +138,17 @@ final class UserProfileViewModel extends _$UserProfileViewModel
   }
 
   /// SHT-10'da doğrulanan şikayeti yazar (`ReportReceivedMixin.sendReport`).
-  /// `true` → sheet kapanır ve view [showReportReceived] çağırır; aynı
-  /// kullanıcı daha önce bildirilmişse de `true` (DLG-12 yine gösterilir).
-  /// `false` → sheet açık kalır: çevrimdışı / ağ (TST-24), yetki yok
-  /// (TST-X18), beklenmeyen hata.
-  Future<bool> submitReport(ReportReasonResult report) => sendReport(
-    reporterId: ref.read(sessionViewModelProvider).uid,
-    report: report,
-  );
+  /// [ReportSubmitOutcome.sent] → sheet kapanır ve view [showReportReceived]
+  /// çağırır; aynı kullanıcı daha önce bildirilmişse de `sent` (DLG-12 yine
+  /// gösterilir). [ReportSubmitOutcome.dailyLimit] → günlük şikayet sınırı
+  /// (T-45): sheet açık kalır, hata satırı. [ReportSubmitOutcome.failed] →
+  /// sheet açık kalır: çevrimdışı / ağ (TST-24), yetki yok (TST-X18),
+  /// beklenmeyen hata.
+  Future<ReportSubmitOutcome> submitReport(ReportReasonResult report) =>
+      sendReport(
+        reporterId: ref.read(sessionViewModelProvider).uid,
+        report: report,
+      );
 
   /// DLG-12 "Şikayetin alındı". Kullanıcı henüz engelli değilse altında
   /// "{ad} kullanıcısını da engelle" çizilir; seçilirse engelleme onayı

@@ -20,7 +20,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { rulesPath } = require('./setup/emulator_ports');
-const { CONTEXTS, VARIANTS, definition } = require('./helpers/contexts');
+const { CONTEXTS, VARIANTS, definition, resolveName } = require('./helpers/contexts');
 const payloads = require('./helpers/payloads');
 const rolePolicy = require('./expectations/role_policy.json');
 const roles = require('./expectations/roles.json');
@@ -140,9 +140,50 @@ describe('parite (c) · RolePolicy ↔ expectations/role_policy.json ↔ roles.j
     expect(definition('otherMgr')).toBe(definition('otherManager'));
   });
 
-  // T-12+: koleksiyon beklentileri dolunca role_policy.json'dan türetilebilirlik doğrulanır
-  // (viewInside ⇒ posts.get allow · comment ⇒ comments.create allow · manageEvents ⇒ events.create allow).
-  test.todo('expectations/*.json üyelik vakaları role_policy.json ile tutarlı (T-19, T-22; nihai T-45)');
+  // T-45 (nihai): koleksiyon beklentilerinin taban vakaları role_policy.json'dan türetilebilir. İstemci düğmesini
+  // RolePolicy açar, Rules ise kendi koşuluyla yazar: biri genişleyip öteki eski kalırsa (ör. danışmana yorum)
+  // kullanıcı ya ret alan bir düğme görür ya da gizli bir yetki Rules'ta açık kalır. Taban vaka = varsayılan
+  // fixture / yol, düzenleme yok (`patch`, `docPath`, `newDocPath`, `without`, `unset`, `fixtureOptions`, `group`,
+  // `query` taşımaz) ve işlemin kanonik yükü. Beklenen sonuç: izin sütunu (süper admin → `superadmin`, değilse
+  // kulüpteki aktif rol, yoksa `student`) izin sahipleri arasında, jeton doğrulanmış ve izinli alan adında, yazmada
+  // ayrıca etkin hesap (okumada askıdaki hesap üyeliğiyle okur — §11.1 satır 14).
+  const EMAIL = new RegExp(`^(?:${dart.emailRulesRegex(dart.readEmailDomains(REPO_ROOT))})$`);
+  const EDITS = ['patch', 'docPath', 'newDocPath', 'without', 'unset', 'fixtureOptions', 'group', 'query'];
+  const isBase = (c) => EDITS.every((key) => !(key in c));
+  const loadCases = (file) => JSON.parse(fs.readFileSync(path.join(__dirname, 'expectations', file), 'utf8')).cases;
+  /** [izin, dosya, işlem, vaka seçicisi]. */
+  const DERIVED = [
+    ['viewInside', 'posts.json', 'get', (c) => isBase(c) && !c.variant && !c.batch],
+    ['viewInside', 'comments.json', 'get', (c) => isBase(c) && !c.variant && !c.batch],
+    ['viewPublic', 'events.json', 'get', (c) => isBase(c) && !c.variant && !c.batch],
+    ['comment', 'comments.json', 'create', (c) => isBase(c) && c.batch === 'commentAddBatch'],
+    // Üye fixture'da zaten oy vermiştir: onun tabanı kendi oy belgesi kurulmamış vakadır (aynı yük, `without`).
+    ['vote', 'votes.json', 'create', (c) => (isBase(c) && c.variant === 'voteO1')
+      || (c.variant === 'voteO2' && c.role === 'member' && EDITS.every((key) => key === 'without' || !(key in c))
+          && JSON.stringify(c.without) === JSON.stringify(['posts/p01/votes/u_member']))],
+    ['createPost', 'posts.json', 'create', (c) => isBase(c) && c.variant === 'postCreate'],
+    ['manageEvents', 'events.json', 'create', (c) => isBase(c) && c.variant === 'eventDraftCreate'],
+  ];
+  const expected = (permission, op, role) => {
+    const def = definition(role);
+    const column = def.isSuper ? 'superadmin' : def.clubRole || 'student';
+    const verified = Boolean(def.token && def.token.email_verified === true && EMAIL.test(def.token.email));
+    const allowed = rolePolicy.permissions[permission].includes(column) && verified && (op === 'get' || def.activeUser);
+    return allowed ? 'allow' : 'deny';
+  };
+
+  test.each(DERIVED.map(([permission, file, op, select]) => [`${permission} ⇒ ${file.replace('.json', '')}.${op}`, permission, file, op, select]))(
+    'expectations/*.json taban vakaları role_policy.json ile tutarlı: %s',
+    (_title, permission, file, op, select) => {
+      const cases = loadCases(file).filter((c) => c.op === op && select(c));
+      // Her bağlam sınanır (12 sütun); hem izinli hem reddedilen sütun vardır.
+      for (const context of CONTEXTS) expect([context, cases.some((c) => resolveName(c.role) === context)]).toEqual([context, true]);
+      expect(cases.map((c) => c.expect)).toEqual(expect.arrayContaining(['allow', 'deny']));
+      for (const c of cases) {
+        expect([c.role, op, permission, c.expect]).toEqual([c.role, op, permission, expected(permission, op, c.role)]);
+      }
+    },
+  );
 });
 
 describe('parite (g) · StaticTables / enum değerleri ↔ Rules değer listeleri (T-12)', () => {
@@ -541,5 +582,56 @@ describe('parite (a) · Limits ↔ Rules sayıları', () => {
     expect(limits.ints.imageMaxBytes).toBe(5 * 1024 * 1024);
   });
 
-  test.todo('sınır değerleri emülatörde: Limits.<ad> geçer, Limits.<ad> + 1 reddedilir (koleksiyon task\'ları; nihai T-45)');
+  // T-45 (nihai): RP01 etiketli sayının Limits değerine EŞİT olduğunu denetler, karşılaştırmanın yönünü değil.
+  // `<= N` yerine `< N` (ya da `>= N` yerine `> N`) yazılırsa RP01 geçer ama N değeri istemcide geçip Rules'ta
+  // reddedilir (üretimde permission-denied). Kural: `*Max` / `*Limit` → `<=`, `*Min` → `>=`; tek istisna
+  // `imageMaxBytes` (Storage `size < 5 * 1024 * 1024` — bayt sınırı dışlayıcıdır, Limits belgesi "en çok 5 MB").
+  // Davranış düzeyi (N geçer, N+1 reddedilir) koleksiyon testlerindedir; burada her int etiketinin yönü statiktir.
+  test('Limits.<ad> etiketli karşılaştırmalar doğru yöndedir: *Max/*Limit `<=`, *Min `>=` (imageMaxBytes `<`)', () => {
+    const limits = dart.readLimits(REPO_ROOT);
+    const EXCLUSIVE = { imageMaxBytes: '<' };
+    const expectedOp = (name) => EXCLUSIVE[name] || (/Min$/.test(name) ? '>=' : /(?:Max|Limit)$/.test(name) ? '<=' : null);
+    const product = (expr) => expr.split('*').map((n) => Number(n.trim())).reduce((a, b) => a * b, 1);
+    const seen = new Set();
+    for (const [file, text] of [['firestore.rules', firestoreRules], ['storage.rules', storageRules]]) {
+      text.split('\n').forEach((line, i) => {
+        const label = /\/\/\s*limit:\s*([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)/.exec(line);
+        if (!label) return;
+        const code = line
+          .slice(0, line.indexOf('//'))
+          .replace(/'(?:\\.|[^'\\])*'/g, "''")
+          .replace(/\d+(?:\s*\*\s*\d+)+/g, (expr) => String(product(expr)));
+        const comparisons = [...code.matchAll(/(<=|>=|<|>)\s*(\d+)(?![\w.])/g)].map((m) => ({ op: m[1], n: Number(m[2]) }));
+        for (const name of label[1].split(',').map((x) => x.trim()).filter((x) => x in limits.ints)) {
+          const op = expectedOp(name);
+          const at = `${file}:${i + 1} ${name}`;
+          expect([at, op !== null]).toEqual([at, true]);
+          const mine = comparisons.filter((c) => c.n === limits.ints[name]);
+          expect([at, mine.some((c) => c.op === op)]).toEqual([at, true]);
+          expect([at, mine.filter((c) => c.op !== op && c.op[0] === op[0]).map((c) => c.op)]).toEqual([at, []]);
+          seen.add(name);
+        }
+      });
+    }
+    // T-45 F1 / F4 etiketleri dahil; listede olmayan yeni bir int etiketi de aynı kurala girer.
+    expect([...seen]).toEqual(expect.arrayContaining(['clubSummaryMax', 'nameMin', 'imageMaxBytes', 'announcementDailyLimit',
+      'socialEmailMax', 'socialWebMax', 'coverSeedMax', 'iconNameMax', 'advisorTitleMax', 'settingsClubsMax']));
+  });
+
+  test('settings.clubs anahtar deseni kulüp kimliği karakter kümesiyle aynıdır (T-45 F4; uzunluk desen içinde — RP01 okumaz)', () => {
+    // Kulüp oluşturma kimliği `[A-Za-z0-9]+` (CD-133 / T-37 otomatik kimlik, 20 karakter); seed `c01`…
+    expect(firestoreRules).toContain("&& clubId.matches('[A-Za-z0-9]+')");
+    expect(firestoreRules).toContain("c.keys().join(',').matches('[A-Za-z0-9]{1,20}(,[A-Za-z0-9]{1,20})*')");
+    // Değer listesi dört bool alanın 16 birleşimidir; alan adları ClubNotificationPrefsModel anahtarlarıdır.
+    const body = firestoreRules.slice(firestoreRules.indexOf('function clubPrefsAll()'), firestoreRules.indexOf('function clubsOk('));
+    const maps = [...body.matchAll(/\{([^}]*)\}/g)].map((m) => m[1]);
+    expect(maps).toHaveLength(16);
+    const keys = ['announcements', 'events', 'posts', 'muted'];
+    const combos = new Set(maps.map((m) => keys.map((k) => new RegExp(`'${k}': (true|false)`).exec(m)[1]).join(',')));
+    expect(combos.size).toBe(16);
+    const fields = Object.fromEntries([...fs.readFileSync(path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', 'constants', 'firestore_fields.dart'), 'utf8')
+      .matchAll(/static const String (\w+) = '([^']+)';/g)].map((m) => [m[1], m[2]]));
+    const model = fs.readFileSync(path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src', 'models', 'club_notification_prefs_model.dart'), 'utf8');
+    expect([...model.matchAll(/@JsonKey\(name: FirestoreFields\.(\w+)\)/g)].map((m) => fields[m[1]]).sort()).toEqual([...keys].sort());
+  });
 });

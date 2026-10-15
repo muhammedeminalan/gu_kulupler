@@ -129,6 +129,21 @@ void main() {
       expect(fake.values, isEmpty);
     });
 
+    test('T-45 · pendingDisplayName: hesap başına; null kaldırır; failNext '
+        'yazımı false yapar ama değer kalır', () async {
+      final fake = FakeAppPreferencesStore();
+      expect(fake.pendingDisplayName('u1'), isNull);
+      expect(await fake.setPendingDisplayName('u1', 'Ayşe'), isTrue);
+      expect(fake.pendingDisplayName('u1'), 'Ayşe');
+      expect(fake.pendingDisplayName('u2'), isNull);
+      expect(fake.values[AppPreferenceKeys.pendingName('u1')], 'Ayşe');
+      fake.failNext();
+      expect(await fake.setPendingDisplayName('u1', 'Ayşe Y.'), isFalse);
+      expect(fake.pendingDisplayName('u1'), 'Ayşe Y.');
+      expect(await fake.setPendingDisplayName('u1', null), isTrue);
+      expect(fake.values, isEmpty);
+    });
+
     test('failNext: yazım false döner ama bellekteki değer güncellenir '
         '(gerçek depo gibi)', () async {
       final fake = FakeAppPreferencesStore()..failNext();

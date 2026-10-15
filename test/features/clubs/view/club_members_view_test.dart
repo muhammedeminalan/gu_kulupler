@@ -240,7 +240,12 @@ void main() {
         expect(rows.first.membership.role, ClubRole.president);
         expect(rows.first.user, kClubUsers[rows.first.membership.userId]);
         expect(rows.every((row) => row.onMenu == null), isTrue);
-        await expectA11yGuidelines(tester);
+        // T-43 C-3: "N kişi" satırı kaydırma kenarında (y = 0); örneklenen
+        // piksel üst katmana düşer (1.17 : 1) → yanlış pozitif, muaf.
+        await expectA11yGuidelines(
+          tester,
+          lowContrastLabels: {l10n.membersTotal(kClubMemberships.length)},
+        );
       });
     }
 

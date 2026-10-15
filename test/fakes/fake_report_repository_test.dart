@@ -53,6 +53,53 @@ void main() {
       );
     });
 
+    test(
+      'T-45 · günlük kota: todayCounts[uid] = Limits.reportDailyLimit '
+      'iken yeni şikayet yazılmadan ruleViolation(reportLimit); aynı hedef '
+      'zaten bildirilmişse önce alreadyExists; her şikayet sayacı artırır',
+      () async {
+        expect(
+          (await fake.report(
+            reporterId: _me,
+            target: _post,
+            reason: ReportReason.spam,
+          )).isSuccess,
+          isTrue,
+        );
+        expect(fake.todayCounts[_me], 1);
+
+        fake.todayCounts[_me] = Limits.reportDailyLimit;
+        final over = await fake.report(
+          reporterId: _me,
+          target: (type: ReportTargetType.post, id: 'p02', clubId: 'c01'),
+          reason: ReportReason.spam,
+        );
+        final again = await fake.report(
+          reporterId: _me,
+          target: _post,
+          reason: ReportReason.spam,
+        );
+
+        expect(over.errorOrNull, FirestoreError.ruleViolation);
+        expect(
+          (over as FirebaseFailure<void, FirestoreError>).detail,
+          const FirestoreFailureDetail(FirestoreRuleCode.reportLimit),
+        );
+        expect(again.errorOrNull, FirestoreError.alreadyExists);
+        expect(fake.reports.keys, ['${_me}_post_p01']);
+        expect(fake.todayCounts[_me], Limits.reportDailyLimit);
+        // Kota kişiseldir.
+        expect(
+          (await fake.report(
+            reporterId: 'u_mehmet',
+            target: _post,
+            reason: ReportReason.spam,
+          )).isSuccess,
+          isTrue,
+        );
+      },
+    );
+
     test('aynı hedefin ikinci şikayeti alreadyExists; ilk şikayet '
         'değişmez', () async {
       await fake.report(

@@ -6,14 +6,18 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/auth/provider/register_state.dart';
+import 'package:gu_kulupler/features/auth/provider/register_view_model.dart';
 import 'package:gu_kulupler/features/auth/provider/setup_profile_state.dart';
 import 'package:gu_kulupler/features/auth/provider/setup_profile_view_model.dart';
+import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
@@ -22,6 +26,7 @@ import 'package:gu_kulupler/product/init/app_preferences_store.dart';
 import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_ui/gu_ui.dart' show TurkishCaseX;
 
 import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_auth_service.dart';
@@ -123,15 +128,26 @@ void main() {
       },
     );
 
-    test(
-      'görünen ad yoksa e-postanın yerel kısmı kullanılır (CD-134)',
-      () async {
-        _signIn(displayName: null);
-        final container = await _container();
+    test('T-45 · F2 · görünen ad ve bekleyen ad yoksa ad boştur: e-postanın '
+        'yerel kısmı kullanılmaz (D-29)', () async {
+      _signIn(displayName: null);
+      final container = await _container();
 
-        expect(_state(container).name, 'ayse.yilmaz');
-      },
-    );
+      expect(_state(container).name, isEmpty);
+      expect(_state(container).name, isNot(contains('ayse.yilmaz')));
+    });
+
+    test('T-45 · F2 · görünen ad yoksa kayıtta cihaza yazılmış bekleyen ad '
+        'kullanılır; görünen ad varsa önceliklidir', () async {
+      _preferences().values[AppPreferenceKeys.pendingName(_uid)] = 'Ayşe Y.';
+      _signIn(displayName: null);
+      var container = await _container();
+      expect(_state(container).name, 'Ayşe Y.');
+
+      _signIn();
+      container = await _container();
+      expect(_state(container).name, _name);
+    });
 
     test('yarım kalmış profil belgesi varsa ad, tohum ve personel bayrağı '
         'belgeden gelir', () async {
@@ -597,6 +613,85 @@ void main() {
       expect(_feedback().visibleToast, ToastId.tst05);
       expect(_state(container).uploadProgress, 1);
       expect(_status(container), AuthStatus.active);
+    });
+
+    test('T-45 · F2 · görünen ad yoksa profil bekleyen adla oluşturulur; '
+        'gönderimden sonra bekleyen ad cihazdan kaldırılır', () async {
+      _preferences().values[AppPreferenceKeys.pendingName(_uid)] = _name;
+      _signIn(displayName: null);
+      final container = await _container();
+      final viewModel = _viewModel(container);
+      await _fillValid(viewModel);
+
+      expect(await viewModel.submit(), SetupProfileOutcome.success);
+
+      final created = _users().createdProfiles.single;
+      expect(created.name, _name);
+      expect(created.nameLower, 'ayşe yılmaz');
+      expect(_preferences().pendingDisplayName(_uid), isNull);
+      expect(_feedback().toastParams.single.name, 'Ayşe');
+    });
+
+    test('T-45 · F2 · ad kaynağı hiç yoksa (başka cihazda doğrulama) kişiyi '
+        'tanıtmayan yer tutucu yazılır; e-posta türevi yazılmaz', () async {
+      _preferences().values[AppPreferenceKeys.locale] = 'tr';
+      _signIn(displayName: null);
+      final container = await _container();
+      final viewModel = _viewModel(container);
+      await _fillValid(viewModel);
+
+      expect(await viewModel.submit(), SetupProfileOutcome.success);
+
+      final created = _users().createdProfiles.single;
+      expect(
+        created.name,
+        lookupAppLocalizations(const Locale('tr')).authSetupPlaceholderName,
+      );
+      expect(created.name, isNot(contains('ayse')));
+      expect(created.nameLower, created.name.trLower());
+      expect(
+        created.name.length,
+        inInclusiveRange(Limits.nameMin, Limits.nameMax),
+      );
+    });
+
+    test('T-45 · F2 · uçtan uca: kayıtta görünen ad yazılamazsa AUT-05 '
+        'formdaki adı yazar; e-postanın yerel kısmı (öğrenci numarası) '
+        'yazılmaz', () async {
+      const studentEmail = '2025123456@ogr.gumushane.edu.tr';
+      _auth()
+        ..uid = _uid
+        ..failDisplayNameWrite = true;
+      final registerContainer = createContainer();
+      addTearDown(
+        registerContainer.listen(registerViewModelProvider, (_, _) {}).close,
+      );
+      final register =
+          registerContainer.read(
+              registerViewModelProvider.notifier,
+            )
+            ..setName(' $_name ')
+            ..setEmail(studentEmail)
+            ..setPassword('Parola123')
+            ..setPasswordConfirm('Parola123')
+            ..toggleLegal();
+      expect(await register.submit(), RegisterOutcome.success);
+      // Doğrulama bağlantısına dokunuldu (AUT-03 "Doğruladım").
+      _auth().emailVerified = true;
+      await _auth().reload();
+      expect(_auth().currentUser!.displayName, isNull);
+
+      final container = await _container();
+      final viewModel = _viewModel(container);
+      expect(_state(container).name, _name);
+      await _fillValid(viewModel);
+      expect(await viewModel.submit(), SetupProfileOutcome.success);
+
+      final created = _users().createdProfiles.single;
+      expect(created.email, studentEmail);
+      expect(created.name, _name);
+      expect(created.name, isNot(contains('2025123456')));
+      expect(_preferences().pendingDisplayName(_uid), isNull);
     });
 
     test('nameLower Türkçe küçük harfle üretilir (CD-11)', () async {

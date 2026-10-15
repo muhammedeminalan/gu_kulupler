@@ -1,7 +1,7 @@
 /// Firestore koleksiyon, alt koleksiyon ve sabit belge adları (PLAN §9.5,
 /// D-25).
 ///
-/// 15 kök koleksiyon + 2 alt koleksiyon ([privateSub], [votesSub]) + 3 sabit
+/// 16 kök koleksiyon + 2 alt koleksiyon ([privateSub], [votesSub]) + 3 sabit
 /// belge adı ([accountDoc], [contactDoc], [counterDoc]). Yol parçaları kodda elle yazılmaz;
 /// `FirestoreService.doc/collection` yalnızca bu sabitlerle çağrılır (D-15).
 abstract final class FirestoreCollections {
@@ -67,4 +67,9 @@ abstract final class FirestoreCollections {
 
   /// `announcementCounters/{clubId}_{yyyyMMdd}` — günlük duyuru sayaçları.
   static const String announcementCounters = 'announcementCounters';
+
+  /// `reportCounters/{uid}_{yyyyMMdd}` — kullanıcının günlük şikayet sayacı
+  /// (T-45, kullanıcı kararı 3; yalnızca sahibi okur, şikayetle aynı batch'te
+  /// +1 oynar).
+  static const String reportCounters = 'reportCounters';
 }

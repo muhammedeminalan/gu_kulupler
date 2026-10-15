@@ -113,6 +113,13 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
       inner.setReminderDoneEvents(uid, eventIds);
 
   @override
+  String? pendingDisplayName(String uid) => inner.pendingDisplayName(uid);
+
+  @override
+  Future<bool> setPendingDisplayName(String uid, String? name) =>
+      inner.setPendingDisplayName(uid, name);
+
+  @override
   Map<String, ({String url, DateTime at})> get imageUrls => inner.imageUrls;
 
   @override

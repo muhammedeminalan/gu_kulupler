@@ -376,6 +376,15 @@ function baseDocs(options = {}) {
     lastPostRef: null,
     updatedAt: serverTimestamp(),
   };
+  // T-45 (karar 3): kullanıcının günlük şikayet sayacı — gün sabittir (geçmiş gün; bugünün sayacını
+  // report_limit.test.js kendi kurar). Yalnızca sahibi okur; BaseFields yok (silinmez, sıfırlanmaz).
+  docs['reportCounters/u_member_20261008'] = {
+    userId: 'u_member',
+    day: '2026-10-08',
+    count: 1,
+    reportId: 'u_member_post_p01',
+    updatedAt: serverTimestamp(),
+  };
   // T-42 (CD-165 b.1): sunucunun (Admin SDK) push makbuzu — istemciye tamamen kapalı; alıcısı da okuyamaz.
   // BaseFields yok (makbuz silinmez — D-10).
   docs['pushReceipts/notification_push_1'] = {

@@ -57,8 +57,9 @@ abstract final class FieldValidators {
 
   /// "Boş değil" kuralı: belge kimliği parçaları (`clubId`, `userId`,
   /// `postId`, `eventId`, `authorId`, `reporterId` …),
-  /// `applicant.avatarSeed`, `coverSeed`, `iconName`, `presidentId`
-  /// (`users.avatarSeed` → [avatarSeed]).
+  /// `applicant.avatarSeed`, `presidentId` (`users.avatarSeed` →
+  /// [avatarSeed]; `clubs.coverSeed` → [coverSeed]; `clubs.iconName` →
+  /// [iconName]).
   ///
   /// `FirestoreIds` üreticileri saf birleştirmedir; boş parçayla `_u1` gibi
   /// kimlik üretmemek için parçalar önce bununla denetlenir.
@@ -168,6 +169,26 @@ abstract final class FieldValidators {
   static FieldError? clubNameLower(String value) =>
       _text(value, min: Limits.nameMin, max: Limits.clubNameMax);
 
+  /// `clubs.iconName`: boş değil, en çok `Limits.iconNameMax` (Rules
+  /// `// limit: iconNameMax`, T-45).
+  static FieldError? iconName(String value) {
+    if (value.isEmpty) return FieldError.empty;
+    return value.length > Limits.iconNameMax ? FieldError.tooLong : null;
+  }
+
+  /// `clubs.coverSeed`: boş değil, en çok `Limits.coverSeedMax` (Rules
+  /// `// limit: coverSeedMax`, T-45 — kulüp belgesi doğrulanmış herkese
+  /// açıktır).
+  static FieldError? coverSeed(String value) {
+    if (value.isEmpty) return FieldError.empty;
+    return value.length > Limits.coverSeedMax ? FieldError.tooLong : null;
+  }
+
+  /// `clubs.advisor.title` (≤ `Limits.advisorTitleMax`; boş olabilir —
+  /// Rules `// limit: advisorTitleMax`, T-45).
+  static FieldError? advisorTitle(String value) =>
+      _text(value, max: Limits.advisorTitleMax);
+
   /// `clubs.categoryId`: `StaticTables.categoryIds` içinde.
   static FieldError? categoryId(String id) => _known(
     id,
@@ -204,17 +225,24 @@ abstract final class FieldValidators {
   /// Koşul maddesinde yasak karakter (Rules `[^\n]`).
   static const String _lineBreak = '\n';
 
-  /// `clubs.social.email`: biçimce geçerli adres (alan adı kısıtı yok).
-  static FieldError? socialEmail(String value) =>
-      EmailDomainValidator.isWellFormed(value)
-      ? null
-      : FieldError.invalidFormat;
+  /// `clubs.social.email`: en çok `Limits.socialEmailMax`, biçimce geçerli
+  /// adres (alan adı kısıtı yok). Uzunluk önce ölçülür (Rules
+  /// `// limit: socialEmailMax`, T-45).
+  static FieldError? socialEmail(String value) {
+    if (value.length > Limits.socialEmailMax) return FieldError.tooLong;
+    return EmailDomainValidator.isWellFormed(value)
+        ? null
+        : FieldError.invalidFormat;
+  }
 
   /// `clubs.social.instagram`: `Limits.instagramHandlePattern`.
   static FieldError? instagram(String value) => _matches(value, _instagram);
 
-  /// `clubs.social.web`: `http` / `https` şemalı, alan adı dolu URL.
+  /// `clubs.social.web`: en çok `Limits.socialWebMax`; `http` / `https`
+  /// şemalı, alan adı dolu URL. Uzunluk önce ölçülür (Rules
+  /// `// limit: socialWebMax`, T-45).
   static FieldError? web(String value) {
+    if (value.length > Limits.socialWebMax) return FieldError.tooLong;
     final uri = Uri.tryParse(value);
     final ok =
         uri != null && _webSchemes.contains(uri.scheme) && uri.host.isNotEmpty;

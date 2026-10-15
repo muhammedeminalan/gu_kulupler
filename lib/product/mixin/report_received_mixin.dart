@@ -15,16 +15,20 @@ import 'package:gu_kulupler/product/mixin/write_guard_mixin.dart';
 /// Design: DLG-12
 mixin ReportReceivedMixin on ProjectDependencyMixin, WriteGuardMixin {
   /// SHT-10'da doğrulanan [report] şikayetini [reporterId] adına yazar
-  /// (`reportRepository.report`). `true` → sheet kapanır ve çağıran
-  /// [showReportReceivedDialog] ile DLG-12'yi açar; aynı hedef daha önce
-  /// bildirilmişse de `true`. `false` → sheet açık kalır: oturum yok,
-  /// çevrimdışı / ağ (TST-24), yetki yok (TST-X18), beklenmeyen hata
-  /// (günlüğe düşer).
-  Future<bool> sendReport({
+  /// (`reportRepository.report`). [ReportSubmitOutcome.sent] → sheet kapanır
+  /// ve çağıran [showReportReceivedDialog] ile DLG-12'yi açar; aynı hedef
+  /// daha önce bildirilmişse de `sent`. [ReportSubmitOutcome.dailyLimit] →
+  /// günlük şikayet sınırı doldu (T-45, kullanıcı kararı 3): sheet açık kalır
+  /// ve hata satırını gösterir (toast yok). [ReportSubmitOutcome.failed] →
+  /// sheet açık kalır: oturum yok, çevrimdışı / ağ (TST-24), yetki yok
+  /// (TST-X18), beklenmeyen hata (günlüğe düşer).
+  Future<ReportSubmitOutcome> sendReport({
     required String? reporterId,
     required ReportReasonResult report,
   }) async {
-    if (reporterId == null || !ensureOnline()) return false;
+    if (reporterId == null || !ensureOnline()) {
+      return ReportSubmitOutcome.failed;
+    }
     final result = await reportRepository.report(
       reporterId: reporterId,
       target: report.target,
@@ -34,7 +38,12 @@ mixin ReportReceivedMixin on ProjectDependencyMixin, WriteGuardMixin {
     switch (result) {
       case FirebaseSuccess():
       case FirebaseFailure(error: FirestoreError.alreadyExists):
-        return true;
+        return ReportSubmitOutcome.sent;
+      case FirebaseFailure(
+        error: FirestoreError.ruleViolation,
+        detail: FirestoreFailureDetail(code: FirestoreRuleCode.reportLimit),
+      ):
+        return ReportSubmitOutcome.dailyLimit;
       case FirebaseFailure(:final error, :final message):
         if (!showWriteFailureToast(error)) {
           AppLogger.warn(
@@ -42,7 +51,7 @@ mixin ReportReceivedMixin on ProjectDependencyMixin, WriteGuardMixin {
             error: message,
           );
         }
-        return false;
+        return ReportSubmitOutcome.failed;
     }
   }
 

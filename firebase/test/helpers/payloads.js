@@ -433,6 +433,27 @@ function reportCreate(uid, target, extra) {
 /** Matris hedefi: temel veri kümesindeki gönderi. */
 const REPORT_TARGET = Object.freeze({ type: 'post', id: 'p01', clubId: roles.club });
 
+/** T-45 (karar 3) · günlük şikayet sayacı yolu — Dart `FirestoreIds.reportCounter`: `{uid}_{yyyyMMdd}` (Istanbul günü). */
+const reportCounterPath = (uid, ms) => `reportCounters/${requireId(uid, 'uid')}_${istanbulDay(ms).key}`;
+
+/** Şikayet sayacı yükü (`set(merge)`): `count` = `increment(1)` — artışı sunucu uygular (repository yalnızca ön okur). */
+function reportCounterData({ uid, reportId, ms }, extra) {
+  return { userId: uid, day: istanbulDay(ms).day, count: increment(1), reportId, updatedAt: serverTimestamp(), ...extra };
+}
+
+/**
+ * `ReportRepository.report` — şikayet + günün sayacı TEK batch (T-45, karar 3). `path` şikayet belgesinin yolunu
+ * ezer (kimlik vakaları); `ms` sayaç gününün hesaplandığı an (varsayılan şimdi); `extra` şikayet yüküne eklenir.
+ * @param {{uid: string, target?: object, ms?: number, extra?: object, path?: string}} o
+ */
+function reportWrites({ uid, target = REPORT_TARGET, ms, extra, path }) {
+  const reportPath = path || `reports/${uid}_${target.type}_${target.id}`;
+  return {
+    report: set(reportPath, reportCreate(uid, target, extra)),
+    counter: { op: 'set', merge: true, path: reportCounterPath(uid, ms), data: reportCounterData({ uid, reportId: reportPath.slice('reports/'.length), ms }) },
+  };
+}
+
 /** `BlockRepository.block` — `BlockModel.toJson()` + `BaseFieldsPayload.create()`. */
 function blockCreate(blockerId, blockedId, extra) {
   return { blockerId, blockedId, ...baseCreate(), ...extra };
@@ -1030,7 +1051,6 @@ const variants = new Map([
   ['contactEmailUpdate', () => ({ email: 'baska@ogr.gumushane.edu.tr', emailLower: 'baska@ogr.gumushane.edu.tr', ...baseUpdate() })],
   // T-15 · reports
   ['reportPost', (ctx) => reportCreate(ctx.uid, REPORT_TARGET)],
-  ['reportPostSeedNulls', (ctx) => reportCreate(ctx.uid, REPORT_TARGET, { action: null, resolvedAt: null, resolvedBy: null })],
   ['reportResolve', (ctx) => ({ status: 'resolved', action: 'dismissed', resolvedAt: serverTimestamp(), resolvedBy: ctx.uid, ...baseUpdate() })],
   // T-15 · blocks
   ['blockBoard', (ctx) => blockCreate(ctx.uid, 'u_board')],
@@ -1091,6 +1111,8 @@ const variants = new Map([
   // T-25 · notifications (alıcı `u_member`; matris yolu `newDocPath` ile verilir)
   ['notificationEventNew', (ctx) => notificationCreate('event_new', 'u_member', { clubId: ctx.club, eventId: 'e_public' })],
   ['notificationReminderSelf', (ctx) => notificationCreate('event_reminder', ctx.uid, { clubId: ctx.club, eventId: 'e_public' })],
+  // T-45 A5-01: `e_live` kayıtları (u_member going · u_student waitlist · u_board attended).
+  ['notificationReminderLive', (ctx) => notificationCreate('event_reminder', ctx.uid, { clubId: ctx.club, eventId: 'e_live' })],
   ['notificationSystem', () => notificationCreate('system', 'u_member', { textKey: 'welcome' })],
   ['notificationRead', () => notificationRead()],
   ['notificationUnread', () => ({ read: false, ...baseUpdate() })],
@@ -1115,6 +1137,10 @@ const batches = new Map([
   ['reapplyPendingBatch', (ctx) => reapplyWrites({ club: ctx.club, uid: ctx.uid, status: 'pending' })],
   ['reapplyActiveBatch', (ctx) => reapplyWrites({ club: ctx.club, uid: ctx.uid, status: 'active' })],
   ['leaveBatch', (ctx) => leaveWrites({ club: ctx.club, uid: ctx.uid })],
+  // T-45 (karar 3) · şikayet + günün şikayet sayacı tek batch; sayaç tek başına geçmez
+  ['reportBatch', (ctx) => reportWrites({ uid: ctx.uid })],
+  ['reportSeedNullsBatch', (ctx) => reportWrites({ uid: ctx.uid, extra: { action: null, resolvedAt: null, resolvedBy: null } })],
+  ['reportCounterAloneBatch', (ctx) => ({ counter: reportWrites({ uid: ctx.uid }).counter })],
   // T-30 (yönetici geçişleri; aktör = bağlam)
   ['approveBatch', (ctx) => approveWrites({ club: ctx.club, uid: ctx.uid })],
   ['rejectBatch', (ctx) => rejectWrites({ club: ctx.club, uid: ctx.uid })],
@@ -1226,6 +1252,9 @@ module.exports = {
   REJECT_NOTE,
   REMOVE_NOTE,
   reportCreate,
+  reportCounterPath,
+  reportCounterData,
+  reportWrites,
   blockCreate,
   DAY_MS,
   POST_NULLS,

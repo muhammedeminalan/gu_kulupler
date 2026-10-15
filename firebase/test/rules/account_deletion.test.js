@@ -476,9 +476,12 @@ describe('hesap silme · silinmiş kullanıcı yazamaz (roadmap T-29; domain-mod
     ['katılım', () => commit('deleted', payloads.rsvpJoinWrites({ club: CLUB, uid: DELETED }))],
     ['hatırlatma (rsvp reminder)', () => updateDoc(at(payloads.rsvpPath('e_public', DELETED)), payloads.rsvpReminder()),
       { [payloads.rsvpPath('e_public', DELETED)]: rsvpDoc('e_public', DELETED, 'going', { ticketCode: 'GU-DLTD-2345' }) }],
+    // T-45 A5-01: hatırlatıcı kendi katılım kaydına bağlıdır — etkin hesapta geçmesi için kayıt kurulur.
     ['kendi hatırlatma bildirimi (createSelf)', () => setDoc(at(payloads.reminderPath('e_public', DELETED)),
-      payloads.notificationCreate('event_reminder', DELETED, { clubId: CLUB, eventId: 'e_public' }))],
-    ['şikayet', () => setDoc(at(`reports/${DELETED}_post_p01`), payloads.reportCreate(DELETED, payloads.REPORT_TARGET))],
+      payloads.notificationCreate('event_reminder', DELETED, { clubId: CLUB, eventId: 'e_public' })),
+      { [payloads.rsvpPath('e_public', DELETED)]: rsvpDoc('e_public', DELETED, 'going', { ticketCode: 'GU-DLTD-2345' }) }],
+    // T-45 (karar 3): şikayet günün şikayet sayacıyla aynı batch'tedir (ReportRepository.report).
+    ['şikayet', () => commit('deleted', payloads.reportWrites({ uid: DELETED }))],
     ['destek talebi', () => setDoc(at(`supportTickets/${payloads.NEW_TICKET_NO}`), payloads.ticketCreate({ uid: DELETED }))],
     ['engel oluşturma', () => setDoc(at(`blocks/${DELETED}_u_board`), payloads.blockCreate(DELETED, 'u_board'))],
     ['engel restore', () => updateDoc(at(`blocks/${DELETED}_u_student`), payloads.restore()),

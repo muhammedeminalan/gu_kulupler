@@ -261,7 +261,12 @@ void main() {
       expect(join.full, isTrue);
       expect(find.byKey(_k('report')), findsOneWidget);
       expect(find.byKey(_k('attendeesPreview')), findsNothing);
-      await expectA11yGuidelines(tester);
+      // T-43 C-2: harita yer tutucusu metni desenli zeminde 4.46 : 1 (K-91
+      // öncesi 4.21) — tasarımdan, muaf.
+      await expectA11yGuidelines(
+        tester,
+        lowContrastLabels: {l10n.eventMapPlaceholder(place)},
+      );
     });
 
     testWidgets('EN metinleri', (tester) async {

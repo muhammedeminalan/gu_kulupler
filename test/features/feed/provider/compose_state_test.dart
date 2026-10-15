@@ -181,7 +181,10 @@ void main() {
         club: kComposeClub,
       );
       expect(
-        ComposeDraft.decode(ComposeDraft.encode(state)),
+        ComposeDraft.decode(
+          ComposeDraft.encode(state, ownerUid: kComposeUid),
+          uid: kComposeUid,
+        ),
         const ComposeState().copyWith(
           type: PostType.announcement,
           title: 'başlık',
@@ -198,16 +201,19 @@ void main() {
 
     test('taslak yok / bozuk / yanlış biçim → null; eksik ve sınır dışı '
         'değerler varsayılana düşer ya da kesilir', () {
-      expect(ComposeDraft.decode(null), isNull);
-      expect(ComposeDraft.decode(''), isNull);
-      expect(ComposeDraft.decode('{bozuk'), isNull);
-      expect(ComposeDraft.decode('[1, 2]'), isNull);
+      ComposeState? decode(String? json) =>
+          ComposeDraft.decode(json, uid: kComposeUid);
+      const owner = '"ownerUid":"$kComposeUid"';
+      expect(decode(null), isNull);
+      expect(decode(''), isNull);
+      expect(decode('{bozuk'), isNull);
+      expect(decode('[1, 2]'), isNull);
 
-      final empty = ComposeDraft.decode('{}')!;
+      final empty = decode('{$owner}')!;
       expect(empty, const ComposeState(hasDraft: true));
 
-      final odd = ComposeDraft.decode(
-        '{"type":"video","title":7,"text":"${'x' * 1200}",'
+      final odd = decode(
+        '{$owner,"type":"video","title":7,"text":"${'x' * 1200}",'
         '"options":["a",3,"b","c","d","e"],"duration":5}',
       )!;
       expect(odd.type, PostType.post);
@@ -215,7 +221,25 @@ void main() {
       expect(odd.text, hasLength(Limits.postTextMax));
       expect(odd.pollOptions, ['a', 'b', 'c', 'd']);
       expect(odd.pollDuration, PollDuration.d3);
-      expect(ComposeDraft.decode('{"options":["a"]}')!.pollOptions, ['a', '']);
+      expect(decode('{$owner,"options":["a"]}')!.pollOptions, ['a', '']);
+    });
+
+    test("T-45 · A3-02 · taslak yazarın uid'siyle etiketlenir: başka hesap "
+        've etiketsiz (eski) kayıt null', () {
+      final json = ComposeDraft.encode(
+        const ComposeState(text: 'yayımlanmamış duyuru'),
+        ownerUid: 'u_a',
+      );
+      expect(
+        ComposeDraft.decode(json, uid: 'u_a')!.text,
+        'yayımlanmamış duyuru',
+      );
+      expect(ComposeDraft.decode(json, uid: 'u_b'), isNull);
+      expect(ComposeDraft.decode('{"text":"eski"}', uid: 'u_a'), isNull);
+      expect(
+        ComposeDraft.decode('{"ownerUid":7,"text":"x"}', uid: 'u_a'),
+        isNull,
+      );
     });
   });
 }

@@ -95,6 +95,14 @@ abstract interface class AppPreferencesStore {
   /// [uid] hesabının bitmiş etkinlik kümesini [eventIds] ile değiştirir.
   Future<bool> setReminderDoneEvents(String uid, Set<String> eventIds);
 
+  /// [uid] hesabının profile henüz yazılmamış adı (T-45 · F2): kayıtta kimlik
+  /// hesabının görünen adı yazılamadıysa (CD-134 madde 2) AUT-02 formundaki
+  /// ad burada bekler, AUT-05 profili oluşturunca kaldırılır. Yoksa `null`.
+  String? pendingDisplayName(String uid);
+
+  /// [uid] hesabının bekleyen adını [name] ile değiştirir; `null` kaldırır.
+  Future<bool> setPendingDisplayName(String uid, String? name);
+
   /// Storage görsel yolu → indirme adresi ve alındığı an (UTC; T-44 · D2-05).
   /// Soğuk açılışta görsel yer tutucuya düşmeden, çevrimdışında diskteki
   /// kopyadan çizilir. Bozuk ya da okunamayan kayıt boş haritadır.
@@ -139,6 +147,9 @@ abstract final class AppPreferenceKeys {
   /// [uid] hesabının hatırlatıcıda bitmiş etkinlikleri (T-44 · D2-06): metin
   /// listesi.
   static String reminderDone(String uid) => 'pref.reminderDone.$uid';
+
+  /// [uid] hesabının profile yazılmamış adı (T-45 · F2): metin.
+  static String pendingName(String uid) => 'pref.pendingName.$uid';
 
   /// Görsel yolu → indirme adresi (T-44 · D2-05): JSON
   /// `{yol: [adres, alındığıAnMsUtc]}`.
@@ -212,6 +223,10 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   /// Bu oturumda yazılan bitmiş etkinlik kümeleri (uid → küme); diskteki
   /// değerin önüne geçer.
   final Map<String, Set<String>> _reminderDone = <String, Set<String>>{};
+
+  /// Bu oturumda yazılan / kaldırılan bekleyen adlar (uid → ad; `null` =
+  /// kaldırıldı); diskteki değerin önüne geçer.
+  final Map<String, String?> _pendingNames = <String, String?>{};
 
   /// Görsel adresleri: ilk okumada diskten çözülür, yazımda güncellenir.
   Map<String, ({String url, DateTime at})>? _imageUrls;
@@ -383,6 +398,24 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
         AppPreferenceKeys.reminderDone(uid),
         ids.toList(),
       ),
+    );
+  }
+
+  @override
+  String? pendingDisplayName(String uid) {
+    if (_pendingNames.containsKey(uid)) return _pendingNames[uid];
+    final prefs = _prefs;
+    return prefs == null
+        ? null
+        : _string(prefs, AppPreferenceKeys.pendingName(uid));
+  }
+
+  @override
+  Future<bool> setPendingDisplayName(String uid, String? name) {
+    _pendingNames[uid] = name;
+    final key = AppPreferenceKeys.pendingName(uid);
+    return _write(
+      (prefs) => name == null ? prefs.remove(key) : prefs.setString(key, name),
     );
   }
 

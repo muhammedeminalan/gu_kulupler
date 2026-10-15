@@ -17,6 +17,17 @@ Widget _target(double size, {String? label}) => Center(
   ),
 );
 
+/// Beyaz zemin üzerinde [color] renkli 12 px metin.
+Widget _text(String text, Color color) => Center(
+  child: ColoredBox(
+    color: const Color(0xFFFFFFFF),
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Text(text, style: TextStyle(fontSize: 12, color: color)),
+    ),
+  ),
+);
+
 Future<String?> _failure(Future<void> Function() body) async {
   try {
     await body();
@@ -59,6 +70,20 @@ void main() {
         ),
         platform: TargetPlatform.iOS,
       );
+      await expectA11yGuidelines(tester);
+    });
+
+    testWidgets('kontrast varsayılan açık (T-45): AA altı metin → ihlal; '
+        'etiketle ya da contrast: false ile muaf', (tester) async {
+      await tester.pumpApp(_text('Soluk', const Color(0xFFD0D0D0)));
+      final failure = await _failure(() => expectA11yGuidelines(tester));
+      expect(failure, contains('Expected contrast ratio of at least 4.5'));
+      await expectA11yGuidelines(tester, lowContrastLabels: const {'Soluk'});
+      await expectA11yGuidelines(tester, contrast: false);
+    });
+
+    testWidgets('K-91 textMuted açık (#5E708A) beyazda geçer', (tester) async {
+      await tester.pumpApp(_text('Yardımcı', GuColors.light.textMuted));
       await expectA11yGuidelines(tester);
     });
   });

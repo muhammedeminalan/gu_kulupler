@@ -51,6 +51,13 @@ abstract final class FirestoreIds {
   static String announcementCounter(String clubId, String dayKey) =>
       '$clubId$_separator$dayKey';
 
+  /// `reportCounters/{uid}_{yyyyMMdd}` — [userId] kullanıcının [dayKey]
+  /// (`AppClock.istanbulDayKey` çıktısı) günündeki şikayet sayacı (T-45,
+  /// kullanıcı kararı 3; Rules yolu oturum + sunucu gününden aynı biçimde
+  /// kurar).
+  static String reportCounter(String userId, String dayKey) =>
+      '$userId$_separator$dayKey';
+
   /// `notifications/{type}_{eventKey}_{userId}` — [type] enum'un JSON
   /// değeri, [eventKey] olay anahtarı (`NotificationDraft.eventKey`), [userId]
   /// alıcı (PLAN §9.4; W-49, CD-129; `docs/plans/T-25.md` §6 b).

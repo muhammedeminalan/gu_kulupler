@@ -408,19 +408,35 @@ void main() {
       final viewModel = _viewModel(container);
 
       expect(viewModel.reportTarget, report.target);
-      expect(await viewModel.submitReport(report), isTrue);
+      expect(await viewModel.submitReport(report), ReportSubmitOutcome.sent);
       expect(reportsFake().callsTo('report').single.args, [
         kViewer.uid,
         report.target,
         ReportReason.harassment,
         '',
       ]);
-      expect(await viewModel.submitReport(report), isTrue);
+      expect(await viewModel.submitReport(report), ReportSubmitOutcome.sent);
 
       connectivityFake().isOffline = true;
-      expect(await viewModel.submitReport(report), isFalse);
+      expect(await viewModel.submitReport(report), ReportSubmitOutcome.failed);
       expect(feedbackFake().toasts, [ToastId.tst24]);
     });
+
+    test(
+      'T-45 · günlük şikayet sınırı → dailyLimit: toast yok, yazılmaz',
+      () async {
+        seedProfile();
+        final container = await _container();
+        reportsFake().todayCounts[kViewer.uid] = Limits.reportDailyLimit;
+
+        expect(
+          await _viewModel(container).submitReport(report),
+          ReportSubmitOutcome.dailyLimit,
+        );
+        expect(feedbackFake().toasts, isEmpty);
+        expect(reportsFake().reports, isEmpty);
+      },
+    );
 
     test('şikayet yazılamazsa sheet açık kalır: yetki → TST-X18, beklenmeyen '
         'hata → sessiz', () async {
@@ -432,7 +448,10 @@ void main() {
       ]) {
         feedbackFake().resetFake();
         reportsFake().failNext(error);
-        expect(await _viewModel(container).submitReport(report), isFalse);
+        expect(
+          await _viewModel(container).submitReport(report),
+          ReportSubmitOutcome.failed,
+        );
         expect(feedbackFake().toasts, toasts, reason: error.name);
       }
     });

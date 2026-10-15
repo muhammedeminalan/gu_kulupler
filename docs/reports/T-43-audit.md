@@ -77,15 +77,15 @@ kapsam dışı.
 
 | # | Bulgu | Ekran | Değerlendirme |
 |---|---|---|---|
-| C-1 | `textTertiary` (#62748E) / `bgSubtle` (#F1F5F9) üzerinde 12 px rozet / durum metni — 4.35 : 1 (< 4.5) | CLB-03 kategori rozeti ("Spor ve Doğa"), EVT-02 rozet ("Eğitim"), NTF-02 "Kapalı" | **Tasarım token çifti.** Rengi değiştirmek tasarım + token kararı (kullanıcı onayı) gerektirir → kalan |
+| C-1 | `textTertiary` (#62748E) / `bgSubtle` (#F1F5F9) üzerinde 12 px rozet / durum metni — 4.35 : 1 (< 4.5) | CLB-03 kategori rozeti ("Spor ve Doğa"), EVT-02 rozet ("Eğitim"), NTF-02 "Kapalı" | **Tasarım token çifti.** Rengi değiştirmek tasarım + token kararı (kullanıcı onayı) gerektirir → kalan. **T-45'te kapandı:** kullanıcı kararı `textMuted` açık #5E708A → 4.61 : 1 (K-91, `docs/reports/T-45-security.md` §7.1); a11y kontrast denetimi varsayılan açık |
 | C-2 | Harita yer tutucusu üzerindeki konum metni — 4.21 : 1 | EVT-02 | Desenli zemin; tasarım yakalamasıyla aynı → kalan |
 | C-3 | "79 kişi" — 1.17 : 1 | CLB-06 | Yanlış pozitif: metin kaydırma kenarında (y = 0), örneklenen piksel üst katmana düşüyor |
 
 ## 3. Kalanlar
 
 1. **C-1** `textTertiary` / `bgSubtle` küçük metin kontrastı 4.35 : 1 — token kararı
-   (ör. rozette `textSecondary`) kullanıcıya sorulmalı; değişirse golden'lar bilinçli güncellenir.
-2. **C-2** EVT-02 harita yer tutucusu metni — tasarım; C-1 kararıyla birlikte.
+   (ör. rozette `textSecondary`) kullanıcıya sorulmalı; değişirse golden'lar bilinçli güncellenir. **Kapandı (T-45, K-91):** #5E708A, 4.61 : 1; 114 açık tema golden'ı bilinçli güncellendi.
+2. **C-2** EVT-02 harita yer tutucusu metni — tasarım; C-1 kararıyla birlikte. T-45 sonrası 4.46 : 1 (önce 4.21); tasarım kaynaklı, `lowContrastLabels` ile muaf (C-3 yanlış pozitifi de).
 3. MGT-02 / MGT-06 / MGT-08 çevrimdışı yazma kapısı VM'de var, testi yok
    (tasarım yakalaması da yok) — düşük öncelik.
 4. A11y taraması yalnızca ekranların varsayılan karesini kapsar; sheet / dialog ve

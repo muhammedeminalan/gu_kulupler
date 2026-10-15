@@ -157,6 +157,14 @@ void main() {
       );
     });
 
+    test('reportCounter = userId_yyyyMMdd (T-45 — Security Rules aynı '
+        'dizgiyi oturum + sunucu gününden kurar)', () {
+      expect(
+        FirestoreIds.reportCounter('u_ayse', '20261015'),
+        'u_ayse_20261015',
+      );
+    });
+
     test('notification = type_refId_userId (PLAN §9.4 örnekleri)', () {
       expect(
         FirestoreIds.notification('event_reminder', 'e03', 'u_ayse'),
@@ -374,6 +382,9 @@ void main() {
       expect(_spans('`announcementCounters/{id}`', 1), [
         FirestoreIds.announcementCounter(r'${clubId}', r'${yyyyMMdd}'),
       ]);
+      expect(_spans('`reportCounters/{id}`', 1), [
+        FirestoreIds.reportCounter(r'${userId}', r'${yyyyMMdd}'),
+      ]);
     });
 
     test('kapak tohumu biçimleri', () {
@@ -416,6 +427,7 @@ void main() {
         'savedPost',
         'supportTicketNoPattern',
         'announcementCounter',
+        'reportCounter',
         'ticketCodePattern',
         'ticketQrPayload',
         'clubCoverSeed',
@@ -457,7 +469,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 27 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 28 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -478,6 +490,8 @@ void main() {
         // T-37 · şikayet grubu anahtarı (`report_resolved` refs.reportId)
         'reportGroupKey',
         'announcementCounter',
+        // T-45 · günlük şikayet sayacı kimliği (kullanıcı kararı 3)
+        'reportCounter',
         'notification',
         // T-25 güvenlik incelemesi · başvuru bildiriminin olay anahtarı (CD-148)
         'applicationEventKey',

@@ -29,6 +29,8 @@ rules_version = '2';
 // `fcmTokens[i].locale` (isteğe bağlı `tr` / `en` — push dili cihaz başına); `pushReceipts` yalnızca sunucunun
 // (Cloud Functions, Admin SDK — Rules'u atlar) koleksiyonudur → istemciye tamamen kapalı. Sunucunun yazdığı
 // `new_report` ve otomatik `waitlist_promoted` bildirimleri, terfi ve hesap silme temizliği Admin SDK'dır.
+// T-45 → güvenlik gözden geçirme: reportCounters (günlük şikayet kotası — kullanıcı kararı 3: kullanıcı başına
+// Istanbul günü başına en çok 20; şikayet ile AYNI batch'te, duyuru sayacı kalıbı); blocks `exists(blockedId)`.
 //
 // Null olabilen alanlar `data.get('alan', null)` ile okunur (W-51, CD-130): istemci null alanı hiç
 // yazmaz (anahtar yok), seed açık `null` yazar; doğrudan erişim eksik anahtarda hata verir (= ret).
@@ -138,6 +140,9 @@ service cloud.firestore {
     function postPath(p) { return /databases/$(database)/documents/posts/$(p); }
     function commentPath(c) { return /databases/$(database)/documents/comments/$(c); }
     function counterPath(id) { return /databases/$(database)/documents/announcementCounters/$(id); }
+    // T-45 (kullanıcı kararı 3): şikayet ve günlük şikayet sayacı yolları.
+    function reportPath(id) { return /databases/$(database)/documents/reports/$(id); }
+    function reportCounterPath(id) { return /databases/$(database)/documents/reportCounters/$(id); }
     // Gizlenmiş (`isHidden`) ya da silinmiş gönderi / yorumu okuma ayrıcalığı: süper admin; hesabı AKTİF yazar
     // ve kulüp yöneticisi. Sıradan üye, danışman ve askıdaki hesap kaldırılmış içeriği okuyamaz.
     function seesRemoved(c, author) { return isSuper() || (activeUser() && (author == uid() || isManager(c))); }
@@ -557,10 +562,14 @@ service cloud.firestore {
                     && j.matches('[^\n]*\\S[^\n]*(\n[^\n]*\\S[^\n]*)*')));
       }
       // `social` (ClubSocialModel): üç anahtar, her biri yok / null ya da dizgi; Instagram deseni istemciyle aynı.
+      // T-45 F1: e-posta ve web üst sınırlı (FieldValidators.socialEmail / web `tooLong`). Kulüp belgesi doğrulanmış
+      // herkese açık ve CLB-01 tüm kulüpleri tek seferde çeker — sınırsız alan başkalarının listesini şişirir
+      // (CD-133 madde 14c `users.avatarSeed` ile aynı sınıf risk). Web şeması burada aranmaz: okuma anında
+      // `ExternalLinks.isAllowed` süzer (Dart `Uri` şemayı küçültür; desen eklenecekse `(?i)` olmalı).
       function socialOk(s) {
         return s is map && s.keys().hasOnly(['email', 'instagram', 'web'])
-            && (s.get('email', null) == null || s.email is string)
-            && (s.get('web', null) == null || s.web is string)
+            && (s.get('email', null) == null || (s.email is string && s.email.size() <= 254))   // limit: socialEmailMax
+            && (s.get('web', null) == null || (s.web is string && s.web.size() <= 200))   // limit: socialWebMax
             && (s.get('instagram', null) == null
                 || (s.instagram is string && s.instagram.matches('^@?[A-Za-z0-9._]{1,30}$')));   // limit: instagramHandlePattern
       }
@@ -574,7 +583,7 @@ service cloud.firestore {
             && d.palette in ['red', 'slate', 'bordeaux']
             // ClubPattern (4) — events.coverPattern ile aynı liste
             && d.pattern in ['dots', 'lines', 'mountain', 'waves']
-            && d.coverSeed is string && d.coverSeed.size() > 0;
+            && d.coverSeed is string && d.coverSeed.size() > 0 && d.coverSeed.size() <= 64;   // limit: coverSeedMax
       }
       // `coverPath` bu dalda yalnızca eski değerinde kalır ya da `null` olur (SHT-31 şablona dönüş —
       // ClubSettingsPatch.clearCoverPath; T-36 güvenlik incelemesi). Yeni yol yalnızca medya dalındadır
@@ -615,7 +624,7 @@ service cloud.firestore {
       }
 
       // ── Süper admin dalları (T-37; sözleşme docs/plans/T-37.md §4 a) ─────────────────────────────
-      // Kimlik alanları (FieldValidators.clubName / clubNameLower / categoryId / founded; `iconName` dolu dizgi):
+      // Kimlik alanları (FieldValidators.clubName / clubNameLower / categoryId / founded / iconName — dolu, ≤ 40, T-45):
       // kulüp belgesi doğrulanmış herkese açıktır — tip ve sınır burada sabitlenir. `nameLower == name.lower()`
       // eşitliği YOK (CD-11: Türkçe küçük harf Rules'ta üretilemez). Ad benzersizliği Rules'ta DENETLENMEZ
       // (CD-63: istemcinin `nameLower` eşitlik sorgusu, kilit belgesi yok — yarış kabul, rules-spec §9.4).
@@ -624,15 +633,16 @@ service cloud.firestore {
             && d.nameLower is string && d.nameLower.trim().size() >= 2 && d.nameLower.size() <= 60   // limit: nameMin, clubNameMax
             // StaticTables.categoryIds (k01–k08)
             && d.categoryId in ['k01', 'k02', 'k03', 'k04', 'k05', 'k06', 'k07', 'k08']
-            && d.iconName is string && d.iconName.size() > 0
+            && d.iconName is string && d.iconName.size() > 0 && d.iconName.size() <= 40   // limit: iconNameMax
             && d.founded is int && d.founded >= 1900 && d.founded <= request.time.year();   // limit: foundedMin
       }
-      // `advisor` (ClubAdvisorModel): yok / null ya da {name, title, userId?}; ad FieldValidators.name sınırında.
+      // `advisor` (ClubAdvisorModel): yok / null ya da {name, title, userId?}; ad FieldValidators.name sınırında,
+      // unvan FieldValidators.advisorTitle (≤ 60, T-45).
       function advisorShapeOk(a) {
         return a == null
             || (a is map && a.keys().hasOnly(['name', 'title', 'userId'])
                 && a.name is string && a.name.trim().size() >= 2 && a.name.size() <= 60   // limit: nameMin, nameMax
-                && a.title is string
+                && a.title is string && a.title.size() <= 60   // limit: advisorTitleMax
                 && (a.get('userId', null) == null || a.userId is string));
       }
 
@@ -2305,6 +2315,18 @@ service cloud.firestore {
             && get(rsvpPath(e, u)).data.status == 'waitlist';
       }
 
+      // T-45 A5-01: `event_reminder` yazarın KENDİ katılım kaydına bağlıdır. Kimlik eventId'ye bağlı olduğundan
+      // kayıt aranmazsa uydurma eventId'lerle sınırsız belge yazılır ve her biri push tetikleyicisini
+      // (`sendPushOnNotificationCreated` — makbuz create + update, T-42) çalıştırır (CD-44 kabulü Mod C'deydi).
+      // Kayıt yolu oturumdan kurulur, alanları karşılaştırılır (kimlik birleşimi `{eventId}_{uid}` belirsizdir).
+      // Durum ARANMAZ: iptal edilen kayıt soft kalır, yoklamadan sonraki (`attended`) ya da iptalden önce düşmüş
+      // hatırlatıcıya dokunuş yine yazar; sayı kayıt sayısıyla (gerçek etkinlik başına bir) sınırlıdır.
+      // Kayıt yoksa `get` hata verir → ret. +1 erişim yolu (users/{uid} ile 2): rsvps/{eventId}_{uid}.
+      function reminderRsvpOk(r) {
+        let rv = get(rsvpPath(r.eventId, uid())).data;
+        return rv.userId == uid() && rv.eventId == r.eventId && rv.clubId == r.clubId;
+      }
+
       // Yönetici kararı AYNI işlemde (T-30, W-83 — sözleşme docs/plans/T-30.md §4 e): alıcının BU kulüpteki
       // üyeliği (yol alıcıdan; alanlar karşılaştırılır) `was → now` geçişini, oturumun kararıyla ve sunucu
       // zamanıyla yaptı (`decidedBy == uid()`, `decidedAt == request.time`). 1 erişim yolu: alıcının üyeliği.
@@ -2372,7 +2394,8 @@ service cloud.firestore {
 
       // C — ortak: alan beyaz listesi, ortak alanlar (sunucu zamanı), `read == false`, alıcı dolu dizgi; aktif
       // hesap. `event_reminder` (CD-44): cihaz yalnızca KENDİ belgesini yazar, kimlik tam eşittir (başka türün
-      // `event_reminder_…` kimliğini işgal etmesi ve başkasının hatırlatıcısını önceden yazmak engellenir).
+      // `event_reminder_…` kimliğini işgal etmesi ve başkasının hatırlatıcısını önceden yazmak engellenir) ve
+      // kendi katılım kaydı vardır (`reminderRsvpOk`, T-45 A5-01).
       function canCreateNotification() {
         let d = request.resource.data;
         let t = d.type;
@@ -2384,7 +2407,8 @@ service cloud.firestore {
             && d.userId is string && d.userId.size() > 0
             && t is string
             && ((t == 'event_reminder' && d.userId == uid() && refsOk(r, ['clubId', 'eventId'])
-                 && notificationId == 'event_reminder_' + r.eventId + '_' + uid())
+                 && notificationId == 'event_reminder_' + r.eventId + '_' + uid()
+                 && reminderRsvpOk(r))
                 || (t in ['application_received', 'announcement', 'event_new', 'event_cancelled', 'waitlist_promoted',
                           'application_approved', 'application_rejected', 'removed_from_club', 'role_changed',
                           'report_resolved']
@@ -2416,9 +2440,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37) · rules-spec §3.10
-    // Yazma yolu: ReportRepository.report (C; 2 erişim yolu: users/{uid} · hedef belge). Okuma: hasReported
-    // (G, sahibi) · ADM-04 (L, süper admin).
+    // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37; günlük kota T-45) · rules-spec §3.10
+    // Yazma yolu: ReportRepository.report (C; günün şikayet sayacıyla tek batch — T-45 karar 3; 4 erişim yolu:
+    // users/{uid} · hedef belge · şikayet sayacı · şikayet). Okuma: hasReported (G, sahibi) · ADM-04 (L, süper admin).
     // T-37: U süper admin — grup çözümü (`canResolveReport`; AdminRepository.resolveReports, erişim çağrısı yalnızca
     // `removed`'da hedef — 1 tekil yol). Sahibi şikayetini güncelleyemez: aynı hedefe ikinci `set` update sayılır ve reddedilir.
     match /reports/{reportId} {
@@ -2438,6 +2462,17 @@ service cloud.firestore {
             || (d.targetType == 'post' && d.targetClubId is string && contentClub('posts', d.targetId) == d.targetClubId)
             || (d.targetType == 'comment' && d.targetClubId is string && contentClub('comments', d.targetId) == d.targetClubId)
             || (d.targetType == 'event' && d.targetClubId is string && contentClub('events', d.targetId) == d.targetClubId);
+      }
+
+      // Günlük kota (T-45, kullanıcı kararı 3): günün şikayet sayacı AYNI işlemde tam +1 oynar ve BU şikayeti
+      // gösterir. Sayaç yolu oturum + sunucu gününden türetilir (istemcinin seçtiği gün belgesi değil): başka
+      // günün ya da başkasının sayacını artırarak sınır dolanılamaz. Sınır (`count <= 20`) ve sayaç biçimi sayaç
+      // kuralındadır; işaretçi iki yönlüdür — tek sayaç artışıyla iki şikayet yazılamaz. 1 erişim yolu: sayaç.
+      function reportCounted() {
+        let ref = reportCounterPath(uid() + '_' + istanbulDayKey());
+        let after = getAfter(ref).data;
+        return after.get('reportId', null) == reportId
+            && after.count == (exists(ref) ? get(ref).data.count : 0) + 1;
       }
 
       function canCreateReport() {
@@ -2460,7 +2495,8 @@ service cloud.firestore {
             && d.note is string && d.note.size() <= 300   // limit: reportNoteMax
             && d.status == 'open'
             && d.get('action', null) == null && d.get('resolvedAt', null) == null
-            && d.get('resolvedBy', null) == null;
+            && d.get('resolvedBy', null) == null
+            && reportCounted();
       }
 
       // U (süper admin, şikayet grubu çözümü — AdminRepository.resolveReports, DLG-29 / SHT-26; T-37 sözleşme §4 a.6)
@@ -2706,6 +2742,43 @@ service cloud.firestore {
       // `uid` = yol değişkeni (`match /settings/{uid}`), `request.auth.uid` = oturum kimliği.
       function isOwner() { return emailOk() && request.auth.uid == uid; }
 
+      // T-45 F4 (CD-133 madde 8 "bilinen açık" kapandı): `clubs` = kulüp kimliği → ClubNotificationPrefsModel.
+      // Rules haritayı gezemez; üç döngüsüz denetim BÜTÜN haritayı her yazımda (C ve U) sınar:
+      //  (1) değer: `toJson` dört bool alanı her zaman yazar → değerler listesi dört bool'un 16 birleşiminin
+      //      alt kümesidir (tam eşitlik: eksik / fazla anahtar, bool olmayan, iç içe harita, dizi, dizgi reddedilir);
+      //  (2) anahtar: kulüp kimliği deseni (CD-133 / T-37 otomatik kimlik `[A-Za-z0-9]`, en çok 20 karakter —
+      //      seed `c01`…); birleşik dizgi tek desenle ölçülür (`,` desende yok → anahtar ayırıcıyı taşıyamaz);
+      //  (3) kayıt sayısı: Limits.settingsClubsMax (belge boyutu sınırı, zaman içi kota değil).
+      // Belge yalnızca sahibine açıktır; sınır sunucu okumasını korur (send_push / preference_filter her push'ta
+      // belgeyi okur). Erişim çağrısı yok.
+      function clubPrefsAll() {
+        return [
+          {'announcements': false, 'events': false, 'posts': false, 'muted': false},
+          {'announcements': false, 'events': false, 'posts': false, 'muted': true},
+          {'announcements': false, 'events': false, 'posts': true, 'muted': false},
+          {'announcements': false, 'events': false, 'posts': true, 'muted': true},
+          {'announcements': false, 'events': true, 'posts': false, 'muted': false},
+          {'announcements': false, 'events': true, 'posts': false, 'muted': true},
+          {'announcements': false, 'events': true, 'posts': true, 'muted': false},
+          {'announcements': false, 'events': true, 'posts': true, 'muted': true},
+          {'announcements': true, 'events': false, 'posts': false, 'muted': false},
+          {'announcements': true, 'events': false, 'posts': false, 'muted': true},
+          {'announcements': true, 'events': false, 'posts': true, 'muted': false},
+          {'announcements': true, 'events': false, 'posts': true, 'muted': true},
+          {'announcements': true, 'events': true, 'posts': false, 'muted': false},
+          {'announcements': true, 'events': true, 'posts': false, 'muted': true},
+          {'announcements': true, 'events': true, 'posts': true, 'muted': false},
+          {'announcements': true, 'events': true, 'posts': true, 'muted': true}
+        ];
+      }
+      function clubsOk(c) {
+        return c is map
+            && c.size() <= 200   // limit: settingsClubsMax
+            && (c.size() == 0
+                || (c.keys().join(',').matches('[A-Za-z0-9]{1,20}(,[A-Za-z0-9]{1,20})*')
+                    && c.values().hasOnly(clubPrefsAll())));
+      }
+
       // Sonuç belge: on bir alanın tamamı vardır ve tipleri doğrudur.
       function settingsShape() {
         let d = request.resource.data;
@@ -2717,7 +2790,7 @@ service cloud.firestore {
             && d.quietFrom is string && d.quietFrom.matches('^([01]\\d|2[0-3]):[0-5]\\d$')   // limit: timeOfDayPattern
             && d.quietTo is string && d.quietTo.matches('^([01]\\d|2[0-3]):[0-5]\\d$')   // limit: timeOfDayPattern
             // anahtar = clubId, değer = ClubNotificationPrefsModel; belge yalnızca sahibine açıktır
-            && d.clubs is map
+            && clubsOk(d.clubs)
             && d.updatedAt == request.time;
       }
 
@@ -2770,7 +2843,10 @@ service cloud.firestore {
             && d.blockedId is string && d.blockedId.size() > 0
             // kendini engelleme yok
             && d.blockedId != uid()
-            && blockId == d.blockerId + '_' + d.blockedId;
+            && blockId == d.blockerId + '_' + d.blockedId
+            // T-45: engellenen kullanıcı VAR olmalı — uydurma kimlikle sınırsız (ve istemciden silinemeyen) engel
+            // belgesi yazılamaz (her biri hesap silme temizliğinde okunur). 2 erişim yolu: users/{uid} · users/{blockedId}.
+            && exists(userPath(d.blockedId));
       }
 
       // U — yalnızca soft delete (engeli kaldır) ve restore (yeniden engelle); `blockerId` / `blockedId`
@@ -2958,6 +3034,57 @@ service cloud.firestore {
     match /pushReceipts/{notificationId} {
       allow read: if false;
       allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // 22 · reportCounters/{uid}_{yyyyMMdd} — T-45 (kullanıcı kararı 3, 2026-10-15) · rules-spec §3.18
+    // Günlük şikayet sayacı: kullanıcı başına Istanbul günü başına en çok `Limits.reportDailyLimit` şikayet.
+    // Alanlar: `userId`, `day` (`yyyy-MM-dd`), `count`, `reportId`, `updatedAt` (BaseFields yok; belge silinmez
+    // ve sıfırlanmaz — yeni gün yeni belgedir). Yazma yolu: ReportRepository.report — YALNIZCA şikayetle aynı batch'te
+    // (`set(merge)`, `count: increment(1)`); istemci yazmadan önce sayacı okur (kota dolu → yazım yok, SHT-10).
+    // Duyuru sayacının (18) kalıbı: gün TOLERANSSIZ (W-50 — istemci gün sınırı penceresinde bir kez komşu günle
+    // yeniden dener), işaretçi iki yönlü (şikayet kuralı `reportCounted`).
+    match /reportCounters/{counterId} {
+      function ownCounterId() {
+        let prefix = uid() + '_';
+        return counterId.size() > prefix.size() && counterId[0:prefix.size()] == prefix;
+      }
+
+      // C / U ortak koşulları: sayaç oturumun bugünkü (Istanbul, sunucu saati) belgesidir, günde en çok 20
+      // şikayete izin verir ve işaretçisi AYNI işlemde oluşturulan, oturumun yazdığı açık şikayeti gösterir.
+      // Şikayet kuralı da bu belgenin tam +1 oynadığını ve kendisini gösterdiğini görür: sayaç tek başına ya da
+      // var olan bir şikayetle yazılamaz. 3 erişim yolu: users/{uid} · şikayet (exists + getAfter).
+      function reportCounterShapeOk() {
+        let d = request.resource.data;
+        let ref = d.get('reportId', null);
+        return d.userId == uid()
+            && counterId == uid() + '_' + istanbulDayKey()
+            && d.day == istanbulDay()
+            && d.count is int && d.count <= 20   // limit: reportDailyLimit
+            && ref is string && ref.matches('[^/]+')
+            && !exists(reportPath(ref))
+            && getAfter(reportPath(ref)).data.reporterId == uid()
+            && activeUser();
+      }
+      function canOpenReportCounter() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['userId', 'day', 'count', 'reportId', 'updatedAt'])
+            && d.updatedAt == request.time
+            && d.count == 1
+            && reportCounterShapeOk();
+      }
+      function canBumpReportCounter() {
+        return touches(['count', 'reportId'])
+            && request.resource.data.count == resource.data.count + 1
+            && reportCounterShapeOk();
+      }
+
+      // R — yalnızca sahibi (istemci ön denetimi; süper admin dahil başkası okuyamaz). Olmayan kendi sayacının
+      // tekil okuması boş döner (o gün şikayet yok). Liste kapalıdır: istemci sorgulamaz.
+      allow get: if emailOk() && (resource == null ? ownCounterId() : resource.data.userId == uid());
+      allow list: if false;
+      allow create: if canOpenReportCounter();
+      allow update: if canBumpReportCounter();
       allow delete: if false;
     }
 

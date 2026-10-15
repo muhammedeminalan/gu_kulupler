@@ -420,4 +420,35 @@ void main() {
       },
     );
   });
+
+  group('T-45 · SharedAppPreferencesStore · bekleyen ad (F2)', () {
+    test('anahtar hesap başınadır; yazılır, yeni depo okur; null kaldırır; '
+        'yanlış tip null', () async {
+      expect(AppPreferenceKeys.pendingName('u1'), 'pref.pendingName.u1');
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      expect(store.pendingDisplayName('u1'), isNull);
+
+      expect(await store.setPendingDisplayName('u1', 'Ayşe Yılmaz'), isTrue);
+      expect(store.pendingDisplayName('u1'), 'Ayşe Yılmaz');
+      final reopened = SharedAppPreferencesStore();
+      await reopened.load();
+      expect(reopened.pendingDisplayName('u1'), 'Ayşe Yılmaz');
+      expect(reopened.pendingDisplayName('u2'), isNull);
+
+      expect(await reopened.setPendingDisplayName('u1', null), isTrue);
+      expect(reopened.pendingDisplayName('u1'), isNull);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey(AppPreferenceKeys.pendingName('u1')), isFalse);
+
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.pendingName('u1'): 7,
+      });
+      final broken = SharedAppPreferencesStore();
+      await broken.load();
+      expect(broken.pendingDisplayName('u1'), isNull);
+      // Load öncesi okunmaz.
+      expect(SharedAppPreferencesStore().pendingDisplayName('u1'), isNull);
+    });
+  });
 }

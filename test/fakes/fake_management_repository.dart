@@ -528,7 +528,7 @@ final class FakeManagementRepository extends FakeBase
         FieldValidators.instagram(instagram),
       if (social?.web case final web?) FieldValidators.web(web),
       if (patch.coverSeed case final coverSeed?)
-        FieldValidators.requiredId(coverSeed),
+        FieldValidators.coverSeed(coverSeed),
     ];
     return errors.every((error) => error == null);
   }

@@ -2,7 +2,9 @@
 // K-41, K-43). Renkler `GuColors.light/dark` (+ `GuComponentColors`)
 // üzerinden hesaplanır; beklenen oranlar token-map §10.1/§10.2/§10.3
 // tablolarındaki sayılardır (±0.01). Renkler değişmez (Q-15): eşik altı
-// çiftler bilinen kusur listelerinde tutulur.
+// çiftler bilinen kusur listelerinde tutulur. Tek istisna `textMuted` açık:
+// tasarım #62748E → #5E708A (T-45 kullanıcı kararı, K-91) — bgSurfaceMuted
+// üzerinde 4.35 → 4.61, liste dışına çıktı.
 //
 // Kural (CD-100): liste dışı bir çift eşiğin altına inerse test KIRMIZI;
 // listedeki bir çift eşiği geçerse test KIRMIZI (liste güncellenir).
@@ -64,10 +66,10 @@ const List<_Pair> _textPairs = [
   (fg: 'textSecondary', bg: 'bgCanvas', usage: 'ikincil', light: 7.20, dark: 10.89),
   (fg: 'textSecondary', bg: 'bgSurfaceMuted', usage: 'seg pasif (css:221), banner-readonly (css:254)', light: 6.92, dark: 8.45),
   (fg: 'textSecondary', bg: 'bgSurfaceRaised', usage: 'field-label (css:162)', light: 7.58, dark: 9.27),
-  (fg: 'textMuted', bg: 'bgSurface', usage: 'caption, sekme pasif (css:226)', light: 4.76, dark: 7.89),
-  (fg: 'textMuted', bg: 'bgCanvas', usage: 'caption, alt sekme pasif (css:134)', light: 4.52, dark: 8.52),
-  (fg: 'textMuted', bg: 'bgSurfaceRaised', usage: 'wheel pasif (css:322)', light: 4.76, dark: 7.25),
-  (fg: 'textMuted', bg: 'bgSurfaceMuted', usage: 'badge-neutral/badge-full (css:198), .picker .ph (css:174), yer tutucu (css:167)', light: 4.35, dark: 6.61),
+  (fg: 'textMuted', bg: 'bgSurface', usage: 'caption, sekme pasif (css:226)', light: 5.05, dark: 7.89),
+  (fg: 'textMuted', bg: 'bgCanvas', usage: 'caption, alt sekme pasif (css:134)', light: 4.79, dark: 8.52),
+  (fg: 'textMuted', bg: 'bgSurfaceRaised', usage: 'wheel pasif (css:322)', light: 5.05, dark: 7.25),
+  (fg: 'textMuted', bg: 'bgSurfaceMuted', usage: 'badge-neutral/badge-full (css:198), .picker .ph (css:174), yer tutucu (css:167); K-91', light: 4.61, dark: 6.61),
   (fg: 'brandOnPrimary', bg: 'brandPrimary', usage: 'dolu buton (css:142), badge-brand (css:199)', light: 5.58, dark: 5.58),
   (fg: 'brandOnPrimary', bg: 'brandPrimaryPressed', usage: 'dolu buton basılı', light: 7.71, dark: 6.76),
   (fg: 'brandOnPrimaryContainer', bg: 'brandPrimaryContainer', usage: 'tonal buton (css:143), badge-president (css:189)', light: 9.58, dark: 13.06),
@@ -93,9 +95,9 @@ const List<_Pair> _textPairs = [
   (fg: 'brandOnPrimary', bg: 'stateDanger', usage: '.notif-under .u-right (css:338), .btn-danger (css:147)', light: 6.57, dark: 2.54),
 ];
 
-/// `expectedContrastFailures` — CD-22'nin 3 çifti + CD-100 4. çift (K-25).
+/// `expectedContrastFailures` — CD-22'nin 2 koyu çifti + CD-100 çifti (K-25).
+/// CD-22'nin `textMuted/bgSurfaceMuted` açık 4.35 kaydı K-91 ile kapandı (4.61).
 const List<_Known> _expectedContrastFailures = [
-  (fg: 'textMuted', bg: 'bgSurfaceMuted', theme: _Theme.light, ratio: 4.35),
   (fg: 'brandOnPrimary', bg: 'stateInfo', theme: _Theme.dark, ratio: 2.12),
   (fg: 'brandOnPrimary', bg: 'stateDanger', theme: _Theme.dark, ratio: 2.54),
   (fg: 'brandPrimaryText', bg: 'bgSurfaceRaised', theme: _Theme.dark, ratio: 4.45),
@@ -121,7 +123,7 @@ const List<_Pair> _nonTextPairs = [
   (fg: 'borderDefault', bg: 'bgSurface', usage: 'switch kapalı rayı (CD-110)', light: 1.23, dark: 1.58),
   (fg: 'focusRing', bg: 'bgCanvas', usage: 'odak halkası', light: 5.30, dark: 5.22),
   (fg: 'focusRing', bg: 'bgSurface', usage: 'odak halkası', light: 5.58, dark: 4.84),
-  (fg: 'textMuted', bg: 'bgSurface', usage: 'check/radio boş kenarlık', light: 4.76, dark: 7.89),
+  (fg: 'textMuted', bg: 'bgSurface', usage: 'check/radio boş kenarlık', light: 5.05, dark: 7.89),
 ];
 
 /// `expectedNonTextContrastFailures` — K-43 / CD-100 + CD-110. token-map
@@ -316,9 +318,14 @@ void main() {
     });
   });
 
-  group('T-01 · Kontrast · liste boyutları (CD-22 → CD-100, CD-110)', () {
-    test('expectedContrastFailures = 4 çift', () {
-      expect(_expectedContrastFailures.length, 4);
+  group('T-01 · Kontrast · liste boyutları (CD-22 → CD-100, CD-110, K-91)', () {
+    test('expectedContrastFailures = 3 çift (textMuted/bgSurfaceMuted K-91 '
+        'ile çıktı)', () {
+      expect(_expectedContrastFailures.length, 3);
+      expect(
+        _expectedContrastFailures.map((k) => '${k.fg}/${k.bg}'),
+        isNot(contains('textMuted/bgSurfaceMuted')),
+      );
     });
 
     test('expectedNonTextContrastFailures = 11 kayıt (10 çift; switch rayı '
@@ -372,7 +379,21 @@ void main() {
   );
 
   group('T-01 · Kontrast · §10.1 illüstrasyon tabanı (grafik, eşik 3.0)', () {
-    // Varlık SVG'lerinde sabit `#62748E` = `GuColors.light.textMuted` (K-20).
+    // Varlık SVG'lerinde sabit `#62748E` = tasarımın `text.muted` açık değeri
+    // (registry). Uygulama tokenı K-91 ile #5E708A'ya koyulaştı; varlıklar
+    // yeniden renklendirilmez (K-20), hesap tasarım değeriyle yapılır.
+    late Color base;
+    setUpAll(() {
+      final colors = registryTokens()['COLORS'] as Map<String, dynamic>;
+      final muted = colors['text.muted'] as List<dynamic>;
+      base = Color(parseCssColor(muted[0] as String));
+    });
+
+    test('taban = registry text.muted açık #62748E (≠ textMuted, K-91)', () {
+      expect(base.toARGB32(), 0xFF62748E);
+      expect(base, isNot(GuColors.light.textMuted));
+    });
+
     for (final (theme, documented) in [
       (_Theme.light, 4.52),
       (_Theme.dark, 3.70),
@@ -380,10 +401,7 @@ void main() {
       test(
         '#62748E / bgCanvas · ${theme.label} = ${documented.toStringAsFixed(2)} ≥ 3.0',
         () {
-          final ratio = _contrast(
-            GuColors.light.textMuted,
-            theme.colors.bgCanvas,
-          );
+          final ratio = _contrast(base, theme.colors.bgCanvas);
           expect(ratio, greaterThanOrEqualTo(_nonTextThreshold));
           expect(ratio, closeTo(documented, _tolerance));
         },

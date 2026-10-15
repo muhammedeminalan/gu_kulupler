@@ -142,4 +142,8 @@ enum FirestoreRuleCode {
 
   /// İşlem yalnızca kulüp üyelerine açık — TST-X18.
   notMember,
+
+  /// Günlük şikayet sınırı doldu (`Limits.reportDailyLimit`; T-45, kullanıcı
+  /// kararı 3) — SHT-10 satır içi hata (`sht10DailyLimit`).
+  reportLimit,
 }
