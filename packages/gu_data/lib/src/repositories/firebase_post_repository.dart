@@ -602,12 +602,35 @@ final class FirebasePostRepository implements PostRepository {
         case final rejected?) {
       return rejected;
     }
-    return _firestore.update(_postRef(postId), {
-      FirestoreFields.isHidden: true,
-      FirestoreFields.hiddenBy: actorId,
-      FirestoreFields.hiddenAt: _firestore.serverTimestamp(),
-    });
+    return _firestore.update(_postRef(postId), _hidePayload(actorId));
   }
+
+  /// [hide]'ın batch karşılığı (T-37, şikayet çözümü "kaldırıldı" —
+  /// `AdminRepository.resolveReports`): [postId] gönderisinin gizleme
+  /// yazımını (`isHidden: true`, `hiddenBy: actorId`, `hiddenAt` +
+  /// `updatedAt` sunucu zamanı) [batch]'e **eşzamanlı** ekler; commit ve ağ
+  /// çağrısı yoktur. Arayüzde değildir (SDK tipi `WriteBatch` arayüze
+  /// sızmaz); yalnızca `gu_data` içindeki çözüm sınıfı çağırır.
+  ///
+  /// Kimlikleri çağıran önceden doğrular (`RepositoryHelpers.isValidId`);
+  /// geçersiz [postId] `ArgumentError` fırlatır ve `commitBatch` batch'i
+  /// düşürür. Sayaçlar ve sabitleme değişmez; Rules (`isHideToggle`) gönderi
+  /// zaten gizliyse yazımı reddeder — çağıran önce okur.
+  void addHideToBatch(
+    WriteBatch batch,
+    String postId, {
+    required String actorId,
+  }) => batch.update(_postRef(postId), {
+    ..._hidePayload(actorId),
+    ...BaseFieldsPayload.update(),
+  });
+
+  /// Gizleme yazımının alanları ([hide] ve [addHideToBatch] ortak yükü).
+  Json _hidePayload(String actorId) => {
+    FirestoreFields.isHidden: true,
+    FirestoreFields.hiddenBy: actorId,
+    FirestoreFields.hiddenAt: _firestore.serverTimestamp(),
+  };
 
   @override
   Future<FirestoreResult<void>> unhide(String postId) async {

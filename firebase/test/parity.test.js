@@ -523,7 +523,8 @@ describe('parite (g) · clubs medya yolları ve Storage clubs/ ↔ Dart (T-36)',
     expect(repository).toContain('StoragePaths.clubLogo(clubId, file)');
     expect(repository).toContain('StoragePaths.clubCover(clubId, file)');
     expect(storageRules).toContain('&& clubMetadataOnly() && request.resource.metadata.clubId == clubId');
-    expect(storageRules).toContain('&& isManagerOf(clubId) && accountActive();');
+    // T-37: süper admin de yükler (AdminRepository.updateClubMedia — üst veri sözleşmesi aynı).
+    expect(storageRules).toContain('&& (isSuperAdmin() || isManagerOf(clubId)) && accountActive();');
   });
 });
 

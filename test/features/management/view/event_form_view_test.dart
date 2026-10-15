@@ -37,6 +37,7 @@ import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
+import '../../../helpers/semantics_scan.dart';
 import '../../../helpers/test_l10n.dart';
 import '../event_form_test_support.dart';
 import '../manage_test_support.dart';
@@ -436,6 +437,27 @@ void main() {
           overrides: _overrides(state: state, of: _editOf(kStartedEvent)),
         );
       }
+    });
+  });
+
+  group('MGT-05 · Etkinlik formu · semantik', () {
+    testWidgets('3. adım: kaydırma boyunca rol doğrulaması hatasız (görünürlük '
+        'GuSegmented; iOS + Android)', (tester) async {
+      await expectSemanticsCleanWhileScrolling(
+        tester,
+        (platform) => tester.pumpApp(
+          _view,
+          overrides: _overrides(
+            state: filledEventState(step: EventFormStep.settings),
+          ),
+          // 3. adım 390 × 844'e sığar: kısa görünüm + 1.6 + klavye.
+          // `SingleChildScrollView`: semantik kırpma tüm içeriği kapsar.
+          size: const Size(320, 568),
+          textScale: 1.6,
+          keyboardInset: 260,
+          platform: platform,
+        ),
+      );
     });
   });
 

@@ -106,6 +106,11 @@ service cloud.firestore {
     }
     // delta doğrulama (±1) — `getAfter` aynı batch içindeki yazımı görür
     function counterDelta(path, field, d) { return getAfter(path).data[field] == get(path).data[field] + d; }
+    // Süper adminin askı gerekçesi (T-37; FieldValidators.adminReason): dizgi, kırpılmışı boş değil, üst sınırlı.
+    // Kulüp (`clubs.suspendReason`) ve kullanıcı (`users/{uid}/private/account.suspendReason` — CD-133) askısı.
+    function adminReasonOk(r) {
+      return r is string && r.trim().size() > 0 && r.size() <= 300;   // limit: adminReasonMax
+    }
 
     // ---- sayaç–belge eşliği (PLAN §11.2b, CD-41) ----
     // İş belgesi dalı `counterDelta` ile sayacın, sayaç dalı iş belgesinin AYNI batch'te doğru geçişi yaptığını
@@ -190,7 +195,8 @@ service cloud.firestore {
     // Yazma yolları: UserRepository.createProfile (C; 1 erişim çağrısı: existsAfter private/account) ·
     // updateProfile (U, sahibi; erişim çağrısı yok) · AccountDeletionRepository.markDeleted (U, sahibi;
     // `private/account` anonimleştirmesiyle aynı batch; 1 erişim çağrısı: getAfter private/account).
-    // Kapalı kalan dal: süper admin `status: active↔suspended` (T-37).
+    // T-37: AdminRepository.suspendUser / activateUser (U, süper admin; `private/account.suspendReason` ile aynı
+    // batch — iki yönlü bağ; 1 erişim çağrısı: getAfter private/account).
     // `suspendReason` bu belgenin alanı DEĞİLDİR (CD-133): hiçbir beyaz listede yoktur.
     match /users/{uid} {
       // sahibi: kendi belgesi + doğrulanmış, izinli alan adlı e-posta. `uid` = yol değişkeni
@@ -285,12 +291,34 @@ service cloud.firestore {
             && getAfter(/databases/$(database)/documents/users/$(uid)/private/account).data.email == '';
       }
 
+      // U (süper admin askı — AdminRepository.suspendUser / activateUser, DLG-30 / TST-52; T-37 sözleşme §4 a.5,
+      // CD-133) — yalnızca `status` (+ `updatedAt`): `active ↔ suspended` (askıdaki hesapta gerekçe yeniden yazımı
+      // `suspended → suspended`). Silinmiş hesap etkinleştirilemez ve askıya alınamaz (`resource.status`). Gerekçe
+      // bu belgeye yazılmaz: `private/account` AYNI batch'te yazılır (`updatedAt == request.time`) ve durumla
+      // tutarlıdır — `suspended` ⇒ dolu gerekçe, `active` ⇒ `null` (iki yönlü: hesap dalı da bu belgeyi görür).
+      // Yetki yalnızca jeton claim'idir (D-28); kullanıcının kendi askısını kaldırma yolu yoktur (sahip dallarının
+      // beyaz listesinde `status` yok). Süper admin KENDİ hesabının durumunu değiştiremez (güvenlik incelemesi T-37:
+      // başka süper adminin askıya aldığı süper admin askısını kaldıramaz; süper adminin askısı claim geri alımıyla
+      // birlikte yapılır — tool/admin/README.md). 1 erişim yolu: private/account (getAfter).
+      function canSetUserStatus() {
+        let account = getAfter(/databases/$(database)/documents/users/$(uid)/private/account).data;
+        let s = request.resource.data.status;
+        return isSuper()
+            && request.auth.uid != uid
+            && touches(['status'])
+            && resource.data.status in ['active', 'suspended'] && s in ['active', 'suspended']
+            && account.updatedAt == request.time
+            && (s == 'suspended'
+                ? adminReasonOk(account.get('suspendReason', null))
+                : account.get('suspendReason', null) == null);
+      }
+
       // R — doğrulanmış her kullanıcı (rules-spec §9.1 kabul edilmiş sınırlama). `isDeleted` süzgeci
       // YOKTUR: anonimleştirilmiş yazar "Silinmiş kullanıcı" olarak okunur (getUser / getUsers);
       // liste ekranları (ADM-05) `isDeleted == false` süzgecini sorguda taşır.
       allow read: if emailOk();
       allow create: if canCreateUser();
-      allow update: if canUpdateOwnProfile() || canMarkDeleted();
+      allow update: if canUpdateOwnProfile() || canMarkDeleted() || canSetUserStatus();
       allow delete: if false;
 
       // 2 · users/{uid}/private/account — T-12 (süper admin `suspendReason` yazımı T-37) · rules-spec §3.2
@@ -299,7 +327,8 @@ service cloud.firestore {
       // AccountDeletionRepository.markDeleted (U anonimleştirme, `users/{uid}` ile aynı batch; 1 erişim
       // çağrısı: getAfter users/{uid}).
       // `suspendReason` sahibi için SALT OKUNURDUR (CD-133): C'de yok / null, U'da değişemez.
-      // Kapalı kalan dallar: süper admin U (T-37), collectionGroup('private') (T-37).
+      // T-37: süper admin U (`suspendReason`, `users/{uid}.status` ile aynı batch; 1 erişim çağrısı: getAfter
+      // users/{uid}) · ADM-05 e-posta araması koleksiyon grubu kuralıyladır (aşağıda `/{path=**}/private`).
       match /private/{docId} {
         // `fcmTokens[i]` = FcmTokenModel {token, platform, updatedAt} (üçü de zorunlu). Belgeyi süper
         // admin de okur (ADM-05): tek bozuk eleman onun okumasını ve e-posta araması sayfasını
@@ -374,11 +403,28 @@ service cloud.firestore {
               && getAfter(userPath(uid)).data.status == 'deleted';
         }
 
-        // R — yalnızca sahibi (kendi e-postası ve askı gerekçesi) ve süper admin (ADM-05).
+        // U (süper admin askı gerekçesi — AdminRepository.suspendUser / activateUser; T-37 §4 a.5, CD-133) —
+        // yalnızca `suspendReason` (+ `updatedAt`), `users/{uid}.status` ile AYNI batch'te (`updatedAt ==
+        // request.time`) ve onunla tutarlı: yazım-sonrası `suspended` ⇒ gerekçe dolu (FieldValidators.adminReason),
+        // `active` ⇒ `null`. Tek başına yazılamaz; silinmiş hesapta profil dalı zaten reddeder. `email`,
+        // `emailLower`, `fcmTokens`, `lastLoginAt`, `isDeleted*` değişemez; belge yoksa yazılamaz (C yok).
+        // Süper admin kendi gerekçesini yazamaz (users dalıyla aynı — güvenlik incelemesi T-37).
+        // 1 erişim yolu: users/{uid} (getAfter).
+        function canSetSuspendReason() {
+          let user = getAfter(userPath(uid)).data;
+          let r = request.resource.data.get('suspendReason', null);
+          return isSuper() && docId == 'account' && request.auth.uid != uid
+              && touches(['suspendReason'])
+              && user.updatedAt == request.time
+              && ((user.status == 'suspended' && adminReasonOk(r)) || (user.status == 'active' && r == null));
+        }
+
+        // R — yalnızca sahibi (kendi e-postası ve askı gerekçesi) ve süper admin (ADM-05). Liste kapalıdır;
+        // süper adminin koleksiyon grubu araması aşağıdaki `/{path=**}/private` kuralıyla açılır.
         allow get: if isOwner() || isSuper();
         allow list: if false;
         allow create: if canCreateAccount();
-        allow update: if canUpdateOwnAccount() || canAnonymizeAccount();
+        allow update: if canUpdateOwnAccount() || canAnonymizeAccount() || canSetSuspendReason();
         allow delete: if false;
       }
     }
@@ -394,8 +440,12 @@ service cloud.firestore {
     // yönetim alanları — ManagementRepository.updateClubSettings (`ClubSettingsPatch`).
     // Yazma yolu (T-36): medya yolları — ManagementRepository.updateClubMedia (`logoPath` / `coverPath`; dosya önce
     // Storage `clubs/{clubId}/{file}` yoluna yüklenir).
-    // Kapalı kalan dallar: C (süper admin, ADM-03 — T-37) · U süper admin `status` / `suspendReason` / ad alanları ·
-    // `presidentId` ataması (T-37). Hesap silme (M14 — T-29) sahibin −1 dalını kullanır.
+    // Yazma yolları (T-37, süper admin; sözleşme docs/plans/T-37.md §4 a): AdminRepository.createClub (C; kulüp +
+    // başkan üyeliği + contact tek batch) · updateClubIdentity (kimlik + ADM-03 form alanları) · updateClubMedia ·
+    // suspendClub / activateClub (`status` + `suspendReason`) · assignPresident (yeni hedef: `presidentId` +
+    // `memberCount +1` + yan belge — W-94; var olan üye: M11 `canTransferPresidency`) · MembershipRepository.setAdvisor
+    // (M13: `advisor.userId`). Süper admin dalları `clubLive` istemez; yetki yalnızca jeton claim'idir (D-28).
+    // Hesap silme (M14 — T-29) sahibin −1 dalını kullanır.
     match /clubs/{clubId} {
       // U (sayaç dalı, PLAN §11.2b) — yalnızca `memberCount` ±1 (+ `updatedAt`).
       // T-15 aktörü yalnızca üyeliğin sahibidir: eşlik eden belge oturumun BU kulüpteki üyeliğidir
@@ -539,11 +589,162 @@ service cloud.firestore {
         return now == resource.data.get(f, null)
             || (now is string && now.matches('clubs/' + clubId + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)'));
       }
+      // T-37 (sözleşme §4 a.1, g-3): süper admin de yazar — AdminRepository.updateClubMedia (ADM-03; yönetim
+      // dalları süper admine kapalıdır — Q-09). Süper admin dalı `clubLive` istemez (askıdaki kulübün görseli de
+      // düzeltilebilir); yol deseni aynıdır, Storage `clubs/` kuralı yüklemeyi süper admine de açar.
       function canUpdateMedia() {
         return touches(['logoPath', 'coverPath'])
             && request.resource.data.diff(resource.data).affectedKeys().hasAny(['logoPath', 'coverPath'])
             && clubFileOk('logoPath') && clubFileOk('coverPath')
-            && activeUser() && isManager(clubId) && clubLive(clubId);
+            && (isSuper() || (activeUser() && isManager(clubId) && clubLive(clubId)));
+      }
+
+      // ── Süper admin dalları (T-37; sözleşme docs/plans/T-37.md §4 a) ─────────────────────────────
+      // Kimlik alanları (FieldValidators.clubName / clubNameLower / categoryId / founded; `iconName` dolu dizgi):
+      // kulüp belgesi doğrulanmış herkese açıktır — tip ve sınır burada sabitlenir. `nameLower == name.lower()`
+      // eşitliği YOK (CD-11: Türkçe küçük harf Rules'ta üretilemez). Ad benzersizliği Rules'ta DENETLENMEZ
+      // (CD-63: istemcinin `nameLower` eşitlik sorgusu, kilit belgesi yok — yarış kabul, rules-spec §9.4).
+      function identityOk(d) {
+        return d.name is string && d.name.trim().size() > 0 && d.name.size() <= 60   // limit: clubNameMax
+            && d.nameLower is string && d.nameLower.trim().size() >= 2 && d.nameLower.size() <= 60   // limit: nameMin, clubNameMax
+            // StaticTables.categoryIds (k01–k08)
+            && d.categoryId in ['k01', 'k02', 'k03', 'k04', 'k05', 'k06', 'k07', 'k08']
+            && d.iconName is string && d.iconName.size() > 0
+            && d.founded is int && d.founded >= 1900 && d.founded <= request.time.year();   // limit: foundedMin
+      }
+      // `advisor` (ClubAdvisorModel): yok / null ya da {name, title, userId?}; ad FieldValidators.name sınırında.
+      function advisorShapeOk(a) {
+        return a == null
+            || (a is map && a.keys().hasOnly(['name', 'title', 'userId'])
+                && a.name is string && a.name.trim().size() >= 2 && a.name.size() <= 60   // limit: nameMin, nameMax
+                && a.title is string
+                && (a.get('userId', null) == null || a.userId is string));
+      }
+
+      // C (ADM-03 — AdminRepository.createClub; §4 a.1) — yalnızca süper admin, TEK batch: kulüp + başkanın
+      // `memberships/{clubId}_{presidentId}` belgesi (`active` + `president`; üyelik kuralı `getAfter(kulüp)`
+      // ile karşı bağı kurar) + başkanın `private/contact` belgesi. Kimlik otomatik (`[A-Za-z0-9]+`: üyelik /
+      // günlük kimliklerinde kulüp önekinden sonra `_` gelir — `activityId.split('_')[0]`). `memberCount == 1`
+      // (başkan); sayaç işaretçisi oluşturmada YAZILMAZ (§4 g-1: sayılan üyeliği `presidentId` gösterir). Sonuç
+      // belge ayar dalının sınırlarını taşır (`settingsOk`: sonraki yönetim yazımları birleşmiş belgeyi doğrular —
+      // `coverSeed` dolu dizgi ZORUNLU). Danışman hesabı oluşturmada bağlanmaz (K-A: `advisor.userId` yok / null;
+      // bağlama M13). Logo / kapak oluşturmadan SONRA medya dalıyla (`logoPath` / `coverPath` yok / null).
+      // Null olabilen alanlar anahtarsız ya da açık `null` (W-51). 1 erişim yolu: başkanın üyeliği (getAfter).
+      function canCreateClub() {
+        let d = request.resource.data;
+        let m = getAfter(mPath(clubId, d.presidentId)).data;
+        return isSuper()
+            && clubId.matches('[A-Za-z0-9]+')
+            && d.keys().hasOnly(['name', 'nameLower', 'categoryId', 'iconName', 'palette', 'pattern', 'coverSeed',
+                                 'logoPath', 'coverPath', 'memberCount', 'approvalRequired', 'applicationsOpen',
+                                 'requireNote', 'founded', 'summary', 'about', 'conditions', 'social', 'presidentId',
+                                 'pinnedPostId', 'advisor', 'status', 'suspendReason', 'createdBy',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.createdBy == uid()
+            && d.memberCount == 1 && d.status == 'active'
+            && d.get('suspendReason', null) == null && d.get('pinnedPostId', null) == null
+            && d.get('logoPath', null) == null && d.get('coverPath', null) == null
+            && identityOk(d) && settingsOk(d)
+            && advisorShapeOk(d.get('advisor', null))
+            && (d.get('advisor', null) == null || d.advisor.get('userId', null) == null)
+            && d.presidentId is string && d.presidentId.size() > 0
+            && m.clubId == clubId && m.userId == d.presidentId && m.status == 'active' && m.role == 'president'
+            && m.createdAt == request.time;
+      }
+
+      // U (ADM-03 düzenleme — AdminRepository.updateClubIdentity; §4 a.2, g-4) — kimlik alanları + ADM-03 formunun
+      // öteki alanları (özet, hakkında, kapak şablonu, iki anahtar — yönetim dalı süper admine kapalıdır, Q-09) +
+      // danışmanın adı / ünvanı. Birleşmiş belge doğrulanır. `advisor.userId` DEĞİŞEMEZ (bağlama / kaldırma M13);
+      // hesabı bağlı danışman kaldırılamaz (`advisor: null` yalnızca `userId` boşken). `status`, `suspendReason`,
+      // `presidentId`, sayaç, sabitleme, medya yolları, `conditions`, `social`, `requireNote` beyaz listede yoktur.
+      // Erişim çağrısı yok.
+      function advisorKept() {
+        let was = resource.data.get('advisor', null);
+        let now = request.resource.data.get('advisor', null);
+        let linked = was == null ? null : was.get('userId', null);
+        return now == null ? linked == null : (advisorShapeOk(now) && now.get('userId', null) == linked);
+      }
+      function canEditIdentity() {
+        return isSuper()
+            && touches(['name', 'nameLower', 'categoryId', 'iconName', 'founded', 'summary', 'about', 'palette',
+                        'pattern', 'coverSeed', 'applicationsOpen', 'approvalRequired', 'advisor'])
+            && identityOk(request.resource.data) && settingsOk(request.resource.data)
+            && advisorKept();
+      }
+
+      // U (askı — AdminRepository.suspendClub / activateClub, DLG-28 / TST-50; §4 a.5) — yalnızca `status`,
+      // `suspendReason` (+ `updatedAt`): `suspended` ⇒ gerekçe dolu (FieldValidators.adminReason; askıdaki kulüpte
+      // gerekçe yeniden yazılabilir), `active` ⇒ `null`. Askının etkisi yazım kurallarındadır (`clubLive` /
+      // `clubOpen`: yayın, etkinlik, katılım, yönetim yazımları kapanır); okuma açık kalır (§4 c). Erişim çağrısı yok.
+      function canSetClubStatus() {
+        let d = request.resource.data;
+        return isSuper()
+            && touches(['status', 'suspendReason'])
+            && resource.data.status in ['active', 'suspended']
+            && ((d.status == 'suspended' && adminReasonOk(d.get('suspendReason', null)))
+                || (d.status == 'active' && d.get('suspendReason', null) == null));
+      }
+
+      // U (başkan atama, yeni hedef — AdminRepository.assignPresident; §4 a.3, W-94) — `presidentId` + `memberCount`
+      // (+ `updatedAt`) TEK güncellemede: hedefin üyeliği işlem öncesi YOK ya da etkin değil (`left` / `cancelled` /
+      // `rejected` / `removed`) ve işlemde `active` + `president` olur (sayılan üye → `memberCount +1`); eski başkan
+      // `president → board` (M11 `canHandOver`, süper admin); yan belge AYNI işlemde hedefi gösterir (W-64 / W-94:
+      // işaretçi herkese açık kulüp belgesine yazılmaz; yan belge dalı `memberCount`'un ±1 oynadığını görür).
+      // Hedefin hesabı etkin. Hedef zaten etkin `member | board` ise sayaç değişmez → M11 (`canTransferPresidency`).
+      // Silinmiş eski başkan (W-90) da `board` olur. 5 erişim yolu: hedef / eski başkan üyeliği (get + getAfter) ·
+      // yan belge · users/{hedef} · kulüp.
+      function canAssignPresident() {
+        let to = request.resource.data.presidentId;
+        let from = resource.data.presidentId;
+        let next = getAfter(mPath(clubId, to)).data;
+        let prev = getAfter(mPath(clubId, from)).data;
+        let side = getAfter(clubCounterPath(clubId)).data;
+        return isSuper()
+            && touches(['presidentId', 'memberCount'])
+            && delta('memberCount') == 1
+            && to is string && to != from
+            && next.clubId == clubId && next.userId == to && next.status == 'active' && next.role == 'president'
+            && (!exists(mPath(clubId, to))
+                || get(mPath(clubId, to)).data.status in ['left', 'cancelled', 'rejected', 'removed'])
+            && prev.clubId == clubId && prev.userId == from && prev.status == 'active' && prev.role == 'board'
+            && get(mPath(clubId, from)).data.role == 'president'
+            && side.updatedAt == request.time && side.clubId == clubId
+            && side.lastMembershipRef == 'memberships/' + clubId + '_' + to
+            && get(userPath(to)).data.status == 'active';
+      }
+
+      // U (danışman hesabı bağla / kaldır — M13, MembershipRepository.setAdvisor; §4 a.4, K-A) — yalnızca
+      // `advisor.userId` değişir (ad / ünvan aynı; `memberCount` yok — danışman sayılmaz). Bağla: danışman kaydı
+      // var, hesabı bağlı değil, hedefin üyeliği AYNI işlemde `active` + `advisor` olur (üyelik dalı da kulübün
+      // yazım-sonrası `advisor.userId`'sini görür). Başka hesap bağlıyken yeni hesap bağlanamaz (önce kaldır).
+      // Kaldır: bağlı hesabın üyeliği yazım-sonrası etkin danışman DEĞİL — etkin danışman üyeliği aynı işlemde `left`
+      // olur ya da bağ bayattır (güvenlik incelemesi T-37: danışman hesabını sildi, M14 / W-91 üyeliği `left` yaptı ama
+      // kulüp bağını ayıramadı; bağ tek başına ayrılır, yoksa yeni danışman hiç bağlanamazdı).
+      // 1 erişim yolu: hedef üyelik (getAfter).
+      function advisorGone(u) {
+        let m = mPath(clubId, u);
+        return !existsAfter(m) || getAfter(m).data.status != 'active' || getAfter(m).data.role != 'advisor';
+      }
+      function advisorMember(u, status) {
+        let m = getAfter(mPath(clubId, u)).data;
+        return m.clubId == clubId && m.userId == u && m.status == status && m.role == 'advisor'
+            && m.updatedAt == request.time;
+      }
+      function canLinkAdvisor() {
+        let was = resource.data.get('advisor', null);
+        let now = request.resource.data.get('advisor', null);
+        let wasUid = was == null ? null : was.get('userId', null);
+        let nowUid = now == null ? null : now.get('userId', null);
+        return isSuper()
+            && touches(['advisor'])
+            && was != null && now != null
+            && now.keys().hasOnly(['name', 'title', 'userId'])
+            && now.name == was.name && now.title == was.title
+            && nowUid != wasUid
+            && (nowUid != null
+                ? (wasUid == null && nowUid is string && advisorMember(nowUid, 'active'))
+                : advisorGone(wasUid));
       }
 
       // U (`pinnedPostId` dalı, T-19) — yalnızca `pinnedPostId` (+ `updatedAt`), gönderi yazımıyla AYNI işlemde.
@@ -577,8 +778,12 @@ service cloud.firestore {
       // kimlik sorgunun tamamını düşürür (süper admin hariç; listede `resource == null` okunamaz).
       allow get: if emailOk() && (resource == null || resource.data.isDeleted == false || isSuper());
       allow list: if emailOk() && (resource.data.isDeleted == false || isSuper());
-      allow create: if false;
-      allow update: if canBumpMemberCount() || canSetPin() || canBumpManagedMemberCount() || canTransferPresidency()
+      allow create: if canCreateClub();
+      // Süper admin dalları önce (claim ucuz ayırıcıdır; süper admin dışındaki istekte tek ifadede düşer) — dal başına
+      // ucuz anahtar ayırıcı (`touches`) önce; kimlik dalı (biçim denetimi en pahalı) en sonda. İstek başına 1000
+      // ifade sınırı: aksi sırada M13 yazımı önceki bütün dalları değerlendirip sınırı aşıyordu.
+      allow update: if (isSuper() && (canSetClubStatus() || canLinkAdvisor() || canAssignPresident() || canEditIdentity()))
+                    || canBumpMemberCount() || canSetPin() || canBumpManagedMemberCount() || canTransferPresidency()
                     || canUpdateSettings() || canUpdateMedia();
       allow delete: if false;
 
@@ -634,7 +839,9 @@ service cloud.firestore {
     // / `isPres` danışmanı içermez); yönetici dalları aktif hesap ve askıda / silinmiş olmayan kulüp ister
     // (`clubLive`), süper admin dalları (M9, M10, M11, M12b) istemez. Başkan çıkarılamaz, rolü M10 ile değişmez:
     // başkanlık yalnızca M11 ile el değiştirir (kulüp başkansız kalmaz).
-    // Kapalı kalan dal: M13 danışman (T-37) — danışman üyeliği hiçbir yönetici dalının hedefi değildir.
+    // Süper admin yolları (T-37; sözleşme docs/plans/T-37.md §4 a): kulüp oluşturma / başkan atama (yeni hedef) /
+    // M13 danışman bağla-kaldır — `canAdminPlace` / `canAdminReplace` / `canAdminUnlinkAdvisor`; danışman üyeliği
+    // hiçbir yönetici dalının hedefi değildir.
     // Belge e-posta ve başvuru notu TAŞIMAZ (D-29, CD-137): `note` hiçbir beyaz listede yoktur.
     // Dal sırası: her dal önce ucuz ayırıcıya (önceki / sonraki `status`) bakar, erişim çağrıları sonra
     // gelir — eşleşmeyen dallar kısa devre olur (istek başına 1000 ifade sınırı; T-30 dalları da böyle eklenir).
@@ -680,8 +887,9 @@ service cloud.firestore {
       // `applicant` = başvuranın `users/{uid}` belgesinden anlık görüntüsü (ad, bölüm, sınıf, avatar tohumu).
       // Belgeyi kulübün her aktif üyesi okur: dört alan kullanıcı belgesiyle birebir olmalıdır (biçimi
       // users kuralları sabitler); başka anahtar (e-posta, not) taşıyamaz.
-      function applicantOk(a) {
-        let u = me();
+      function applicantOk(a) { return snapshotOf(a, me()); }
+      // `a` anlık görüntüsü `u` kullanıcı belgesiyle birebir mi? (T-37: süper admin hedefin belgesiyle karşılaştırır.)
+      function snapshotOf(a, u) {
         return a is map && a.keys().hasOnly(['name', 'department', 'year', 'avatarSeed'])
             && a.name == u.name && a.avatarSeed == u.avatarSeed
             && a.get('department', null) == u.get('department', null)
@@ -1006,6 +1214,89 @@ service cloud.firestore {
             && devolvedBy(c, from);   // budget: 5 tekil yol (transfer_budget)
       }
 
+      // ── Süper admin yerleştirmeleri (T-37; sözleşme docs/plans/T-37.md §4 a.1, a.3, a.4) ───────────────
+      // Hedef üyelik DOĞRUDAN `active` + `president` (kulüp oluşturma / başkan atama — yeni hedef) ya da `active` +
+      // `advisor` (M13 bağla) olur; başvuru / karar akışı yoktur. Yalnızca süper admin (claim — D-28; `clubLive`
+      // aranmaz). Hedefin hesabı etkin, `applicant` hedefin `users/{userId}` belgesinden birebir anlık görüntü (belge
+      // kulübün her aktif üyesine açıktır). Karar alanları: `decidedAt == request.time ∧ decidedBy == uid()` ya da
+      // ikisi de boş (M13 sözleşmesi); `retryAfter` / `rejectReason` boş, `rejectNote` boş ya da `''`. Kulüp belgesi
+      // AYNI işlemde karşı bağı taşır (iki yönlü — `adminPlaced`):
+      //   president ⇒ kulübün yazım-sonrası `presidentId`'si bu kullanıcı; kulüp yeni (belge yok — kulüp C dalı
+      //     `memberCount == 1` ister) ya da yazım-öncesi başkan başkası ve `memberCount +1` + yan belge bu üyeliği
+      //     gösterir (W-94);
+      //   advisor ⇒ kulübün yazım-sonrası `advisor.userId`'si bu kullanıcı, yazım-öncesi değil; sayaç değişmez.
+      // İletişim belgesi AYNI işlemde yazılır (`updatedAt == request.time`; e-postasını contact kuralı hesap
+      // belgesinden doğrular): yönetim panelinde e-postasız başkan / danışman kalmaz.
+      // Erişim yolları: users/{hedef} · kulüp (get + getAfter) · contact (getAfter) · yan belge (yalnızca atama).
+      function adminDecisionOk(d) {
+        return ((d.get('decidedAt', null) == request.time && d.get('decidedBy', null) == uid())
+                || (d.get('decidedAt', null) == null && d.get('decidedBy', null) == null))
+            && d.get('retryAfter', null) == null && d.get('rejectReason', null) == null
+            && (d.get('rejectNote', null) == null || d.rejectNote == '');
+      }
+      function placedUserOk(u, a) {
+        let user = get(userPath(u)).data;
+        return user.status == 'active' && snapshotOf(a, user);
+      }
+      function adminPlaced(c, u, role) {
+        let after = getAfter(clubPath(c)).data;
+        return (role == 'president' && after.presidentId == u
+                && (!exists(clubPath(c))
+                    || (get(clubPath(c)).data.presidentId != u && sidePointsHere(c)
+                        && counterDelta(clubPath(c), 'memberCount', 1))))
+            || (role == 'advisor' && exists(clubPath(c))
+                && after.get('advisor', null) != null && after.advisor.get('userId', null) == u
+                && (get(clubPath(c)).data.get('advisor', null) == null
+                    || get(clubPath(c)).data.advisor.get('userId', null) != u)
+                && after.memberCount == get(clubPath(c)).data.memberCount);
+      }
+      // C — hedefin bu kulüpte belgesi yok (kulüp oluşturma, başkan atama, danışman bağlama).
+      function canAdminPlace() {
+        let d = request.resource.data;
+        return isSuper()
+            && d.keys().hasOnly(['clubId', 'userId', 'status', 'role', 'applicant', 'appliedAt', 'decidedAt',
+                                 'decidedBy', 'retryAfter', 'rejectReason', 'rejectNote', 'priorCount',
+                                 'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+            && baseCreate()
+            && d.clubId is string && d.userId is string
+            && membershipId == d.clubId + '_' + d.userId
+            && d.status == 'active' && d.role in ['president', 'advisor']
+            && d.priorCount == 0 && d.appliedAt == request.time
+            && adminDecisionOk(d)
+            && placedUserOk(d.userId, d.applicant)
+            && getAfter(contactPath()).data.updatedAt == request.time
+            && adminPlaced(d.clubId, d.userId, d.role);
+      }
+      // U — hedefin geçmiş (etkin olmayan) üyeliği yeniden etkinleşir; `priorCount` korunur, `appliedAt` korunur ya
+      // da sunucu zamanı olur. Bekleyen başvuru (`pending`) ve etkin üyelik bu dalın hedefi değildir (etkin üye →
+      // M11).
+      function canAdminReplace() {
+        let d = request.resource.data;
+        return isSuper()
+            && resource.data.status in ['left', 'cancelled', 'rejected', 'removed']
+            && d.status == 'active' && d.role in ['president', 'advisor']
+            && touches(['status', 'role', 'applicant', 'appliedAt', 'decidedAt', 'decidedBy', 'retryAfter',
+                        'rejectReason', 'rejectNote'])
+            && (d.get('appliedAt', null) == resource.data.get('appliedAt', null) || d.get('appliedAt', null) == request.time)
+            && adminDecisionOk(d)
+            && idOk()
+            && placedUserOk(resource.data.userId, d.applicant)
+            && getAfter(contactPath()).data.updatedAt == request.time
+            && adminPlaced(resource.data.clubId, resource.data.userId, d.role);
+      }
+      // M13 kaldır — etkin danışman üyeliği `left` olur; kulübün yazım-sonrası `advisor.userId`'si artık bu
+      // kullanıcıyı göstermez (kulüp dalı da bu üyeliğin `left` olduğunu görür). Kulüp kaydı tutarsızsa (danışman
+      // üyeliği var, `advisor.userId` başka / boş) üyelik yine kapatılabilir. Sayaç yok. 1 erişim yolu: kulüp.
+      function canAdminUnlinkAdvisor() {
+        let after = getAfter(clubPath(resource.data.clubId)).data;
+        return isSuper()
+            && resource.data.status == 'active' && resource.data.role == 'advisor'
+            && request.resource.data.status == 'left'
+            && touches(['status'])
+            && idOk()
+            && (after.get('advisor', null) == null || after.advisor.get('userId', null) != resource.data.userId);
+      }
+
       // Olmayan kendi belgesinin tekil okuması boş döner (getMembership → null; başvuru işleminin ilk
       // okuması): `resource == null` yalnızca `…_<uid>` kimliğinde izinlidir (başkasının üyeliği var mı
       // sorusu yanıtlanmaz).
@@ -1014,8 +1305,11 @@ service cloud.firestore {
       // `clubId` (yönetim) · `status == 'active'` + `role in ['board', 'president'(, 'advisor')]` (herkes —
       // (d), `listManagers`). Süzgeçsiz sorgu yalnızca süper admine açıktır.
       allow list: if canReadMembership();
-      allow create: if canApply() || canJoinInstant();
-      allow update: if canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave()
+      // Süper admin yerleştirmeleri önce (claim ucuz ayırıcıdır — istek başına 1000 ifade sınırı; süper admin
+      // başvuramaz, M1 / M2 ona kapalıdır).
+      allow create: if (isSuper() && canAdminPlace()) || canApply() || canJoinInstant();
+      allow update: if (isSuper() && (canAdminUnlinkAdvisor() || canAdminReplace()))
+                    || canReapplyFromInactive() || canReapplyAfterCooldown() || canCancelApplication() || canLeave()
                     || canAnonymizeMembership()
                     || canApprove() || canReject() || canUndoDecision() || canRemove() || canUndoRemoval()
                     || canChangeRole() || canHandOver() || canTakeOver();
@@ -1025,8 +1319,9 @@ service cloud.firestore {
       // Alanlar: `email`, `emailLower`, `note` (başvuru notu — CD-137) + BaseFields. "Sahibi" = üst üyelik
       // belgesinin `userId`'si. Yazma yolları (T-15): apply / joinInstant — M1 / M2'de C, M3 / M4'te U(a)
       // (belge yoksa C); T-16: updateApplicationNote — U(b) (bekleyen başvurunun notu); T-29: anonymizeChunk —
-      // U(c) (hesap silme, M14 ile aynı işlem). Yönetici, danışman ve süper admin YAZAMAZ.
-      // Kapalı kalan dal: collectionGroup('private') (T-37).
+      // U(c) (hesap silme, M14 ile aynı işlem). Yönetici ve danışman YAZAMAZ; süper admin yalnızca kendi yerleştirdiği
+      // (başkan / danışman) üyeliğin iletişimini hedefin HESAP e-postasıyla yazar (T-37 — `canAdminWriteContact`).
+      // ADM-05 e-posta araması koleksiyon grubu kuralıyladır (T-37 — `/{path=**}/private`).
       match /private/{docId} {
         function membershipPath() { return /databases/$(database)/documents/memberships/$(membershipId); }
 
@@ -1101,10 +1396,34 @@ service cloud.firestore {
               && deletedUser();
         }
 
+        // C / U (süper admin — T-37 sözleşme §4 a.1, a.3, a.4): kulüp oluşturma / başkan atama / M13 bağlama
+        // işleminde hedef üyelik AYNI işlemde `active` + `president | advisor` olurken (`updatedAt == request.time`;
+        // kimlik üyeliğin alanlarından — birleşim belirsizliği) iletişim belgesi hedefin HESAP e-postasıyla yazılır
+        // (`users/{userId}/private/account` — token e-postasıyla aynıdır; boş = silinmiş hesap, ret). C: not `''`
+        // (başvuru notu yoktur). U: var olan belgede YALNIZCA e-posta güncellenir (eski başvuru notu kalır).
+        // 2 erişim yolu: üyelik (getAfter) · hedefin hesap belgesi.
+        function adminContactOk(d) {
+          let m = getAfter(membershipPath()).data;
+          let account = get(/databases/$(database)/documents/users/$(m.userId)/private/account).data;
+          return isSuper() && docId == 'contact'
+              && membershipId == m.clubId + '_' + m.userId
+              && m.updatedAt == request.time && m.status == 'active' && m.role in ['president', 'advisor']
+              && d.email is string && d.email != ''
+              && d.email == account.email && d.emailLower == account.emailLower;
+        }
+        function canAdminWriteContact() {
+          let d = request.resource.data;
+          return resource == null
+              ? (d.keys().hasOnly(['email', 'emailLower', 'note',
+                                   'createdAt', 'updatedAt', 'isDeleted', 'deletedAt', 'deletedBy'])
+                 && baseCreate() && d.note == '' && adminContactOk(d))
+              : (touches(['email', 'emailLower']) && adminContactOk(d));
+        }
+
         allow get: if canReadContact();
         allow list: if false;
-        allow create: if canCreateContact();
-        allow update: if canRewriteNote() || canEditNote() || canAnonymizeContact();
+        allow create: if canCreateContact() || canAdminWriteContact();
+        allow update: if canRewriteNote() || canEditNote() || canAnonymizeContact() || canAdminWriteContact();
         allow delete: if false;
       }
     }
@@ -1887,8 +2206,8 @@ service cloud.firestore {
     // T-30 (W-83): `application_approved`, `application_rejected`, `removed_from_club`, `role_changed` — kritik,
     // yönetici geçişinin transaction'ında (NotificationWriter.addToTransaction); rastgele olay anahtarı
     // (`keyedIdOk`), olay belgesi = alıcının hedef üyeliği (aynı işlemde doğru geçiş — `decidedNow` / `roleChangedNow`).
-    // Kapalı türler (dal üreticisiyle aynı commit'te açılır): `report_resolved` (T-37) · `new_report` (hiç
-    // üretilmez — CD-37) · `system` (yalnızca Admin SDK). Fan-out türlerinde alıcının üyeliği DOĞRULANMAZ (bütçe:
+    // T-37 (W-84): `report_resolved` — yalnızca süper admin, şikayet çözümü batch'inde (alıcı bağı aranmaz).
+    // Kapalı türler: `new_report` (hiç üretilmez — CD-37) · `system` (yalnızca Admin SDK). Fan-out türlerinde alıcının üyeliği DOĞRULANMAZ (bütçe:
     // alıcı başına `get` yok) — ETKİN kulübün yöneticisinin taze olay penceresindeki spam'i kabul edilmiş
     // sınırlamadır (rules-spec §9.3, K-J: kabul — CD-65; kota kuralı yazılmaz). Başvuran (güvenilmeyen öğrenci)
     // başvuru başına yönetici başına en çok bir belge yazabilir (CD-148).
@@ -1978,11 +2297,13 @@ service cloud.firestore {
             && get(mPath(c, u)).data.status == was;
       }
       // Rol değişimi AYNI işlemde (M10 / M11): alıcının etkin üyeliği `refs.role`'e geçti (önceki rol farklı).
+      // T-37: başkan atamada hedefin üyeliği işlem öncesi hiç olmayabilir (süper admin yerleştirmesi — üyelik kuralı
+      // `canAdminPlace`).
       function roleChangedNow(c, u, role) {
         let after = getAfter(mPath(c, u)).data;
         return after.clubId == c && after.userId == u && after.status == 'active'
             && after.role == role && after.updatedAt == request.time
-            && get(mPath(c, u)).data.role != role;
+            && (!exists(mPath(c, u)) || get(mPath(c, u)).data.role != role);
       }
 
       // Tür dalları (docs/plans/T-25.md §6 c, f). Her dal önce ucuz ayırıcıya (`type`) ve dizgi denetimlerine
@@ -2020,7 +2341,15 @@ service cloud.firestore {
                 && (isSuper() || (isManager(r.clubId) && clubLive(r.clubId))))
             || (t == 'role_changed' && refsOk(r, ['clubId', 'role']) && keyedIdOk(d)
                 && roleChangedNow(r.clubId, d.userId, r.role)
-                && (isSuper() || (isPres(r.clubId) && clubLive(r.clubId))));
+                && (isSuper() || (isPres(r.clubId) && clubLive(r.clubId))))
+            // T-37 (W-84): şikayet grubu çözümünün şikayetçi bildirimi — AdminRepository.resolveReports →
+            // notifyReportResolved (kritik, çözümle aynı batch; rastgele olay anahtarı, alıcı başına bir belge).
+            // `refs` yalnızca `reportId` = grup anahtarı `{targetType}_{targetId}` (FirestoreIds.reportGroupKey).
+            // Üretici yalnızca süper admindir (claim — D-28); alıcı ↔ çözülen şikayet bağı ARANMAZ (sözleşme §4 a.6:
+            // alıcı başına erişim çağrısı parçayı 9 alıcıyla sınırlardı — bütçe batch boyundan bağımsız kalır).
+            || (t == 'report_resolved' && refsOk(r, ['reportId']) && keyedIdOk(d)
+                && r.reportId.matches('(post|comment|user|club|event)_[A-Za-z0-9_-]+')
+                && isSuper());
       }
 
       // C — ortak: alan beyaz listesi, ortak alanlar (sunucu zamanı), `read == false`, alıcı dolu dizgi; aktif
@@ -2039,7 +2368,8 @@ service cloud.firestore {
             && ((t == 'event_reminder' && d.userId == uid() && refsOk(r, ['clubId', 'eventId'])
                  && notificationId == 'event_reminder_' + r.eventId + '_' + uid())
                 || (t in ['application_received', 'announcement', 'event_new', 'event_cancelled', 'waitlist_promoted',
-                          'application_approved', 'application_rejected', 'removed_from_club', 'role_changed']
+                          'application_approved', 'application_rejected', 'removed_from_club', 'role_changed',
+                          'report_resolved']
                     && kindOk(d, t, r)))
             && activeUser();
       }
@@ -2071,8 +2401,8 @@ service cloud.firestore {
     // 12 · reports/{reporterId}_{targetType}_{targetId} — T-15 (çözme T-37) · rules-spec §3.10
     // Yazma yolu: ReportRepository.report (C; 2 erişim yolu: users/{uid} · hedef belge). Okuma: hasReported
     // (G, sahibi) · ADM-04 (L, süper admin).
-    // Kapalı kalan dal: U süper admin `status: 'resolved'`, `action`, `resolvedAt`, `resolvedBy` (T-37).
-    // Sahibi şikayetini güncelleyemez: aynı hedefe ikinci `set` update sayılır ve reddedilir.
+    // T-37: U süper admin — grup çözümü (`canResolveReport`; AdminRepository.resolveReports, erişim çağrısı yalnızca
+    // `removed`'da hedef — 1 tekil yol). Sahibi şikayetini güncelleyemez: aynı hedefe ikinci `set` update sayılır ve reddedilir.
     match /reports/{reportId} {
       function ownReportId() {
         let prefix = uid() + '_';
@@ -2115,12 +2445,36 @@ service cloud.firestore {
             && d.get('resolvedBy', null) == null;
       }
 
+      // U (süper admin, şikayet grubu çözümü — AdminRepository.resolveReports, DLG-29 / SHT-26; T-37 sözleşme §4 a.6)
+      // — yalnızca açık şikayet, yalnızca `status: resolved`, `action` (ReportAction), `resolvedAt` (sunucu zamanı),
+      // `resolvedBy` (oturum) (+ `updatedAt`); hedef / şikayetçi / neden / not değişmez, çözülen yeniden açılmaz ya
+      // da yeniden çözülmez. Grup (aynı `targetType` + `targetId`) tek batch'tir; `action == removed` yalnızca
+      // gönderi / yorum hedefinde ve hedef işlemin sonunda GİZLİDİR (aynı batch'teki gizleme — T-19 süper dalı;
+      // parçalı çözümde gizleme ilk parçadadır, sonrakiler gizli hedefi görür): "kaldırıldı" denip içerik ortada
+      // kalamaz. `suspended` askıyı yazmaz (askı ayrı çağrıdır — §4 g-2); `dismissed` yan yazım istemez.
+      // Erişim çağrısı yalnızca `removed`'da: hedef (getAfter) — grubun bütün belgeleri AYNI yolu okur (n'den bağımsız).
+      function targetHidden(t) {
+        return (t.targetType == 'post' && getAfter(postPath(t.targetId)).data.isHidden == true)
+            || (t.targetType == 'comment' && getAfter(commentPath(t.targetId)).data.isHidden == true);
+      }
+      function canResolveReport() {
+        let d = request.resource.data;
+        return isSuper()
+            && resource.data.status == 'open'
+            && touches(['status', 'action', 'resolvedAt', 'resolvedBy'])
+            && d.status == 'resolved'
+            // ReportAction (3)
+            && d.action in ['removed', 'dismissed', 'suspended']
+            && d.resolvedBy == uid() && d.resolvedAt == request.time
+            && (d.action != 'removed' || targetHidden(resource.data));
+      }
+
       // R — sahibi (aktif kullanıcı; askıdaki / silinmiş hesap okuyamaz) ve süper admin. Olmayan kendi
       // şikayetinin tekil okuması boş döner (hasReported → false).
       allow get: if isSuper() || (activeUser() && ((resource == null && ownReportId()) || resource.data.reporterId == uid()));
       allow list: if isSuper() || (activeUser() && resource.data.reporterId == uid());
       allow create: if canCreateReport();
-      allow update: if false;
+      allow update: if canResolveReport();
       allow delete: if false;
     }
 
@@ -2291,14 +2645,16 @@ service cloud.firestore {
                              + string(now.get('priorCount', 0))
             && now.clubId == d.clubId && now.userId == u && now.status == 'active'
             && now.role == d.refs.role && now.updatedAt == request.time
-            && get(t).data.role != d.refs.role
+            // T-37: başkan atamada hedefin üyeliği işlem öncesi hiç olmayabilir (süper admin yerleştirmesi)
+            && (!exists(t) || get(t).data.role != d.refs.role)
             && (isSuper() || (activeUser() && isPres(d.clubId) && clubLive(d.clubId)));
       }
 
       // C (T-30) — kulüp ayarı güncellemesinin günlüğü: kimlik otomatik (`ActivityDraft.id: null`), `refs` boş;
       // kulüp belgesi AYNI işlemde yazıldı (`getAfter(clubs/{clubId}).updatedAt == request.time` — yetkiyi kulüp
       // kuralı doğrular). Aynı işlemde yinelenen kayıt kabul edilen sınırlamadır (sözleşme §4 a). Aktör kulübün
-      // yöneticisi, aktif hesap, askıda olmayan kulüp. 3 erişim yolu: kulüp (get + getAfter) · users/{uid} · üyelik.
+      // yöneticisi, aktif hesap, askıda olmayan kulüp; T-37: ya da süper admin (ADM-03 kimlik / medya düzenlemesi —
+      // `AdminRepository.updateClubIdentity` / `updateClubMedia` günlük yazmayı seçerse). 3 erişim yolu: kulüp (get + getAfter) · users/{uid} · üyelik.
       function canLogSettings() {
         let d = request.resource.data;
         return d.kind == 'settings_changed'
@@ -2310,7 +2666,7 @@ service cloud.firestore {
             && d.refs.get('userId', null) == null && d.refs.get('eventId', null) == null
             && d.refs.get('postId', null) == null && d.refs.get('role', null) == null
             && getAfter(clubPath(d.clubId)).data.updatedAt == request.time
-            && activeUser() && isManager(d.clubId) && clubLive(d.clubId);
+            && (isSuper() || (activeUser() && isManager(d.clubId) && clubLive(d.clubId)));
       }
 
       // R — kulüp yönetimi, danışman (ikisi de aktif hesap) ve süper admin; doğrulanmış e-posta şarttır
@@ -2574,11 +2930,18 @@ service cloud.firestore {
 
     // ── Koleksiyon grupları ─────────────────────────────────────────────────────────────────────
 
-    // collectionGroup('private') — ADM-05 e-posta araması, yalnızca süper admin (T-37). Bu ad altında dört belge
-    // türü durur (`users/…/private/account`, `memberships/…/private/contact`, `events/…/private/counter`,
-    // `clubs/…/private/counter` — T-30).
+    // collectionGroup('private') — ADM-05 e-posta araması (AdminRepository.findUserByEmail), yalnızca süper admin
+    // (T-37; sözleşme §4 b). Bu ad altında dört belge türü durur (`users/…/private/account`,
+    // `memberships/…/private/contact`, `events/…/private/counter`, `clubs/…/private/counter` — T-30); dördünü de
+    // süper admin tekil olarak zaten okur (kendi `match`'leri), bu kural yeni veri AÇMAZ. Yalnızca `list` açılır:
+    // tekil okuma (`get`) her belgenin kendi `match`'indedir (Rules izinleri birleştirir — burada `get` açılsaydı
+    // başka bağlamlara da açılırdı). Özyinelemeli joker tekil alt koleksiyon sorgularına da uyar
+    // (`users/{uid}/private` …): süper admin onları da listeler — aynı belgeler. Süper admin dışındaki her bağlam
+    // (sahibi dahil) için liste kapalıdır. İstemci sonuçtan yalnızca `users/{uid}/private/account` yollarını alır
+    // (`emailLower` alanı contact belgesinde de vardır). Erişim çağrısı yok.
     match /{path=**}/private/{docId} {
-      allow read: if false;
+      allow get: if false;
+      allow list: if isSuper();
     }
 
     // collectionGroup('votes') — kullanılmaz; açıkça kapalı.

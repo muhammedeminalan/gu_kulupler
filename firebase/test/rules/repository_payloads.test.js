@@ -1474,12 +1474,172 @@ describe('T-36 · kulüp görselleri — senaryolar (kendi bağlamı, kurallar a
     });
   });
 
-  test('yükleme: üye, danışman, süper admin ve başka kulübün yöneticisi kendi kimlikleriyle de yükleyemez (Storage — klasördeki kulüp)', async () => {
+  // Süper admin T-37'de yükler (AdminRepository.updateClubMedia — storage.test.js).
+  test('yükleme: üye, danışman ve başka kulübün yöneticisi kendi kimlikleriyle de yükleyemez (Storage — klasördeki kulüp)', async () => {
     const scenario = t36.scenarios[0];
     await seedDocs(seedOf(scenario, {}));
-    for (const role of ['member', 'advisor', 'super', 'otherManager']) {
+    for (const role of ['member', 'advisor', 'otherManager']) {
       const upload = scenario.uploads[0];
       await assertFails(uploadOf(role, { ...upload, customMetadata: { ...upload.customMetadata, uploaderId: definition(role).uid } }));
+    }
+  });
+});
+
+// 13. T-37 — `contract.t37.scenarios`: süper admin yazımlarının GERÇEK sorgu + okuma + yükleme + yazımları
+//     (FirebaseAdminRepository; assignPresident / setAdvisor — M11 / M13; resolveReports + report_resolved aynı batch'te —
+//     W-84). Her senaryo süper admin (claim) bağlamıyla, repository'nin sırasıyla (sorgular → okumalar → yüklemeler →
+//     tek commit; `tx` ise okumalar + yazımlar tek transaction) GEÇER. Claim'siz ret: aynı yazımlar roles.json'ın
+//     süper admin olmayan 11 bağlamının her biriyle, aktör kimliği o bağlamın uid'ine çevrilerek (repository'nin o
+//     bağlam için üreteceği yük) tek batch olarak gönderilir ve REDDEDİLİR; hiçbir belge değişmez. `exempt` bağlamı
+//     (M11: kulübün kendi başkanı; kulüp görseli: etkin yöneticiler — T-36 yönetim dalı) aynı yükü meşru olarak
+//     gönderebilir — bu da ayrıca sınanır.
+describe('T-37 · süper admin — senaryolar (claim ile geçer, claim olmadan her bağlamda ret)', () => {
+  const t37 = contract.t37;
+  const { CONTEXTS, ANON_UID } = require('../helpers/contexts');
+  const { getDocs, limit, query, where } = require('firebase/firestore');
+  const DAYS_AGO = '@daysAgo:';
+  const ACTOR = t37.actors.super;
+  const CLAIMLESS = CONTEXTS.filter((name) => !definition(name).isSuper);
+  const BYTES = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+
+  /** Bağlamların kullanıcı, hesap, üyelik ve iletişim belgeleri (roles.json); içerik senaryonun `seed`'inden. */
+  const identityDocs = () =>
+    Object.fromEntries(
+      Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+(\/private\/(account|contact))?$/.test(path)),
+    );
+
+  /** Koşunun TEK üretilen kimliği (yeni kulüp kimliği / bildirim olay anahtarı; 20 karakter `[A-Za-z0-9]`). */
+  const tokensFor = (db) => ({ [t37.autoId]: doc(collection(db, 'clubs')).id });
+
+  function replaceAll(value, pairs) {
+    if (typeof value === 'string') {
+      return Object.entries(pairs).reduce((text, [from, to]) => text.split(from).join(to), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => replaceAll(inner, pairs));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, replaceAll(inner, pairs)]));
+    }
+    return value;
+  }
+
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function seedOf(scenario) {
+    const content = Object.fromEntries(
+      Object.entries(scenario.seed).map(([path, { $fixture: name, ...fields }]) => {
+        if (name !== undefined && !t37.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+        return [path, seedValue({ ...(name === undefined ? {} : t37.fixtures[name]), ...fields })];
+      }),
+    );
+    return { ...identityDocs(), ...content };
+  }
+
+  /** Bağlamın uid'i (oturumsuz bağlamda yol şablonlarının sahte kimliği). */
+  const uidOf = (role) => definition(role).uid || ANON_UID;
+
+  /** Senaryonun `role` bağlamındaki repository sırası: sorgular → okumalar → yüklemeler → tek commit. */
+  async function run(role, scenario, tokens) {
+    const db = contextFor(role).firestore();
+    for (const spec of scenario.queries || []) {
+      const clauses = spec.where.map(([field, op, value]) => where(field, op, replaceAll(value, tokens)));
+      if (spec.limit !== undefined) clauses.push(limit(spec.limit));
+      await getDocs(query(collection(db, spec.collection), ...clauses));
+    }
+    const reads = replaceAll(scenario.reads, tokens);
+    const writes = replaceAll(scenario.writes, tokens);
+    if (scenario.tx) {
+      return runTransaction(
+        db,
+        async (tx) => {
+          for (const path of reads) await tx.get(doc(db, path));
+          for (const write of writes) applyWrite(db, tx, write);
+        },
+        { maxAttempts: 1 },
+      );
+    }
+    for (const path of reads) await getDoc(doc(db, path));
+    for (const upload of scenario.uploads || []) {
+      await uploadBytes(ref(contextFor(role).storage(), upload.path), BYTES, {
+        contentType: upload.contentType,
+        customMetadata: upload.customMetadata,
+      });
+    }
+    const batch = writeBatch(db);
+    for (const write of writes) applyWrite(db, batch, write);
+    return batch.commit();
+  }
+
+  /** Claim'siz bağlamın gönderebileceği yük: aynı yazımlar, aktör kimliği o bağlamın uid'i; tek batch. */
+  function sendAs(role, scenario, tokens) {
+    const db = contextFor(role).firestore();
+    const writes = replaceAll(replaceAll(scenario.writes, { [ACTOR]: uidOf(role) }), tokens);
+    const batch = writeBatch(db);
+    for (const write of writes) applyWrite(db, batch, write);
+    return { commit: () => batch.commit(), paths: writes.map((write) => write.path) };
+  }
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  test('sözleşme: tek aktör süper admin (claim); nöbetçiler t15 ile aynı; muafiyetler claim\'siz bağlamlar; claim\'siz bağlamlar 11', () => {
+    expect(t37.autoId).toBe(contract.t15.autoId);
+    expect(t37.increment).toBe(INCREMENT);
+    expect(definition('super').token.superadmin).toBe(true);
+    expect(t37.actors).toEqual({ super: definition('super').uid });
+    expect(CLAIMLESS).toHaveLength(11);
+    for (const name of CLAIMLESS) expect(definition(name).token && definition(name).token.superadmin).toBeFalsy();
+    for (const scenario of t37.scenarios) {
+      expect(scenario.role).toBe('super');
+      for (const name of scenario.exempt || []) expect(CLAIMLESS).toContain(name);
+    }
+  });
+
+  describe.each(t37.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test('süper admin (claim): gerçek sorgu + okuma + yükleme + yazımlar geçer', async () => {
+      const tokens = tokensFor(contextFor('super').firestore());
+      await seedDocs(seedOf(scenario));
+
+      await assertSucceeds(run('super', scenario, tokens));
+
+      for (const write of replaceAll(scenario.writes, tokens)) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+    });
+
+    const denied = CLAIMLESS.filter((name) => !(scenario.exempt || []).includes(name));
+    test.each(denied)('claim yok → ret: %s', async (role) => {
+      const tokens = tokensFor(contextFor(role).firestore());
+      const seed = seedOf(scenario);
+      await seedDocs(seed);
+      const attempt = sendAs(role, scenario, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...attempt.paths])];
+      const before = await snapshot(paths);
+
+      await assertFails(attempt.commit());
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+
+    for (const role of scenario.exempt || []) {
+      test(`muaf bağlam aynı yükü kendi kimliğiyle meşru olarak gönderir: ${role}`, async () => {
+        const tokens = tokensFor(contextFor(role).firestore());
+        await seedDocs(seedOf(scenario));
+        await assertSucceeds(sendAs(role, scenario, tokens).commit());
+      });
     }
   });
 });

@@ -30,6 +30,7 @@ import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
+import '../../../helpers/semantics_scan.dart';
 import '../../../helpers/test_container.dart';
 import '../../../helpers/test_l10n.dart';
 
@@ -303,6 +304,22 @@ void main() {
         (_) => const SettingsView(),
         overrides: _overrides,
         safeAreas: true,
+      );
+    });
+
+    testWidgets('semantik: kaydırma boyunca rol doğrulaması hatasız '
+        '(yazı boyutu GuSegmented; iOS + Android)', (tester) async {
+      await expectSemanticsCleanWhileScrolling(
+        tester,
+        // `CustomScrollView` + kısa görünüm + 1.6: önbellek kenarı bölmenin
+        // içinden geçer (eski kodda iOS'ta "a TabBar cannot be empty").
+        (platform) => tester.pumpApp(
+          const SettingsView(),
+          overrides: _overrides,
+          size: const Size(320, 568),
+          textScale: 1.6,
+          platform: platform,
+        ),
       );
     });
   });

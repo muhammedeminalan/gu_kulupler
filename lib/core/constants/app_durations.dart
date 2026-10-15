@@ -20,4 +20,10 @@ abstract final class AppDurations {
   /// `setTimeout(() => app.toast('TST-54', …), 1200)`; aynı anda tek toast;
   /// T-36).
   static const Duration applicationsToastDelay = Duration(milliseconds: 1200);
+
+  /// Uygulama öne geldiğinde `superadmin` claim'inin (ve kullanıcı
+  /// belgesinin) sunucudan yeniden okunduğu en kısa aralık
+  /// (`SessionViewModel.onAppResumed`; T-37 sözleşme §4 d): sık arka plan /
+  /// ön plan geçişi jeton yenileme ve okuma bütçesini tüketmez.
+  static const Duration claimRefreshInterval = Duration(minutes: 10);
 }

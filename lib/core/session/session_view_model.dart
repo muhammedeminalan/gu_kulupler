@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_durations.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
@@ -68,6 +69,10 @@ final class SessionViewModel extends _$SessionViewModel
   /// Kimlik jetonu bu oturumda sunucudan yenilenmiş kullanıcı (D-28: girişte
   /// bir kez). Oturum kapanınca sıfırlanır.
   String? _claimsRefreshedFor;
+
+  /// Claim'in sunucudan son yenilendiği an ([onAppResumed] aralığı; T-37).
+  /// Oturum kapanınca sıfırlanır.
+  DateTime? _claimsCheckedAt;
 
   /// Üyelik akışının aboneliği ve dinlenen kullanıcı ([_watchMemberships]).
   StreamSubscription<FirestoreResult<List<MembershipModel>>>?
@@ -143,9 +148,16 @@ final class SessionViewModel extends _$SessionViewModel
   }
 
   /// `superadmin` claim'ini sunucudan yenileyerek okur. Oturum yoksa
-  /// etkisizdir; okunamazsa mevcut değer korunur.
+  /// etkisizdir; okunamazsa mevcut değer korunur. Değer değişirse router
+  /// (`refreshListenable`) `AdminRoute` guard'ını yeniden değerlendirir.
+  ///
+  /// Çağıranlar (T-37 — sözleşme `docs/plans/T-37.md` §4 d): [onAppResumed]
+  /// ve süper admin ekranlarının ViewModel'leri (`permissionDenied` aldıkları
+  /// anda — claim geri alınmış olabilir). Rules jetondan okur: geri alınan
+  /// claim en geç jeton yenilenince (≤ 1 sa) ya da bu çağrıyla etkisizleşir.
   Future<void> refreshClaims() async {
     if (state.uid == null) return;
+    _claimsCheckedAt = appClock.nowUtc();
     final epoch = _epoch;
     final result = await authRepository.isSuperAdmin(forceRefresh: true);
     if (!_isCurrent(epoch)) return;
@@ -155,6 +167,26 @@ final class SessionViewModel extends _$SessionViewModel
       case FirebaseFailure(:final error):
         AppLogger.warn('Claim yenilenemedi: ${error.name}');
     }
+  }
+
+  /// Uygulama öne geldiğinde (`AppLifecycleListener.onResume` — `GuApp`;
+  /// T-37 sözleşme §4 c–d) etkin oturumda, son claim yenilemesinden
+  /// [AppDurations.claimRefreshInterval] geçtiyse önce claim sunucudan
+  /// yenilenir ([refreshClaims]), sonra kullanıcı belgesi yeniden okunur
+  /// ([refreshUser]): oturum ortasında verilen / geri alınan süper admin
+  /// yetkisi ve hesap askısı uygulama yeniden açılmadan yakalanır (canlı
+  /// dinleyici yok — okuma bütçesi). Etkin olmayan ya da çözülmekte olan
+  /// oturumda etkisizdir.
+  Future<void> onAppResumed() async {
+    if (state.status != AuthStatus.active || state.isResolving) return;
+    final last = _claimsCheckedAt;
+    if (last != null &&
+        appClock.nowUtc().difference(last) <
+            AppDurations.claimRefreshInterval) {
+      return;
+    }
+    await refreshClaims();
+    await refreshUser();
   }
 
   /// Tanıtımı (ONB-01) görüldü işaretler: önce depoya yazar, sonra bu state'i
@@ -322,6 +354,7 @@ final class SessionViewModel extends _$SessionViewModel
     final onboardingSeen = appPreferencesStore.onboardingSeen;
     if (user == null) {
       _claimsRefreshedFor = null;
+      _claimsCheckedAt = null;
       _stopMembershipWatch();
       _stopReminders();
       _launchHandled = true;
@@ -382,6 +415,7 @@ final class SessionViewModel extends _$SessionViewModel
     if (refresh) {
       if (result.isSuccess) {
         _claimsRefreshedFor = uid;
+        _claimsCheckedAt = appClock.nowUtc();
       } else if (result.errorOrNull == AuthError.network) {
         result = await authRepository.isSuperAdmin();
         if (!_isCurrent(epoch)) return null;

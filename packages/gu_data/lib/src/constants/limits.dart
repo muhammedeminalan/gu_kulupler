@@ -265,6 +265,11 @@ abstract final class Limits {
   /// CLB-01 tek seferlik kulüp çekiminin üst sınırı.
   static const int clubsFetchMax = 50;
 
+  /// ADM-05 kullanıcı aramasının üst sınırı (T-37): e-posta araması
+  /// (`collectionGroup('private')` `emailLower` aralığı) tek sorguda en çok
+  /// bu kadar belge okur; ad araması sayfası da aynı boyu kullanır.
+  static const int adminSearchMax = 50;
+
   /// EVT-01 tek seferlik yaklaşan etkinlik çekiminin üst sınırı.
   static const int upcomingEventsFetchMax = 200;
 

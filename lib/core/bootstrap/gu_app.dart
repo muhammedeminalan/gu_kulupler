@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/core/env/app_environment.dart';
+import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/widget/debug_menu_corner_button.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
@@ -70,9 +71,18 @@ class _GuAppState extends ConsumerState<GuApp> {
 
   GoRouter? _router;
 
+  /// Uygulama öne gelince oturumun claim / hesap durumu tazelenir
+  /// (`SessionViewModel.onAppResumed`, en çok 10 dakikada bir; T-37).
+  late final AppLifecycleListener _lifecycle;
+
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(
+        ref.read(sessionViewModelProvider.notifier).onAppResumed(),
+      ),
+    );
     final router = ref.read(appRouterProvider);
     _attach(router);
     // İlk konum eşzamanlı okunur: henüz dinleyen bir katman yoktur.
@@ -81,6 +91,7 @@ class _GuAppState extends ConsumerState<GuApp> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     _router?.routerDelegate.removeListener(_onRouteChanged);
     _location.dispose();
     super.dispose();

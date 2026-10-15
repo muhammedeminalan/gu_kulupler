@@ -789,6 +789,23 @@ void main() {
     });
   });
 
+  group('T-37 · ProjectDependency · süper admin', () {
+    test('repository gerçek uygulamasıyla kaydedilir; mixin getter’ı aynı '
+        'örneği döndürür', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(GetIt.I<AdminRepository>(), isA<FirebaseAdminRepository>());
+      expect(
+        _Consumer().adminRepository,
+        same(GetIt.I<AdminRepository>()),
+      );
+    });
+  });
+
   group('T-22 · ProjectDependency · etkinlik ve katılım kayıtları', () {
     test('iki repository gerçek uygulamalarıyla kaydedilir; mixin '
         'getter’ları aynı örnekleri döndürür', () async {

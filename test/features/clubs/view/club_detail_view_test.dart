@@ -71,6 +71,7 @@ import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
+import '../../../helpers/semantics_scan.dart';
 import '../../../helpers/test_l10n.dart';
 import '../club_detail_test_support.dart';
 
@@ -1418,6 +1419,37 @@ void main() {
         tester,
         'CLB-03',
         extraExempt: {'CLB-03.about.*', 'CLB-03.report'},
+      );
+    });
+
+    testWidgets('semantik: kaydırma boyunca rol doğrulaması hatasız '
+        '(yapışkan GuTabs + etkinlik GuSegmented; iOS + Android)', (
+      tester,
+    ) async {
+      await expectSemanticsCleanWhileScrolling(
+        tester,
+        (platform) => tester.pumpApp(
+          clubDetailView(tab: ClubDetailTab.events),
+          overrides: _overrides(
+            kVisitorSession,
+            state: loadedState(
+              kVisitorSession,
+              // Uzun liste: bölme `CustomScrollView` önbellek kenarının
+              // üstüne kayar (eski kodda iOS'ta "a TabBar cannot be empty").
+              base: ClubDetailState(
+                tab: ClubDetailTab.events,
+                events: [
+                  for (var copy = 0; copy < 6; copy++)
+                    for (final event in EventModelFixtures.ofClub(kClubId))
+                      event.copyWith(id: '${event.id}-$copy'),
+                ],
+              ),
+            ),
+          ),
+          size: const Size(320, 568),
+          textScale: 1.6,
+          platform: platform,
+        ),
       );
     });
 

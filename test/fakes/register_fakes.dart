@@ -22,6 +22,7 @@ import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import '../helpers/fake_app_clock.dart';
 import 'fake_account_deletion_repository.dart';
 import 'fake_activity_repository.dart';
+import 'fake_admin_repository.dart';
 import 'fake_announcement_counter_repository.dart';
 import 'fake_app_info_service.dart';
 import 'fake_app_preferences_store.dart';
@@ -81,6 +82,10 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// yorum fake'lerine devreder, ayarları kayıtlı `FakeClubRepository`'ye
 /// yazar, kulüp görsellerini (T-36) kayıtlı `FakeStorageService`'e yükler; `FakeAttendanceRepository` kayıtlı `FakeRsvpRepository` (ve onun
 /// `FakeEventRepository`'si) üzerinde çalışır.
+/// T-37: `FakeAdminRepository` kayıtlı kulüp / kullanıcı / üyelik / gönderi /
+/// yorum fake'leri ve `FakeAuthService` oturumu üzerinde çalışır (başkan
+/// ataması ve danışman bağlama `FakeMembershipRepository`'de, gizleme gönderi /
+/// yorum fake'lerinde).
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
   final authService = FakeAuthService();
@@ -160,6 +165,19 @@ void registerDefaultFakes() {
     )
     ..registerSingleton<AttendanceRepository>(
       FakeAttendanceRepository(clock, rsvps: rsvps),
+    )
+    // T-37 · süper admin (kompozisyon)
+    ..registerSingleton<AdminRepository>(
+      FakeAdminRepository(
+        clock,
+        auth: authService,
+        clubs: clubs,
+        users: users,
+        memberships: memberships,
+        posts: posts,
+        comments: comments,
+        storage: storage,
+      ),
     )
     // T-13 · dış bağlantı servisi
     ..registerSingleton<UrlLauncherService>(FakeUrlLauncherService())

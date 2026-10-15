@@ -90,6 +90,10 @@ final class StubQuery implements CollectionReference<Json> {
     bool? isNull,
   }) => this;
 
+  /// T-37 · sıralı sayfa sorgularının hata eşlemesi (ADM-04 / ADM-05).
+  @override
+  Query<Json> orderBy(Object field, {bool descending = false}) => this;
+
   @override
   Query<Json> startAfterDocument(DocumentSnapshot<Object?> documentSnapshot) =>
       this;
@@ -178,6 +182,10 @@ final class StubFirestore implements FirebaseFirestore {
   @override
   CollectionReference<Json> collection(String collectionPath) =>
       StubQuery(error: error);
+
+  /// T-37 · ADM-05 e-posta araması (`collectionGroup('private')`).
+  @override
+  Query<Json> collectionGroup(String collectionPath) => StubQuery(error: error);
 
   @override
   WriteBatch batch() {

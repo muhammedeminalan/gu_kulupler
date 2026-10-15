@@ -8843,13 +8843,6 @@
             }
           },
           {
-            "name": "süper admin yönetim alanını yazmaz",
-            "role": "super",
-            "swap": {
-              "u_board": "u_super"
-            }
-          },
-          {
             "name": "başka kulübün yöneticisi",
             "role": "otherManager",
             "swap": {
@@ -8968,6 +8961,1183 @@
             }
           }
         ]
+      }
+    ]
+  },
+  "t37": {
+    "_doc": "T-37 — süper admin yazımlarının GERÇEK sorgu + okuma + yükleme + yazımları (FirebaseAdminRepository; başkan ataması / danışman bağlama FirebaseMembershipRepository.assignPresident / setAdvisor — M11 / M13; şikayet çözümü FirebaseReportModeration + ClientFanOutDispatcher.notifyReportResolved AYNI batch'te — W-84; docs/plans/T-37.md §4 a). Biçim `t30` ile aynıdır (`tx: true` = okumalar + yazımlar tek transaction, yoksa ön okuma + tek commit; `@autoId` = koşu başına TEK üretilen kimlik: yeni kulüp kimliği ya da bildirim olay anahtarı); ek alanlar: `queries` = yazımdan önce koşulan eşitlik sorguları ({collection, where: [[alan, '==', değer]], limit}; CD-63 ad sorgusu, SHT-26 hedefin açık şikayetleri), `uploads` = Storage yüklemeleri (t36 biçimi), `exempt` = aynı yükü claim'siz gönderebilen meşru bağlam (M11: kulübün kendi başkanı). Her senaryo süper admin (claim) bağlamıyla GEÇER; jest tarafı aynı yazımları roles.json'ın claim'siz 11 bağlamının her biriyle (aktör kimliği `u_super` → o bağlamın uid'i, repository'nin o bağlam için üreteceği yük) tek batch olarak gönderir ve hepsi REDDEDİLİR (yetki yalnızca custom claim — D-28). Sayaç işaretçisi yalnızca yan belgede (W-64 / W-94); kulüp oluşturmada yan belge yoktur (§4 g.1).",
+    "autoId": "@autoId",
+    "increment": "@increment",
+    "actors": {
+      "super": "u_super"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null,
+        "logoPath": null,
+        "coverPath": null,
+        "pinnedPostId": null,
+        "advisor": null,
+        "suspendReason": null
+      },
+      "user": {
+        "name": "Sözleşme Kullanıcısı",
+        "nameLower": "sözleşme kullanıcısı",
+        "avatarSeed": "u",
+        "avatarPath": null,
+        "department": "d01",
+        "year": "1",
+        "interests": [
+          "i01"
+        ],
+        "bio": "",
+        "status": "active",
+        "staff": false,
+        "profileComplete": true,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "membership": {
+        "clubId": "c01",
+        "status": "active",
+        "role": "member",
+        "applicant": {
+          "name": "Sözleşme Kullanıcısı",
+          "department": "d01",
+          "year": "1",
+          "avatarSeed": "u"
+        },
+        "appliedAt": "@daysAgo:30",
+        "decidedAt": "@daysAgo:29",
+        "decidedBy": "u_president",
+        "retryAfter": null,
+        "rejectReason": null,
+        "rejectNote": null,
+        "priorCount": 0,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "account": {
+        "email": "",
+        "emailLower": "",
+        "fcmTokens": [],
+        "lastLoginAt": null,
+        "suspendReason": null,
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "contact": {
+        "email": "",
+        "emailLower": "",
+        "note": "",
+        "createdAt": "@daysAgo:30",
+        "updatedAt": "@daysAgo:30",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "post": {
+        "clubId": "c01",
+        "authorId": "u_board",
+        "type": "post",
+        "text": "Sözleşme gönderisi.",
+        "images": [],
+        "pinned": false,
+        "pushSent": false,
+        "likes": [],
+        "likeCount": 0,
+        "commentCount": 0,
+        "isHidden": false,
+        "createdAt": "@daysAgo:2",
+        "updatedAt": "@daysAgo:2",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      },
+      "report": {
+        "targetType": "post",
+        "targetId": "p01",
+        "targetClubId": "c01",
+        "reporterId": "u_member",
+        "reason": "spam",
+        "note": "",
+        "status": "open",
+        "action": null,
+        "resolvedAt": null,
+        "resolvedBy": null,
+        "createdAt": "@daysAgo:1",
+        "updatedAt": "@daysAgo:1",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "AdminRepository.createClub",
+        "role": "super",
+        "note": "ADM-03: önce nameLower eşitlik sorgusu (CD-63, `queries`), sonra TEK batch: kulüp (memberCount 1, presidentId, createdBy = aktör, danışman ad + ünvan, userId null — K-A) + başkanın üyeliği (active / president, applicant users/{başkan}'dan, decidedBy = aktör) + iletişim belgesi (hesap e-postası). Yan belge YAZILMAZ (§4 g.1).",
+        "seed": {
+          "users/u_student": {
+            "$fixture": "user",
+            "avatarSeed": "u_student"
+          },
+          "users/u_student/private/account": {
+            "$fixture": "account",
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr"
+          }
+        },
+        "queries": [
+          {
+            "collection": "clubs",
+            "where": [
+              [
+                "nameLower",
+                "==",
+                "yeni kulüp"
+              ]
+            ],
+            "limit": 2
+          }
+        ],
+        "reads": [],
+        "writes": [
+          {
+            "op": "set",
+            "path": "clubs/@autoId",
+            "data": {
+              "name": "Yeni Kulüp",
+              "nameLower": "yeni kulüp",
+              "categoryId": "k02",
+              "iconName": "flask-conical",
+              "palette": "slate",
+              "pattern": "dots",
+              "coverSeed": "club-@autoId",
+              "logoPath": null,
+              "coverPath": null,
+              "memberCount": 1,
+              "approvalRequired": true,
+              "applicationsOpen": true,
+              "requireNote": false,
+              "founded": 2024,
+              "summary": "Yeni kulübün özeti.",
+              "about": "",
+              "conditions": [],
+              "social": {},
+              "presidentId": "u_student",
+              "pinnedPostId": null,
+              "advisor": {
+                "name": "Ayşe Yılmaz",
+                "title": "Doç. Dr.",
+                "userId": null
+              },
+              "status": "active",
+              "suspendReason": null,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null,
+              "createdBy": "u_super"
+            }
+          },
+          {
+            "op": "set",
+            "path": "memberships/@autoId_u_student",
+            "data": {
+              "clubId": "@autoId",
+              "userId": "u_student",
+              "status": "active",
+              "role": "president",
+              "applicant": {
+                "name": "Sözleşme Kullanıcısı",
+                "department": "d01",
+                "year": "1",
+                "avatarSeed": "u_student"
+              },
+              "appliedAt": "@serverTimestamp",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_super",
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": "",
+              "priorCount": 0,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "memberships/@autoId_u_student/private/contact",
+            "data": {
+              "email": "student@ogr.gumushane.edu.tr",
+              "emailLower": "student@ogr.gumushane.edu.tr",
+              "note": "",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {}
+      },
+      {
+        "call": "AdminRepository.updateClubIdentity",
+        "role": "super",
+        "note": "ADM-03 düzenleme: ad sorgusu (kendisi hariç) + kulüp TEK transaction'da okunur; yalnızca verilen kimlik alanları + updatedAt; bağlı danışman hesabı (advisor.userId) okunan değerle korunur.",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "advisor": {
+              "name": "Eski Danışman",
+              "title": "Dr.",
+              "userId": "u_advisor"
+            }
+          }
+        },
+        "queries": [
+          {
+            "collection": "clubs",
+            "where": [
+              [
+                "nameLower",
+                "==",
+                "robotik kulübü"
+              ]
+            ],
+            "limit": 2
+          }
+        ],
+        "reads": [
+          "clubs/c01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "name": "Robotik Kulübü",
+              "nameLower": "robotik kulübü",
+              "categoryId": "k03",
+              "summary": "Robotik topluluğu.",
+              "advisor": {
+                "name": "Ayşe Yılmaz",
+                "title": "Doç. Dr.",
+                "userId": "u_advisor"
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "name": "Robotik Kulübü",
+            "nameLower": "robotik kulübü",
+            "categoryId": "k03",
+            "summary": "Robotik topluluğu."
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.updateClubMedia · logo",
+        "role": "super",
+        "note": "Süper medya dalı: ön okuma, Storage yüklemesi (uploaderId = süper admin), TEK güncelleme (logoPath + updatedAt) — kulüp günlüğü YOK (yönetim dalından farkı). Aynı tek güncellemeyi kulübün etkin yöneticileri de yönetim dalından (T-36 canUpdateMedia) gönderebilir: yol bu kulübün klasöründe, otomatik kimlikli günlük kulüp tarafından zorlanamaz — muaf.",
+        "exempt": [
+          "board",
+          "president"
+        ],
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "uploads": [
+          {
+            "path": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+            "contentType": "image/jpeg",
+            "customMetadata": {
+              "clubId": "c01",
+              "uploaderId": "u_super"
+            }
+          }
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "logoPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "logoPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.suspendClub",
+        "role": "super",
+        "note": "DLG-28: tek güncelleme status suspended + suspendReason (1–300).",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "status": "suspended",
+              "suspendReason": "Topluluk kurallarının ihlali.",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "status": "suspended",
+            "suspendReason": "Topluluk kurallarının ihlali."
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.activateClub",
+        "role": "super",
+        "note": "TST-50: tek güncelleme status active + suspendReason null.",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "status": "suspended",
+            "suspendReason": "Topluluk kurallarının ihlali."
+          }
+        },
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "status": "active",
+              "suspendReason": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "status": "active",
+            "suspendReason": null
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.suspendUser",
+        "role": "super",
+        "note": "DLG-30 (CD-133): TEK işlem — users.status suspended + private/account.suspendReason; gerekçe users belgesine yazılmaz.",
+        "tx": true,
+        "seed": {
+          "users/u_member": {
+            "$fixture": "user",
+            "avatarSeed": "u_member"
+          },
+          "users/u_member/private/account": {
+            "$fixture": "account",
+            "email": "member@ogr.gumushane.edu.tr",
+            "emailLower": "member@ogr.gumushane.edu.tr"
+          }
+        },
+        "reads": [
+          "users/u_member"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "users/u_member",
+            "data": {
+              "status": "suspended",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "users/u_member/private/account",
+            "data": {
+              "suspendReason": "Topluluk kurallarının ihlali.",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "users/u_member": {
+            "status": "suspended"
+          },
+          "users/u_member/private/account": {
+            "suspendReason": "Topluluk kurallarının ihlali."
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.activateUser",
+        "role": "super",
+        "note": "TST-52: TEK işlem — users.status active + private/account.suspendReason null.",
+        "tx": true,
+        "seed": {
+          "users/u_susp": {
+            "$fixture": "user",
+            "avatarSeed": "u_susp",
+            "status": "suspended"
+          },
+          "users/u_susp/private/account": {
+            "$fixture": "account",
+            "email": "susp@ogr.gumushane.edu.tr",
+            "emailLower": "susp@ogr.gumushane.edu.tr",
+            "suspendReason": "Topluluk kurallarının ihlali."
+          }
+        },
+        "reads": [
+          "users/u_susp"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "users/u_susp",
+            "data": {
+              "status": "active",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "users/u_susp/private/account",
+            "data": {
+              "suspendReason": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "users/u_susp": {
+            "status": "active"
+          },
+          "users/u_susp/private/account": {
+            "suspendReason": null
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.assignPresident · üyeliği olmayan hedef (W-94)",
+        "role": "super",
+        "note": "SHT-25 TEK transaction: hedef üyelik active / president + iletişim (hesap e-postası) + eski başkan board + kulüp {presidentId, memberCount +1} TEK güncelleme + yan belge işaretçisi hedefi gösterir (W-94) + role_changed günlüğü + iki role_changed bildirimi.",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_president": {
+            "$fixture": "membership",
+            "clubId": "c01",
+            "userId": "u_president",
+            "role": "president",
+            "decidedBy": "u_super"
+          },
+          "users/u_student": {
+            "$fixture": "user",
+            "avatarSeed": "u_student"
+          },
+          "users/u_student/private/account": {
+            "$fixture": "account",
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr"
+          }
+        },
+        "reads": [
+          "clubs/c01",
+          "memberships/c01_u_president",
+          "memberships/c01_u_student",
+          "users/u_student",
+          "users/u_student/private/account",
+          "activity/c01_u_super_role_changed_u_student_president_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_president",
+            "data": {
+              "role": "board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "memberships/c01_u_student",
+            "data": {
+              "clubId": "c01",
+              "userId": "u_student",
+              "status": "active",
+              "role": "president",
+              "applicant": {
+                "name": "Sözleşme Kullanıcısı",
+                "department": "d01",
+                "year": "1",
+                "avatarSeed": "u_student"
+              },
+              "appliedAt": "@serverTimestamp",
+              "decidedAt": "@serverTimestamp",
+              "decidedBy": "u_super",
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": "",
+              "priorCount": 0,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "memberships/c01_u_student/private/contact",
+            "data": {
+              "email": "student@ogr.gumushane.edu.tr",
+              "emailLower": "student@ogr.gumushane.edu.tr",
+              "note": "",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "presidentId": "u_student",
+              "memberCount": {
+                "@increment": 1
+              },
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "clubs/c01/private/counter",
+            "data": {
+              "clubId": "c01",
+              "lastMembershipRef": "memberships/c01_u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_super_role_changed_u_student_president_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_super",
+              "kind": "role_changed",
+              "refs": {
+                "userId": "u_student",
+                "role": "president"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "president"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_president",
+            "data": {
+              "userId": "u_president",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "board"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_president": {
+            "role": "board"
+          },
+          "memberships/c01_u_student": {
+            "clubId": "c01",
+            "userId": "u_student",
+            "status": "active",
+            "role": "president",
+            "decidedBy": "u_super",
+            "retryAfter": null,
+            "rejectReason": null,
+            "rejectNote": "",
+            "priorCount": 0,
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          },
+          "memberships/c01_u_student/private/contact": {
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr",
+            "note": "",
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          },
+          "clubs/c01": {
+            "presidentId": "u_student",
+            "memberCount": 5
+          },
+          "clubs/c01/private/counter": {
+            "clubId": "c01",
+            "lastMembershipRef": "memberships/c01_u_student"
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.assignPresident · etkin üye (M11)",
+        "role": "super",
+        "note": "Hedef etkin üye: M11 yazımları (sayaç değişmez), aktör süper admin. Aynı yük kulübün kendi başkanınca da gönderilebilir (M11) — otomatik retten muaf.",
+        "tx": true,
+        "exempt": [
+          "president"
+        ],
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          },
+          "memberships/c01_u_president": {
+            "$fixture": "membership",
+            "clubId": "c01",
+            "userId": "u_president",
+            "role": "president",
+            "decidedBy": "u_super"
+          },
+          "memberships/c01_u_member": {
+            "$fixture": "membership",
+            "clubId": "c01",
+            "userId": "u_member"
+          },
+          "users/u_member": {
+            "$fixture": "user",
+            "avatarSeed": "u_member"
+          }
+        },
+        "reads": [
+          "clubs/c01",
+          "memberships/c01_u_president",
+          "memberships/c01_u_member",
+          "users/u_member",
+          "activity/c01_u_super_role_changed_u_member_president_0"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_president",
+            "data": {
+              "role": "board",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "memberships/c01_u_member",
+            "data": {
+              "role": "president",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "presidentId": "u_member",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/c01_u_super_role_changed_u_member_president_0",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_super",
+              "kind": "role_changed",
+              "refs": {
+                "userId": "u_member",
+                "role": "president"
+              },
+              "createdAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "president"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/role_changed_@autoId_u_president",
+            "data": {
+              "userId": "u_president",
+              "type": "role_changed",
+              "refs": {
+                "clubId": "c01",
+                "role": "board"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_president": {
+            "role": "board"
+          },
+          "memberships/c01_u_member": {
+            "role": "president"
+          },
+          "clubs/c01": {
+            "presidentId": "u_member"
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.setAdvisor · bağla (M13)",
+        "role": "super",
+        "note": "K-A / M13 TEK transaction: hedef üyelik active / advisor (karar alanları null) + iletişim (hesap e-postası) + kulüp advisor.userId; memberCount ve yan belge YOK.",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "advisor": {
+              "name": "Ayşe Yılmaz",
+              "title": "Doç. Dr.",
+              "userId": null
+            }
+          },
+          "users/u_student": {
+            "$fixture": "user",
+            "avatarSeed": "u_student"
+          },
+          "users/u_student/private/account": {
+            "$fixture": "account",
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr"
+          }
+        },
+        "reads": [
+          "clubs/c01",
+          "memberships/c01_u_student",
+          "users/u_student",
+          "users/u_student/private/account"
+        ],
+        "writes": [
+          {
+            "op": "set",
+            "path": "memberships/c01_u_student",
+            "data": {
+              "clubId": "c01",
+              "userId": "u_student",
+              "status": "active",
+              "role": "advisor",
+              "applicant": {
+                "name": "Sözleşme Kullanıcısı",
+                "department": "d01",
+                "year": "1",
+                "avatarSeed": "u_student"
+              },
+              "appliedAt": "@serverTimestamp",
+              "decidedAt": null,
+              "decidedBy": null,
+              "retryAfter": null,
+              "rejectReason": null,
+              "rejectNote": "",
+              "priorCount": 0,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "isDeleted": false,
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "memberships/c01_u_student/private/contact",
+            "data": {
+              "email": "student@ogr.gumushane.edu.tr",
+              "emailLower": "student@ogr.gumushane.edu.tr",
+              "note": "",
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "advisor.userId": "u_student",
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_student": {
+            "clubId": "c01",
+            "userId": "u_student",
+            "status": "active",
+            "role": "advisor",
+            "decidedAt": null,
+            "decidedBy": null,
+            "retryAfter": null,
+            "rejectReason": null,
+            "rejectNote": "",
+            "priorCount": 0,
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          },
+          "memberships/c01_u_student/private/contact": {
+            "email": "student@ogr.gumushane.edu.tr",
+            "emailLower": "student@ogr.gumushane.edu.tr",
+            "note": "",
+            "isDeleted": false,
+            "deletedAt": null,
+            "deletedBy": null
+          },
+          "clubs/c01": {
+            "advisor": {
+              "userId": "u_student"
+            }
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.setAdvisor · kaldır (M13)",
+        "role": "super",
+        "note": "Etkin danışman üyeliği left + kulüp advisor.userId null (ad / ünvan kalır); sayaç yok.",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "advisor": {
+              "name": "Ayşe Yılmaz",
+              "title": "Doç. Dr.",
+              "userId": "u_advisor"
+            }
+          },
+          "memberships/c01_u_advisor": {
+            "$fixture": "membership",
+            "clubId": "c01",
+            "userId": "u_advisor",
+            "role": "advisor",
+            "decidedAt": null,
+            "decidedBy": null
+          }
+        },
+        "reads": [
+          "clubs/c01",
+          "memberships/c01_u_advisor"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "memberships/c01_u_advisor",
+            "data": {
+              "status": "left",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "advisor.userId": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "memberships/c01_u_advisor": {
+            "status": "left"
+          },
+          "clubs/c01": {
+            "advisor": {
+              "userId": null
+            }
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.resolveReports · removed (gönderi)",
+        "role": "super",
+        "note": "DLG-29 grup = aynı hedef: şikayetler kimlikle okunur, hedef gönderi okunur (gizli değil → gizlenir); TEK batch: gizleme (isHidden, hiddenBy, hiddenAt) + her şikayet resolved / removed / resolvedAt / resolvedBy + şikayetçi başına report_resolved (refs.reportId = grup anahtarı post_p01; W-84).",
+        "seed": {
+          "posts/p01": {
+            "$fixture": "post"
+          },
+          "reports/u_member_post_p01": {
+            "$fixture": "report",
+            "reporterId": "u_member"
+          },
+          "reports/u_student_post_p01": {
+            "$fixture": "report",
+            "reporterId": "u_student",
+            "reason": "inappropriate"
+          }
+        },
+        "reads": [
+          "reports/u_member_post_p01",
+          "reports/u_student_post_p01",
+          "posts/p01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "posts/p01",
+            "data": {
+              "isHidden": true,
+              "hiddenBy": "u_super",
+              "hiddenAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "reports/u_member_post_p01",
+            "data": {
+              "status": "resolved",
+              "action": "removed",
+              "resolvedAt": "@serverTimestamp",
+              "resolvedBy": "u_super",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "update",
+            "path": "reports/u_student_post_p01",
+            "data": {
+              "status": "resolved",
+              "action": "removed",
+              "resolvedAt": "@serverTimestamp",
+              "resolvedBy": "u_super",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/report_resolved_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "report_resolved",
+              "refs": {
+                "reportId": "post_p01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/report_resolved_@autoId_u_student",
+            "data": {
+              "userId": "u_student",
+              "type": "report_resolved",
+              "refs": {
+                "reportId": "post_p01"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "posts/p01": {
+            "isHidden": true,
+            "hiddenBy": "u_super"
+          },
+          "reports/u_member_post_p01": {
+            "status": "resolved",
+            "action": "removed",
+            "resolvedBy": "u_super"
+          },
+          "reports/u_student_post_p01": {
+            "status": "resolved",
+            "action": "removed",
+            "resolvedBy": "u_super"
+          }
+        }
+      },
+      {
+        "call": "AdminRepository.resolveReports · dismissed (hedefli: kullanıcı)",
+        "role": "super",
+        "note": "SHT-26 hedef verildi: hedefin O ANKİ açık şikayetleri sorguyla yeniden okunur (`queries`); TEK batch: şikayet resolved / dismissed + report_resolved (refs.reportId = user_u_board). Askı ayrı çağrıdır (§4 g.2).",
+        "seed": {
+          "reports/u_member_user_u_board": {
+            "$fixture": "report",
+            "targetType": "user",
+            "targetId": "u_board",
+            "targetClubId": null,
+            "reporterId": "u_member",
+            "reason": "harassment"
+          }
+        },
+        "queries": [
+          {
+            "collection": "reports",
+            "where": [
+              [
+                "targetType",
+                "==",
+                "user"
+              ],
+              [
+                "targetId",
+                "==",
+                "u_board"
+              ],
+              [
+                "status",
+                "==",
+                "open"
+              ]
+            ]
+          }
+        ],
+        "reads": [],
+        "writes": [
+          {
+            "op": "update",
+            "path": "reports/u_member_user_u_board",
+            "data": {
+              "status": "resolved",
+              "action": "dismissed",
+              "resolvedAt": "@serverTimestamp",
+              "resolvedBy": "u_super",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "notifications/report_resolved_@autoId_u_member",
+            "data": {
+              "userId": "u_member",
+              "type": "report_resolved",
+              "refs": {
+                "reportId": "user_u_board"
+              },
+              "read": false,
+              "isDeleted": false,
+              "createdAt": "@serverTimestamp",
+              "updatedAt": "@serverTimestamp",
+              "deletedAt": null,
+              "deletedBy": null
+            }
+          }
+        ],
+        "expect": {
+          "reports/u_member_user_u_board": {
+            "status": "resolved",
+            "action": "dismissed",
+            "resolvedBy": "u_super"
+          }
+        }
       }
     ]
   }

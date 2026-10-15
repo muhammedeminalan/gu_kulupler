@@ -41,6 +41,7 @@ import '../../fakes/fake_rsvp_repository.dart';
 import '../../fakes/fake_url_launcher_service.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fakes/register_fakes.dart';
+import '../../helpers/fake_app_clock.dart';
 import '../../helpers/test_container.dart';
 
 const _email = 'mehmet@ogr.gumushane.edu.tr';
@@ -919,6 +920,52 @@ void main() {
       await notifierOf(container).refreshClaims();
       expect(stateOf(container).isSuperAdmin, isTrue);
       expect(stateOf(container).isError, isFalse);
+    });
+  });
+
+  group('T-37 · SessionViewModel · öne gelince claim / hesap tazeleme', () {
+    test(
+      'ilk çözümden 10 dk geçmeden yenilemez; sonra claim zorlanarak '
+      'okunur ve kullanıcı belgesi yeniden okunur (askı yakalanır)',
+      () async {
+        final clock = GetIt.I<AppClock>() as FakeAppClock;
+        final container = await resolvedActive();
+        final claimReads = auth.callsTo('isSuperAdmin').length;
+
+        clock.advance(const Duration(minutes: 9));
+        await notifierOf(container).onAppResumed();
+        expect(auth.callsTo('isSuperAdmin'), hasLength(claimReads));
+
+        clock.advance(const Duration(minutes: 1));
+        auth.isSuperAdminResult = true;
+        users.users['u1'] = users.users['u1']!.copyWith(
+          status: UserStatus.suspended,
+        );
+        final states = <SessionState>[];
+        container.listen(
+          sessionViewModelProvider,
+          (_, next) => states.add(next),
+        );
+        await notifierOf(container).onAppResumed();
+        await pumpEventQueue();
+
+        expect(auth.callsTo('isSuperAdmin').last.args, [true]);
+        expect(states.first.isSuperAdmin, isTrue);
+        // Askı yakalanır (DLG-01); askıdaki oturum ardından kapatılır.
+        expect(
+          states.map((state) => state.status),
+          contains(AuthStatus.suspended),
+        );
+      },
+    );
+
+    test('etkin olmayan oturumda çağrı yapılmaz', () async {
+      final container = await resolved();
+      (GetIt.I<AppClock>() as FakeAppClock).advance(const Duration(hours: 1));
+
+      await notifierOf(container).onAppResumed();
+
+      expect(auth.callsTo('isSuperAdmin'), isEmpty);
     });
   });
 

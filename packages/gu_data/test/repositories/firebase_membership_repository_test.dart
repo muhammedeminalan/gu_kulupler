@@ -336,10 +336,17 @@ void main() {
   });
 
   group('T-15 · MembershipRepository · sözleşme', () {
-    test('PLAN §10.4 tablosunun T-15, T-16, T-29, T-30 ve T-32 üyeleri '
+    test('PLAN §10.4 tablosunun T-15, T-16, T-29, T-30, T-32 ve T-37 üyeleri '
         'arayüzde aynı imzayla var; sonraki task üyeleri yok', () {
       final plan = readPlanRepositoryMembers('$MembershipRepository');
-      const tasks = {'(T-15)', '(T-16)', '(T-29)', '(T-30)', '(T-32)'};
+      const tasks = {
+        '(T-15)',
+        '(T-16)',
+        '(T-29)',
+        '(T-30)',
+        '(T-32)',
+        '(T-37)',
+      };
       final now = plan.where((row) => tasks.contains(row.note)).toList();
       // `reapply` ayrı bir üye değildir: `apply` ile aynı metottur.
       final reapply = now.singleWhere((row) => row.member == 'reapply');
@@ -367,6 +374,7 @@ void main() {
         'remove',
         'changeRole',
         'transferPresidency',
+        'setAdvisor',
         'anonymizeChunk',
       ]);
       expect(interfaceMembers(_interface, '$MembershipRepository').toSet(), {

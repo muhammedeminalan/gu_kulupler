@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsRole;
+
 import 'package:flutter/widgets.dart';
 import 'package:gu_ui/src/extensions/build_context_x.dart';
 import 'package:gu_ui/src/tokens/gu_sizes.dart';
@@ -21,8 +23,10 @@ typedef GuActionSurfaceBuilder =
 /// * klavye odağı → `FocusableActionDetector` + 2 px `focus.ring` halkası,
 ///   2 px dışarıda (css:82 `:focus-visible`, css:150 `.btn.is-focus`; K-19);
 ///   Enter / Boşluk [onTap]'i çağırır;
-/// * `Semantics(button, enabled, selected, label)` — `container: false`,
-///   düğüm `GuTapTarget`'ın genişletilmiş kutusuna birleşir.
+/// * `Semantics(button, enabled, selected, label, role)` — `container:
+///   false`, düğüm `GuTapTarget`'ın genişletilmiş kutusuna (semantik sınır)
+///   birleşir; [role] bu düğüme yazılır ([semanticLabel] çocukları dışlasa
+///   da korunur). Rollü kaba (`tabBar`) doğrudan çocuk olan tek düğüm budur.
 ///
 /// [onTap] `null` → etkileşimsiz: yalnızca [builder] çıktısı çizilir.
 class GuActionSurface extends StatefulWidget {
@@ -33,6 +37,7 @@ class GuActionSurface extends StatefulWidget {
     this.enabled = true,
     this.semanticLabel,
     this.selected,
+    this.role,
     this.inset,
     this.autofocus = false,
     super.key,
@@ -56,6 +61,11 @@ class GuActionSurface extends StatefulWidget {
 
   /// `Semantics(selected:)` (çip, `aria-pressed` ui.js:54); `null` → yok.
   final bool? selected;
+
+  /// Düğümün semantik rolü (ör. `SemanticsRole.tab`: `GuTabs`,
+  /// `GuSegmented`); `null` → rol yok. Rol kuralları (sekme: `selected` +
+  /// dokunma eylemi) çağırana aittir.
+  final SemanticsRole? role;
 
   /// CSS `::after{inset:-N}` eşdeğeri dokunma dolgusu.
   final EdgeInsets? inset;
@@ -104,6 +114,7 @@ class _GuActionSurfaceState extends State<GuActionSurface> {
           button: true,
           enabled: widget.enabled,
           selected: widget.selected,
+          role: widget.role,
           label: widget.semanticLabel,
           excludeSemantics: widget.semanticLabel != null,
           onTap: widget.enabled ? onTap : null,

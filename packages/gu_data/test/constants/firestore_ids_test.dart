@@ -457,7 +457,7 @@ void main() {
       );
     });
 
-    test('kaynak dosyadaki açık üyeler: 26 ad, ters çözüm metodu yok', () {
+    test('kaynak dosyadaki açık üyeler: 27 ad, ters çözüm metodu yok', () {
       final source = readRepoFile(
         'packages/gu_data/lib/src/constants/firestore_ids.dart',
       );
@@ -475,6 +475,8 @@ void main() {
         'block',
         'savedPost',
         'report',
+        // T-37 · şikayet grubu anahtarı (`report_resolved` refs.reportId)
+        'reportGroupKey',
         'announcementCounter',
         'notification',
         // T-25 güvenlik incelemesi · başvuru bildiriminin olay anahtarı (CD-148)
