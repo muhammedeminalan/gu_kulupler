@@ -161,4 +161,9 @@ mixin ProjectDependencyMixin {
   /// bildirim izni [permissionService]'tedir.
   LocalReminderService get localReminderService =>
       GetIt.I<LocalReminderService>();
+
+  /// Push (FCM) cihaz servisi (T-42, CD-165): izin durumu, jeton, dokunma
+  /// yükleri. İzin istemez — [permissionService]'tedir; jeton yazımı
+  /// [userRepository]'dedir (`SessionPushSync`).
+  MessagingService get messagingService => GetIt.I<MessagingService>();
 }

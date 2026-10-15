@@ -562,6 +562,14 @@ void _seedCompleteProfile(_RecordingFirestore db, String uid) {
 /// T-15 senaryolarının "şimdi"si (`@daysAgo:N` bu ana göre çözülür).
 final DateTime _scenarioNow = DateTime.utc(2026, 10, 13, 9);
 
+/// T-42 · bu cihazın push jetonu (`updatedAt` istemci saati → `@daysAhead:0`).
+final FcmTokenModel _fcmToken = FcmTokenModel(
+  token: 'fcm-contract-token',
+  platform: 'ios',
+  locale: 'en',
+  updatedAt: _scenarioNow,
+);
+
 /// Ön koşul belgesindeki nöbetçileri SDK değerine çevirir: sunucu zamanı →
 /// [_scenarioNow], `@daysAgo:N` → N gün öncesi (negatif = sonrası).
 Object? _seedValue(Object? value) => switch (value) {
@@ -728,6 +736,22 @@ void main() {
               ),
             ),
         'UserRepository.touchLastLogin': () => users.touchLastLogin(uid),
+        // T-42 (CD-165 d): girişte bu cihazın jetonu (transaction: hesap
+        // okunur, tam liste + updatedAt yazılır) ve çıkışta aynı jetonun
+        // çıkarılması. jest tarafı aynı yazımı sahibi olarak gönderir:
+        // `fcmTokenOk` (locale dahil) + yalnızca yeni öğe denetimi.
+        'UserRepository.upsertFcmToken · girişte bu cihazın jetonu (T-42)': () {
+          db.docs['users/$uid/private/account'] = {
+            FirestoreFields.fcmTokens: <Object?>[],
+          };
+          return users.upsertFcmToken(uid, _fcmToken);
+        },
+        'UserRepository.removeFcmToken · çıkışta bu cihazın jetonu (T-42)': () {
+          db.docs['users/$uid/private/account'] = {
+            FirestoreFields.fcmTokens: [_fcmToken.toJson()],
+          };
+          return users.removeFcmToken(uid, _fcmToken.token);
+        },
         'SettingsRepository.updateSettings': () => settings.updateSettings(
           uid,
           const UserSettingsPatch(

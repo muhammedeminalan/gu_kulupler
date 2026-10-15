@@ -65,6 +65,14 @@ abstract interface class NotificationRepository {
   /// "Geri al"; yalnızca silen sahibi).
   Future<FirestoreResult<void>> restoreNotification(String notificationId);
 
+  /// [notificationId] bildirimi (push'a dokunma — T-42,
+  /// `NotificationNavigator.openPush`). Belge yoksa başarı `null`; silinmiş
+  /// belge [FirestoreError.notFound]; başkasının ya da olmayan belgenin
+  /// okuması Rules'ta [FirestoreError.permissionDenied] olabilir.
+  Future<FirestoreResult<NotificationModel?>> getNotification(
+    String notificationId,
+  );
+
   /// Cihazın **kendi** [userId]'si için [eventId] etkinliğinin
   /// `event_reminder` belgesini yazar (CD-44; yerel hatırlatıcıya dokunma).
   ///

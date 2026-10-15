@@ -775,10 +775,13 @@ void main() {
       await tester.pump();
 
       final users = _users();
+      // Profil tamamlanınca oturum etkinleşir ve push jetonu yazılır (T-42);
+      // AUT-05 sırası yalnızca profil yazımlarıdır.
       expect(
         [
           for (final call in users.calls)
-            if (call.method != 'getUser') call.method,
+            if (call.method != 'getUser' && call.method != 'upsertFcmToken')
+              call.method,
         ],
         ['createProfile', 'updateProfile', 'updateAvatar'],
       );

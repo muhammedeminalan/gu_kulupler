@@ -983,6 +983,16 @@ final class _AvatarFailingUsers implements UserRepository {
       _inner.touchLastLogin(uid);
 
   @override
+  Future<FirestoreResult<void>> upsertFcmToken(
+    String uid,
+    FcmTokenModel token,
+  ) => _inner.upsertFcmToken(uid, token);
+
+  @override
+  Future<FirestoreResult<void>> removeFcmToken(String uid, String token) =>
+      _inner.removeFcmToken(uid, token);
+
+  @override
   Future<FirestoreResult<List<UserModel>>> listByInterests(
     List<String> interestIds, {
     int limit = Limits.eventNewInterestFanOutMax,

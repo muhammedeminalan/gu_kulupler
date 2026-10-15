@@ -212,6 +212,41 @@
       ]
     },
     {
+      "call": "UserRepository.upsertFcmToken · girişte bu cihazın jetonu (T-42)",
+      "note": "T-42 (CD-165 d): transaction — hesap okunur, tam liste + updatedAt yazılır; öğe {token, platform, locale, updatedAt: istemci saati}; Rules fcmTokenOk (locale dahil), U'da yalnızca yeni öğe denetlenir",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student/private/account",
+          "data": {
+            "fcmTokens": [
+              {
+                "token": "fcm-contract-token",
+                "platform": "ios",
+                "locale": "en",
+                "updatedAt": "@daysAhead:0"
+              }
+            ],
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
+      "call": "UserRepository.removeFcmToken · çıkışta bu cihazın jetonu (T-42)",
+      "note": "T-42 (CD-165 d): çıkışta signOut'tan önce bu cihazın jetonu listeden çıkarılır (transaction: oku → süz → yaz)",
+      "writes": [
+        {
+          "op": "update",
+          "path": "users/u_student/private/account",
+          "data": {
+            "fcmTokens": [],
+            "updatedAt": "@serverTimestamp"
+          }
+        }
+      ]
+    },
+    {
       "call": "SettingsRepository.updateSettings",
       "note": "UserSettingsPatch'in on alanı",
       "writes": [

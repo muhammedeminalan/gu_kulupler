@@ -122,6 +122,23 @@ final class FakeAppPreferencesStore extends FakeBase
   );
 
   @override
+  String? get pushTokenUid => switch (values[AppPreferenceKeys.pushTokenUid]) {
+    final String uid => uid,
+    _ => null,
+  };
+
+  @override
+  Future<bool> setPushTokenUid(String? uid) async {
+    record('setPushTokenUid', [uid]);
+    if (uid == null) {
+      values.remove(AppPreferenceKeys.pushTokenUid);
+    } else {
+      values[AppPreferenceKeys.pushTokenUid] = uid;
+    }
+    return takeFailure() == null;
+  }
+
+  @override
   String? composeDraft(String clubId) =>
       switch (values[AppPreferenceKeys.composeDraft(clubId)]) {
         final String json => json,

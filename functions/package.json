@@ -1,0 +1,48 @@
+{
+  "name": "gu-kulupler-functions",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GÜ Kulüpler — Cloud Functions (Mod F, T-42): push gönderici, new_report, bekleme listesi terfisi, hesap silme temizliği. Deploy yalnızca kullanıcı onayıyla.",
+  "license": "UNLICENSED",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json",
+    "test": "npm run build && firebase emulators:exec --config ../firebase.functions-test.json --only firestore --project demo-gu-kulupler \"jest --runInBand\" && npm run e2e:exec",
+    "test:unit": "jest --runInBand --testPathIgnorePatterns \"\\.emu\\.test\\.ts$\"",
+    "test:e2e": "npm run build && npm run e2e:exec",
+    "e2e:exec": "firebase emulators:exec --config ../firebase.functions-test.json --only auth,firestore,functions --project demo-gu-kulupler \"jest --runInBand --config jest.e2e.config.js\""
+  },
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.20.5",
+    "firebase-functions-test": "^3.5.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.15",
+    "typescript": "^5.9.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/test"
+    ],
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.test.json"
+        }
+      ]
+    }
+  }
+}

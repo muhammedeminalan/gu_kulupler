@@ -37,6 +37,10 @@ import 'package:gu_ui/gu_ui.dart';
 ///   uygulama çalışırken dokunulduysa `SessionViewModel.reminderTaps`
 ///   `NotificationNavigator.openPayload`'a verilir (bilet → EVT-03, değilse
 ///   EVT-02; Etkinlikler sekmesi).
+/// * Push dokunuşu (T-42): soğuk açılış yükü (`SessionViewModel
+///   .takeLaunchPush`, bir kez) ve arka plandan dokunuşlar
+///   (`SessionViewModel.pushTaps`) `NotificationNavigator.openPush`'a
+///   verilir.
 /// * Ön plan bandı (TST-55) kabuğu sarar ([ForegroundNotificationBanner]).
 class AppShellView extends ConsumerStatefulWidget {
   /// [navigationShell]: `StatefulShellRoute.indexedStack`'in dal kabı.
@@ -92,13 +96,15 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
   /// Uygulama açıkken dokunulan hatırlatıcılar (yalnızca etkin oturumda).
   StreamSubscription<String>? _reminderTaps;
 
+  /// Uygulama arka plandayken dokunulan push'lar (yalnızca etkin oturumda).
+  StreamSubscription<Map<String, String>>? _pushTaps;
+
   @override
   void initState() {
     super.initState();
-    _reminderTaps = ref
-        .read(sessionViewModelProvider.notifier)
-        .reminderTaps
-        .listen(_openReminder);
+    final session = ref.read(sessionViewModelProvider.notifier);
+    _reminderTaps = session.reminderTaps.listen(_openReminder);
+    _pushTaps = session.pushTaps.listen(_openPush);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(
@@ -107,12 +113,14 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
             .askNotificationPermissionOnce(),
       );
       unawaited(_openLaunchReminder());
+      unawaited(_openLaunchPush());
     });
   }
 
   @override
   void dispose() {
     unawaited(_reminderTaps?.cancel());
+    unawaited(_pushTaps?.cancel());
     super.dispose();
   }
 
@@ -123,6 +131,21 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
         .takeLaunchReminder();
     if (payload == null || !mounted) return;
     _openReminder(payload);
+  }
+
+  /// Soğuk açılışın push yükü varsa hedefine gider (T-42).
+  Future<void> _openLaunchPush() async {
+    final data = await ref
+        .read(sessionViewModelProvider.notifier)
+        .takeLaunchPush();
+    if (data == null || !mounted) return;
+    _openPush(data);
+  }
+
+  /// Push yükü → `NotificationNavigator.openPush` (T-42).
+  void _openPush(Map<String, String> data) {
+    if (!mounted) return;
+    unawaited(ref.read(notificationNavigatorProvider).openPush(data));
   }
 
   /// Hatırlatıcı yükü → `NotificationNavigator.openPayload` (CD-72).

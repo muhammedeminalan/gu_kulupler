@@ -43,15 +43,15 @@
 | `table_calendar` | takvim | SHT-28, EVT-01 | **Kaldırıldı (T-00)** — Q-08 = `GuCalendar` |
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | çekirdek | — | — |
 | `firebase_storage` | fotoğraf | Q-19 | Q-19 = yükle (kesin); bucket/Blaze K-L → T-46 (`architecture.md §10`) |
-| `firebase_messaging` | FCM | bildirim izni, jeton | **Eklenmez (Mod C, Q-02)**; T-42 Mod F'de eklenir |
-| `cloud_functions` | callable (gerekirse) | — | **Eklenmez (Mod C, Q-02)**; T-42 Mod F'de eklenir |
+| `firebase_messaging` | FCM | jeton, push dokunuşu (izin `permission_handler`'da kalır — tek pencere) | **Kökte doğrudan bağımlılık değil** (T-42 Mod F, CD-165): `packages/gu_data` (`MessagingService` — uygulama Firebase SDK'sını doğrudan içe aktaramaz, B04); eklenti gu_data üzerinden kaydolur. iOS: `UIBackgroundModes` `remote-notification` + `Runner.entitlements` `aps-environment` (APNs anahtarı kullanıcıda); Android: varsayılan kanal `gu_push` |
+| `cloud_functions` | callable (gerekirse) | — | **Eklenmez** — T-42 (Mod F) callable kullanmaz; sunucu yalnızca tetikleyici / zamanlanmış fonksiyon (CD-165) |
 | `firebase_remote_config` | sürüm kapısı, bakım, limit ipuçları | DLG-26 | — |
 | `firebase_crashlytics` | hata raporu | D-23 | — |
 
-**Kaldırıldı / eklenmedi (T-00):** `google_fonts` (D-12; mevcut pubspec'te zaten yoktu), `flutter_lints` (→ `very_good_analysis`), `flutter_gen_runner` (izinli listede değil; asset erişimi el yazımı kayıt defterleri `GuIcons` / `GuIllustrations` / `GuCovers`, D-13), `table_calendar` (Q-08 → `GuCalendar`), `cloud_functions` ve `firebase_messaging` (Q-02 Mod C; T-42 Mod F'de eklenir). `firebase_storage` ve `cached_network_image` **kalır** (Q-19 = yükle). `uses-material-design: true` kalır (Material widget'ları kullanılır; `Icons.*` kullanılmaz).
+**Kaldırıldı / eklenmedi (T-00):** `google_fonts` (D-12; mevcut pubspec'te zaten yoktu), `flutter_lints` (→ `very_good_analysis`), `flutter_gen_runner` (izinli listede değil; asset erişimi el yazımı kayıt defterleri `GuIcons` / `GuIllustrations` / `GuCovers`, D-13), `table_calendar` (Q-08 → `GuCalendar`), `cloud_functions` ve `firebase_messaging` (Q-02 Mod C; T-42 Mod F'de `firebase_messaging` gu_data'ya eklendi, `cloud_functions` eklenmedi — CD-165). `firebase_storage` ve `cached_network_image` **kalır** (Q-19 = yükle). `uses-material-design: true` kalır (Material widget'ları kullanılır; `Icons.*` kullanılmaz).
 
 ### 2.2 `packages/gu_data`
-`cloud_firestore`, `firebase_auth`, `firebase_storage` (Q-19 = yükle, kesin), `firebase_remote_config`, `firebase_messaging` (yalnızca Mod F'de (T-42); Mod C'de yok), `firebase_crashlytics`, `equatable`, `json_annotation`, `meta`, `collection`, `crypto`/`dart:math Random.secure` (bilet kodu — **yalnızca `Random.secure()`**).
+`cloud_firestore`, `firebase_auth`, `firebase_storage` (Q-19 = yükle, kesin), `firebase_remote_config`, `firebase_messaging` 16.7.0 (T-42, Mod F — `services/messaging_service.dart`; CD-165), `firebase_crashlytics`, `equatable`, `json_annotation`, `meta`, `collection`, `crypto`/`dart:math Random.secure` (bilet kodu — **yalnızca `Random.secure()`**).
 Dev: `build_runner`, `json_serializable`, `very_good_analysis`, `flutter_test` (sdk) — `test` paketi workspace'te çözülemez (`riverpod_generator` analyzer kısıtı, CD-15); `fake_cloud_firestore` + `firebase_auth_mocks` + `firebase_storage_mocks` (**Q-06**, kesin).
 
 ### 2.3 `packages/gu_ui`

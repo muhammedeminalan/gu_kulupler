@@ -44,6 +44,7 @@ final class ProjectDependencyOverrides {
     this.imagePickerService,
     this.fileService,
     this.localReminderService,
+    this.messagingService,
     this.qrScannerService,
     this.appPreferencesStore,
   });
@@ -90,6 +91,9 @@ final class ProjectDependencyOverrides {
   /// `LocalReminderService` yerine.
   final LocalReminderService? localReminderService;
 
+  /// `MessagingService` yerine.
+  final MessagingService? messagingService;
+
   /// `QrScannerService` yerine.
   final QrScannerService? qrScannerService;
 
@@ -107,10 +111,11 @@ final class ProjectDependencyOverrides {
 ///   `.firestore` / `.storage` üzerinden alınır (emülatörde ikinci Firebase
 ///   uygulaması — CD-131). `AppEnvironment.configure()` tamamlanmadıysa
 ///   [setup] `StateError` ile durur; hata yakalanıp devam edilmez.
-/// - **Emülatörde Remote Config ve çökme raporlama gerçek projeye gitmez**
-///   (W-53): ikisinin emülatörü yoktur ve SDK'ları varsayılan (gerçek)
-///   Firebase uygulamasını kullanır. `ENV=emulator` iken yerel uygulamalar
-///   kaydedilir ([EmulatorRemoteConfigService], [EmulatorCrashService]).
+/// - **Emülatörde Remote Config, çökme raporlama ve push gerçek projeye
+///   gitmez** (W-53, T-42): emülatörleri yoktur ve SDK'ları varsayılan
+///   (gerçek) Firebase uygulamasını kullanır. `ENV=emulator` iken yerel
+///   uygulamalar kaydedilir ([EmulatorRemoteConfigService],
+///   [EmulatorCrashService], [EmulatorMessagingService]).
 abstract final class ProjectDependency {
   /// Tüm servisleri kaydeder. `Firebase.initializeApp` ve
   /// `AppEnvironment.configure()` sonrasında, `runApp` öncesinde bir kez
@@ -162,12 +167,13 @@ abstract final class ProjectDependency {
       Random.secure(),
     );
     final settingsRepository = FirebaseSettingsRepository(firestoreService);
-    // T-25 · bildirimler (Mod C — Q-02, W-62): istemci kendi yazar
+    // T-25 · bildirimler (W-62): istemci kendi yazar
     // (`ClientFanOutDispatcher`). Repository hem gelen kutusu yüzeyi hem
-    // dağıtıcının yazma kapısıdır (`NotificationWriter`). Mod F'de yalnızca
-    // bu satırlar değişir (`ServerSideDispatcher` — CD-147); çağıran
-    // repository'ler arayüzü bilir. Eksik kalan dağıtım günlüğe düşer (PLAN
-    // §10.5), kullanıcıya gösterilmez.
+    // dağıtıcının yazma kapısıdır (`NotificationWriter`). T-42 (Mod F,
+    // CD-165 hibrit): dağıtıcı DEĞİŞMEZ — sunucu yalnızca her yeni belgeden
+    // push, `new_report` ve otomatik terfi üretir; `ServerSideDispatcher`
+    // yazılmaz. Eksik kalan dağıtım günlüğe düşer (PLAN §10.5), kullanıcıya
+    // gösterilmez.
     final notificationRepository = FirebaseNotificationRepository(
       firestoreService,
     );
@@ -386,6 +392,14 @@ abstract final class ProjectDependency {
       ..registerSingleton<LocalReminderService>(
         overrides.localReminderService ??
             FlutterLocalReminderService(clock: appClock),
+      )
+      // T-42 · push (Mod F, CD-165): izin PermissionService'te kalır; jeton
+      // yazımı UserRepository'de (`SessionPushSync`).
+      ..registerSingleton<MessagingService>(
+        overrides.messagingService ??
+            (isEmulator
+                ? const EmulatorMessagingService()
+                : FirebaseMessagingService()),
       )
       // T-35 · QR tarayıcı (MGT-07, D-30)
       ..registerSingleton<QrScannerService>(

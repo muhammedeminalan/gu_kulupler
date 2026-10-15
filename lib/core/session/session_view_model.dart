@@ -5,6 +5,7 @@ import 'package:gu_kulupler/core/constants/app_durations.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
+import 'package:gu_kulupler/core/session/session_push_sync.dart';
 import 'package:gu_kulupler/core/session/session_reminder_sync.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
@@ -53,6 +54,16 @@ part 'session_view_model.g.dart';
 /// Uygulama açıkken dokunulan hatırlatıcılar [reminderTaps]'tedir (yalnızca
 /// etkin oturumda); ikisini de kabuk `NotificationNavigator.openPayload`'a
 /// verir (T-26, CD-72).
+///
+/// **Push (T-42, Mod F — CD-165):** oturum `active` çözülünce, dil değişince
+/// ve uygulama öne gelince bu cihazın FCM jetonu hesaba yazılır
+/// ([registerPushToken]; izin yoksa etkisiz — izin `PermissionService`'te).
+/// Çıkışta jeton `signOut`'tan **önce** hesaptan çıkarılır ve geçersiz
+/// kılınır ([signOut]; en iyi çaba, süre sınırlı). Push'a dokunma:
+/// soğuk açılış [takeLaunchPush] (bir kez), uygulama arka plandayken
+/// [pushTaps] (yalnızca etkin oturumda); kabuk ikisini de
+/// `NotificationNavigator.openPush`'a verir. Ön planda gelen push için iş
+/// yapılmaz (TST-55 bandı gelen kutusu akışından — T-26).
 @Riverpod(keepAlive: true)
 final class SessionViewModel extends _$SessionViewModel
     with ProjectDependencyMixin, SuspendedAccountMixin {
@@ -86,6 +97,14 @@ final class SessionViewModel extends _$SessionViewModel
   /// Soğuk açılış yükü alındı ya da atıldı mı (uygulama ömründe bir kez)?
   bool _launchHandled = false;
 
+  /// Push jetonu köprüsü ve jetonu yazılan kullanıcı (bu etkinleşmede).
+  final SessionPushSync _push = SessionPushSync();
+  String? _pushFor;
+
+  /// Soğuk açılışın push yükü alındı ya da atıldı mı (uygulama ömründe bir
+  /// kez)?
+  bool _pushLaunchHandled = false;
+
   @override
   SessionState build() {
     final authSubscription = authRepository.watchAuthState().listen(
@@ -97,7 +116,10 @@ final class SessionViewModel extends _$SessionViewModel
       // Planlı bildirimlerin metni planlandığı dildedir: dil değişince
       // yeniden kurulur (PLAN §15.6; kanal adı da değişir).
       ..listen(appPreferencesViewModelProvider, (previous, next) {
-        if (previous?.locale != next.locale) unawaited(rescheduleReminders());
+        if (previous?.locale == next.locale) return;
+        unawaited(rescheduleReminders());
+        // Push metinleri cihaz başına dildedir (CD-165).
+        unawaited(registerPushToken());
       })
       ..onDispose(authSubscription.cancel)
       ..onDispose(tokenSubscription.cancel)
@@ -179,6 +201,9 @@ final class SessionViewModel extends _$SessionViewModel
   /// oturumda etkisizdir.
   Future<void> onAppResumed() async {
     if (state.status != AuthStatus.active || state.isResolving) return;
+    // İzin DLG-03 / sistem ayarlarından verildiyse jeton şimdi yazılır;
+    // aynı jeton bu oturumda yeniden yazılmaz (T-42).
+    unawaited(registerPushToken());
     final last = _claimsCheckedAt;
     if (last != null &&
         appClock.nowUtc().difference(last) <
@@ -238,6 +263,11 @@ final class SessionViewModel extends _$SessionViewModel
     // dinleyicisi yetki hatası üretir.
     final watched = _membershipsFor;
     _stopMembershipWatch();
+    // Push jetonu oturum kapanmadan çıkarılır (Rules oturum ister; en iyi
+    // çaba, süre sınırlı — T-42).
+    final pushUid = _pushFor ?? state.uid;
+    _pushFor = null;
+    if (pushUid != null) await _push.unregister(pushUid);
     final result = await authRepository.signOut();
     switch (result) {
       case FirebaseSuccess():
@@ -246,13 +276,15 @@ final class SessionViewModel extends _$SessionViewModel
         return true;
       case FirebaseFailure(:final error):
         AppLogger.warn('Oturum kapatılamadı: ${error.name}');
-        // Oturum açık kaldı: aktifse üyelikler yeniden dinlenir.
+        // Oturum açık kaldı: aktifse üyelikler yeniden dinlenir, push jetonu
+        // yeniden yazılır.
         if (ref.mounted &&
             watched != null &&
             watched == state.uid &&
             state.status == AuthStatus.active) {
           _watchMemberships(watched);
         }
+        if (ref.mounted) unawaited(registerPushToken());
         return false;
     }
   }
@@ -310,6 +342,55 @@ final class SessionViewModel extends _$SessionViewModel
     );
   }
 
+  /// Bu cihazın push jetonunu etkin oturumun hesabına yazar
+  /// (`SessionPushSync.register`; T-42, CD-165). Oturum etkinleşince, dil
+  /// değişince ve uygulama öne gelince kendiliğinden çağrılır; izin yoksa ya
+  /// da etkin oturum yoksa etkisizdir. Aynı jeton bu oturumda yeniden
+  /// yazılmaz.
+  Future<void> registerPushToken() async {
+    final uid = state.uid;
+    if (uid == null || state.status != AuthStatus.active) return;
+    _pushFor = uid;
+    await _push.register(
+      uid,
+      isCurrent: () =>
+          ref.mounted &&
+          _pushFor == uid &&
+          state.uid == uid &&
+          state.status == AuthStatus.active,
+    );
+  }
+
+  /// Uygulama push'a dokunarak (soğuk) açıldıysa mesajın `data` yükü; yoksa
+  /// `null` (T-42). Uygulama ömründe **bir kez** yanıt verir; oturum önce
+  /// `active` dışında çözüldüyse yük atılmıştır. Kabuk yükü
+  /// `NotificationNavigator.openPush`'a verir.
+  Future<Map<String, String>?> takeLaunchPush() async {
+    final uid = state.uid;
+    if (_pushLaunchHandled ||
+        uid == null ||
+        state.status != AuthStatus.active) {
+      _pushLaunchHandled = true;
+      return null;
+    }
+    _pushLaunchHandled = true;
+    final data = await messagingService.initialMessageData();
+    if (!ref.mounted || state.uid != uid) return null;
+    return data;
+  }
+
+  /// Uygulama arka plandayken dokunulan push'ların yükleri
+  /// (`MessagingService.openedMessageData`); yalnızca etkin oturumda
+  /// iletilir (T-42). Kabuk dinler ve `NotificationNavigator.openPush`'a
+  /// verir.
+  Stream<Map<String, String>> get pushTaps =>
+      messagingService.openedMessageData.where(
+        (_) =>
+            ref.mounted &&
+            state.uid != null &&
+            state.status == AuthStatus.active,
+      );
+
   /// Uygulama hatırlatıcıya dokunarak (soğuk) açıldıysa bildirimin yükü
   /// (`event_reminder:<eventId>`); yoksa `null` (CD-72; PLAN §15.6).
   /// Uygulama ömründe **bir kez** yanıt verir: kabuk ilk kuruluşta çağırır ve
@@ -357,7 +438,9 @@ final class SessionViewModel extends _$SessionViewModel
       _claimsCheckedAt = null;
       _stopMembershipWatch();
       _stopReminders();
+      _stopPush();
       _launchHandled = true;
+      _pushLaunchHandled = true;
       state = _withoutUser(
         state,
       ).copyWith(status: AuthStatus.signedOut, onboardingSeen: onboardingSeen);
@@ -514,9 +597,20 @@ final class SessionViewModel extends _$SessionViewModel
     if (isActive) {
       _watchMemberships(uid);
       if (_remindersFor != uid) unawaited(rescheduleReminders());
+      if (_pushFor != uid) unawaited(registerPushToken());
     } else {
       _launchHandled = true;
+      _pushLaunchHandled = true;
     }
+  }
+
+  /// Oturum dışarıdan kapandı: jeton yenileme dinleyicisi bırakılır (oturum
+  /// yokken hesaba yazılamaz) ve bu oturumda yazılan yerel jeton geçersiz
+  /// kılınır — sonraki kullanıcıya önceki hesabın push'u gelmez (T-42
+  /// güvenlik incelemesi). `signOut` yolunda jeton zaten çıkarılmıştır.
+  void _stopPush() {
+    _pushFor = null;
+    unawaited(_push.release());
   }
 
   /// Oturum kapandı: planlar iptal edilir (yerel bildirim planı, veri değil).
@@ -603,6 +697,10 @@ final class SessionViewModel extends _$SessionViewModel
   /// hata olur (R1 → SYS-01 → SYS-02 "Yeniden dene" kapatmayı yeniden dener).
   Future<void> _closeDeletedAccount(int epoch) async {
     _stopMembershipWatch();
+    // Jetonlar `markDeleted` ile zaten `[]`: yalnızca yerel jeton geçersiz
+    // kılınır (T-42).
+    _pushFor = null;
+    unawaited(_push.forgetDevice());
     final uid = state.uid;
     if (uid != null) {
       final cleanup = await accountDeletionRepository.resumeCleanup(uid);

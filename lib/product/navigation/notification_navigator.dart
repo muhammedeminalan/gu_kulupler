@@ -148,6 +148,7 @@ abstract final class NotificationTargets {
 ///
 /// [openPayload] yerel hatırlatıcı dokunuşudur: `eventReminder` satırıyla
 /// aynı çözüm + hatırlatıcının liste belgesi (`createSelf`, CD-44).
+/// [openPush] push dokunuşudur (T-42): bildirim belgesi okunur, [open].
 ///
 /// Bağımlılıklar `ProjectDependencyMixin`'den (D-04); router ve oturum
 /// değerleri kurucudan gelir ([notificationNavigatorProvider]). Hiçbir metot
@@ -251,6 +252,56 @@ final class NotificationNavigator with ProjectDependencyMixin {
       hasTicket: await _hasTicket(uid, eventId),
     );
     if (location != null) go(location);
+  }
+
+  /// Push'a dokunma (T-42, CD-165; soğuk: splash sonrası
+  /// `MessagingService.initialMessageData`, arka plan:
+  /// `openedMessageData`): [data] yükündeki `notificationId` ile belge
+  /// okunur (`NotificationRepository.getNotification`) ve [open] ile aynı
+  /// çözümden geçer (okundu, bilet ayrımı, varlık kontrolü, sekme).
+  ///
+  /// * Belge yok, silinmiş, başkasının ya da okunamıyor (`notFound` /
+  ///   `permissionDenied`) → SYS-04 (`NotFoundRoute`).
+  /// * Ağ / zaman aşımı → belge yerine yükün `type` + `refs` alanlarıyla
+  ///   açılır (çevrimdışı dokunma ekranı boş bırakmaz; hedefin varlığı yine
+  ///   denetlenir).
+  /// * Kimliği olmayan / bozuk yük ya da oturum yok → gezinme yok +
+  ///   `AppLogger.warn` (yük değeri yazılmaz).
+  Future<void> openPush(Map<String, String> data) async {
+    final uid = userId;
+    if (uid == null) {
+      AppLogger.warn('Push dokunuşu oturumsuz: yönlendirilmedi');
+      return;
+    }
+    final id = data[MessagingService.notificationIdKey];
+    if (id == null || !RepositoryHelpers.isValidId(id)) {
+      AppLogger.warn('Push yükü tanınmadı: bildirim kimliği yok');
+      return;
+    }
+    switch (await notificationRepository.getNotification(id)) {
+      case FirebaseSuccess(data: final notification?)
+          when notification.userId == uid:
+        await open(notification);
+      case FirebaseSuccess() ||
+          FirebaseFailure(
+            error: FirestoreError.notFound || FirestoreError.permissionDenied,
+          ):
+        go(AppPaths.notFound);
+      case FirebaseFailure(:final error):
+        AppLogger.warn('Push bildirimi okunamadı: ${error.name}');
+        await open(
+          NotificationModel(
+            id: id,
+            userId: uid,
+            type: NotificationType.fromJson(
+              data[MessagingService.typeKey] ?? '',
+            ),
+            refs: NotificationRefsModel.fromJson(
+              Map<String, Object?>.of(data),
+            ),
+          ),
+        );
+    }
   }
 
   /// [location] konumunu ev sekmesinde açar (Q-20 = A; `openInTab` ile

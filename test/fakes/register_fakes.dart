@@ -42,6 +42,7 @@ import 'fake_image_picker_service.dart';
 import 'fake_local_reminder_service.dart';
 import 'fake_management_repository.dart';
 import 'fake_membership_repository.dart';
+import 'fake_messaging_service.dart';
 import 'fake_notification_dispatcher.dart';
 import 'fake_notification_repository.dart';
 import 'fake_permission_service.dart';
@@ -189,6 +190,8 @@ void registerDefaultFakes() {
     // T-23 · geçici dosya (.ics) ve yerel hatırlatıcı
     ..registerSingleton<FileService>(FakeFileService())
     ..registerSingleton<LocalReminderService>(FakeLocalReminderService(clock))
+    // T-42 · push (FCM'e gitmez; izin / jeton / dokunma elle kurulur)
+    ..registerSingleton<MessagingService>(FakeMessagingService())
     // T-35 · QR tarayıcı (kamera yok; okuma `emit` ile)
     ..registerSingleton<QrScannerService>(FakeQrScannerService());
 }

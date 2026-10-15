@@ -5,6 +5,7 @@ import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/storage_error.dart';
+import 'package:gu_data/src/models/fcm_token_model.dart';
 import 'package:gu_data/src/models/user_account_model.dart';
 import 'package:gu_data/src/models/user_model.dart';
 import 'package:gu_data/src/models/user_profile_patch.dart';
@@ -114,6 +115,24 @@ abstract interface class UserRepository {
   /// [uid] hesabının `lastLoginAt` alanını sunucu zamanına çeker (+
   /// `updatedAt`); başka alana dokunmaz.
   Future<FirestoreResult<void>> touchLastLogin(String uid);
+
+  /// Bu cihazın push jetonunu [uid] hesabının `fcmTokens` listesine yazar
+  /// (T-42, CD-165): transaction içinde aynı jetonlu eski eleman çıkarılır,
+  /// [token] eklenir; liste `Limits.fcmTokensMax`'ı aşarsa en eski
+  /// `updatedAt`'li eleman atılır (`FcmTokenModel.upserted`). Liste
+  /// değişmezse yazılmaz. Yalnızca hesabın sahibi, silinmemiş hesapta yazar
+  /// (Rules `canUpdateOwnAccount`). Geçersiz jeton / platform / dil
+  /// [FirestoreError.invalidArgument]; belge yoksa [FirestoreError.notFound].
+  Future<FirestoreResult<void>> upsertFcmToken(
+    String uid,
+    FcmTokenModel token,
+  );
+
+  /// [token] jetonunu [uid] hesabının `fcmTokens` listesinden çıkarır (çıkış
+  /// — T-42, CD-165); transaction: oku → süz → yaz. Jeton listede yoksa
+  /// yazılmaz ve sonuç başarıdır. Boş jeton
+  /// [FirestoreError.invalidArgument]; belge yoksa [FirestoreError.notFound].
+  Future<FirestoreResult<void>> removeFcmToken(String uid, String token);
 
   /// İlgi alanlarından en az biri [interestIds] içinde olan silinmemiş
   /// kullanıcılar, en çok [limit] tane (`event_new` ilgi-eşleşmeli alıcılar —

@@ -60,6 +60,13 @@ const QUERIES = Object.freeze({
   listReports: { collection: 'reports', equals: ['status'], order: ['createdAt', 'desc'] },
   // T-38 (CD-46): ActivityRepository.countByWeek — ADM-01 grafiği, `clubId` süzgeci yok (`createdAt` aralığı = sıralama alanı).
   countByWeek: { collection: 'activity', equals: [], inField: 'kind', order: ['createdAt', 'desc'] },
+  // T-42 (Mod F, sözleşme docs/plans/T-42.md §4 b; CD-165): Cloud Functions sorguları — Admin SDK Rules'u atlar ama
+  // bileşik indeks yine gerekir. `promoteWaitlistOnCancel` en eski bekleyen (`waitlistPosition` indeksi) ·
+  // `notifyNewReport` aynı hedefin açık şikayetleri (`listReportsForTarget` indeksi) · `finishAccountDeletions`
+  // `status == 'deleted'` + `deletedAt` aralığı (aralık alanı = sıralama alanı; yeni indeks).
+  fnPromoteOldestWaitlist: { collection: 'rsvps', equals: ['eventId', 'clubId', 'status'], order: ['waitlistAt', 'asc'] },
+  fnOpenReportsForTarget: { collection: 'reports', equals: ['targetType', 'targetId', 'status'] },
+  fnDeletedAccountsWindow: { collection: 'users', equals: ['status'], order: ['deletedAt', 'asc'] },
 });
 
 /**

@@ -93,6 +93,12 @@ final class ControlledPreferencesStore implements AppPreferencesStore {
       inner.setRecentSearches(terms);
 
   @override
+  String? get pushTokenUid => inner.pushTokenUid;
+
+  @override
+  Future<bool> setPushTokenUid(String? uid) => inner.setPushTokenUid(uid);
+
+  @override
   String? composeDraft(String clubId) => inner.composeDraft(clubId);
 
   @override

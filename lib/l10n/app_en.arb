@@ -3883,6 +3883,10 @@
   "@notifPrefsTitle": {
     "description": "Key notifPrefs.title"
   },
+  "notifPushChannelDesc": "Club, event and application notifications.",
+  "@notifPushChannelDesc": {
+    "description": "Key notif.pushChannelDesc"
+  },
   "notifTypeAnnouncementBody": "Announcement: {post}",
   "@notifTypeAnnouncementBody": {
     "description": "Key notifType.announcement.body",

@@ -139,6 +139,7 @@ void main() {
           'markAllRead',
           'softDeleteNotification',
           'restoreNotification',
+          'getNotification',
           'addToBatch',
           'addToTransaction',
           'createMany',
@@ -165,6 +166,29 @@ void main() {
       expect(deleteIdentifiersIn(_interface), isEmpty);
       expect(deleteIdentifiersIn(_writer), isEmpty);
       expect(deleteIdentifiersIn(_implementation), isEmpty);
+    });
+  });
+
+  group('T-42 · NotificationRepository · getNotification', () {
+    test('var → model (kimlikli); yok → null; silinmiş → notFound; geçersiz '
+        'kimlik → invalidArgument', () async {
+      await seed('n_var');
+      await seed('n_silinmis', isDeleted: true);
+
+      final found = await repository.getNotification('n_var');
+      expect(found.dataOrNull?.id, 'n_var');
+      expect(found.dataOrNull?.type, NotificationType.announcement);
+      expect(found.dataOrNull?.refs.postId, _postId);
+      expect((await repository.getNotification('n_yok')).isSuccess, isTrue);
+      expect((await repository.getNotification('n_yok')).dataOrNull, isNull);
+      expect(
+        (await repository.getNotification('n_silinmis')).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(
+        (await repository.getNotification('n/1')).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
     });
   });
 
