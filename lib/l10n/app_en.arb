@@ -408,6 +408,15 @@
   "@adminClubsEmpty": {
     "description": "Key adminClubs.empty"
   },
+  "adminClubsPresident": "President: {name}",
+  "@adminClubsPresident": {
+    "description": "Key adminClubs.president",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminClubsSuspend": "Suspend",
   "@adminClubsSuspend": {
     "description": "Key adminClubs.suspend"
@@ -1224,6 +1233,14 @@
   "clubFormAdvisorTitle": "Title",
   "@clubFormAdvisorTitle": {
     "description": "Key clubForm.advisorTitle"
+  },
+  "clubFormAdvisorLinked": "Account linked",
+  "@clubFormAdvisorLinked": {
+    "description": "Key clubForm.advisorLinked"
+  },
+  "clubFormAdvisorTitlePlaceholder": "Dr.",
+  "@clubFormAdvisorTitlePlaceholder": {
+    "description": "Key clubForm.advisorTitlePlaceholder"
   },
   "clubFormAssignPresident": "Assign president",
   "@clubFormAssignPresident": {

@@ -72,6 +72,7 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
         GoRoute(path: '/admin', builder: (_, _) => _view),
+        GoRoute(path: '/admin/clubs', builder: (_, s) => stub(s)),
         GoRoute(path: '/clubs/:clubId', builder: (_, s) => stub(s)),
       ],
     ),
@@ -217,6 +218,18 @@ void main() {
 
       await _tapKey(tester, GuKey.action('ADM-01.topClub.c03'));
       expect(_location(router), '/clubs/c03');
+    });
+
+    testWidgets('"Aktif kulüp" → ADM-02; "Askıdaki kulüp" → ADM-02 askıda '
+        'sekmesi (W-45)', (tester) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, GuKey.action('ADM-01.kpi.clubs'));
+      expect(_location(router), '/admin/clubs');
+
+      router.go('/admin');
+      await tester.pumpAndSettle();
+      await _tapKey(tester, GuKey.action('ADM-01.task.suspended'));
+      expect(_location(router), '/admin/clubs?tab=suspended');
     });
 
     testWidgets('hata → "Yeniden dene" yeniden okur', (tester) async {
