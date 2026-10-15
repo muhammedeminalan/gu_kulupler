@@ -10,7 +10,8 @@ plugins {
 
 android {
     namespace = "com.gukulupler.gu_kulupler"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14.x en az 37 ister (AAR metadata); targetSdk değişmez.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
