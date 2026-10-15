@@ -211,7 +211,10 @@ mixin ManageApplicationsViewMixin on ConsumerState<ManageApplicationsView> {
       case ApplicationDetailAction.undo:
         await vm.undoDecision(userId);
       case ApplicationDetailAction.profile:
-        ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+        ClubDetailUserProfileRoute(
+          clubId: widget.clubId,
+          userId: userId,
+        ).go(context);
     }
   }
 

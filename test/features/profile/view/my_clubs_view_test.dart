@@ -32,6 +32,7 @@ import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
 import '../../../fixtures/club_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -167,6 +168,7 @@ void main() {
       expect(find.text('21 Mayıs 2026'), findsOneWidget);
       expect(find.text(l10n.roleMember), findsNWidgets(2));
       expect(find.byKey(_k('menu.c07')), findsOneWidget);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('bekleyen ve geçmiş sekmeleri durum rozeti çizer', (

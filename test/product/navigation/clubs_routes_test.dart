@@ -7,6 +7,9 @@
 // T-18 · CLB-06 `/clubs/:clubId/members` (guard `üye`), CLB-07
 // `/clubs/user/:userId?clubId=` (guard `A`; `user` parçası `:clubId`
 // kalıbından önce eşleşir).
+// T-43 · K-69: kulüp bağlamlı CLB-07 `/clubs/:clubId/user/:userId` (CLB-03
+// altı, guard `A`) ve `/clubs/:clubId/members/:userId` (CLB-06 altı, guard
+// `üye`) — geri geldiği kulüp ekranına döner.
 // T-20 · FED-02 `/clubs/:clubId/posts/:postId` (guard `üye`); SHT-09 gövdesi
 // kulüp sayfasına rotadan verilir (`commentsSheetBuilder`).
 // T-21 · FED-03 `/clubs/:clubId/compose?edit=` (guard `M`).
@@ -260,6 +263,48 @@ void main() {
       expect(app.location, '/clubs/user/u02?clubId=c03');
       expect(profile().userId, 'u02');
       expect(profile().clubId, 'c03');
+    });
+
+    testWidgets('T-43 · kulüp bağlamlı profil (K-69): CLB-03 ve CLB-06 '
+        'altında açılır, `clubId` yoldan gelir; geri geldiği kulüp ekranına '
+        'döner', (tester) async {
+      UserProfileView profile() =>
+          tester.widget<UserProfileView>(find.byType(UserProfileView));
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeMember('c01'),
+        location: '/clubs/c01',
+      );
+      const ClubDetailUserProfileRoute(
+        clubId: 'c01',
+        userId: 'u01',
+      ).go(tester.element(find.byType(ClubDetailView)));
+      await tester.pumpAndSettle();
+      expect(app.location, '/clubs/c01/user/u01');
+      expect(profile().userId, 'u01');
+      expect(profile().clubId, 'c01');
+      expect(app.stackDepth(GuTab.clubs), 3);
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01');
+      expect(find.byType(ClubDetailView), findsOneWidget);
+
+      await app.go('/clubs/c01/members');
+      const ClubMembersUserProfileRoute(
+        clubId: 'c01',
+        userId: 'u02',
+      ).go(tester.element(find.byType(ClubMembersView)));
+      await tester.pumpAndSettle();
+      expect(app.location, '/clubs/c01/members/u02');
+      expect(profile().userId, 'u02');
+      expect(profile().clubId, 'c01');
+      expect(app.stackDepth(GuTab.clubs), 4);
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01/members');
+      expect(find.byType(ClubMembersView), findsOneWidget);
+
+      // CLB-06 guard'ı (üye) alt profilde de geçerlidir.
+      await app.go('/clubs/c03/members/u01');
+      expect(app.location, '/clubs/c03');
     });
   });
 

@@ -32,6 +32,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fixtures/demo_data.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -99,7 +100,11 @@ Future<GoRouter> _pumpRoute(
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
         GoRoute(path: '/events/:eventId', builder: (_, s) => stub(s)),
-        GoRoute(path: '/clubs/user/:userId', builder: (_, s) => stub(s)),
+        // T-43 · K-69: kulüp bağlamlı CLB-07 (geri → CLB-03).
+        GoRoute(
+          path: '/clubs/:clubId/user/:userId',
+          builder: (_, s) => stub(s),
+        ),
         GoRoute(
           path: '/clubs/:clubId/posts/:postId',
           builder: (_, s) => stub(s),
@@ -209,6 +214,7 @@ void main() {
       expect(find.byType(ActivityRow), findsNWidgets(kActIds.length));
       expect(find.byType(GuListEnd), findsOneWidget);
       expect(find.text(l10n.mgtReadOnlyBanner), findsNothing);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('danışman: salt okunur bandı', (tester) async {
@@ -301,7 +307,10 @@ void main() {
       ),
       (
         'a118',
-        const ClubUserProfileRoute(userId: 'u086', clubId: kActClubId).location,
+        const ClubDetailUserProfileRoute(
+          clubId: kActClubId,
+          userId: 'u086',
+        ).location,
       ),
     ]) {
       testWidgets('satır $row → $target', (tester) async {

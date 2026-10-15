@@ -37,6 +37,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_management_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -204,6 +205,7 @@ void main() {
       if (kManageClub.advisor != null) {
         expect(find.text(l10n.clubSettingsAdvisorLocked), findsOneWidget);
       }
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('kirli form: "Kaydet" etkin; onay kapalı → uyarı bandı; '

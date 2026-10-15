@@ -36,6 +36,7 @@ import '../../../fakes/fake_admin_repository.dart';
 import '../../../fakes/fake_auth_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -186,6 +187,7 @@ void main() {
         expect(find.text(l10n.contentReports(3)), findsOneWidget);
         expect(find.text('Nisa Yıldırım'), findsOneWidget);
         expect(find.text('E-Spor Kulübü'), findsOneWidget);
+        await expectA11yGuidelines(tester);
       });
     }
 

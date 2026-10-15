@@ -21,6 +21,7 @@ import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -174,6 +175,7 @@ void main() {
         expect(find.text(l10n.adminPendingTasks), findsOneWidget);
         expect(find.text(l10n.adminTaskReports(5)), findsOneWidget);
         expect(find.text(l10n.adminTaskSuspended(1)), findsOneWidget);
+        await expectA11yGuidelines(tester);
       });
     }
 
@@ -218,6 +220,26 @@ void main() {
 
       await _tapKey(tester, GuKey.action('ADM-01.topClub.c03'));
       expect(_location(router), '/clubs/c03');
+    });
+
+    testWidgets('T-43 · en aktif kulüp satırları en az 44 dp (D-22, '
+        'kullanıcı kararı)', (tester) async {
+      await _pump(tester);
+      final rows = find.byWidgetPredicate(
+        (widget) =>
+            widget is GuTapTarget &&
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'ADM-01.topClub.',
+            ),
+      );
+      expect(rows, findsWidgets);
+      for (var i = 0; i < rows.evaluate().length; i++) {
+        expect(
+          tester.getSize(rows.at(i)).height,
+          greaterThanOrEqualTo(GuSizes.tapTargetIos),
+        );
+      }
     });
 
     testWidgets('"Aktif kulüp" → ADM-02; "Askıdaki kulüp" → ADM-02 askıda '

@@ -1,4 +1,4 @@
-// T-11 · RouteAccessTable: 57 yol kalıbı ↔ PLAN §13.3 "Guard" sütunu
+// T-11 · RouteAccessTable: 59 yol kalıbı (T-43: +2 kulüp bağlamlı CLB-07) ↔ PLAN §13.3 "Guard" sütunu
 // (navigation.md §2). Tablo burada açıkça yazılıdır; satır başına assert.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/product/navigation/route_guards.dart';
@@ -20,7 +20,7 @@ const Map<String, RouteAccess> _expected = {
   '/verify': RouteAccess.unverified,
   '/setup-profile': RouteAccess.profileIncomplete,
   '/legal/:tip': RouteAccess.public,
-  // §13.3.2 Kulüpler (20)
+  // §13.3.2 Kulüpler (22)
   '/clubs': RouteAccess.active,
   '/clubs/search': RouteAccess.active,
   '/clubs/user/:userId': RouteAccess.active,
@@ -28,6 +28,8 @@ const Map<String, RouteAccess> _expected = {
   '/clubs/:clubId/applied': RouteAccess.active,
   '/clubs/:clubId/application': RouteAccess.active,
   '/clubs/:clubId/members': RouteAccess.member,
+  '/clubs/:clubId/members/:userId': RouteAccess.member,
+  '/clubs/:clubId/user/:userId': RouteAccess.active,
   '/clubs/:clubId/posts/:postId': RouteAccess.member,
   '/clubs/:clubId/compose': RouteAccess.manager,
   '/clubs/:clubId/manage': RouteAccess.managerOrAdvisor,
@@ -88,8 +90,8 @@ String _sample(String pattern) => pattern.replaceAllMapped(
 
 void main() {
   group('T-11 · RouteAccessTable', () {
-    test('57 kalıp vardır ve PLAN §13.3 ile birebir aynıdır', () {
-      expect(_expected, hasLength(57));
+    test('59 kalıp vardır ve PLAN §13.3 ile birebir aynıdır', () {
+      expect(_expected, hasLength(59));
       expect(RouteAccessTable.patterns, _expected);
     });
 
@@ -133,6 +135,15 @@ void main() {
       expect(patternOf('/clubs/c01'), '/clubs/:clubId');
       expect(patternOf('/clubs/user/u01'), '/clubs/user/:userId');
       expect(patternOf('/clubs/c01/applied'), '/clubs/:clubId/applied');
+      expect(patternOf('/clubs/c01/user/u01'), '/clubs/:clubId/user/:userId');
+      expect(
+        patternOf('/clubs/c01/members/u01'),
+        '/clubs/:clubId/members/:userId',
+      );
+      expect(
+        patternOf('/clubs/c01/manage/members'),
+        '/clubs/:clubId/manage/members',
+      );
       expect(patternOf('/events/mine'), '/events/mine');
       expect(patternOf('/events/search'), '/events/search');
       expect(patternOf('/events/e01'), '/events/:eventId');

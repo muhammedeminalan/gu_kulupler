@@ -36,6 +36,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_image_picker_service.dart';
 import '../../../fakes/fake_permission_service.dart';
 import '../../../fakes/fake_user_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -189,6 +190,7 @@ void main() {
           expect(find.byKey(_back), findsNothing);
           expect(find.byKey(_finish), findsNothing);
           expect(find.byType(FormErrorLine), findsNothing);
+          await expectA11yGuidelines(tester);
         },
       );
 

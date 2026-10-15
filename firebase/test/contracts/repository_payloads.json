@@ -9313,6 +9313,46 @@
         }
       },
       {
+        "call": "AdminRepository.updateClubIdentity · SHT-31 şablona dön (kapak bırakılır)",
+        "role": "super",
+        "note": "W-102: yüklenmiş kapağı olan kulüpte ADM-03'te SHT-31 şablonu seçilip kaydedilir — aynı kimlik güncellemesinde şablon alanları + coverPath: null (ClubIdentityPatch.clearCoverPath; Rules süper dalı coverClearOk: yalnızca null ya da eski değer — yönetim dalıyla aynı kalıp). Dosya silinmez (D-10); logoPath dokunulmaz. Kategori de değişir: yük yönetim ayar dalının beyaz listesine sığmaz (muafiyet yok).",
+        "tx": true,
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "logoPath": "clubs/c01/20261008T201500Z_1a2b3c4d5e6f7081.jpg",
+            "coverPath": "clubs/c01/20261008T201501Z_3f9a1c2b7d4e5f60.png"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "categoryId": "k03",
+              "palette": "slate",
+              "pattern": "dots",
+              "coverSeed": "sablon-1",
+              "coverPath": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "categoryId": "k03",
+            "palette": "slate",
+            "pattern": "dots",
+            "coverSeed": "sablon-1",
+            "coverPath": null,
+            "logoPath": "clubs/c01/20261008T201500Z_1a2b3c4d5e6f7081.jpg"
+          }
+        }
+      },
+      {
         "call": "AdminRepository.updateClubMedia · logo",
         "role": "super",
         "note": "Süper medya dalı: ön okuma, Storage yüklemesi (uploaderId = süper admin), TEK güncelleme (logoPath + updatedAt) — kulüp günlüğü YOK (yönetim dalından farkı). Aynı tek güncellemeyi kulübün etkin yöneticileri de yönetim dalından (T-36 canUpdateMedia) gönderebilir: yol bu kulübün klasöründe, otomatik kimlikli günlük kulüp tarafından zorlanamaz — muaf.",

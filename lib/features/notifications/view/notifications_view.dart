@@ -161,7 +161,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView>
               onAction: enableNotifications,
               onDismiss: dismissBanner,
               dismissActionKey: GuKey.action('NTF-01.dismissBanner'),
-              dismissSemanticLabel: l10n.a11yClose,
+              dismissSemanticLabel: l10n.a11yDismiss,
             ),
           // `.hscroll.py8` yazılmıştır, ancak `.hscroll` dolgusu ezer:
           // dikey 3 px (referans görüntüde ölçüldü; AUT-06 ile aynı).

@@ -31,6 +31,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_qr_scanner_service.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -169,6 +170,7 @@ void main() {
         ),
       );
       expect(systemUi.style, GuSystemUiStyle.lightIcons);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('kamera izni reddi: "Kamera izni gerekli" + açıklama, "Kod '

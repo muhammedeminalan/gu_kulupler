@@ -37,6 +37,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fixtures/demo_data.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -116,7 +117,11 @@ Future<GoRouter> _pumpRoute(
       initialLocation: '/start',
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
-        GoRoute(path: '/clubs/user/:userId', builder: (_, s) => stub(s)),
+        // T-43 · K-69: kulüp bağlamlı CLB-07 (geri → CLB-03).
+        GoRoute(
+          path: '/clubs/:clubId/user/:userId',
+          builder: (_, s) => stub(s),
+        ),
         GoRoute(
           path: '/clubs/:clubId',
           builder: (_, s) => stub(s),
@@ -213,6 +218,7 @@ void main() {
           expect(applied[i].isAfter(applied[i - 1]), isFalse);
         }
         expect(find.byType(GuBanner), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

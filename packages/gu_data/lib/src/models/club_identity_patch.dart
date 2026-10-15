@@ -15,8 +15,11 @@ import 'package:gu_data/src/models/enums/club_pattern.dart';
 /// süper admine kapalıdır (Q-09). `status` / `suspendReason`
 /// (`suspendClub` / `activateClub`), `presidentId` (`assignPresident`),
 /// `advisor.userId` (`MembershipRepository.setAdvisor`), sayaç, sabitleme ve
-/// logo / kapak dosya yolları (`AdminRepository.updateClubMedia`) bu yamayla
-/// **değiştirilemez** (tipte yoktur; Rules da reddeder).
+/// logo / kapak dosyasının **yeni** yolu (`AdminRepository.updateClubMedia`)
+/// bu yamayla **değiştirilemez** (tipte yoktur; Rules da reddeder). Yüklenmiş
+/// kapak ise bırakılabilir ([clearCoverPath] → `coverPath: null`; dosya
+/// silinmez — D-10; yönetici dalındaki `ClubSettingsPatch.clearCoverPath` ile
+/// aynı kalıp, W-102).
 ///
 /// [name] ve [nameLower] birlikte verilir (CD-11; çağıran `trLower()` ile
 /// üretir). [advisor] danışmanın adını / ünvanını yazar, bağlı hesabı
@@ -39,6 +42,7 @@ final class ClubIdentityPatch extends Equatable {
     this.approvalRequired,
     this.advisor,
     this.clearAdvisor = false,
+    this.clearCoverPath = false,
   }) : assert(
          !clearAdvisor || advisor == null,
          'clearAdvisor ile advisor birlikte verilemez',
@@ -86,6 +90,12 @@ final class ClubIdentityPatch extends Equatable {
   /// Danışman kaldırılıyor mu (`advisor: null`)?
   final bool clearAdvisor;
 
+  /// Yüklenmiş kapak bırakılıp şablona dönülüyor mu (ADM-03 → SHT-31
+  /// "Kullan")? `true` → `coverPath: null` yazılır (Rules §3.3 U(süper)
+  /// yalnızca `null`'a izin verir; yeni yol yalnızca `updateClubMedia`
+  /// dalındadır).
+  final bool clearCoverPath;
+
   /// Yama hiçbir alan taşımıyor mu?
   bool get isEmpty =>
       name == null &&
@@ -101,7 +111,8 @@ final class ClubIdentityPatch extends Equatable {
       applicationsOpen == null &&
       approvalRequired == null &&
       advisor == null &&
-      !clearAdvisor;
+      !clearAdvisor &&
+      !clearCoverPath;
 
   @override
   List<Object?> get props => [
@@ -119,5 +130,6 @@ final class ClubIdentityPatch extends Equatable {
     approvalRequired,
     advisor,
     clearAdvisor,
+    clearCoverPath,
   ];
 }

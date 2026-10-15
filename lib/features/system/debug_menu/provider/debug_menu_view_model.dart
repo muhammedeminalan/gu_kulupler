@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/connectivity/connectivity_view_model.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/env/app_environment.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
@@ -19,19 +20,27 @@ part 'debug_menu_view_model.g.dart';
 ///   yansıtılır ve ona yazılır.
 /// * Demo hesap geçişi (CD-132 (23)): [signInDemo] seed'deki hesapla
 ///   emülatörde oturum açar, [signOut] oturumu kapatır.
-// TODO(T-43): çevrimdışı simülasyonu ve boş / hata zorlama (`DebugFlags`).
+/// * Çevrimdışı simülasyonu (T-43): [setSimulatedOffline] kök
+///   `ConnectivityViewModel`'in simülasyon bayrağını açar / kapar (bant +
+///   yazma engeli; yalnızca `AppEnvironment.debugMenuEnabled` derlemesinde
+///   etkili). Boş / hata zorlama kapsam dışıdır — durum testleri karşılar.
 @riverpod
 final class DebugMenuViewModel extends _$DebugMenuViewModel
     with ProjectDependencyMixin {
   @override
   DebugMenuState build() {
     final preferences = ref.watch(appPreferencesViewModelProvider);
-    // Tercih değişince yeniden kurulur; demo giriş alanları korunur.
+    final isSimulatedOffline = ref
+        .watch(connectivityViewModelProvider)
+        .isSimulated;
+    // Tercih / simülasyon değişince yeniden kurulur; demo giriş alanları
+    // korunur.
     return (stateOrNull ?? const DebugMenuState()).copyWith(
       themeMode: preferences.themeMode,
       locale: preferences.locale,
       clearLocale: preferences.locale == null,
       textScale: preferences.textScale,
+      isSimulatedOffline: isSimulatedOffline,
     );
   }
 
@@ -47,6 +56,16 @@ final class DebugMenuViewModel extends _$DebugMenuViewModel
   /// Metin ölçeğini değiştirir.
   Future<void> setTextScale(GuTextScaleLevel level) =>
       _preferences.setTextScale(level);
+
+  /// Çevrimdışılığı simüle eder / bırakır (`ConnectivityViewModel`). Üretim
+  /// derlemesinde etkisizdir; [debugMenuEnabled] yalnızca testte verilir
+  /// (bayrak derleme sabitidir).
+  void setSimulatedOffline(
+    bool value, {
+    bool debugMenuEnabled = AppEnvironment.debugMenuEnabled,
+  }) => ref
+      .read(connectivityViewModelProvider.notifier)
+      .setSimulatedOffline(value, debugMenuEnabled: debugMenuEnabled);
 
   /// [account] demo hesabıyla oturum açar ve açılıp açılmadığını döndürür.
   ///

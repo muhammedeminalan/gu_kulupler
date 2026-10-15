@@ -35,6 +35,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
 import '../../../fixtures/club_model_fixtures.dart';
 import '../../../fixtures/user_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -211,6 +212,7 @@ void main() {
         expect(find.byKey(_unlinkAdvisor), findsNothing);
         final switches = tester.widgetList<GuSwitch>(find.byType(GuSwitch));
         expect(switches.map((s) => s.value), [true, true]);
+        await expectA11yGuidelines(tester);
       });
     }
 

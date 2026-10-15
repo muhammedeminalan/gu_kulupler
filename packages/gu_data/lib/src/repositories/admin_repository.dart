@@ -67,6 +67,8 @@ abstract interface class AdminRepository {
   /// [ClubIdentityPatch.advisor] bağlı hesabı (`advisor.userId`) korur;
   /// hesabı bağlı danışman [ClubIdentityPatch.clearAdvisor] ile kaldırılamaz
   /// → [FirestoreError.failedPrecondition] (önce `setAdvisor(active: false)`).
+  /// [ClubIdentityPatch.clearCoverPath] yüklenmiş kapağı bırakır (`coverPath:
+  /// null`, dosya silinmez — D-10; W-102).
   /// Boş yama [FirestoreError.invalidArgument]; kulüp yoksa / silinmişse
   /// [FirestoreError.notFound].
   Future<FirestoreResult<void>> updateClubIdentity(

@@ -330,10 +330,6 @@
   "@adminKpiUsers": {
     "description": "Key admin.kpi.users"
   },
-  "adminNoAccess": "This area is for campus administration only.",
-  "@adminNoAccess": {
-    "description": "Key admin.noAccess"
-  },
   "adminPendingTasks": "Pending tasks",
   "@adminPendingTasks": {
     "description": "Key admin.pendingTasks"
@@ -421,10 +417,6 @@
   "@adminClubsSuspend": {
     "description": "Key adminClubs.suspend"
   },
-  "adminClubsTitle": "Clubs",
-  "@adminClubsTitle": {
-    "description": "Key adminClubs.title"
-  },
   "adminUsersClubCount": "{count, plural, one{{count} club} other{{count} clubs}}",
   "@adminUsersClubCount": {
     "description": "Key adminUsers.clubCount",
@@ -434,17 +426,9 @@
       }
     }
   },
-  "adminUsersHistory": "Membership history",
-  "@adminUsersHistory": {
-    "description": "Key adminUsers.history"
-  },
   "adminUsersManagers": "Managers",
   "@adminUsersManagers": {
     "description": "Key adminUsers.managers"
-  },
-  "adminUsersNoHistory": "No membership records.",
-  "@adminUsersNoHistory": {
-    "description": "Key adminUsers.noHistory"
   },
   "adminUsersSearch": "Search name or email",
   "@adminUsersSearch": {
@@ -453,10 +437,6 @@
   "adminUsersSuspend": "Suspend",
   "@adminUsersSuspend": {
     "description": "Key adminUsers.suspend"
-  },
-  "adminUsersTitle": "Users",
-  "@adminUsersTitle": {
-    "description": "Key adminUsers.title"
   },
   "adminUsersUnsuspend": "Unsuspend",
   "@adminUsersUnsuspend": {
@@ -881,10 +861,6 @@
   "@authLogout": {
     "description": "Key auth.logout"
   },
-  "authNewEmail": "New email",
-  "@authNewEmail": {
-    "description": "Key auth.newEmail"
-  },
   "authNoAccount": "Don't have an account?",
   "@authNoAccount": {
     "description": "Key auth.noAccount"
@@ -1172,10 +1148,6 @@
         "type": "String"
       }
     }
-  },
-  "clubGoClub": "Go to club",
-  "@clubGoClub": {
-    "description": "Key club.goClub"
   },
   "clubLeave": "Leave club",
   "@clubLeave": {
@@ -1489,17 +1461,9 @@
   "@commonDeletedUser": {
     "description": "Key common.deletedUser"
   },
-  "commonDemo": "Demo",
-  "@commonDemo": {
-    "description": "Key common.demo"
-  },
   "commonEdit": "Edit",
   "@commonEdit": {
     "description": "Key common.edit"
-  },
-  "commonEmptyGeneric": "Nothing here yet",
-  "@commonEmptyGeneric": {
-    "description": "Key common.emptyGeneric"
   },
   "commonFilter": "Filter",
   "@commonFilter": {
@@ -1608,10 +1572,6 @@
   "commonUndo": "Undo",
   "@commonUndo": {
     "description": "Key common.undo"
-  },
-  "commonUpdate": "Update",
-  "@commonUpdate": {
-    "description": "Key common.update"
   },
   "commonView": "View",
   "@commonView": {
@@ -1846,6 +1806,10 @@
         "type": "String"
       }
     }
+  },
+  "debugMenuSimulateOffline": "Simulate offline",
+  "@debugMenuSimulateOffline": {
+    "description": "Key debugMenu.simulateOffline"
   },
   "debugMenuSystemScreens": "System screens",
   "@debugMenuSystemScreens": {
@@ -2400,10 +2364,6 @@
   "@dlg26Body": {
     "description": "Key dlg.26.body"
   },
-  "dlg26Store": "the store",
-  "@dlg26Store": {
-    "description": "Key dlg.26.store"
-  },
   "dlg26Title": "Update required",
   "@dlg26Title": {
     "description": "Key dlg.26.title"
@@ -2504,10 +2464,6 @@
   "@dlg32Body2": {
     "description": "Key dlg.32.body2"
   },
-  "dlg32Link": "the link",
-  "@dlg32Link": {
-    "description": "Key dlg.32.link"
-  },
   "dlg32Title": "Leaving the app",
   "@dlg32Title": {
     "description": "Key dlg.32.title"
@@ -2519,18 +2475,6 @@
   "dlgPermissionNotNow": "Not now",
   "@dlgPermissionNotNow": {
     "description": "Key dlg.permission.notNow"
-  },
-  "dlgSystemAllow": "Allow",
-  "@dlgSystemAllow": {
-    "description": "Key dlg.system.allow"
-  },
-  "dlgSystemDeny": "Don't Allow",
-  "@dlgSystemDeny": {
-    "description": "Key dlg.system.deny"
-  },
-  "dlgSystemPermissionBody": "(System permission simulation)",
-  "@dlgSystemPermissionBody": {
-    "description": "Key dlg.system.permissionBody"
   },
   "editProfileBio": "Short bio",
   "@editProfileBio": {
@@ -3105,15 +3049,6 @@
   "@feedLike": {
     "description": "Key feed.like"
   },
-  "feedNewPosts": "{count} new posts",
-  "@feedNewPosts": {
-    "description": "Key feed.newPosts",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "feedPinned": "Pinned",
   "@feedPinned": {
     "description": "Key feed.pinned"
@@ -3679,10 +3614,6 @@
   "@mgtMembersSortName": {
     "description": "Key mgtMembers.sort.name"
   },
-  "mgtMembersSortRate": "By attendance",
-  "@mgtMembersSortRate": {
-    "description": "Key mgtMembers.sort.rate"
-  },
   "mgtMembersSortRole": "By role",
   "@mgtMembersSortRole": {
     "description": "Key mgtMembers.sort.role"
@@ -3782,10 +3713,6 @@
   "notifMarkRead": "Mark read",
   "@notifMarkRead": {
     "description": "Key notif.markRead"
-  },
-  "notifMarkUnread": "Mark unread",
-  "@notifMarkUnread": {
-    "description": "Key notif.markUnread"
   },
   "notifMuteType": "Mute this type",
   "@notifMuteType": {
@@ -4114,10 +4041,6 @@
   "@onbStart": {
     "description": "Key onb.start"
   },
-  "onbTitle": "Welcome",
-  "@onbTitle": {
-    "description": "Key onb.title"
-  },
   "placePl01": "Congress & Culture Centre — Hall A",
   "@placePl01": {
     "description": "Key place.pl01"
@@ -4263,10 +4186,6 @@
   "@reminder1h": {
     "description": "Key reminder.1h"
   },
-  "reminderBoth": "Both",
-  "@reminderBoth": {
-    "description": "Key reminder.both"
-  },
   "reminderNone": "No reminder",
   "@reminderNone": {
     "description": "Key reminder.none"
@@ -4343,10 +4262,6 @@
   "@reportsTargetUser": {
     "description": "Key reports.target.user"
   },
-  "reportsTitle": "Reports",
-  "@reportsTitle": {
-    "description": "Key reports.title"
-  },
   "roleAdvisor": "Advisor",
   "@roleAdvisor": {
     "description": "Key role.advisor"
@@ -4399,21 +4314,9 @@
       }
     }
   },
-  "scanDemoInvalid": "Invalid ticket",
-  "@scanDemoInvalid": {
-    "description": "Key scan.demo.invalid"
-  },
-  "scanDemoUsed": "Already scanned",
-  "@scanDemoUsed": {
-    "description": "Key scan.demo.used"
-  },
   "scanDemoValid": "Valid ticket",
   "@scanDemoValid": {
     "description": "Key scan.demo.valid"
-  },
-  "scanDemoScan": "scan a ticket",
-  "@scanDemoScan": {
-    "description": "Key scan.demoScan"
   },
   "scanEnterCode": "Ticket code",
   "@scanEnterCode": {
@@ -4442,10 +4345,6 @@
   "scanPermissionTitle": "Camera permission needed",
   "@scanPermissionTitle": {
     "description": "Key scan.permissionTitle"
-  },
-  "scanTitle": "QR scanner",
-  "@scanTitle": {
-    "description": "Key scan.title"
   },
   "scanTorch": "Torch",
   "@scanTorch": {
@@ -4479,10 +4378,6 @@
   "searchSuggested": "Suggested for you",
   "@searchSuggested": {
     "description": "Key search.suggested"
-  },
-  "searchTitle": "Search",
-  "@searchTitle": {
-    "description": "Key search.title"
   },
   "set03ConfirmWord": "SİL",
   "@set03ConfirmWord": {
@@ -4693,10 +4588,6 @@
   "@sht09SeeAll": {
     "description": "Key sht.09.seeAll"
   },
-  "sht09Title": "Comments",
-  "@sht09Title": {
-    "description": "Key sht.09.title"
-  },
   "sht10Desc": "Your report goes to campus administration; your identity is not shared.",
   "@sht10Desc": {
     "description": "Key sht.10.desc"
@@ -4819,22 +4710,9 @@
   "@sht15Other": {
     "description": "Key sht.15.other"
   },
-  "sht15SystemShare": "the system share sheet",
-  "@sht15SystemShare": {
-    "description": "Key sht.15.systemShare"
-  },
   "sht15Title": "Share",
   "@sht15Title": {
     "description": "Key sht.15.title"
-  },
-  "sht16Add": "Add ({count})",
-  "@sht16Add": {
-    "description": "Key sht.16.add",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
   },
   "sht16Camera": "Camera",
   "@sht16Camera": {
@@ -4932,10 +4810,6 @@
   "@sht23Duplicate": {
     "description": "Key sht.23.duplicate"
   },
-  "sht23Title": "Event menu",
-  "@sht23Title": {
-    "description": "Key sht.23.title"
-  },
   "sht23Unpublish": "Unpublish / move to drafts",
   "@sht23Unpublish": {
     "description": "Key sht.23.unpublish"
@@ -4952,10 +4826,6 @@
   "@sht24InvalidDesc": {
     "description": "Key sht.24.invalidDesc"
   },
-  "sht24InvalidNone": "Could not read. No registered tickets left to scan.",
-  "@sht24InvalidNone": {
-    "description": "Key sht.24.invalidNone"
-  },
   "sht24Next": "Next ticket",
   "@sht24Next": {
     "description": "Key sht.24.next"
@@ -4968,10 +4838,6 @@
         "type": "String"
       }
     }
-  },
-  "sht24Title": "Scan result",
-  "@sht24Title": {
-    "description": "Key sht.24.title"
   },
   "sht24Unreadable": "Couldn't read the code. Scan again or enter it manually.",
   "@sht24Unreadable": {
@@ -5178,10 +5044,6 @@
   "@statusMembers": {
     "description": "Key status.members"
   },
-  "statusNone": "Not a member",
-  "@statusNone": {
-    "description": "Key status.none"
-  },
   "statusOpen": "Open",
   "@statusOpen": {
     "description": "Key status.open"
@@ -5213,18 +5075,6 @@
   "statusSuspended": "Suspended",
   "@statusSuspended": {
     "description": "Key status.suspended"
-  },
-  "statusUsed": "Scanned",
-  "@statusUsed": {
-    "description": "Key status.used"
-  },
-  "statusValid": "Valid",
-  "@statusValid": {
-    "description": "Key status.valid"
-  },
-  "statusVoid": "Void",
-  "@statusVoid": {
-    "description": "Key status.void"
   },
   "statusWaitlist": "Waitlist",
   "@statusWaitlist": {
@@ -5837,15 +5687,6 @@
   "@tst57": {
     "description": "Key tst.57"
   },
-  "tst58": "Demo: opening {what}.",
-  "@tst58": {
-    "description": "Key tst.58",
-    "placeholders": {
-      "what": {
-        "type": "String"
-      }
-    }
-  },
   "tstX1": "This club is not accepting applications right now.",
   "@tstX1": {
     "description": "Key tst.x1"
@@ -5906,18 +5747,6 @@
   "tstX20": "Type DEVRET to confirm.",
   "@tstX20": {
     "description": "Key tst.x20"
-  },
-  "tstX21": "This account has no pending application.",
-  "@tstX21": {
-    "description": "Key tst.x21"
-  },
-  "tstX22": "Sign in with an account first.",
-  "@tstX22": {
-    "description": "Key tst.x22"
-  },
-  "tstX23": "Demo data was reset.",
-  "@tstX23": {
-    "description": "Key tst.x23"
   },
   "tstX3": "Wait {s}s to resend.",
   "@tstX3": {

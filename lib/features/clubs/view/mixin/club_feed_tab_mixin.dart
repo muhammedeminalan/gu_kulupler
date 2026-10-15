@@ -139,9 +139,9 @@ mixin ClubFeedTabMixin on ConsumerState<ClubFeedTab> {
   /// Hesabı silinmiş yazarın profili açılmaz (`cards.js:106`).
   void openAuthor(PostModel post) {
     if (_state.authorName(post.authorId) == null) return;
-    ClubUserProfileRoute(
-      userId: post.authorId,
+    ClubDetailUserProfileRoute(
       clubId: widget.clubId,
+      userId: post.authorId,
     ).go(context);
   }
 

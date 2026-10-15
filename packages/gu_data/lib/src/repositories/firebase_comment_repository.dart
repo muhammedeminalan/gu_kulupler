@@ -7,6 +7,7 @@ import 'package:gu_data/src/constants/firestore_ids.dart';
 import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
+import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/models/comment_model.dart';
 import 'package:gu_data/src/repositories/comment_repository.dart';
 import 'package:gu_data/src/repositories/query_x.dart';
@@ -149,6 +150,31 @@ final class FirebaseCommentRepository implements CommentRepository {
               .orderBy(FirestoreFields.createdAt),
         )
         .map((event) => RepositoryHelpers.parseAll(event, _commentOf));
+  }
+
+  @override
+  Future<FirestoreResult<CommentModel>> getComment(String commentId) async {
+    if (RepositoryHelpers.rejectInvalidIds<CommentModel>({
+          'commentId': commentId,
+        })
+        case final rejected?) {
+      return rejected;
+    }
+    final ref = _commentRef(commentId);
+    // Silinmiş belge `parseOrNull` içinde "bulunamadı" olur; gizlenmiş yorum
+    // (Rules okumaya izin verdiyse) döner.
+    return switch (RepositoryHelpers.parseOrNull(
+      await _firestore.getDoc(ref),
+      _commentOf,
+    )) {
+      FirebaseSuccess(data: final comment?) => FirebaseSuccess(comment),
+      FirebaseSuccess() => FirebaseFailure(
+        FirestoreError.notFound,
+        message: '${ref.path}: yok',
+      ),
+      FirebaseFailure(:final error, :final message, :final detail) =>
+        FirebaseFailure(error, message: message, detail: detail),
+    };
   }
 
   @override

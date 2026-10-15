@@ -154,8 +154,10 @@ mixin ManageMembersViewMixin on ConsumerState<ManageMembersView> {
   void onReadOnly() => viewModel.onReadOnlyTap();
 
   /// Satır (`MGT-03.member.<id>`) ve SHT-21 "Profili gör" → CLB-07.
-  void openProfile(String userId) =>
-      ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+  void openProfile(String userId) => ClubDetailUserProfileRoute(
+    clubId: widget.clubId,
+    userId: userId,
+  ).go(context);
 
   /// Sıralama (`MGT-03.sort`): açılır menü → seçilen sıralama.
   Future<void> openSort() async {

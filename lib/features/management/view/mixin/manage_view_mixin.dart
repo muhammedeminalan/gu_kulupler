@@ -149,7 +149,10 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
     } else if (_applicationKinds.contains(activity.kind)) {
       openApplications();
     } else if (userId != null) {
-      ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+      ClubDetailUserProfileRoute(
+        clubId: widget.clubId,
+        userId: userId,
+      ).go(context);
     } else {
       openSettings();
     }

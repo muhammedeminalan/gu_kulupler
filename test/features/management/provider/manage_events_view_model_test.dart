@@ -19,7 +19,9 @@ import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/manage_event_actions_mixin.dart';
 import 'package:gu_kulupler/product/navigation/manage_events_tab.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_management_repository.dart';
@@ -170,6 +172,18 @@ void main() {
       feedback.dialogResults[DialogId.dlg23] = 'venue';
       management.failNext(FirestoreError.unavailable);
       expect(await vm(container).cancelEvent(event(container, 'e03')), isFalse);
+      expect(event(container, 'e03').status, EventStatus.published);
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('çevrimdışı (T-43): iptal yazılmaz, satır aynı → TST-24', () async {
+      final container = await loaded();
+      feedback.dialogResults[DialogId.dlg23] = 'venue';
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+      management.calls.clear();
+      expect(await vm(container).cancelEvent(event(container, 'e03')), isFalse);
+      expect(management.calls, isEmpty);
       expect(event(container, 'e03').status, EventStatus.published);
       expect(feedback.toasts, [ToastId.tst24]);
     });

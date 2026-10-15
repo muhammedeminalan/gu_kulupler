@@ -671,8 +671,10 @@ service cloud.firestore {
       // U (ADM-03 düzenleme — AdminRepository.updateClubIdentity; §4 a.2, g-4) — kimlik alanları + ADM-03 formunun
       // öteki alanları (özet, hakkında, kapak şablonu, iki anahtar — yönetim dalı süper admine kapalıdır, Q-09) +
       // danışmanın adı / ünvanı. Birleşmiş belge doğrulanır. `advisor.userId` DEĞİŞEMEZ (bağlama / kaldırma M13);
-      // hesabı bağlı danışman kaldırılamaz (`advisor: null` yalnızca `userId` boşken). `status`, `suspendReason`,
-      // `presidentId`, sayaç, sabitleme, medya yolları, `conditions`, `social`, `requireNote` beyaz listede yoktur.
+      // hesabı bağlı danışman kaldırılamaz (`advisor: null` yalnızca `userId` boşken). `coverPath` yalnızca eski
+      // değerinde kalır ya da `null` olur (SHT-31 şablona dönüş — ClubIdentityPatch.clearCoverPath, W-102;
+      // `coverClearOk`, yönetim dalıyla aynı); yeni yol yalnızca medya dalındadır. `status`, `suspendReason`,
+      // `presidentId`, sayaç, sabitleme, `logoPath`, `conditions`, `social`, `requireNote` beyaz listede yoktur.
       // Erişim çağrısı yok.
       function advisorKept() {
         let was = resource.data.get('advisor', null);
@@ -683,7 +685,8 @@ service cloud.firestore {
       function canEditIdentity() {
         return isSuper()
             && touches(['name', 'nameLower', 'categoryId', 'iconName', 'founded', 'summary', 'about', 'palette',
-                        'pattern', 'coverSeed', 'applicationsOpen', 'approvalRequired', 'advisor'])
+                        'pattern', 'coverSeed', 'applicationsOpen', 'approvalRequired', 'advisor', 'coverPath'])
+            && coverClearOk()
             && identityOk(request.resource.data) && settingsOk(request.resource.data)
             && advisorKept();
       }

@@ -22,6 +22,7 @@ import 'package:gu_kulupler/product/form/form_field_error.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/register_fakes.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -167,6 +168,7 @@ void main() {
         expect(find.byType(GuErrorState), findsNothing);
         expect(find.byType(GuSkeletonList), findsNothing);
         expect(find.text(l10n.sysErrorTitle), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

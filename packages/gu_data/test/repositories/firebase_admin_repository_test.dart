@@ -501,6 +501,39 @@ void main() {
       expect(result.isSuccess, isTrue);
       expect((await read(_clubPath))!['advisor'], isNull);
     });
+
+    test('W-102 · clearCoverPath → coverPath: null (şablon alanlarıyla tek '
+        'güncelleme; dosya silinmez — D-10); tek başına boş yama sayılmaz', () {
+      expect(const ClubIdentityPatch(clearCoverPath: true).isEmpty, isFalse);
+      expect(
+        const ClubIdentityPatch(clearCoverPath: true),
+        isNot(const ClubIdentityPatch()),
+      );
+    });
+
+    test('W-102 · şablona dönüş: yalnızca şablon alanları + coverPath null + '
+        'updatedAt', () async {
+      await seedClub();
+      final result = await repository.updateClubIdentity(
+        _clubId,
+        const ClubIdentityPatch(
+          palette: ClubPalette.slate,
+          pattern: ClubPattern.dots,
+          coverSeed: 'sablon-1',
+          clearCoverPath: true,
+        ),
+      );
+      expect(result.isSuccess, isTrue);
+      expect(writes(), [
+        _write('update', _clubPath, {
+          'palette': 'slate',
+          'pattern': 'dots',
+          'coverSeed': 'sablon-1',
+          'coverPath': null,
+          'updatedAt': serverTimestampMark,
+        }),
+      ]);
+    });
   });
 
   group('T-37 · updateClubMedia (süper admin)', () {

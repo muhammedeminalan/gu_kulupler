@@ -35,6 +35,7 @@ import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_rsvp_repository.dart';
 import '../../../fakes/fake_share_service.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -187,6 +188,7 @@ void main() {
         // Demo öğeleri uygulanmaz (K-02); parlaklık rozeti yok.
         expect(find.text(l10n.ticketDemoScan), findsNothing);
         expect(find.text(l10n.ticketBrightness), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

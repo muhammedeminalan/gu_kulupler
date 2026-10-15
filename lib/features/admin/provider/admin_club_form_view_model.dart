@@ -197,8 +197,9 @@ final class AdminClubFormViewModel extends _$AdminClubFormViewModel
   }
 
   /// SHT-31 şablonu (`SHT-31.use`): [palette] × [pattern], tohum [seed].
-  /// Seçilmiş özel kapak bırakılır. Yüklenmiş kapak (`coverPath`) yerinde
-  /// kalır: süper admin yaması onu bırakamaz (`ClubIdentityPatch`'te yok).
+  /// Seçilmiş özel kapak bırakılır; yüklenmiş kapak önizlemeden kalkar ve
+  /// kayıtta `coverPath` bırakılır (`ClubIdentityPatch.clearCoverPath`;
+  /// dosya silinmez — D-10; W-102).
   void setCoverTemplate(ClubPalette palette, ClubPattern pattern, String seed) {
     if (!_canEdit) return;
     _edit(
@@ -206,6 +207,7 @@ final class AdminClubFormViewModel extends _$AdminClubFormViewModel
         coverPalette: palette,
         coverPattern: pattern,
         coverSeed: seed,
+        clearCoverPath: true,
         clearPendingCover: true,
       ),
     );
@@ -669,6 +671,12 @@ final class AdminClubFormViewModel extends _$AdminClubFormViewModel
           : form.approvalRequired,
       advisor: advisorChanged ? advisor : null,
       clearAdvisor: advisorChanged && advisor == null && before != null,
+      // SHT-31 şablonu yüklenmiş kapağın yerine seçildi: `coverPath` bırakılır
+      // (dosya silinmez — D-10). Yeni kapak seçildiyse yükleme yolu yazar.
+      clearCoverPath:
+          original.coverPath != null &&
+          form.coverPath == null &&
+          form.pendingCover == null,
     );
   }
 
@@ -696,6 +704,7 @@ final class AdminClubFormViewModel extends _$AdminClubFormViewModel
               userId: before?.userId,
             ),
       clearAdvisor: patch.clearAdvisor,
+      clearCoverPath: patch.clearCoverPath,
     );
   }
 

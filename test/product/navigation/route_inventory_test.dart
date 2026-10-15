@@ -1,7 +1,7 @@
 // T-11 · Rota envanteri (kabuk + sistem + oturum öncesi yönlendirme
 // hedefleri): router'daki yollar ↔ navigation.md §2 sınıf / yol tablosu ↔
 // guard tablosu (PLAN §13.3, §13.5). Her ekran task'ı kendi satırını ekler;
-// T-43'te 57 rota sınıfı / 51 ekran tamamlanır.
+// T-43'te 59 rota sınıfı / 51 ekran tamamlanır.
 // T-13 · `RegisterRoute` (`/login/register`) ve `LegalRoute` (`/legal/:tip`).
 // T-14 · `ResetPasswordRoute` (`/login/reset`).
 // T-16 · `ClubDetailRoute` (`/clubs/:clubId`), `ClubAppliedRoute`
@@ -44,6 +44,9 @@
 // T-40 · `AdminReportsRoute` (`/admin/reports?tab=&reportId=`, ADM-04).
 // T-41 · `AdminUsersRoute` (`/admin/users?filter=`, ADM-05),
 // `AdminUserProfileRoute` (`/admin/users/:userId`, CLB-07 paylaşılan).
+// T-43 · K-69: `ClubDetailUserProfileRoute` (`/clubs/:clubId/user/:userId`)
+// ve `ClubMembersUserProfileRoute` (`/clubs/:clubId/members/:userId`) —
+// kulüp bağlamlı CLB-07 (geri → geldiği kulüp).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
@@ -60,7 +63,7 @@ import '../../helpers/design_ids.dart';
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
 /// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39 + T-40 +
-/// T-41).
+/// T-41 + T-43).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -87,6 +90,11 @@ const Map<GoRouteData, String> _routes = {
   ClubAppliedRoute(clubId: _clubId): '/clubs/:clubId/applied',
   ClubApplicationRoute(clubId: _clubId): '/clubs/:clubId/application',
   ClubMembersRoute(clubId: _clubId): '/clubs/:clubId/members',
+  // T-43: CLB-07 kulüp bağlamı (K-69)
+  ClubMembersUserProfileRoute(clubId: _clubId, userId: _userId):
+      '/clubs/:clubId/members/:userId',
+  ClubDetailUserProfileRoute(clubId: _clubId, userId: _userId):
+      '/clubs/:clubId/user/:userId',
   PostDetailRoute(clubId: _clubId, postId: _postId):
       '/clubs/:clubId/posts/:postId',
   ComposeRoute(clubId: _clubId): '/clubs/:clubId/compose',
@@ -213,13 +221,13 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 57 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 59 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
         'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2, '
-        'T-39: +3, T-40: +1, T-41: +2)', () {
+        'T-39: +3, T-40: +1, T-41: +2, T-43: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(57));
+      expect(_routes, hasLength(59));
     });
 
     test(
@@ -719,6 +727,45 @@ void main() {
         expect(match.clubId, isNull, reason: location);
       }
       expect(ClubUserProfileRoute.segment, 'user/:userId');
+    });
+
+    test('T-43 · kulüp bağlamlı profil rotaları (K-69): `clubId` ve '
+        '`userId` yol parametresidir; CLB-03 altı `A`, CLB-06 altı `üye`', () {
+      expect(ClubDetailUserProfileRoute.segment, 'user/:userId');
+      expect(ClubMembersUserProfileRoute.segment, ':userId');
+      for (final (route, location, access)
+          in <(GoRouteData, String, RouteAccess)>[
+            (
+              const ClubDetailUserProfileRoute(
+                clubId: _clubId,
+                userId: _userId,
+              ),
+              '/clubs/c01/user/u01',
+              RouteAccess.active,
+            ),
+            (
+              const ClubMembersUserProfileRoute(
+                clubId: _clubId,
+                userId: _userId,
+              ),
+              '/clubs/c01/members/u01',
+              RouteAccess.member,
+            ),
+          ]) {
+        final name = '${route.runtimeType}';
+        expect(route.location, location, reason: name);
+        final match = RouteAccessTable.match(Uri.parse(location));
+        expect(match.pattern, _routes[route], reason: name);
+        expect(match.access, access, reason: name);
+        expect(match.clubId, _clubId, reason: name);
+      }
+      expect(
+        const ClubDetailUserProfileRoute(
+          clubId: _clubId,
+          userId: 'a/b',
+        ).location,
+        '/clubs/c01/user/a%2Fb',
+      );
     });
 
     test('T-17 · arama rotaları: sabit `search` parçası `:clubId` kalıbına '

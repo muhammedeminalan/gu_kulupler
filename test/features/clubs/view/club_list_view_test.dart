@@ -46,6 +46,7 @@ import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -316,6 +317,7 @@ void main() {
           tester.widget<GuListEnd>(find.byType(GuListEnd)).label,
           l10n.commonAllDone,
         );
+        await expectA11yGuidelines(tester);
       });
     }
 

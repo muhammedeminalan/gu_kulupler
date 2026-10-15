@@ -3,15 +3,16 @@ import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:gu_ui/gu_ui.dart';
 
 /// DebugMenu panelinin durumu (K-E, CD-69; PLAN §12.3): görünüm tercihleri
-/// `AppPreferencesState`'ten yansıtılır; demo hesap girişi (yalnızca
-/// emülatör) kendi alanlarını tutar.
+/// `AppPreferencesState`'ten, çevrimdışı simülasyonu `ConnectivityState`'ten
+/// yansıtılır; demo hesap girişi (yalnızca emülatör) kendi alanlarını tutar.
 final class DebugMenuState extends Equatable {
-  /// Varsayılan: sistem teması, sistem dili, %100 ölçek; süren giriş ve hata
-  /// yok.
+  /// Varsayılan: sistem teması, sistem dili, %100 ölçek; simülasyon, süren
+  /// giriş ve hata yok.
   const DebugMenuState({
     this.themeMode = ThemeMode.system,
     this.locale,
     this.textScale = GuTextScaleLevel.s100,
+    this.isSimulatedOffline = false,
     this.signingInId,
     this.isError = false,
     this.errorCode,
@@ -25,6 +26,9 @@ final class DebugMenuState extends Equatable {
 
   /// Uygulama içi metin ölçeği.
   final GuTextScaleLevel textScale;
+
+  /// Çevrimdışılık simüle ediliyor mu (`ConnectivityState.isSimulated`)?
+  final bool isSimulatedOffline;
 
   /// Girişi süren demo hesabın kimliği (`u_ayse` …); süren giriş yoksa
   /// `null`.
@@ -41,6 +45,7 @@ final class DebugMenuState extends Equatable {
     themeMode,
     locale,
     textScale,
+    isSimulatedOffline,
     signingInId,
     isError,
     errorCode,
@@ -54,6 +59,7 @@ final class DebugMenuState extends Equatable {
     Locale? locale,
     bool clearLocale = false,
     GuTextScaleLevel? textScale,
+    bool? isSimulatedOffline,
     String? signingInId,
     bool clearSigningInId = false,
     bool? isError,
@@ -63,6 +69,7 @@ final class DebugMenuState extends Equatable {
     themeMode: themeMode ?? this.themeMode,
     locale: clearLocale ? null : locale ?? this.locale,
     textScale: textScale ?? this.textScale,
+    isSimulatedOffline: isSimulatedOffline ?? this.isSimulatedOffline,
     signingInId: clearSigningInId ? null : signingInId ?? this.signingInId,
     isError: isError ?? this.isError,
     errorCode: clearErrorCode ? null : errorCode ?? this.errorCode,

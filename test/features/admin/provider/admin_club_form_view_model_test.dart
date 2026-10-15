@@ -283,6 +283,56 @@ void main() {
       expect(feedback.toasts, [ToastId.tst21]);
     });
 
+    test('yüklenmiş kapak varken SHT-31 şablonu (W-102) → önizleme şablon; '
+        'kayıt coverPath bırakır (clearCoverPath), dosya yüklenmez', () async {
+      const uploaded = 'clubs/c/20261015T090000Z_0a1b2c3d4e5f6071.png';
+      final seeded = await seedFormClub();
+      clubs.clubs[seeded.id] = seeded.copyWith(coverPath: uploaded);
+      final (c, p) = await opened(seeded.id);
+      expect(c.read(p).coverPath, uploaded);
+
+      final vm = c.read(p.notifier)
+        ..setCoverTemplate(ClubPalette.red, ClubPattern.dots, 'sablon-1');
+      expect(c.read(p).coverPath, isNull);
+      expect(c.read(p).isDirty, isTrue);
+
+      expect(await vm.save(), AdminClubFormOutcome.saved);
+      expect(
+        admin.callsTo('updateClubIdentity').single.args[1],
+        const ClubIdentityPatch(
+          palette: ClubPalette.red,
+          pattern: ClubPattern.dots,
+          coverSeed: 'sablon-1',
+          clearCoverPath: true,
+        ),
+      );
+      expect(admin.callsTo('updateClubMedia'), isEmpty);
+      expect(clubs.clubs[seeded.id]!.coverPath, isNull);
+      expect(c.read(p).coverPath, isNull);
+      expect(c.read(p).original?.coverPath, isNull);
+    });
+
+    test('şablondan sonra yeni kapak seçilirse coverPath bırakılmaz '
+        '(yükleme yolu yazar)', () async {
+      const uploaded = 'clubs/c/20261015T090000Z_0a1b2c3d4e5f6071.png';
+      final seeded = await seedFormClub();
+      clubs.clubs[seeded.id] = seeded.copyWith(coverPath: uploaded);
+      final (c, p) = await opened(seeded.id);
+      final vm = c.read(p.notifier)
+        ..setCoverTemplate(ClubPalette.red, ClubPattern.dots, 'sablon-1');
+      picker.nextPick = kFakeJpeg;
+      await vm.pickCover(MediaSource.gallery);
+      expect(c.read(p).pendingCover, isNotNull);
+
+      expect(await vm.save(), AdminClubFormOutcome.saved);
+      expect(admin.callsTo('updateClubMedia'), hasLength(1));
+      final patch =
+          admin.callsTo('updateClubIdentity').single.args[1]!
+              as ClubIdentityPatch;
+      expect(patch.clearCoverPath, isFalse);
+      expect(clubs.clubs[seeded.id]!.coverPath, isNotNull);
+    });
+
     test(
       'başkan ata → üyelik + presidentId tutarlı (eski başkan board)',
       () async {

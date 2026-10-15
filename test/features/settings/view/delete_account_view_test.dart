@@ -24,6 +24,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -145,6 +146,7 @@ void main() {
       expect(_button(tester, _next).variant, GuButtonVariant.dangerOutline);
       expect(_button(tester, _next).disabled, isFalse);
       expect(_button(tester, _next).label, l10n.commonContinue);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('TST-X10 · başkan: uyarı kenarlıklı kart (kulüp adı + '

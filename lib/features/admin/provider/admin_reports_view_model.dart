@@ -22,9 +22,10 @@ part 'admin_reports_view_model.g.dart';
 ///
 /// * Okuma: sekme başına `adminRepository.listReports(status, page)` (açık
 ///   sekme `listOpenReports` — CD-37), sayfalı ([loadMore]); satır
-///   önizlemeleri toplu okunur (gönderi `getPost`, kullanıcı `getUsers`,
-///   kulüp `getClubs`, etkinlik `getEvents`; silinmiş hedef → boş önizleme
-///   "İçerik kaldırıldı"). Gruplama ve hedef türü süzgeci istemcidedir.
+///   önizlemeleri toplu okunur (gönderi `getPost`, yorum `getComment` —
+///   W-103, kullanıcı `getUsers`, kulüp `getClubs`, etkinlik `getEvents`;
+///   silinmiş hedef → boş önizleme "İçerik kaldırıldı"). Gruplama ve hedef
+///   türü süzgeci istemcidedir.
 /// * SHT-26 ([openGroup]): grup listede yoksa (`?reportId=`) hedefin açık
 ///   şikayetleri `listReportsForTarget` ile okunur; hedef önizlemesi (yazar
 ///   dahil) ve şikayetçi profilleri okunur.
@@ -511,8 +512,18 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
             return _gone(error) ? const ReportTargetPreview() : fallback;
         }
       case ReportTargetType.comment:
-        // `CommentRepository.getComment` yok (PLAN §10.4 T-40 satırı).
-        return fallback;
+        // W-103: yorum metni + yazarı (SHT-26 önizlemesi; "Kullanıcıyı askıya
+        // al" yazarın uid'si üzerinden — `suspendableUserId`).
+        switch (await commentRepository.getComment(id)) {
+          case FirebaseSuccess(:final data):
+            final author = await userRepository.getUser(data.authorId);
+            return ReportTargetPreview(
+              comment: data,
+              author: author.dataOrNull,
+            );
+          case FirebaseFailure(:final error):
+            return _gone(error) ? const ReportTargetPreview() : fallback;
+        }
       case ReportTargetType.user:
         return switch (await userRepository.getUser(id)) {
           FirebaseSuccess(:final data) => ReportTargetPreview(user: data),
@@ -543,6 +554,7 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
     }
     final parts = await Future.wait([
       _readPosts(ids[ReportTargetType.post] ?? const []),
+      _readComments(ids[ReportTargetType.comment] ?? const []),
       _readMany<UserModel>(
         ReportTargetType.user,
         ids[ReportTargetType.user] ?? const [],
@@ -577,6 +589,26 @@ final class AdminReportsViewModel extends _$AdminReportsViewModel
       for (var i = 0; i < ids.length; i++)
         _keyOf(ReportTargetType.post, ids[i]): ?switch (results[i]) {
           FirebaseSuccess(:final data) => ReportTargetPreview(post: data),
+          FirebaseFailure(:final error) when _gone(error) =>
+            const ReportTargetPreview(),
+          FirebaseFailure() => null,
+        },
+    };
+  }
+
+  /// Yorum satırı önizlemeleri (W-103; ADM-04 satır başlığı yorum metni —
+  /// tek satır, taşan kısım kısaltılır). Yazar SHT-26'da okunur.
+  Future<Map<String, ReportTargetPreview>> _readComments(
+    List<String> ids,
+  ) async {
+    if (ids.isEmpty) return const {};
+    final results = await Future.wait([
+      for (final id in ids) commentRepository.getComment(id),
+    ]);
+    return {
+      for (var i = 0; i < ids.length; i++)
+        _keyOf(ReportTargetType.comment, ids[i]): ?switch (results[i]) {
+          FirebaseSuccess(:final data) => ReportTargetPreview(comment: data),
           FirebaseFailure(:final error) when _gone(error) =>
             const ReportTargetPreview(),
           FirebaseFailure() => null,

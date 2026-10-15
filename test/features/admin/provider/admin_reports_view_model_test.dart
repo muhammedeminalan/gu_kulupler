@@ -23,12 +23,14 @@ import '../../../fakes/fake_admin_repository.dart';
 import '../../../fakes/fake_auth_repository.dart';
 import '../../../fakes/fake_auth_service.dart';
 import '../../../fakes/fake_club_repository.dart';
+import '../../../fakes/fake_comment_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_post_repository.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/register_fakes.dart';
+import '../../../fixtures/comment_model_fixtures.dart';
 import '../../../helpers/test_container.dart';
 import '../admin_reports_test_support.dart';
 
@@ -93,8 +95,33 @@ void main() {
       expect(state.previews['post_p17']!.post!.id, 'p17');
       expect(state.previews['user_u077']!.user!.name, 'Nisa Yıldırım');
       expect(state.previews['club_c10']!.club!.name, 'E-Spor Kulübü');
-      // Yorum hedefi okunamaz (`getComment` yok) → kayıt yok.
-      expect(state.previews.containsKey('comment_cm24'), isFalse);
+      // W-103: yorum hedefi `getComment` ile (satır başlığı yorum metni).
+      expect(
+        state.previews['comment_cm24']!.comment!.text,
+        CommentModelFixtures.byId('cm24').text,
+      );
+      final comments = GetIt.I<CommentRepository>() as FakeCommentRepository;
+      expect(comments.callsTo('getComment').single.args, ['cm24']);
+    });
+
+    test('W-103 yorum hedefi: silinmiş yorum → boş önizleme (İçerik '
+        'kaldırıldı); gizlenmiş yorum süper admine döner; okuma hatası → '
+        'kayıt yok', () async {
+      final comments = GetIt.I<CommentRepository>() as FakeCommentRepository
+        ..put(CommentModelFixtures.byId('cm24').copyWith(isDeleted: true));
+      var container = await loaded();
+      expect(read(container).previews['comment_cm24']!.isMissing, isTrue);
+
+      comments.put(CommentModelFixtures.byId('cm24').copyWith(isHidden: true));
+      container = await loaded();
+      expect(
+        read(container).previews['comment_cm24']!.comment!.isHidden,
+        isTrue,
+      );
+
+      comments.failNext(FirestoreError.unavailable);
+      container = await loaded();
+      expect(read(container).previews.containsKey('comment_cm24'), isFalse);
     });
 
     test('silinmiş hedef → boş önizleme (İçerik kaldırıldı)', () async {
@@ -198,6 +225,50 @@ void main() {
 
       expect(await vm(container).openGroup('nope_x'), isNull);
       expect(await vm(container).openGroup('post_yok'), isNull);
+    });
+  });
+
+  group('W-103 · AdminReportsViewModel · yorum hedefi (SHT-26)', () {
+    test('önizleme yorum metni + yazar; "Kullanıcıyı askıya al" yazarın '
+        'kimliği üzerinden → suspendUser + suspended çözüm; TST-52', () async {
+      final container = await loaded();
+
+      final group = await vm(container).openGroup('comment_cm24');
+      await pumpEventQueue();
+
+      expect(group!.key, 'comment_cm24');
+      final preview = read(container).targetPreview!;
+      expect(preview.comment!.id, 'cm24');
+      expect(preview.author!.uid, 'u077');
+      expect(preview.author!.name, 'Nisa Yıldırım');
+      expect(preview.suspendableUserId, 'u077');
+      expect(read(container).previews['comment_cm24'], preview);
+
+      final ok = await vm(container).suspendUser(
+        'comment_cm24',
+        userId: preview.suspendableUserId!,
+        reason: 'Taciz',
+      );
+      expect(ok, isTrue);
+      expect(admin.callsTo('suspendUser').single.args, ['u077', 'Taciz']);
+      expect(admin.resolutions.single.groupKey, 'comment_cm24');
+      expect(admin.resolutions.single.action, ReportAction.suspended);
+      expect(feedback.toasts, [ToastId.tst52]);
+    });
+
+    test('yorum silinmişse önizleme boş ve askı hedefi yok', () async {
+      final comments = GetIt.I<CommentRepository>() as FakeCommentRepository;
+      final container = await loaded();
+      comments.put(
+        CommentModelFixtures.byId('cm24').copyWith(isDeleted: true),
+      );
+
+      await vm(container).openGroup('comment_cm24');
+      await pumpEventQueue();
+
+      final preview = read(container).targetPreview!;
+      expect(preview.isMissing, isTrue);
+      expect(preview.suspendableUserId, isNull);
     });
   });
 

@@ -31,6 +31,7 @@ import '../../../fakes/fake_admin_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fixtures/user_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -182,6 +183,7 @@ void main() {
         );
         expect(find.text(l10n.adminUsersClubCount(3)), findsNothing);
         expect(find.textContaining(l10n.adminUsersClubCount(3)), findsWidgets);
+        await expectA11yGuidelines(tester);
       });
     }
 

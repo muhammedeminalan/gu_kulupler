@@ -25,7 +25,17 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
       routes: <TypedRoute<RouteData>>[
         TypedGoRoute<ClubAppliedRoute>(path: ClubAppliedRoute.segment),
         TypedGoRoute<ClubApplicationRoute>(path: ClubApplicationRoute.segment),
-        TypedGoRoute<ClubMembersRoute>(path: ClubMembersRoute.segment),
+        TypedGoRoute<ClubMembersRoute>(
+          path: ClubMembersRoute.segment,
+          routes: <TypedRoute<RouteData>>[
+            TypedGoRoute<ClubMembersUserProfileRoute>(
+              path: ClubMembersUserProfileRoute.segment,
+            ),
+          ],
+        ),
+        TypedGoRoute<ClubDetailUserProfileRoute>(
+          path: ClubDetailUserProfileRoute.segment,
+        ),
         TypedGoRoute<PostDetailRoute>(path: PostDetailRoute.segment),
         TypedGoRoute<ComposeRoute>(path: ComposeRoute.segment),
         TypedGoRoute<ManageRoute>(
@@ -526,10 +536,14 @@ final class ActivityLogRoute extends GoRouteData
       ActivityLogView(clubId: clubId);
 }
 
-/// CLB-07 Profil — `/clubs/user/:userId?clubId=` (guard `A`). `/clubs`'un
-/// doğrudan alt rotasıdır: geri CLB-01'e döner. Ekran paylaşılan yapraktır
-/// (PLAN §13.9): `BlockedUserProfileRoute` (T-28) ve `AdminUserProfileRoute`
-/// (T-41) aynı view'ı açar.
+/// CLB-07 Profil (kulüpsüz bağlam) — `/clubs/user/:userId?clubId=` (guard
+/// `A`). `/clubs`'un doğrudan alt rotasıdır: geri CLB-01'e döner. Kulüp
+/// içinden açılan profil kulübün altındaki rotaları kullanır (K-69, kullanıcı
+/// kararı 2026-10-15: geri → geldiği kulüp): [ClubDetailUserProfileRoute]
+/// (CLB-03) ve [ClubMembersUserProfileRoute] (CLB-06); `?clubId=` geriye dönük
+/// bağlantılar için kalır. Ekran paylaşılan yapraktır (PLAN §13.9):
+/// `BlockedUserProfileRoute` (T-28) ve `AdminUserProfileRoute` (T-41) aynı
+/// view'ı açar.
 final class ClubUserProfileRoute extends GoRouteData
     with $ClubUserProfileRoute, PlatformPageMixin {
   /// [userId] kullanıcısının profili; [clubId] açıldığı kulüp bağlamıdır.
@@ -550,6 +564,58 @@ final class ClubUserProfileRoute extends GoRouteData
 
   /// Açıldığı kulüp (`?clubId=`, üyelik bağlamı); yoksa `null`.
   final String? clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UserProfileView(userId: userId, clubId: clubId);
+}
+
+/// CLB-07 Profil (kulüp bağlamı) — `/clubs/:clubId/user/:userId` (guard `A`).
+/// CLB-03'ün alt rotasıdır: geri açıldığı kulübe döner (K-69, kullanıcı
+/// kararı 2026-10-15). CLB-03 kişi / üye önizleme satırları, FED-01 yazar
+/// satırı, FED-02 ve yönetim ekranlarındaki (MGT-01 / 02 / 03 / 10) kişi
+/// bağlantıları `go` ile açar; üyelik bağlamı [clubId] yoldan gelir.
+final class ClubDetailUserProfileRoute extends GoRouteData
+    with $ClubDetailUserProfileRoute, PlatformPageMixin {
+  /// [clubId] kulübünden açılan [userId] profili.
+  const ClubDetailUserProfileRoute({
+    required this.clubId,
+    required this.userId,
+  });
+
+  /// `/clubs/:clubId` altındaki yol parçası.
+  static const String segment = 'user/:userId';
+
+  /// Açıldığı kulüp (yol parametresi; üyelik bağlamı).
+  final String clubId;
+
+  /// Profili açılan kullanıcının kimliği (yol parametresi).
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      UserProfileView(userId: userId, clubId: clubId);
+}
+
+/// CLB-07 Profil (üye listesi) — `/clubs/:clubId/members/:userId` (guard
+/// `üye`, CLB-06 ile aynı). CLB-06'nın alt rotasıdır: geri üye listesine döner
+/// (K-69, kullanıcı kararı 2026-10-15). CLB-06 satırı `go` ile açar.
+final class ClubMembersUserProfileRoute extends GoRouteData
+    with $ClubMembersUserProfileRoute, PlatformPageMixin {
+  /// [clubId] kulübünün üye listesinden açılan [userId] profili.
+  const ClubMembersUserProfileRoute({
+    required this.clubId,
+    required this.userId,
+  });
+
+  /// `/clubs/:clubId/members` altındaki yol parçası.
+  static const String segment = ':userId';
+
+  /// Açıldığı kulüp (yol parametresi; üyelik bağlamı).
+  final String clubId;
+
+  /// Profili açılan kullanıcının kimliği (yol parametresi).
+  final String userId;
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>

@@ -21,21 +21,27 @@ import 'package:intl/intl.dart';
 /// Bölümler: tema, dil, metin ölçeği; **demo hesaplar** (yalnızca
 /// [isEmulator]; CD-132 (23)) — hesaba dokunmak seed'deki hesapla oturum açar
 /// ve uygulamaya gider (nereye varılacağına router karar verir); oturum
-/// açıksa "Çıkış yap"; sistem ekranlarına (SYS-02 / 03 / 04) kısayollar.
+/// açıksa "Çıkış yap"; **çevrimdışı simülasyonu** anahtarı (T-43: kök
+/// çevrimdışı bandı + yazma engeli; boş / hata zorlama kapsam dışı — durum
+/// testleri karşılar) ve sistem ekranlarına (SYS-02 / 03 / 04) kısayollar.
 /// Anahtarlar `debug.*` biçimindedir (`GuKey.action` değil — tasarım aksiyon
 /// envanterine girmez).
-// TODO(T-43): çevrimdışı simülasyonu, boş / hata zorlama.
 class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
-  /// DebugMenu paneli. [isEmulator] yalnızca testte verilir (bayrak derleme
-  /// sabitidir).
+  /// DebugMenu paneli. [isEmulator] ve [debugMenuEnabled] yalnızca testte
+  /// verilir (bayraklar derleme sabitidir).
   const DebugMenuView({
     this.isEmulator = AppEnvironment.isEmulator,
+    this.debugMenuEnabled = AppEnvironment.debugMenuEnabled,
     super.key,
   });
 
   /// Emülatör derlemesi mi? Demo hesaplar bölümü yalnızca bu durumda ağaca
   /// girer ve giriş yalnızca bu durumda denenir.
   final bool isEmulator;
+
+  /// DebugMenu derlemesi mi? Çevrimdışı simülasyonu yalnızca bu durumda
+  /// etkilidir (üretimde panel zaten ağaçta yoktur).
+  final bool debugMenuEnabled;
 
   /// Geri düğmesinin anahtarı.
   static const Key backKey = ValueKey<String>('debug.back');
@@ -45,6 +51,11 @@ class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
 
   /// "Çıkış yap" satırının anahtarı.
   static const Key signOutKey = ValueKey<String>('debug.signOut');
+
+  /// Çevrimdışı simülasyonu anahtarının (switch) anahtarı.
+  static const Key simulateOfflineKey = ValueKey<String>(
+    'debug.simulateOffline',
+  );
 
   /// SYS-02 kısayolunun anahtarı.
   static const Key errorScreenKey = ValueKey<String>('debug.screen.error');
@@ -241,6 +252,23 @@ class DebugMenuView extends ConsumerWidget with AppProviderStateMixin {
             ),
           ],
           GuSectionTitle(title: l10n.debugMenuSystemScreens),
+          GuTile(
+            title: l10n.debugMenuSimulateOffline,
+            leading: GuIcon(
+              GuIcons.wifiOff,
+              size: GuSizes.icon20,
+              color: context.gu.colors.textMuted,
+            ),
+            trailing: GuSwitch(
+              key: simulateOfflineKey,
+              value: state.isSimulatedOffline,
+              semanticLabel: l10n.debugMenuSimulateOffline,
+              onChanged: (value) => viewModel.setSimulatedOffline(
+                value,
+                debugMenuEnabled: debugMenuEnabled,
+              ),
+            ),
+          ),
           GuTile(
             key: errorScreenKey,
             title: l10n.sysErrorTitle,

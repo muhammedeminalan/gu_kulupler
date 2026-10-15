@@ -699,6 +699,7 @@ final class FirebaseAdminRepository implements AdminRepository {
         }
       else if (patch.clearAdvisor)
         FirestoreFields.advisor: null,
+      if (patch.clearCoverPath) FirestoreFields.coverPath: null,
     };
   }
 

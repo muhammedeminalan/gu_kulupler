@@ -30,6 +30,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_settings_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -179,6 +180,7 @@ void main() {
         expect(find.text(club.name), findsOneWidget);
       }
       expect(find.text(l10n.notifPrefsCustomize), findsNWidgets(2));
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('izin açık: "Açık", düğme yok; yönetici: yönetim satırı; '

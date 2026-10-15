@@ -4,7 +4,7 @@
 //
 //   üye girişi (`u_mehmet`, `c01` üyesi) → CLB-03 → "Üyeler" sekmesi → "Tüm
 //   üyeler" → CLB-06 (/clubs/c01/members) → "Yönetim" çipi (liste süzülür) →
-//   üye satırı → CLB-07 (/clubs/user/:id?clubId=c01) → "⋮" → SHT-27 →
+//   üye satırı → CLB-07 (/clubs/c01/members/:id — K-69) → "⋮" → SHT-27 →
 //   "Engelle" → DLG-13 onay → engel yazılır, TST-09 → "Geri al" → engel
 //   kaldırılır
 //   üye olmayan (`u_ayse`) /clubs/c01/members → kulüp sayfasına yönlenir
@@ -171,13 +171,10 @@ void main() {
         findsNothing,
       );
 
-      // Üye satırı → CLB-07 (kulüp bağlamıyla); ortak kulüp olduğundan profil
-      // görünür.
+      // Üye satırı → CLB-07 (CLB-06 altında, K-69); ortak kulüp olduğundan
+      // profil görünür.
       await _tap(tester, _k('CLB-06.member.$_target'));
-      expect(
-        _location(tester),
-        '/clubs/user/$_target?clubId=$kMembersClubId',
-      );
+      expect(_location(tester), '/clubs/$kMembersClubId/members/$_target');
       expect(find.byType(UserProfileView), findsOneWidget);
       expect(find.byKey(_k('CLB-07.club.$kMembersClubId')), findsOneWidget);
 
@@ -209,6 +206,42 @@ void main() {
 
       await tester.pump(GuMotion.toastUndo);
       await tester.pumpAndSettle();
+
+      // Geri → geldiği üye listesi (K-69, kullanıcı kararı 2026-10-15).
+      await _tap(tester, _k('CLB-07.back'));
+      expect(_location(tester), '/clubs/$kMembersClubId/members');
+      expect(find.byType(UserProfileView), findsNothing);
+    });
+
+    testWidgets('T-43 · K-69: CLB-03 yönetim kurulu satırı → CLB-07 → geri → '
+        'CLB-03; CLB-06 üye satırı → CLB-07 → geri → CLB-06', (tester) async {
+      await _launch(tester);
+      await _go(tester, '/clubs/$kMembersClubId');
+      expect(find.byType(ClubDetailView), findsOneWidget);
+
+      // "Hakkında" sekmesi yönetim kurulu satırı → CLB-07 (CLB-03 altında).
+      await _tap(tester, _k('CLB-03.about.person.$_target'));
+      expect(_location(tester), '/clubs/$kMembersClubId/user/$_target');
+      expect(find.byType(UserProfileView), findsOneWidget);
+
+      // Geri → geldiği kulüp sayfası (kullanıcı kararı 2026-10-15).
+      await _tap(tester, _k('CLB-07.back'));
+      expect(_location(tester), '/clubs/$kMembersClubId');
+      expect(find.byType(UserProfileView), findsNothing);
+      expect(find.byType(ClubDetailView), findsOneWidget);
+
+      // CLB-06 → üye satırı → CLB-07 (CLB-06 altında) → geri → CLB-06.
+      await _tap(tester, _k('CLB-03.tab.members'));
+      await _tap(tester, _k('CLB-03.allMembers'));
+      expect(_location(tester), '/clubs/$kMembersClubId/members');
+      await _tap(tester, _k('CLB-06.member.$_target'));
+      expect(_location(tester), '/clubs/$kMembersClubId/members/$_target');
+      expect(find.byType(UserProfileView), findsOneWidget);
+
+      await _tap(tester, _k('CLB-07.back'));
+      expect(_location(tester), '/clubs/$kMembersClubId/members');
+      expect(find.byType(UserProfileView), findsNothing);
+      expect(find.byType(ClubMembersView), findsOneWidget);
     });
 
     testWidgets('üye olmayan: /clubs/:id/members → kulüp sayfasına '

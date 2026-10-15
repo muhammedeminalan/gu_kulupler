@@ -36,6 +36,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_post_repository.dart';
 import '../../../fixtures/demo_data.dart';
 import '../../../fixtures/post_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -224,6 +225,7 @@ void main() {
       expect(find.text('3 gün önce · 26 beğeni · 2 yorum'), findsOneWidget);
       final fab = tester.widget<GuFab>(find.byKey(_create));
       expect(fab.label, l10n.feedTypePost);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('duyurular: sabit p08 iğneli (megaphone); gizli satır '

@@ -42,6 +42,7 @@ import 'package:gu_ui/gu_ui.dart';
 import '../../../fakes/fake_announcement_counter_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_post_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -290,6 +291,7 @@ void main() {
         expect(find.text(l10n.composePin), findsOneWidget);
         expect(find.byType(AnnouncementQuotaBar), findsNothing);
         expect(find.byType(PollEditor), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

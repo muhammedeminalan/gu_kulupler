@@ -20,6 +20,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/test_router.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -62,6 +63,7 @@ void main() {
             .dy,
         844 - GuSizes.splashVersionBottom,
       );
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('sürüm okunamadıysa satır çizilmez', (tester) async {

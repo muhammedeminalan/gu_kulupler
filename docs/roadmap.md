@@ -1,7 +1,7 @@
 # Yol Haritası — T-00 … T-47
 
 > **Bu dosya, `docs/task-map.json` ve `docs/progress.json` ile birlikte uygulama sırasını kilitler.** Task'lar **sırayla, birer birer** yapılır; atlanmaz, birleştirilmez, yeniden sıralanmaz (CLAUDE.md §0.4). Sıra değişikliği gerekirse önce kullanıcıya sorulur (`AskUserQuestion`).
-> Kimlik kapsamı tasarım registry'sinden **otomatik doğrulanmıştır**: 51 ekran · 34 sheet · 32 dialog · 78 toast (77 + `TST-58` muaf) · 1 menü (`EVT-MENU`) · 1072 ekran aksiyonu (1060 uygulanan + 12 muaf demo) — her biri tam bir task'a atanmıştır (`node tool/check_design_coverage.js --map`).
+> Kimlik kapsamı tasarım registry'sinden **otomatik doğrulanmıştır**: 51 ekran · 34 sheet · 32 dialog · 78 toast (77 + `TST-58` muaf) · 1 menü (`EVT-MENU`) · 1072 ekran aksiyonu (1056 uygulanan + 16 muaf) — her biri tam bir task'a atanmıştır (`node tool/check_design_coverage.js --map`).
 
 ## 0. Okuma ve kurallar
 
@@ -53,7 +53,7 @@
 | **T-17** | C | Kulüp listesi ve arama | T-16 | 2 | 1 | 0 | 1 | 67 | 16/10/14/21 |
 | **T-18** | C | Üye listesi ve kullanıcı profili | T-16 | 2 | 1 | 1 | 1 | 87 | 18/11/15/22 |
 | **T-19** | C | Gönderi, yorum, oy ve kaydetme arka ucu | T-15 | 0 | 0 | 0 | 0 | 0 | 18/11/15/22 |
-| **T-20** | C | Kulüp akışı ve gönderi detayı | T-19, T-18 | 2 | 3 | 2 | 6 | 77 | 20/14/17/28 |
+| **T-20** | C | Kulüp akışı ve gönderi detayı | T-19, T-18 | 2 | 3 | 2 | 6 | 77 (1) | 20/14/17/28 |
 | **T-21** | C | Gönderi / duyuru / anket oluşturma | T-20 | 1 | 1 | 1 | 3 | 9 | 21/15/18/31 |
 | **T-22** | D | Etkinlik ve katılım arka ucu | T-15 | 0 | 0 | 0 | 0 | 0 | 21/15/18/31 |
 | **T-23** | D | Etkinlik detayı ve bilet | T-22, T-16 | 2 | 3 +menü | 3 | 10 | 15 (1) | 23/18/21/41 |
@@ -69,7 +69,7 @@
 | **T-33** | F | Üye yönetimi ve başkanlık devri | T-31 | 1 | 3 | 3 | 6 | 50 | 40/28/26/65 |
 | **T-34** | F | Etkinlik yönetimi ve oluşturma | T-31, T-24 | 2 | 3 | 3 | 4 | 20 | 42/31/29/69 |
 | **T-35** | F | Katılımcılar, yoklama ve QR tarayıcı | T-34, T-23 | 2 | 1 | 0 | 3 | 68 (3) | 44/32/29/72 |
-| **T-36** | F | İçerik yönetimi ve kulüp ayarları | T-31, T-21 | 2 | 1 | 0 | 0 | 32 | 46/33/29/72 |
+| **T-36** | F | İçerik yönetimi ve kulüp ayarları | T-31, T-21 | 2 | 1 | 0 | 0 | 32 (3) | 46/33/29/72 |
 | **T-37** | G | Süper admin arka ucu ve betik | T-30 | 0 | 0 | 0 | 0 | 0 | 46/33/29/72 |
 | **T-38** | G | Admin genel bakış | T-37 | 1 | 0 | 0 | 0 | 31 | 47/33/29/72 |
 | **T-39** | G | Admin kulüpler ve kulüp oluşturma | T-37, T-36 | 2 | 0 | 1 | 2 | 47 | 49/33/30/74 |
@@ -82,12 +82,12 @@
 | **T-46** | H | Mağaza ve yayın hazırlığı | T-44, T-45 | 0 | 0 | 0 | 0 | 0 | 51/34/32/77 |
 | **T-47** | H | Teslim | T-46 | 0 | 0 | 0 | 0 | 0 | 51/34/32/77 |
 
-Toplam: **51** ekran · **34** sheet (+ `EVT-MENU` açılır menü) · **32** dialog · **77** toast (+ `TST-58` muaf) · **1072** aksiyon (bunların **12**'si muaf demo aksiyonu — `design-contract.md §2`; uygulanan **1060**).
+Toplam: **51** ekran · **34** sheet (+ `EVT-MENU` açılır menü) · **32** dialog · **77** toast (+ `TST-58` muaf) · **1072** aksiyon (bunların **16**'sı muaf — 12 demo aksiyonu `design-contract.md §2` + 3 `DLG-04.*` MGT-08 yakalama sızıntısı (CD-159) + `FED-01.back` (K-70, W-72, kullanıcı onayı 2026-10-15) — `tool/design_exempt_actions.txt`; uygulanan **1056**).
 
 ### 2.1 Muaf kimlikler
 
 - `TST-58` — Yalnızca demo (K-02): 'Demo: … açılıyor' — uygulanmaz
-- Aksiyon düzeyinde muaflar (`AUT-01.demoAccount.*`, `AUT-01.demoToggle`, `AUT-03.demoVerify`, `EVT-03.demoScan`, `MGT-07.demoScan.*`) — `design-contract.md §2`; ilgili task bölümlerinde ayrıca anılır.
+- Aksiyon düzeyinde muaflar (`AUT-01.demoAccount.*`, `AUT-01.demoToggle`, `AUT-03.demoVerify`, `EVT-03.demoScan`, `MGT-07.demoScan.*`, `DLG-04.*` MGT-08 sızıntısı — CD-159, `FED-01.back` — K-70 / W-72) — `design-contract.md §2`; ilgili task bölümlerinde ayrıca anılır.
 
 ## 3. Faz haritası ve bağımlılık özeti
 

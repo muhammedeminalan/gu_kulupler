@@ -32,6 +32,7 @@ import 'package:gu_ui/gu_ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -189,6 +190,7 @@ void main() {
       expect(find.byKey(_scan), findsOneWidget);
       expect(find.byType(GuBanner), findsNothing);
       expect(find.text(l10n.attendanceNoWaitlist), findsOneWidget);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('danışman: salt okunur bandı, QR yok; anahtar → TST-26', (

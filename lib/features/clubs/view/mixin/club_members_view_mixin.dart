@@ -90,10 +90,14 @@ mixin ClubMembersViewMixin on ConsumerState<ClubMembersView> {
   /// Çek-yenile.
   Future<void> refresh() => viewModel.refresh();
 
-  /// Üye satırı (`CLB-06.member.<userId>`) → CLB-07, kulüp bağlamıyla.
+  /// Üye satırı (`CLB-06.member.<userId>`) → CLB-07, CLB-06'nın altında
+  /// (geri → üye listesi; K-69).
   void openProfile(String userId) {
     if (!mounted) return;
-    ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+    ClubMembersUserProfileRoute(
+      clubId: widget.clubId,
+      userId: userId,
+    ).go(context);
   }
 
   /// Satır menüsü (`CLB-06.menu.<userId>`; yalnızca yönetici bakışında):

@@ -32,6 +32,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -163,6 +164,7 @@ void main() {
         ),
         findsNothing,
       );
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('yönetici: "Yönettiğim kulüpler" kartı (satırlar + Yönetim '

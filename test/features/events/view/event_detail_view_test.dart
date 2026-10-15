@@ -43,6 +43,7 @@ import '../../../fakes/fake_event_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fixtures/event_model_fixtures.dart';
 import '../../../fixtures/rsvp_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -260,6 +261,7 @@ void main() {
       expect(join.full, isTrue);
       expect(find.byKey(_k('report')), findsOneWidget);
       expect(find.byKey(_k('attendeesPreview')), findsNothing);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('EN metinleri', (tester) async {

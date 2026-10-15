@@ -35,6 +35,7 @@ import 'package:gu_ui/gu_ui.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -115,10 +116,6 @@ Future<GoRouter> _pumpRoute(
       routes: [
         GoRoute(path: '/start', builder: (_, _) => const _Stub('/start')),
         GoRoute(
-          path: '/clubs/user/:userId',
-          builder: (_, state) => _Stub(state.uri.toString()),
-        ),
-        GoRoute(
           path: '/clubs/:clubId',
           builder: (_, state) => _Stub(state.uri.toString()),
           routes: [
@@ -126,6 +123,13 @@ Future<GoRouter> _pumpRoute(
               path: 'members',
               builder: (_, state) =>
                   ClubMembersView(clubId: state.pathParameters['clubId']!),
+              routes: [
+                // T-43 · K-69: profil CLB-06'nın altında (geri → üye listesi).
+                GoRoute(
+                  path: ':userId',
+                  builder: (_, state) => _Stub(state.uri.toString()),
+                ),
+              ],
             ),
           ],
         ),
@@ -236,6 +240,7 @@ void main() {
         expect(rows.first.membership.role, ClubRole.president);
         expect(rows.first.user, kClubUsers[rows.first.membership.userId]);
         expect(rows.every((row) => row.onMenu == null), isTrue);
+        await expectA11yGuidelines(tester);
       });
     }
 
@@ -383,12 +388,12 @@ void main() {
 
   group('CLB-06 · Üyeler · aksiyonlar', () {
     testWidgets('geri → CLB-03 (/clubs/c01); satır → CLB-07 '
-        '(kulüp bağlamıyla)', (tester) async {
+        '(CLB-06 altında, K-69)', (tester) async {
       final router = await _pumpRoute(tester);
       final userId = kBoardMember.userId;
       await _tapKey(tester, _member(userId));
       await tester.pumpAndSettle();
-      expect(_location(router), '/clubs/user/$userId?clubId=$kMembersClubId');
+      expect(_location(router), '$_membersPath/$userId');
 
       router.go(_membersPath);
       await tester.pumpAndSettle();
@@ -506,7 +511,7 @@ void main() {
       await _tapKey(tester, _menu(userId));
       await tester.pumpAndSettle();
       expect(_feedback().sheets, [SheetId.sht21]);
-      expect(_location(router), '/clubs/user/$userId?clubId=$kMembersClubId');
+      expect(_location(router), '$_membersPath/$userId');
     });
   });
 
