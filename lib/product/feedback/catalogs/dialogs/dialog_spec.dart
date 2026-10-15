@@ -485,6 +485,19 @@ abstract final class DialogCatalog {
       destructive: true,
     ),
 
+    /// Design: DLG-29 — İçerik kaldırılsın mı? (`dialogs.js:48`): ikon
+    /// `trash-2`, `danger`; "Kaldır" → `true` (SHT-26 "İçeriği kaldır" →
+    /// `AdminRepository.resolveReports(removed)`: hedef gizlenir, grubun açık
+    /// şikayetleri çözülür; ardından TST-51), "Vazgeç" → `false`.
+    DialogId.dlg29: DialogSpec(
+      title: (l10n, _) => l10n.dlg29Title,
+      body: (l10n, _) => l10n.dlg29Body,
+      primary: (l10n) => l10n.dlg29Confirm,
+      secondary: (l10n) => l10n.commonGiveUp,
+      icon: GuIcons.trash2,
+      destructive: true,
+    ),
+
     /// Design: DLG-26 — Güncelleme gerekli (`dialogs.js:44`; kapatılamaz).
     DialogId.dlg26: DialogSpec(
       title: (l10n, _) => l10n.dlg26Title,

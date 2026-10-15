@@ -1,7 +1,8 @@
 // T-26 · Derin bağlantı tablosu (PLAN §13.7, navigation.md §4.1):
 // `NotificationTargets.locationFor` her `NotificationType` için beklenen
-// konum ve sekme; türün gerektirdiği kimlik eksikse SYS-04. Geçici hedefler
-// (W-28 → T-32, W-29 → T-40) borç kapanınca güncellenir.
+// konum ve sekme; türün gerektirdiği kimlik eksikse SYS-04. Gecikmeli sheet
+// hedefleri: W-28 (T-32, MGT-02 `?applicant=`), W-29 (T-40, ADM-04
+// `?reportId=`).
 // `NotificationNavigator.open` / `openPayload`: okundu, bilet ayrımı
 // (going / attended → EVT-03; waitlist / kayıt yok → EVT-02), silinmiş /
 // gizli hedef → SYS-04, TST-17, hatırlatıcı liste belgesi, bozuk yük; gerçek
@@ -87,8 +88,11 @@ void main() {
         NotificationType.eventReminder: ('/events/e01', GuTab.events),
         NotificationType.waitlistPromoted: ('/events/e01', GuTab.events),
         NotificationType.reportResolved: (null, null),
-        // Geçici: T-40 `AdminReportsRoute(reportId:)` (W-29).
-        NotificationType.newReport: ('/admin', GuTab.admin),
+        // ADM-04 + SHT-26 (`?reportId=` grup anahtarı; W-29).
+        NotificationType.newReport: (
+          '/admin/reports?reportId=r01',
+          GuTab.admin,
+        ),
         NotificationType.system: ('/profile/settings/about', GuTab.profile),
         NotificationType.unknown: ('/profile/settings/about', GuTab.profile),
       };
@@ -123,6 +127,7 @@ void main() {
         NotificationType.eventCancelled,
         NotificationType.eventReminder,
         NotificationType.waitlistPromoted,
+        NotificationType.newReport,
       ]) {
         expect(_at(type, refs: _none), AppPaths.notFound, reason: type.name);
       }

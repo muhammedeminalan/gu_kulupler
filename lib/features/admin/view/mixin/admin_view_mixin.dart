@@ -91,9 +91,7 @@ mixin AdminViewMixin on ConsumerState<AdminView> {
 
   /// "Açık şikayet" (`ADM-01.kpi.reports`, `ADM-01.task.reports`) /
   /// "Şikayetler" bölmesi → ADM-04.
-  void openReports() {
-    // TODO(T-40): `AdminReportsRoute().go(context)` (W-46).
-  }
+  void openReports() => const AdminReportsRoute().go(context);
 
   /// "Toplam kullanıcı" (`ADM-01.kpi.users`) / "Kullanıcılar" bölmesi →
   /// ADM-05.

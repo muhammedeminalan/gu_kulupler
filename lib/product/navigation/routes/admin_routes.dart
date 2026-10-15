@@ -1,8 +1,9 @@
 part of 'shell_route.dart';
 
 // T-11 dal kökünü kurdu; T-38 kök ekranı (ADM-01) bağladı; T-39 kulüpler
-// (ADM-02) ile kulüp oluştur / düzenle (ADM-03) rotalarını ekler. Kalan alt
-// rotalar PLAN §13.3.6 tablosundaki task'larda (T-40, T-41).
+// (ADM-02) ile kulüp oluştur / düzenle (ADM-03) rotalarını ekler; T-40
+// şikayetler (ADM-04). Kalan alt rotalar PLAN §13.3.6 tablosundaki task'ta
+// (T-41).
 
 /// Admin dalının rota ağacı (navigation.md §2.6). Alt rotalar sahip
 /// task'larında bu ağaca eklenir.
@@ -16,6 +17,7 @@ const TypedGoRoute<AdminRoute> adminRouteTree = TypedGoRoute<AdminRoute>(
         TypedGoRoute<AdminClubEditRoute>(path: AdminClubEditRoute.segment),
       ],
     ),
+    TypedGoRoute<AdminReportsRoute>(path: AdminReportsRoute.segment),
   ],
 );
 
@@ -84,4 +86,40 @@ final class AdminClubEditRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       AdminClubFormView(clubId: clubId);
+}
+
+/// ADM-04 Şikayetler — `/admin/reports?tab=&reportId=`. ADM-01'in alt
+/// rotasıdır (guard `S`: yalnızca süper admin, router'da). ADM-01 "Açık
+/// şikayet" göstergesi / bekleyen iş ve `AdminSegmentBar` "Şikayetler"
+/// (W-46) `go` ile açar; `new_report` bildirimi (W-29) [reportId] ile açar.
+/// Geri ADM-01'e döner.
+final class AdminReportsRoute extends GoRouteData
+    with $AdminReportsRoute, PlatformPageMixin {
+  /// Şikayet listesi; [tab] ilk açılan sekme, [reportId] açılışta SHT-26'sı
+  /// açılacak grup.
+  const AdminReportsRoute({
+    this.tab,
+    @TypedQueryParameter<String>(name: reportIdQuery) this.reportId,
+  });
+
+  /// `/admin` altındaki yol parçası.
+  static const String segment = 'reports';
+
+  /// [reportId] sorgu parametresinin adı (`?reportId=`; navigation.md §2.6,
+  /// §4.1).
+  static const String reportIdQuery = 'reportId';
+
+  /// İlk açılan sekme (`?tab=open|resolved`); `null` ya da tanınmayan değer
+  /// → açık şikayetler.
+  final AdminReportsTab? tab;
+
+  /// Açılışta `AppDurations.postNavigationSheetDelay` sonra SHT-26'sı açılan
+  /// şikayet grubunun anahtarı `{targetType}_{targetId}`
+  /// (`FirestoreIds.reportGroupKey`; bildirimin `refs.reportId` değeri —
+  /// belge kimliği değildir). `null` → sheet açılmaz.
+  final String? reportId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AdminReportsView(tab: tab, reportId: reportId);
 }

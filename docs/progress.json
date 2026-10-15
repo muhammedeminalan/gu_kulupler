@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T07:47:07.058Z",
+  "updated": "2026-10-15T08:15:33.354Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-40",
   "statusValues": [
     "pending",
     "planning",
@@ -531,8 +531,8 @@
       "notes": ""
     },
     "T-40": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-15T07:47:26.836Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -882,7 +882,10 @@
       "resolveIn": [
         "T-40"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-40",
+      "closedAt": "2026-10-15T08:15:33.304Z",
+      "closeNote": "NotificationTargets newReport → AdminReportsRoute(reportId:) (/admin/reports?reportId=); ADM-04 250 ms sonra SHT-26; reportId yoksa SYS-04; deep_link_stack_test"
     },
     {
       "id": "W-30",
@@ -1035,7 +1038,10 @@
       "resolveIn": [
         "T-40"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-40",
+      "closedAt": "2026-10-15T08:15:33.329Z",
+      "closeNote": "ADM-01 KPI / bekleyen iş / bölme ve ADM-02 bölme → AdminReportsRoute().go; admin_reports_flow_test"
     },
     {
       "id": "W-47",
@@ -1712,6 +1718,15 @@
       "actions": [
         "ADM-03.cover"
       ]
+    },
+    {
+      "id": "W-103",
+      "declaredIn": "T-40",
+      "text": "CommentRepository.getComment yok (PLAN §10.4 T-40 satırı; gu_data T-40'ta değiştirilmedi): SHT-26 yorum hedefi önizlemesi boş, ADM-04 yorum satırı başlığı 'Yorum', yorum hedefinde 'Kullanıcıyı askıya al' yok → getComment + AdminReportsViewModel._readTarget/_readPreviews yorum dalı",
+      "resolveIn": [
+        "T-43"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [

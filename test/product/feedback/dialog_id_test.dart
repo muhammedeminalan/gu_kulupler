@@ -47,7 +47,8 @@ void main() {
         'DLG-18; T-33 → DLG-20 (DLG-19 girdili, DLG-21 adımlı: '
         '`RemoveMemberDialog`, `TransferPresidencyDialog`); T-34 → DLG-31 '
         '(DLG-22 onay kutulu, DLG-23 seçenekli: `PublishEventDialog`, '
-        '`CancelEventDialog`)', () {
+        '`CancelEventDialog`); T-40 → DLG-29 (DLG-28 / DLG-30 girdili: '
+        '`SuspendClubDialog`, `SuspendUserDialog`)', () {
       expect(DialogCatalog.ids.toSet(), {
         DialogId.dlg01,
         DialogId.dlg03,
@@ -70,6 +71,7 @@ void main() {
         DialogId.dlg24,
         DialogId.dlg26,
         DialogId.dlg27,
+        DialogId.dlg29,
         DialogId.dlg31,
       });
       for (final id in DialogId.values) {

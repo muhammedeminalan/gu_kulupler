@@ -41,6 +41,7 @@
 // T-39 · `AdminClubsRoute` (`/admin/clubs?tab=`, ADM-02),
 // `AdminClubFormRoute` (`/admin/clubs/new`) + `AdminClubEditRoute`
 // (`/admin/clubs/:clubId/edit`) — tek `AdminClubFormView` (ADM-03, CD-54).
+// T-40 · `AdminReportsRoute` (`/admin/reports?tab=&reportId=`, ADM-04).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
@@ -56,7 +57,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39 + T-40).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -120,6 +121,8 @@ const Map<GoRouteData, String> _routes = {
   AdminClubsRoute(): '/admin/clubs',
   AdminClubFormRoute(): '/admin/clubs/new',
   AdminClubEditRoute(clubId: _clubId): '/admin/clubs/:clubId/edit',
+  // T-40: ADM-04
+  AdminReportsRoute(): '/admin/reports',
   ProfileRoute(): '/profile',
   // Profil dalı (T-27: PRF-02, PRF-03, PRF-04)
   EditProfileRoute(): '/profile/edit',
@@ -208,10 +211,40 @@ void main() {
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
         'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2, '
-        'T-39: +3)', () {
+        'T-39: +3, T-40: +1)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(54));
+      expect(_routes, hasLength(55));
     });
+
+    test(
+      "T-40 · ADM-04 ADM-01'in altındadır (`tab` + `reportId` sorgu "
+      'parametreleri; `reportId` grup anahtarıdır) ve süper admin (S) ister',
+      () {
+        expect(AdminReportsRoute.segment, 'reports');
+        expect(AdminReportsTab.values.map((tab) => tab.name), [
+          'open',
+          'resolved',
+        ]);
+        const plain = AdminReportsRoute();
+        expect(plain.tab, isNull);
+        expect(plain.reportId, isNull);
+        expect(plain.location, '/admin/reports');
+        final deep = Uri.parse(
+          const AdminReportsRoute(
+            tab: AdminReportsTab.resolved,
+            reportId: 'post_p13',
+          ).location,
+        );
+        expect(deep.path, '/admin/reports');
+        expect(deep.queryParameters, {
+          'tab': 'resolved',
+          'reportId': 'post_p13',
+        });
+        final match = RouteAccessTable.match(Uri.parse(plain.location));
+        expect(match.pattern, _routes[plain]);
+        expect(match.access, RouteAccess.superAdmin);
+      },
+    );
 
     test(
       "T-39 · ADM-02 ADM-01'in altındadır (`tab` sorgu parametresi); ADM-03 "
