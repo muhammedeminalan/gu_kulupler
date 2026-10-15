@@ -30,7 +30,7 @@ part 'notification_navigator.g.dart';
 /// | `eventCancelled` | `/events/{eventId}?showCancelled=true` | events |
 /// | `eventReminder`, `waitlistPromoted` | `hasTicket` → `/events/{eventId}/ticket`, değilse `/events/{eventId}` | events |
 /// | `reportResolved` | `null` (rota yok; yalnızca TST-17) | — |
-/// | `newReport` | `/admin` (**geçici**; T-40 `AdminReportsRoute(reportId:)` — W-29) | admin |
+/// | `newReport` | `/admin/reports?reportId={reportId}` (ADM-04; açılıştan 250 ms sonra SHT-26 — W-29) | admin |
 /// | `system`, `unknown` (varsayılan) | `/profile/settings/about` (`AboutRoute`, SET-04) | profile |
 ///
 /// Türün gerektirdiği kimlik ([NotificationRefsModel]) eksikse hedef
@@ -84,9 +84,14 @@ abstract final class NotificationTargets {
             ? TicketRoute(eventId: eventId).location
             : EventDetailRoute(eventId: eventId).location,
       NotificationType.reportResolved => null,
-      // TODO(T-40): `AdminReportsRoute(reportId: refs.reportId)` + 250 ms
-      // sonra SHT-26 (W-29); o güne kadar Admin sekme kökü.
-      NotificationType.newReport => const AdminRoute().location,
+      // ADM-04; `?reportId=` (grup anahtarı `{targetType}_{targetId}`) →
+      // ekran `postNavigationSheetDelay` sonra o grubun SHT-26'sını açar
+      // (W-29). Rota süper admin guard'lıdır; CD-37: Mod C'de üretilmez ama
+      // hedef tanımlıdır.
+      NotificationType.newReport =>
+        refs.reportId == null
+            ? AppPaths.notFound
+            : AdminReportsRoute(reportId: refs.reportId).location,
       // SET-04 Hakkında (PLAN §13.7; yığın Profil → Ayarlar → Hakkında).
       NotificationType.system ||
       NotificationType.unknown => const AboutRoute().location,
@@ -205,8 +210,9 @@ final class NotificationNavigator with ProjectDependencyMixin {
       return;
     }
     go(location);
-    // `applicationReceived`: SHT-19'u MGT-02 `?applicant=` ile açar (W-28).
-    // TODO(T-40): `newReport` → aynı gecikmeyle SHT-26 (süper admin; W-29).
+    // `applicationReceived`: SHT-19'u MGT-02 `?applicant=` ile açar (W-28);
+    // `newReport`: SHT-26'yı ADM-04 `?reportId=` ile açar (W-29; rota süper
+    // admin guard'lı).
   }
 
   /// Yerel hatırlatıcı dokunuşu (sıcak: `onDidReceiveNotificationResponse`;
