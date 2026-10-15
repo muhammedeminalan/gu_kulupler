@@ -133,6 +133,16 @@ Future<GoRouter> _pumpRoute(
               path: 'manage/events/:eventId/edit',
               builder: (_, state) => _Stub(state.uri.path),
             ),
+            GoRoute(
+              path: 'manage/events/:eventId/attendance',
+              builder: (_, state) => _Stub(state.uri.path),
+              routes: [
+                GoRoute(
+                  path: 'scan',
+                  builder: (_, state) => _Stub(state.uri.path),
+                ),
+              ],
+            ),
           ],
         ),
         GoRoute(
@@ -454,6 +464,24 @@ void main() {
           (GetIt.I<EventRepository>() as FakeEventRepository).created.single;
       expect(copy.startsAt, kEvent.startsAt.add(const Duration(days: 7)));
       expect(_location(router), '$editPath/${copy.id}/edit');
+    });
+
+    testWidgets('yönetici (W-27): "Katılımcılar" → MGT-06; "Yoklama başlat" '
+        '→ MGT-07', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        session: memberSession(role: ClubRole.board),
+      );
+      final attendance =
+          '/clubs/${kEvent.clubId}/manage/events/${kEvent.id}/attendance';
+      await _tap(tester, _k('attendees'));
+      await tester.pumpAndSettle();
+      expect(_location(router), attendance);
+      unawaited(router.push('/events/${kEvent.id}'));
+      await tester.pumpAndSettle();
+      await _tap(tester, _k('scan'));
+      await tester.pumpAndSettle();
+      expect(_location(router), '$attendance/scan');
     });
 
     testWidgets('"Katıl" → SHT-12 (çipler, varsayılan 1 sa) → katılım → '

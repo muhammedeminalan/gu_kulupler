@@ -129,9 +129,8 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
   }
 
   /// Yaklaşan etkinlik kartı (`MGT-01.event.<id>`) → MGT-06.
-  void openAttendance(String eventId) {
-    // TODO(T-35): `AttendanceRoute(clubId:, eventId:).go` (MGT-06; W-39).
-  }
+  void openAttendance(String eventId) =>
+      AttendanceRoute(clubId: widget.clubId, eventId: eventId).go(context);
 
   /// "Tümü" (`MGT-01.activityAll`) → MGT-10.
   void openActivityLog() => ActivityLogRoute(clubId: widget.clubId).go(context);

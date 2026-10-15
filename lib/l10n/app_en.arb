@@ -662,6 +662,15 @@
   "@attendanceMarkAll": {
     "description": "Key attendance.markAll"
   },
+  "attendanceMarkingProgress": "Marking attendance… {percent}",
+  "@attendanceMarkingProgress": {
+    "description": "Key attendance.markingProgress",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "attendanceNoWaitlist": "The waitlist is empty.",
   "@attendanceNoWaitlist": {
     "description": "Key attendance.noWaitlist"
@@ -682,6 +691,15 @@
   "@attendanceRate": {
     "description": "Key attendance.rate"
   },
+  "attendanceRateValue": "Attendance {percent}",
+  "@attendanceRateValue": {
+    "description": "Key attendance.rateValue",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "attendanceRegistered": "Registered",
   "@attendanceRegistered": {
     "description": "Key attendance.registered"
@@ -690,9 +708,43 @@
   "@attendanceRegisteredOne": {
     "description": "Key attendance.registeredOne"
   },
+  "attendanceSummaryChip": "{label} {count}",
+  "@attendanceSummaryChip": {
+    "description": "Key attendance.summaryChip",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceSelfHint": "You can't mark your own attendance.",
+  "@attendanceSelfHint": {
+    "description": "Key attendance.selfHint"
+  },
   "attendanceTitle": "Attendees & check-in",
   "@attendanceTitle": {
     "description": "Key attendance.title"
+  },
+  "attendanceWindowClosed": "Check-in is closed. Attendance can be taken up to {hours, plural, =1{1 hour} other{{hours} hours}} after the event ends.",
+  "@attendanceWindowClosed": {
+    "description": "Key attendance.windowClosed",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceWindowNotOpen": "The event hasn't started yet. Check-in opens {hours, plural, =1{1 hour} other{{hours} hours}} before the start.",
+  "@attendanceWindowNotOpen": {
+    "description": "Key attendance.windowNotOpen",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
   },
   "authChangeEmail": "Change email",
   "@authChangeEmail": {
@@ -4310,6 +4362,10 @@
   "@savedTitle": {
     "description": "Key saved.title"
   },
+  "scanCodePlaceholder": "GU-XXXX-XXXX",
+  "@scanCodePlaceholder": {
+    "description": "Key scan.codePlaceholder"
+  },
   "scanCounter": "Checked in {a}/{b}",
   "@scanCounter": {
     "description": "Key scan.counter",
@@ -4883,9 +4939,22 @@
   "@sht24Next": {
     "description": "Key sht.24.next"
   },
+  "sht24ScannedBy": "Scanned by {name}",
+  "@sht24ScannedBy": {
+    "description": "Key sht.24.scannedBy",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "sht24Title": "Scan result",
   "@sht24Title": {
     "description": "Key sht.24.title"
+  },
+  "sht24Unreadable": "Couldn't read the code. Scan again or enter it manually.",
+  "@sht24Unreadable": {
+    "description": "Key sht.24.unreadable"
   },
   "sht24Used": "Already scanned",
   "@sht24Used": {
@@ -4907,6 +4976,18 @@
   "sht24ValidDesc": "Marked as attended.",
   "@sht24ValidDesc": {
     "description": "Key sht.24.validDesc"
+  },
+  "sht24WindowClosed": "Check-in opens {before} hours before the event and closes {after} hours after it ends.",
+  "@sht24WindowClosed": {
+    "description": "Key sht.24.windowClosed",
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "after": {
+        "type": "int"
+      }
+    }
   },
   "sht25Assign": "Assign president",
   "@sht25Assign": {

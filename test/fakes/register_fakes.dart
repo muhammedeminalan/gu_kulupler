@@ -15,6 +15,7 @@ import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
+import 'package:gu_kulupler/product/service/qr_scanner_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 
@@ -44,6 +45,7 @@ import 'fake_notification_dispatcher.dart';
 import 'fake_notification_repository.dart';
 import 'fake_permission_service.dart';
 import 'fake_post_repository.dart';
+import 'fake_qr_scanner_service.dart';
 import 'fake_recipient_resolver.dart';
 import 'fake_remote_config_service.dart';
 import 'fake_report_repository.dart';
@@ -166,5 +168,7 @@ void registerDefaultFakes() {
     ..registerSingleton<ImagePickerService>(FakeImagePickerService())
     // T-23 · geçici dosya (.ics) ve yerel hatırlatıcı
     ..registerSingleton<FileService>(FakeFileService())
-    ..registerSingleton<LocalReminderService>(FakeLocalReminderService(clock));
+    ..registerSingleton<LocalReminderService>(FakeLocalReminderService(clock))
+    // T-35 · QR tarayıcı (kamera yok; okuma `emit` ile)
+    ..registerSingleton<QrScannerService>(FakeQrScannerService());
 }

@@ -34,6 +34,8 @@
 // T-34 · `ManageEventsRoute` (`/clubs/:clubId/manage/events?tab=`, MGT-04),
 // `EventFormRoute` (`…/events/new`) + `EventEditRoute`
 // (`…/events/:eventId/edit`) — tek `EventFormView` (MGT-05, CD-54).
+// T-35 · `AttendanceRoute` (`…/events/:eventId/attendance`, MGT-06),
+// `ScanRoute` (`…/attendance/scan`, MGT-07).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
@@ -48,7 +50,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -89,6 +91,11 @@ const Map<GoRouteData, String> _routes = {
   EventFormRoute(clubId: _clubId): '/clubs/:clubId/manage/events/new',
   EventEditRoute(clubId: _clubId, eventId: _eventId):
       '/clubs/:clubId/manage/events/:eventId/edit',
+  // T-35: MGT-06, MGT-07
+  AttendanceRoute(clubId: _clubId, eventId: _eventId):
+      '/clubs/:clubId/manage/events/:eventId/attendance',
+  ScanRoute(clubId: _clubId, eventId: _eventId):
+      '/clubs/:clubId/manage/events/:eventId/attendance/scan',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
   // T-24: EVT-04)
@@ -186,10 +193,42 @@ void main() {
     test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2, T-32: +1, T-33: +1, T-34: +3)', () {
+        'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(47));
+      expect(_routes, hasLength(49));
     });
+
+    test(
+      "T-35 · MGT-06 MGT-04'ün altındadır (V); MGT-07 MGT-06'nın altındadır "
+      '(M); `clubId` ve `eventId` yol parametresidir',
+      () {
+        expect(AttendanceRoute.segment, ':eventId/attendance');
+        expect(ScanRoute.segment, 'scan');
+        for (final MapEntry(key: route, value: (location, access))
+            in <GoRouteData, (String, RouteAccess)>{
+              const AttendanceRoute(clubId: _clubId, eventId: _eventId): (
+                '/clubs/c01/manage/events/e01/attendance',
+                RouteAccess.managerOrAdvisor,
+              ),
+              const ScanRoute(clubId: _clubId, eventId: _eventId): (
+                '/clubs/c01/manage/events/e01/attendance/scan',
+                RouteAccess.manager,
+              ),
+            }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, access, reason: name);
+          expect(match.clubId, _clubId, reason: name);
+        }
+        // Kimlik yolda kodlanır (ayırıcı içeren değer yolu bölmez).
+        expect(
+          const AttendanceRoute(clubId: _clubId, eventId: 'a/b').location,
+          '/clubs/c01/manage/events/a%2Fb/attendance',
+        );
+      },
+    );
 
     test(
       "T-34 · MGT-04 MGT-01'in altındadır (V; `tab` sorgu parametresi); "

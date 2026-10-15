@@ -152,3 +152,14 @@ MGT-05.back            # design/prototype/app/screens-manage.js:11,117 — alt �
 MGT-05.saveDraft       # design/prototype/app/screens-manage.js:117 — alt çubuk "Taslak olarak kaydet" yalnızca 3. adımda (`f.step === 3`); yakalama 1. adım
 MGT-05.publish         # design/prototype/app/screens-manage.js:117 — alt çubuk "Yayınla" / "Kaydet" yalnızca 3. adımda; yakalama 1. adım
 MGT-05.retry           # lib/features/management/view/event_form_view.dart — yalnızca düzenlenecek etkinlik okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-06.retry           # lib/features/management/view/attendance_view.dart — yalnızca etkinlik / katılımcılar okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-06.scrim           # design/prototype/app/ui.js:191 + screens-manage.js:128–129 — "⋮" ve etkinlik değiştir menülerinin (`PopMenu id="MGT-06"`) saydam scrim'i; yalnızca menü açıkken
+MGT-06.export          # design/prototype/app/screens-manage.js:128 — "Dışa aktar (CSV)" yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-06.markAll         # design/prototype/app/screens-manage.js:128 — "Tüm kayıtlıları katıldı yap" (DLG-17) yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-06.toggleRegistration  # design/prototype/app/screens-manage.js:128 — "Kayıtları aç / kapat" yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-06.switchEvent.*   # design/prototype/app/screens-manage.js:129 — etkinlik değiştir menüsünün satırları (etkinlik başına) yalnızca menü açıkken; yakalama kapalı menü
+MGT-06.promote.*       # design/prototype/app/screens-manage.js:135 — bekleme listesi satırının "Kayıtlıya al" düğmesi yalnızca bekleyen varken; yakalama e17 (bekleme listesi boş)
+MGT-06.attended.*      # design/prototype/app/screens-manage.js:133 — "Katıldı" anahtarı katılımcı başına (`MGT-06.attended.<userId>`); envanterdeki kimlikler yakalamanın (e17) 52 kaydı, başka etkinlikte başka kimlikler
+MGT-07.codeInput         # design/prototype/app/screens-manage.js:154 — elle kod alanı yalnızca "Kod gir" sonrası (`manual`); yakalama kapalı alan
+MGT-07.verify            # design/prototype/app/screens-manage.js:154 — "Doğrula" yalnızca elle kod alanı açıkken (`manual`); yakalama kapalı alan
+MGT-07.permission.retry  # design/prototype/app/screens-manage.js:149 — "Ayarlara git" yalnızca kamera izni reddedildiğinde (`perm === 'denied'`); yakalama izin penceresi (DLG-04)

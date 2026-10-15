@@ -1306,6 +1306,10 @@ abstract final class GuSizes {
   /// ekranda satır daralır).
   static const double manageHeaderClubMaxWidth = 190;
 
+  /// screens-manage.js:152 `max-width:260px` — MGT-07 tarayıcı ipucu
+  /// metninin en geniş hâli (`ScanOverlay`; T-35).
+  static const double scanHintMaxWidth = 260;
+
   /// cards.js:176 `width: '44px', height: '44px'` —
   /// K-32, K-46.
   static const double iconButtonTonal = 44;

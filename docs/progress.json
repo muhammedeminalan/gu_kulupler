@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-14T23:16:59.948Z",
+  "updated": "2026-10-15T00:24:56.150Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-35",
   "statusValues": [
     "pending",
     "planning",
@@ -481,8 +481,8 @@
       "notes": ""
     },
     "T-35": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-14T23:17:28.731Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -841,11 +841,14 @@
         "T-34",
         "T-35"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "EVT-02.attendees",
         "EVT-02.scan"
-      ]
+      ],
+      "closedIn": "T-35",
+      "closedAt": "2026-10-14T23:58:07.158Z",
+      "closeNote": "T-35: MGT-06 / MGT-07 bağlandı (AttendanceRoute / ScanRoute go)"
     },
     {
       "id": "W-28",
@@ -971,7 +974,10 @@
       "resolveIn": [
         "T-35"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-35",
+      "closedAt": "2026-10-14T23:58:07.185Z",
+      "closeNote": "T-35: MGT-06 / MGT-07 bağlandı (AttendanceRoute / ScanRoute go)"
     },
     {
       "id": "W-40",
@@ -989,7 +995,10 @@
       "resolveIn": [
         "T-35"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-35",
+      "closedAt": "2026-10-14T23:58:07.209Z",
+      "closeNote": "T-35: MGT-06 / MGT-07 bağlandı (AttendanceRoute / ScanRoute go)"
     },
     {
       "id": "W-45",
@@ -1550,7 +1559,10 @@
       "resolveIn": [
         "T-35"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-35",
+      "closedAt": "2026-10-15T00:24:56.125Z",
+      "closeNote": "Hedef T-43'e taşındı (kullanıcı kararı Faz H'ye ertelendi); devamı yeni borç kaydında"
     },
     {
       "id": "W-94",
@@ -1616,6 +1628,18 @@
       "closedIn": "T-33",
       "closedAt": "2026-10-14T22:10:44.731Z",
       "closeNote": "T-33: bağlandı (CD-156)"
+    },
+    {
+      "id": "W-99",
+      "declaredIn": "T-35",
+      "text": "Kopyalanmış bilet kodu kalıcı çözümü (W-79 devamı): QR v2 gu:ticket:v2:{eventId}:{userId}:{code} → rsvps/{eventId}_{userId} tekil get + kod karşılaştırma; D-30 değişikliği ister — kullanıcıya sorulur. T-30'da scanTicket kopya kodu ScanOutcome.invalid sayar (yoklama MGT-06'dan elle) (kullanıcı kararı Faz H'ye ertelendi, 2026-10-14: T-43 başında toplu sorulacak; QR v1 T-35'te uygulandı)",
+      "resolveIn": [
+        "T-43"
+      ],
+      "status": "open",
+      "actions": [
+        "MGT-07.manual"
+      ]
     }
   ],
   "notImplemented": [
@@ -1685,6 +1709,11 @@
       "date": "2026-10-13",
       "task": "T-21",
       "text": "T-21 otonom kararlar CD-143: uploadImages imzası (PostImageUpload + clubId + onUploaded) PLAN §10.4'ten farklı; Storage posts/ kuralı 2 belge sınırı nedeniyle kulübün askı durumunu okumaz (yetim dosya olabilir) ve görsel okuması üyelik aramaz; seçici tek tek görsel seçtirir; taslak görselleri saklamaz, DLG-25 'Kaydetmeden çık' eski taslağı silmez; anket süresi varsayılanı 3 gün; düzenlemede anket sorusu salt okunur (kullanıcı teyidi bekliyor — K-75)"
+    },
+    {
+      "date": "2026-10-15",
+      "task": "T-35",
+      "text": "W-93 (QR v2, D-30 değişikliği) T-35'ten T-43'e taşındı: kullanıcı bekleyen soruları Faz H'ye erteledi; T-35 QR v1 ile tamamlandı"
     }
   ],
   "knownIssuesAdded": [

@@ -662,6 +662,15 @@
   "@attendanceMarkAll": {
     "description": "Key attendance.markAll"
   },
+  "attendanceMarkingProgress": "Yoklama işleniyor… {percent}",
+  "@attendanceMarkingProgress": {
+    "description": "Key attendance.markingProgress",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "attendanceNoWaitlist": "Bekleme listesi boş.",
   "@attendanceNoWaitlist": {
     "description": "Key attendance.noWaitlist"
@@ -682,6 +691,15 @@
   "@attendanceRate": {
     "description": "Key attendance.rate"
   },
+  "attendanceRateValue": "Yoklama {percent}",
+  "@attendanceRateValue": {
+    "description": "Key attendance.rateValue",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "attendanceRegistered": "Kayıtlı",
   "@attendanceRegistered": {
     "description": "Key attendance.registered"
@@ -690,9 +708,43 @@
   "@attendanceRegisteredOne": {
     "description": "Key attendance.registeredOne"
   },
+  "attendanceSummaryChip": "{label} {count}",
+  "@attendanceSummaryChip": {
+    "description": "Key attendance.summaryChip",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceSelfHint": "Kendi katılımını işaretleyemezsin.",
+  "@attendanceSelfHint": {
+    "description": "Key attendance.selfHint"
+  },
   "attendanceTitle": "Katılımcılar ve yoklama",
   "@attendanceTitle": {
     "description": "Key attendance.title"
+  },
+  "attendanceWindowClosed": "Yoklama kapandı. Yoklama, etkinlik bittikten sonra en geç {hours} saat içinde alınabilir.",
+  "@attendanceWindowClosed": {
+    "description": "Key attendance.windowClosed",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceWindowNotOpen": "Etkinlik henüz başlamadı. Yoklama, başlangıçtan {hours} saat önce açılır.",
+  "@attendanceWindowNotOpen": {
+    "description": "Key attendance.windowNotOpen",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
   },
   "authChangeEmail": "E-postayı değiştir",
   "@authChangeEmail": {
@@ -4310,6 +4362,10 @@
   "@savedTitle": {
     "description": "Key saved.title"
   },
+  "scanCodePlaceholder": "GU-XXXX-XXXX",
+  "@scanCodePlaceholder": {
+    "description": "Key scan.codePlaceholder"
+  },
   "scanCounter": "Katıldı {a}/{b}",
   "@scanCounter": {
     "description": "Key scan.counter",
@@ -4883,9 +4939,22 @@
   "@sht24Next": {
     "description": "Key sht.24.next"
   },
+  "sht24ScannedBy": "Okutan: {name}",
+  "@sht24ScannedBy": {
+    "description": "Key sht.24.scannedBy",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "sht24Title": "Tarama sonucu",
   "@sht24Title": {
     "description": "Key sht.24.title"
+  },
+  "sht24Unreadable": "Kod okunamadı. Tekrar tara ya da kodu elle gir.",
+  "@sht24Unreadable": {
+    "description": "Key sht.24.unreadable"
   },
   "sht24Used": "Zaten okutulmuş",
   "@sht24Used": {
@@ -4907,6 +4976,18 @@
   "sht24ValidDesc": "Katıldı olarak işaretlendi.",
   "@sht24ValidDesc": {
     "description": "Key sht.24.validDesc"
+  },
+  "sht24WindowClosed": "Yoklama, etkinlikten {before} saat önce açılır ve bitişinden {after} saat sonra kapanır.",
+  "@sht24WindowClosed": {
+    "description": "Key sht.24.windowClosed",
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "after": {
+        "type": "int"
+      }
+    }
   },
   "sht25Assign": "Başkan ata",
   "@sht25Assign": {

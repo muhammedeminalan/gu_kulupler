@@ -4,7 +4,8 @@ part of 'shell_route.dart';
 // kökünün gerçek ekranını ve aramayı, T-18 üye listesi ile kullanıcı
 // profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
 // panelini ve faaliyet geçmişini, T-32 başvuru yönetimini, T-33 üye
-// yönetimini, T-34 etkinlik yönetimini ve formunu kurar; kalan alt rotalar
+// yönetimini, T-34 etkinlik yönetimini ve formunu, T-35 katılımcılar /
+// yoklama ile QR tarayıcıyı kurar; kalan alt rotalar
 // PLAN §13.3.2
 // tablosundaki task'larda eklenir.
 //
@@ -40,6 +41,12 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
               routes: <TypedRoute<RouteData>>[
                 TypedGoRoute<EventFormRoute>(path: EventFormRoute.segment),
                 TypedGoRoute<EventEditRoute>(path: EventEditRoute.segment),
+                TypedGoRoute<AttendanceRoute>(
+                  path: AttendanceRoute.segment,
+                  routes: <TypedRoute<RouteData>>[
+                    TypedGoRoute<ScanRoute>(path: ScanRoute.segment),
+                  ],
+                ),
               ],
             ),
             TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
@@ -387,6 +394,58 @@ final class EventEditRoute extends GoRouteData
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       EventFormView(clubId: clubId, eventId: eventId);
+}
+
+/// MGT-06 Katılımcılar ve yoklama —
+/// `/clubs/:clubId/manage/events/:eventId/attendance`. MGT-04'ün alt
+/// rotasıdır (guard `V`: yönetici ya da danışman; danışman salt okunur görür,
+/// yoklama yazımları TST-26 — `RouteAccessTable`). EVT-02 yönetici
+/// "Katılımcılar / Yoklama" (W-27), MGT-01 "Yoklama" (W-39) ve SHT-23
+/// satırları (W-42) `go` ile açar; geri MGT-04'e döner. Etkinlik değiştirme
+/// (`MGT-06.switchEvent.<id>`) aynı rotaya başka [eventId] ile `go`'dur.
+final class AttendanceRoute extends GoRouteData
+    with $AttendanceRoute, PlatformPageMixin {
+  /// [clubId] kulübünün [eventId] etkinliğinin katılımcıları.
+  const AttendanceRoute({required this.clubId, required this.eventId});
+
+  /// `/clubs/:clubId/manage/events` altındaki yol parçası; `:eventId/edit`
+  /// (MGT-05) ile aynı kimlik parçasını paylaşır.
+  static const String segment = ':eventId/attendance';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Etkinlik kimliği (yol parametresi).
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AttendanceView(clubId: clubId, eventId: eventId);
+}
+
+/// MGT-07 QR tarayıcı —
+/// `/clubs/:clubId/manage/events/:eventId/attendance/scan`. MGT-06'nın alt
+/// rotasıdır (guard `M`: yalnızca kulüp yönetimi; danışman MGT-01'e TST-26
+/// ile yönlenir — R11). MGT-06 "Tara" (`MGT-06.scan`) `go` ile açar; kapat /
+/// geri
+/// MGT-06'ya döner. Geçiş platform varsayılanıdır (D-06); durum çubuğu açık
+/// ikonlu (D-20, `GuSystemUi`).
+final class ScanRoute extends GoRouteData with $ScanRoute, PlatformPageMixin {
+  /// [clubId] kulübünün [eventId] etkinliği için bilet tarayıcı.
+  const ScanRoute({required this.clubId, required this.eventId});
+
+  /// `…/attendance` altındaki yol parçası.
+  static const String segment = 'scan';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// Etkinlik kimliği (yol parametresi).
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ScanView(clubId: clubId, eventId: eventId);
 }
 
 /// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt

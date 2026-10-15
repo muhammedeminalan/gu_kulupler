@@ -50,6 +50,7 @@ dependencies:
   timezone: ^0.11.1 # T-23: Europe/Istanbul zonedSchedule (yalnızca LocalReminderService — D-26)
   path_provider: ^2.1.6 # T-23: .ics geçici dosyası (SHT-14, FileService)
   qr_flutter: ^4.1.0 # T-23: bilet QR'ı (EVT-03, QrCodeView — D-30)
+  mobile_scanner: ^7.4.2 # T-35: bilet QR'ı okuma (MGT-07, QrScannerService — D-30; ML Kit bundled, K-16)
 
   # --- Firebase (Mod C: firebase_messaging / cloud_functions yok — Q-02) ---
   firebase_core: ^4.15.0
