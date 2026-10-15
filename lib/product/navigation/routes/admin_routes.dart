@@ -1,6 +1,6 @@
 part of 'shell_route.dart';
 
-// T-11 yalnızca dal kökünü kurar.
+// T-11 dal kökünü kurdu; T-38 kök ekranı (ADM-01) bağladı.
 // TODO(T-39): `AdminClubsRoute` ve form rotaları; kalan alt rotalar PLAN
 // §13.3.6 tablosundaki task'larda.
 
@@ -10,13 +10,11 @@ const TypedGoRoute<AdminRoute> adminRouteTree = TypedGoRoute<AdminRoute>(
   path: AppPaths.admin,
 );
 
-/// Admin sekmesinin kökü — `/admin`.
+/// Admin sekmesinin kökü — `/admin` (ADM-01 `AdminView`; guard `S`).
 final class AdminRoute extends GoRouteData with $AdminRoute, PlatformPageMixin {
   /// Sekme kökü rotası.
   const AdminRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      // TODO(T-38): `AdminView` (Admin sekme kökü).
-      RoutePlaceholderView(title: (l10n) => l10n.navAdmin);
+  Widget build(BuildContext context, GoRouterState state) => const AdminView();
 }

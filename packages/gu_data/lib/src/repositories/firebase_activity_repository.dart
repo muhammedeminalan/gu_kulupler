@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
+import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/page_request.dart';
 import 'package:gu_data/src/core/page_result.dart';
 import 'package:gu_data/src/models/activity_draft.dart';
 import 'package:gu_data/src/models/activity_model.dart';
 import 'package:gu_data/src/models/enums/activity_category.dart';
+import 'package:gu_data/src/models/enums/activity_kind.dart';
 import 'package:gu_data/src/repositories/activity_repository.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
@@ -54,6 +56,54 @@ final class FirebaseActivityRepository implements ActivityRepository {
       (doc) => ActivityModel.fromJson(doc.data, id: doc.id),
     );
   }
+
+  @override
+  Future<FirestoreResult<List<int>>> countByWeek({
+    required Set<ActivityKind> kinds,
+    required DateTime fromUtc,
+    required int weeks,
+  }) async {
+    if (kinds.isEmpty ||
+        kinds.length > RepositoryHelpers.whereInMax ||
+        weeks <= 0) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final kindValues = [for (final kind in kinds) kind.json];
+    final start = fromUtc.toUtc();
+    // Kovalar paralel; her biri tek `count()` (belge okunmaz). Açık
+    // `orderBy createdAt ↓` indeks `activity (kind, createdAt↓)` ile eşleşir.
+    final counts = await Future.wait([
+      for (var i = 0; i < weeks; i++)
+        _firestore.count(
+          _firestore
+              .collection(FirestoreCollections.activity)
+              .where(FirestoreFields.kind, whereIn: kindValues)
+              .where(
+                FirestoreFields.createdAt,
+                isGreaterThanOrEqualTo: Timestamp.fromDate(
+                  start.add(_week * i),
+                ),
+              )
+              .where(
+                FirestoreFields.createdAt,
+                isLessThan: Timestamp.fromDate(start.add(_week * (i + 1))),
+              )
+              .orderBy(FirestoreFields.createdAt, descending: true),
+        ),
+    ]);
+    final values = <int>[];
+    for (final count in counts) {
+      switch (count) {
+        case FirebaseFailure(:final error, :final message, :final detail):
+          return FirebaseFailure(error, message: message, detail: detail);
+        case FirebaseSuccess(:final data):
+          values.add(data);
+      }
+    }
+    return FirebaseSuccess(values);
+  }
+
+  static const Duration _week = Duration(days: DateTime.daysPerWeek);
 
   /// [draft] kaydını [batch]'e yeni bir `activity/{id}` belgesi olarak ekler.
   ///

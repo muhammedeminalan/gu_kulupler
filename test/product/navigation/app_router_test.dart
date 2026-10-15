@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
+import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/auth/view/legal_view.dart';
 import 'package:gu_kulupler/features/auth/view/login_view.dart';
 import 'package:gu_kulupler/features/auth/view/register_view.dart';
@@ -30,7 +31,6 @@ import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/app_router.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/navigation/routes/auth_routes.dart';
-import 'package:gu_kulupler/product/navigation/routes/route_placeholder_view.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_kulupler/product/navigation/routes/system_routes.dart';
 import 'package:gu_kulupler/product/navigation/session_refresh_listenable.dart';
@@ -50,10 +50,11 @@ import '../../helpers/test_container.dart';
 Page<Object?> _topRootPage() =>
     rootNavigatorKey.currentState!.widget.pages.last;
 
-String _placeholderTitle(WidgetTester tester) => tester
+/// Admin sekme kökünün (ADM-01, T-38) başlığı.
+String _adminTitle(WidgetTester tester) => tester
     .widget<GuAppBar>(
       find.descendant(
-        of: find.byType(RoutePlaceholderView),
+        of: find.byType(AdminView),
         matching: find.byType(GuAppBar),
       ),
     )
@@ -312,7 +313,7 @@ void main() {
         location: '/admin',
       );
       expect(app.location, '/admin');
-      expect(_placeholderTitle(tester), tr.navAdmin);
+      expect(_adminTitle(tester), tr.navAdmin);
       final nav = tester.widget<GuBottomNav>(find.byType(GuBottomNav));
       expect(nav.items, hasLength(5));
       expect(nav.currentIndex, GuTab.admin.index);
@@ -475,15 +476,14 @@ void main() {
 
   group('T-11 · AppRouter · sekmeler (gerçek ağaç)', () {
     testWidgets('Kulüpler kökü CLB-01 (T-17), Etkinlikler kökü EVT-01 '
-        '(T-24), Bildirimler kökü NTF-01 (T-26), Profil kökü PRF-01 (T-27); '
-        'Yönetim kökü yer tutucudur, başlık sekme adıdır', (
+        '(T-24), Bildirimler kökü NTF-01 (T-26), Profil kökü PRF-01 (T-27), '
+        'Admin kökü ADM-01 (T-38)', (
       tester,
     ) async {
       final app = await TestRouter.pump(
         tester,
         session: FakeSessionStates.activeSuper,
       );
-      final titles = {GuTab.admin: tr.navAdmin};
       for (final tab in GuTab.values) {
         await app.tapTab(tab);
         expect(app.location, tab.rootPath, reason: tab.name);
@@ -503,7 +503,8 @@ void main() {
           expect(find.byType(ProfileView), findsOneWidget);
           continue;
         }
-        expect(_placeholderTitle(tester), titles[tab], reason: tab.name);
+        expect(find.byType(AdminView), findsOneWidget, reason: tab.name);
+        expect(_adminTitle(tester), tr.navAdmin);
       }
     });
 
@@ -526,7 +527,7 @@ void main() {
       expect(app.location, '/clubs');
     });
 
-    testWidgets('yer tutucu EN başlığı', (tester) async {
+    testWidgets('Admin kökü (ADM-01) EN başlığı', (tester) async {
       final en = lookupAppLocalizations(const Locale('en'));
       await tester.pumpWidget(const SizedBox.shrink());
       final container = ProviderContainer(
@@ -553,11 +554,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Kulüpler (T-17), Etkinlikler (T-24), Bildirimler (T-26) ve Profil
-      // (T-27) kökleri gerçek ekrandır; yer tutucu Yönetim'de (süper admin).
+      // Tüm sekme kökleri gerçek ekrandır; Admin kökü ADM-01 (T-38).
       container.read(appRouterProvider).go(AppPaths.admin);
       await tester.pumpAndSettle();
-      expect(_placeholderTitle(tester), en.navAdmin);
+      expect(_adminTitle(tester), en.navAdmin);
       expect(
         tester.widget<GuBottomNav>(find.byType(GuBottomNav)).semanticLabel,
         en.a11yMainNav,

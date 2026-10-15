@@ -58,6 +58,8 @@ const QUERIES = Object.freeze({
   adminUpcomingEvents: { collection: 'events', equals: ['status', 'isDeleted'], order: ['startsAt', 'asc'] },
   listUsersByName: { collection: 'users', equals: ['isDeleted'], order: ['nameLower', 'asc'] },
   listReports: { collection: 'reports', equals: ['status'], order: ['createdAt', 'desc'] },
+  // T-38 (CD-46): ActivityRepository.countByWeek — ADM-01 grafiği, `clubId` süzgeci yok (`createdAt` aralığı = sıralama alanı).
+  countByWeek: { collection: 'activity', equals: [], inField: 'kind', order: ['createdAt', 'desc'] },
 });
 
 /**
