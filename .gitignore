@@ -59,6 +59,20 @@ key.properties
 # Firebase servis hesabı / admin anahtarları
 serviceAccount*.json
 *-firebase-adminsdk-*.json
+# T-45 (A3-03, S4-01; D-36, W-104): APNs Auth Key (AuthKey_<KEYID>.p8 — repo DIŞINDA
+# saklanır, ör. ~/.secrets/), PEM / TLS anahtar ve sertifikaları
+*.p8
+*.pem
+*.key
+*.cer
+# Functions emülatör gizlileri / eski runtime yapılandırması
+**/.secret.local
+**/.runtimeconfig.json
+# GCP IAM konsolundan indirilen servis hesabı anahtarlarının varsayılan adları
+# (<proje-kimliği>-<hex>.json). Geniş *.json deseni YOK: firebase.json, package*.json izlenir.
+service-account*.json
+*credentials*.json
+gu-kulupler-*.json
 
 # Swift Package Manager (SPM) üretilen klasörleri
 .build/

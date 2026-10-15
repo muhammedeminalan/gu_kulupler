@@ -14,12 +14,16 @@
 //  6. Günlük (yönetici türleri) sabit kimlik ve olay bağı.
 // Sayaç işaretçisi (W-64) `counters.test.js`, bildirim dalları `notifications.test.js`, erişim bütçesi
 // `budget/approve_budget.test.js` ve `budget/transfer_budget.test.js`.
+const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { Timestamp, doc, getDoc } = require('firebase/firestore');
 const budget = require('../helpers/budget');
 const { CONTEXTS, contextFor, uidOf, CLUB } = require('../helpers/contexts');
 const { readDoc, seedFixture } = require('../helpers/fixtures');
 const payloads = require('../helpers/payloads');
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const LIMITS = require(path.join(REPO_ROOT, 'tool', 'lib', 'dart_sources.js')).readLimits(REPO_ROOT).ints;
 
 const SECOND_MS = 1000;
 const MINUTE_MS = 60 * SECOND_MS;
@@ -291,10 +295,14 @@ describe('günlük — yönetici türleri sabit kimlik ve aynı işlemdeki geçi
 });
 
 describe('kulüp ayarları — tip ve sınırlar (birleşmiş belge doğrulanır)', () => {
+  const EMAIL_TAIL = '@gu.edu.tr';
+  const WEB_HEAD = 'https://gu.edu.tr/';
   const settings = (extra) => ({ club: { op: 'update', path: CLUB_PATH, data: payloads.clubSettingsPatch(extra) } });
   test.each([
     ['özet 161 karakter (clubSummaryMax)', { summary: 'a'.repeat(161) }, 'deny'],
+    ['özet 160 karakter (clubSummaryMax — T-45 sınır tam değeri)', { summary: 'a'.repeat(160) }, 'allow'],
     ['hakkında 1001 karakter (clubAboutMax)', { about: 'a'.repeat(1001) }, 'deny'],
+    ['hakkında 1000 karakter (clubAboutMax — T-45 sınır tam değeri)', { about: 'a'.repeat(1000) }, 'allow'],
     ['11 koşul (conditionsMax)', { conditions: Array.from({ length: 11 }, (_, i) => `Koşul ${i}`) }, 'deny'],
     ['10 koşul, sonuncusu 121 karakter (conditionTextMax)', { conditions: [...Array.from({ length: 9 }, (_, i) => `Koşul ${i}`), 'a'.repeat(121)] }, 'deny'],
     ['boş koşul maddesi', { conditions: ['Öğrenci olmak', '  '] }, 'deny'],
@@ -308,6 +316,15 @@ describe('kulüp ayarları — tip ve sınırlar (birleşmiş belge doğrulanır
     ['tanımsız palet', { palette: 'green' }, 'deny'],
     ['tanımsız desen', { pattern: 'stars' }, 'deny'],
     ['boş kapak tohumu', { coverSeed: '' }, 'deny'],
+    // T-45 F1: kulüp belgesi doğrulanmış herkese açık — `social.email` / `social.web` / `coverSeed` üst sınırlı
+    // (Limits.socialEmailMax / socialWebMax / coverSeedMax; önceden yalnızca tip — ~300 KB'lık alan yazılabiliyordu).
+    [`social.email ${LIMITS.socialEmailMax} karakter (socialEmailMax)`, { social: { email: `${'a'.repeat(LIMITS.socialEmailMax - EMAIL_TAIL.length)}${EMAIL_TAIL}` } }, 'allow'],
+    [`social.email ${LIMITS.socialEmailMax + 1} karakter`, { social: { email: `${'a'.repeat(LIMITS.socialEmailMax + 1 - EMAIL_TAIL.length)}${EMAIL_TAIL}` } }, 'deny'],
+    [`social.web ${LIMITS.socialWebMax} karakter (socialWebMax)`, { social: { web: `${WEB_HEAD}${'a'.repeat(LIMITS.socialWebMax - WEB_HEAD.length)}` } }, 'allow'],
+    [`social.web ${LIMITS.socialWebMax + 1} karakter`, { social: { web: `${WEB_HEAD}${'a'.repeat(LIMITS.socialWebMax + 1 - WEB_HEAD.length)}` } }, 'deny'],
+    ['social.web ~300 KB (saldırı yükü)', { social: { web: `${WEB_HEAD}${'a'.repeat(300000)}` } }, 'deny'],
+    [`kapak tohumu ${LIMITS.coverSeedMax} karakter (coverSeedMax)`, { coverSeed: 'a'.repeat(LIMITS.coverSeedMax) }, 'allow'],
+    [`kapak tohumu ${LIMITS.coverSeedMax + 1} karakter`, { coverSeed: 'a'.repeat(LIMITS.coverSeedMax + 1) }, 'deny'],
     ['approvalRequired dizgi', { approvalRequired: 'true' }, 'deny'],
     ['palet + desen + tohum (kapak şablonu)', { palette: 'slate', pattern: 'waves', coverSeed: 'club-c01-2' }, 'allow'],
     ['logoPath (T-36 akışı)', { logoPath: 'clubs/c01/logo.jpg' }, 'deny'],

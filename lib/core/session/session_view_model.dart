@@ -441,11 +441,18 @@ final class SessionViewModel extends _$SessionViewModel
 
   Future<void> _resolveFor(AuthUserInfo? user) async {
     final epoch = ++_epoch;
+    final previousUid = _crashUid;
     // Crashlytics raporları oturumun uid'ine bağlanır (e-posta değil); çıkış
     // ve hesap değişimi de bu akıştan gelir (T-44 · D2-11).
     if (user?.uid != _crashUid) {
       _crashUid = user?.uid;
       AppErrorHandler.setUser(_crashUid);
+    }
+    // Son aramalar hesaba özeldir: çıkışta (dışarıdan kapanış dahil) ve hesap
+    // değişiminde sessizce temizlenir — ortak cihazda sonraki hesaba
+    // gösterilmez (T-45 · A3-02).
+    if (user == null || (previousUid != null && previousUid != user.uid)) {
+      _clearRecentSearches();
     }
     // Tanıtım bayrağı her çözümün başında depodan okunur (CD-52).
     final onboardingSeen = appPreferencesStore.onboardingSeen;
@@ -657,6 +664,13 @@ final class SessionViewModel extends _$SessionViewModel
   void _stopPush() {
     _pushFor = null;
     unawaited(_push.release());
+  }
+
+  /// Cihazdaki son aramaları siler (CLB-02); boşsa yazmaz. Toast yok, geri
+  /// alınmaz (depo fırlatmaz).
+  void _clearRecentSearches() {
+    if (appPreferencesStore.recentSearches.isEmpty) return;
+    unawaited(appPreferencesStore.setRecentSearches(const <String>[]));
   }
 
   /// Oturum kapandı: planlar iptal edilir (yerel bildirim planı, veri değil).

@@ -77,11 +77,16 @@ final class ComposeViewModel extends _$ComposeViewModel
     // Okumalar ilk karede başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_start));
     if (editPostId != null) return const ComposeState(isLoadingEdit: true);
+    final uid = ref.read(sessionViewModelProvider).uid;
     final draft =
-        ComposeDraft.decode(appPreferencesStore.composeDraft(clubId)) ??
-        const ComposeState();
+        (uid == null ? null : _storedDraft(uid)) ?? const ComposeState();
     return initialType == null ? draft : draft.copyWith(type: initialType);
   }
+
+  /// Bu kulübün cihazdaki taslağı — yalnızca [uid] hesabınınsa
+  /// (T-45 · A3-02).
+  ComposeState? _storedDraft(String uid) =>
+      ComposeDraft.decode(appPreferencesStore.composeDraft(clubId), uid: uid);
 
   // ───────────────────────────────── alanlar ────────────────────────────────
 
@@ -395,10 +400,12 @@ final class ComposeViewModel extends _$ComposeViewModel
   /// yerini alır); görseller saklanmaz. Düzenlemede taslak yoktur (`false`).
   Future<bool> saveDraft() async {
     if (editPostId != null || _isLocked || state.isSavingDraft) return false;
+    final uid = ref.read(sessionViewModelProvider).uid;
+    if (uid == null) return false;
     state = state.copyWith(isSavingDraft: true);
     final persisted = await appPreferencesStore.setComposeDraft(
       clubId,
-      ComposeDraft.encode(state),
+      ComposeDraft.encode(state, ownerUid: uid),
     );
     // Depo değeri bellekte tutar: oturum boyunca taslak geçerlidir.
     if (!persisted) AppLogger.warn('Yazı taslağı kalıcı yazılamadı');
@@ -413,9 +420,11 @@ final class ComposeViewModel extends _$ComposeViewModel
     return true;
   }
 
-  /// Cihazdaki taslağı kaldırır (yayın başarısında).
-  Future<void> clearDraft() async {
-    if (!await appPreferencesStore.setComposeDraft(clubId, null)) {
+  /// [uid] hesabının cihazdaki taslağını kaldırır (yayın başarısında).
+  /// Yuvadaki taslak başka hesabınsa dokunulmaz (T-45 · A3-02).
+  Future<void> _clearDraft(String uid) async {
+    if (_storedDraft(uid) != null &&
+        !await appPreferencesStore.setComposeDraft(clubId, null)) {
       AppLogger.warn('Yazı taslağı kaldırılamadı');
     }
     if (ref.mounted) state = state.copyWith(hasDraft: false);
@@ -512,7 +521,7 @@ final class ComposeViewModel extends _$ComposeViewModel
     switch (result) {
       case FirebaseSuccess():
         if (form.pinAfterPublish) await _applyPin(postId, pinned: true);
-        await clearDraft();
+        await _clearDraft(uid);
         return _published(postId, onView);
       case FirebaseFailure(:final error, :final message):
         return _writeFailed(error, message);

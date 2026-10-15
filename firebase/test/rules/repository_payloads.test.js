@@ -300,6 +300,23 @@ describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, ku
   const t15 = contract.t15;
   const DAYS_AGO = '@daysAgo:';
 
+  /** T-45: koşunun gün yer tutucuları — emülatörün (sunucunun) Istanbul günü (şikayet sayacı `{uid}_{yyyyMMdd}`). */
+  function dayTokens() {
+    const { key, day } = istanbulDay();
+    return { [t15.dayKey]: key, [t15.day]: day };
+  }
+
+  /** Dizgilerdeki gün yer tutucularını doldurur — anahtarlar dahil (ön koşul belgesi yolları). */
+  function fill(value, tokens) {
+    const text = (str) => Object.entries(tokens).reduce((out, [token, actual]) => out.split(token).join(actual), str);
+    if (typeof value === 'string') return text(value);
+    if (Array.isArray(value)) return value.map((inner) => fill(inner, tokens));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [text(key), fill(inner, tokens)]));
+    }
+    return value;
+  }
+
   /** Ön koşul belgesindeki nöbetçiler: sunucu zamanı ve `@daysAgo:N` (negatif = gelecekte). */
   function seedValue(value) {
     if (value === SENTINEL) return serverTimestamp();
@@ -379,13 +396,16 @@ describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, ku
   test('sözleşme: nöbetçiler ve bağlam', () => {
     expect(t15.autoId).toBe('@autoId');
     expect(INCREMENT).toBe('@increment');
+    // T-45: gün yer tutucuları T-19 ile aynıdır (Dart tarafı aynı sabitlerle doldurur).
+    expect([t15.dayKey, t15.day]).toEqual([contract.t19.dayKey, contract.t19.day]);
     // Başvuranın kullanıcı belgesi etkin kullanıcıdır (activeUser()).
     expect(t15.fixtures.user).toMatchObject({ status: 'active', profileComplete: true });
     expect(t15.fixtures.contact.email).toBe(contract.email);
   });
 
-  describe.each(t15.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+  describe.each(t15.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, template) => {
     test('gerçek okuma + yazımlar geçer', async () => {
+      const scenario = fill(template, dayTokens());
       const seed = seedOf(scenario);
       await seedDocs(seed);
 
@@ -399,9 +419,12 @@ describe('T-15 · kulüp / üyelik / şikayet / engel — senaryolar (sahibi, ku
       }
     });
 
-    const denied = scenario.denied || [];
+    const denied = template.denied || [];
     if (denied.length === 0) return;
-    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+    test.each(denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, rawVariant) => {
+      const tokens = dayTokens();
+      const scenario = fill(template, tokens);
+      const variant = fill(rawVariant, tokens);
       const seed = seedOf(scenario, variant);
       await seedDocs(seed);
       const paths = pathsOf(scenario, seed);

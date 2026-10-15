@@ -94,8 +94,9 @@ final class SetupProfileState extends Equatable {
   /// Görünen adım.
   final SetupStep step;
 
-  /// Kullanıcının adı (profil belgesi → kimlik hesabı → e-posta yerel kısmı);
-  /// avatar baş harfleri ve karşılama toast'ı (TST-05) için.
+  /// Kullanıcının adı (profil belgesi → kimlik hesabının görünen adı →
+  /// kayıtta cihaza yazılmış bekleyen ad; yoksa boş — e-postadan türetilmez,
+  /// D-29 · T-45 F2); avatar baş harfleri ve karşılama toast'ı (TST-05) için.
   final String name;
 
   /// Avatar tohumu (`users.avatarSeed`; yeni profilde `uid`).

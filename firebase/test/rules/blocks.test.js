@@ -75,6 +75,10 @@ describe('blocks · create — alan beyaz listesi ve kimlik (rules-spec §3.13 C
     ['createdAt istemci saati', NEW_BLOCK, { createdAt: clientTime() }, [], 'deny'],
     ['updatedAt yok', NEW_BLOCK, {}, ['updatedAt'], 'deny'],
     ['deletedAt / deletedBy anahtarı yok (W-51)', NEW_BLOCK, {}, ['deletedAt', 'deletedBy'], 'allow'],
+    // T-45 (R/F notu): engellenen kullanıcı VAR olmalı — uydurma kimlikle sınırsız engel belgesi yazılamaz
+    // (her biri hesap silme temizliğinde ve engel listesinde okunur). 1 ek erişim yolu: users/{blockedId}.
+    ['engellenen kullanıcı yok (uydurma kimlik)', `blocks/${MEMBER}_u_yok`, { blockedId: 'u_yok' }, [], 'deny'],
+    ['engellenen kullanıcı var (askıdaki hesap da engellenebilir)', `blocks/${MEMBER}_u_susp`, { blockedId: 'u_susp' }, [], 'allow'],
   ])('%s', async (_title, path, extra, removedKeys, expected) => {
     await seedFixture('base');
     const payload = omit(payloads.blockCreate(MEMBER, TARGET, extra), removedKeys);

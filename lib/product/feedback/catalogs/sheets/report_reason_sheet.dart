@@ -36,6 +36,22 @@ final class ReportReasonResult extends Equatable {
   List<Object?> get props => [target, reason, note];
 }
 
+/// SHT-10 gönderiminin sonucu ([ReportReasonSheet.onSubmit]).
+enum ReportSubmitOutcome {
+  /// Şikayet yazıldı ya da aynı hedef zaten bildirilmiş: sayfa sonuçla
+  /// kapanır, çağıran DLG-12'yi açar.
+  sent,
+
+  /// Yazılamadı (oturum yok, çevrimdışı TST-24, yetki TST-X18, beklenmeyen
+  /// hata — geri bildirimi çağıran gösterdi): sayfa açık kalır.
+  failed,
+
+  /// Günlük şikayet sınırı doldu (`Limits.reportDailyLimit`; T-45, kullanıcı
+  /// kararı 3): sayfa açık kalır, hata satırında `sht10DailyLimit`.
+  /// Tasarımda karşılığı yok — mevcut hata satırı kullanılır.
+  dailyLimit,
+}
+
 /// SHT-10 "Şikayet nedeni" — altı neden + "Diğer" için açıklama (prototip
 /// `SHEETS['SHT-10']`, `sheets.js:49–52`). CLB-03, FED-01/02 (SHT-08),
 /// SHT-27 ve EVT-02 açar; hedef türleri `ReportTargetType` (CD-33).
@@ -47,9 +63,11 @@ final class ReportReasonResult extends Equatable {
 /// * Doğrulama gönderimde: neden yok → "Bu alan zorunlu"; "Diğer" + boş
 ///   açıklama → "…kısa bir açıklama yaz". Seçim ya da yazma hatayı siler.
 /// * Sonuç [ReportReasonResult]'tır (`pop`). [onSubmit] verilirse önce o
-///   beklenir: düğme meşgul görünür, `true` → sayfa sonuçla kapanır, `false`
-///   → açık kalır (çevrimdışı TST-24, yazma hatası). Verilmezse doğrulanan
-///   seçim doğrudan döner. Yazma ve DLG-12 çağıranın işidir.
+///   beklenir: düğme meşgul görünür, [ReportSubmitOutcome.sent] → sayfa
+///   sonuçla kapanır, [ReportSubmitOutcome.failed] → açık kalır (çevrimdışı
+///   TST-24, yazma hatası), [ReportSubmitOutcome.dailyLimit] → açık kalır ve
+///   hata satırında günlük sınır metni (`sht10DailyLimit` — T-45). Verilmezse
+///   doğrulanan seçim doğrudan döner. Yazma ve DLG-12 çağıranın işidir.
 /// * Bir neden seçiliyken X / scrim / sürükleme / geri DLG-25'i sorar
 ///   (prototip `dirty`); "Kaydetmeden çık" → `null` ile kapanır.
 /// * Anahtarlar `SHT-10.reason.<neden>`, `SHT-10.note`, `SHT-10.submit`,
@@ -72,10 +90,12 @@ class ReportReasonSheet extends ConsumerStatefulWidget {
   /// Şikayet edilen şey; sonuca aynen taşınır.
   final ReportTarget target;
 
-  /// Gönderim: `true` → sayfa sonuçla kapanır, `false` → açık kalır. Beklenen
-  /// süre boyunca "Şikayet et" meşgul görünür. `null` → doğrulanan seçim
-  /// doğrudan sonuç olur.
-  final Future<bool> Function(ReportReasonResult result)? onSubmit;
+  /// Gönderim: [ReportSubmitOutcome.sent] → sayfa sonuçla kapanır, diğerleri
+  /// → açık kalır ([ReportSubmitOutcome.dailyLimit] hata satırını gösterir).
+  /// Beklenen süre boyunca "Şikayet et" meşgul görünür. `null` → doğrulanan
+  /// seçim doğrudan sonuç olur.
+  final Future<ReportSubmitOutcome> Function(ReportReasonResult result)?
+  onSubmit;
 
   /// [reason] satırının anahtarı (`SHT-10.reason.<neden>`).
   static Key reasonKey(ReportReason reason) =>
@@ -112,6 +132,9 @@ enum _ReportFormError {
 
   /// "Diğer" seçili, açıklama boş.
   noteRequired,
+
+  /// Günlük şikayet sınırı doldu (gönderim sonucu — T-45).
+  dailyLimit,
 }
 
 class _ReportReasonSheetState extends ConsumerState<ReportReasonSheet> {
@@ -175,13 +198,22 @@ class _ReportReasonSheetState extends ConsumerState<ReportReasonSheet> {
     final onSubmit = widget.onSubmit;
     if (onSubmit != null) {
       setState(() => _isSubmitting = true);
-      final bool accepted;
+      final ReportSubmitOutcome outcome;
       try {
-        accepted = await onSubmit(result);
+        outcome = await onSubmit(result);
       } finally {
         if (mounted) setState(() => _isSubmitting = false);
       }
-      if (!accepted || !mounted) return;
+      if (!mounted) return;
+      switch (outcome) {
+        case ReportSubmitOutcome.sent:
+          break;
+        case ReportSubmitOutcome.failed:
+          return;
+        case ReportSubmitOutcome.dailyLimit:
+          setState(() => _error = _ReportFormError.dailyLimit);
+          return;
+      }
     }
     Navigator.of(context).pop(result);
   }
@@ -204,6 +236,7 @@ class _ReportReasonSheetState extends ConsumerState<ReportReasonSheet> {
     final errorText = switch (_error) {
       _ReportFormError.reasonRequired => l10n.authErrRequired,
       _ReportFormError.noteRequired => l10n.sht10OtherRequired,
+      _ReportFormError.dailyLimit => l10n.sht10DailyLimit,
       null => null,
     };
     return GuSheetFrame(

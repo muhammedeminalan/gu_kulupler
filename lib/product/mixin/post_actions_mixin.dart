@@ -499,6 +499,7 @@ mixin PostActionsMixin
   /// engelli ya da adı bilinmeyen kullanıcıda `null`) DLG-12'de "{ad}
   /// kullanıcısını da engelle" çizilir; seçilirse DLG-13
   /// (`BlockUserMixin.blockUser`). Ad, sheet kapandıktan sonra sorulur.
+  /// Günlük şikayet sınırında (T-45) sheet açık kalır, hata satırı çizilir.
   Future<void> reportContent(
     ReportTarget target, {
     required String userId,

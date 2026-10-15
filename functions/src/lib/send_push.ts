@@ -1,13 +1,16 @@
 /**
  * `sendPushOnNotificationCreated` gövdesi (CD-165 b1): her yeni bildirim belgesi → alıcının cihazlarına push.
  *
- * - **İdempotentlik:** önce `pushReceipts/{notificationId}` `create()`; belge zaten varsa (ALREADY_EXISTS) çıkılır
- *   → bir bildirim için en çok bir push. Makbuz silinmez (D-10); sonuç `update` ile yazılır.
- * - **Atlananlar:** silinmiş belge (`filtered`), `event_reminder` ve bilinmeyen tür (`skipped_type` — Q-07: hatırlatıcı
- *   cihazda yerel, push çift bildirim olurdu), etkin olmayan kullanıcı (`inactive`), tercih süzgeci (`filtered`),
- *   jetonsuz kullanıcı (`no_tokens`).
+ * - **Tür süzgeci makbuzdan ÖNCE (T-45):** `event_reminder` ve bilinmeyen tür `skipped_type` döner, makbuz YAZILMAZ
+ *   (Q-07: hatırlatıcı cihazda yerel, push çift bildirim olurdu; hatırlatıcı belgesi başına iki boşa yazım olmasın).
+ *   Tür belgeden okunur ve yeniden teslimde değişmez → push'suz tür için idempotentlik kaydına gerek yok.
+ * - **İdempotentlik:** push üretebilen türde önce `pushReceipts/{notificationId}` `create()`; belge zaten varsa
+ *   (ALREADY_EXISTS) çıkılır → bir bildirim için en çok bir push. Makbuz silinmez (D-10); sonuç `update` ile yazılır.
+ * - **Atlananlar (makbuzlu):** silinmiş belge (`filtered`), etkin olmayan kullanıcı (`inactive`), tercih süzgeci
+ *   (`filtered`), jetonsuz kullanıcı (`no_tokens`).
  * - **Push freni (güvenlik incelemesi — push_guard.ts):** alıcının olayla bağı yoksa `unlinked`; aynı kapsamın ikinci
- *   push'u `throttled` (kapsam kilidi `pushReceipts/once_…`). Bildirim belgesine dokunulmaz (gelen kutusu aynen).
+ *   push'u `throttled` (kapsam kilidi `pushReceipts/once_…`; T-45'ten beri karar türleri de — (tür, kulüp, alıcı)
+ *   başına Istanbul günü başına bir). Bildirim belgesine dokunulmaz (gelen kutusu aynen).
  * - **Sessiz saat:** push engellenmez, sessiz teslim edilir.
  * - **Geçersiz jeton:** yalnızca `INVALID_TOKEN_CODES` → `private/account.fcmTokens`'tan transaction ile çıkarılır.
  * - **Döngü yok:** yazdıkları `pushReceipts` ve `private/account`; ikisi de bildirim üretmez.
@@ -40,6 +43,9 @@ export type PushStatus =
 /** Push üretmeyen türler: `event_reminder` cihazda yerel (Q-07). */
 const NO_PUSH: ReadonlySet<string> = new Set(['event_reminder']);
 
+/** Push üretebilen tür mü? (Tanınan ve [NO_PUSH] dışında.) */
+const isPushType = (type: string): type is NotificationType => isKnownType(type) && !NO_PUSH.has(type);
+
 interface Outcome {
   status: PushStatus;
   successCount: number;
@@ -54,7 +60,7 @@ const outcome = (status: PushStatus, successCount = 0, failureCount = 0): Outcom
 
 /**
  * [notificationId] belgesinin ([data]) push'unu bir kez gönderir. Döner: makbuz durumu; makbuz zaten varsa
- * `duplicate`, belge biçimsizse `ignored` (makbuz yazılmaz).
+ * `duplicate`; belge biçimsizse `ignored`, push üretmeyen türse `skipped_type` (ikisinde de makbuz yazılmaz).
  */
 export async function handleNotificationCreated(
   deps: Pick<Deps, 'db' | 'sender' | 'now'>,
@@ -64,6 +70,7 @@ export async function handleNotificationCreated(
   const userId = data?.userId;
   if (!data || !isValidId(notificationId) || !isValidId(userId)) return 'ignored';
   const type = typeof data.type === 'string' ? data.type : 'unknown';
+  if (!isPushType(type)) return 'skipped_type';
   const key = eventKeyOf(notificationId);
   const receipt = deps.db.collection(Col.pushReceipts).doc(notificationId);
   try {
@@ -102,11 +109,10 @@ async function deliver(
   deps: Pick<Deps, 'db' | 'sender' | 'now'>,
   notificationId: string,
   userId: string,
-  type: string,
+  type: NotificationType,
   data: Record<string, unknown>,
 ): Promise<Outcome> {
   if (data.isDeleted === true) return outcome('filtered');
-  if (!isKnownType(type) || NO_PUSH.has(type)) return outcome('skipped_type');
 
   const { db } = deps;
   const userRef = db.collection(Col.users).doc(userId);

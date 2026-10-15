@@ -619,14 +619,18 @@ final class FirebaseAdminRepository implements AdminRepository {
         input.nameLower,
       ),
       FirestoreFields.categoryId: FieldValidators.categoryId(input.categoryId),
-      FirestoreFields.iconName: FieldValidators.requiredId(input.iconName),
+      FirestoreFields.iconName: FieldValidators.iconName(input.iconName),
       FirestoreFields.founded: FieldValidators.founded(input.founded, _clock),
       FirestoreFields.summary: FieldValidators.clubSummary(input.summary),
       FirestoreFields.about: FieldValidators.clubAbout(input.about),
       if (coverSeed != null)
-        FirestoreFields.coverSeed: FieldValidators.requiredId(coverSeed),
+        FirestoreFields.coverSeed: FieldValidators.coverSeed(coverSeed),
       if (advisor != null)
         FirestoreFields.advisorName: FieldValidators.name(advisor.name),
+      if (advisor != null)
+        FirestoreFields.advisorTitle: FieldValidators.advisorTitle(
+          advisor.title,
+        ),
       FirestoreFields.email: FieldValidators.universityEmail(email),
     });
   }
@@ -658,7 +662,7 @@ final class FirebaseAdminRepository implements AdminRepository {
       if (categoryId != null)
         FirestoreFields.categoryId: FieldValidators.categoryId(categoryId),
       if (iconName != null)
-        FirestoreFields.iconName: FieldValidators.requiredId(iconName),
+        FirestoreFields.iconName: FieldValidators.iconName(iconName),
       if (founded != null)
         FirestoreFields.founded: FieldValidators.founded(founded, _clock),
       if (summary != null)
@@ -666,9 +670,13 @@ final class FirebaseAdminRepository implements AdminRepository {
       if (about != null)
         FirestoreFields.about: FieldValidators.clubAbout(about),
       if (coverSeed != null)
-        FirestoreFields.coverSeed: FieldValidators.requiredId(coverSeed),
+        FirestoreFields.coverSeed: FieldValidators.coverSeed(coverSeed),
       if (advisor != null)
         FirestoreFields.advisorName: FieldValidators.name(advisor.name),
+      if (advisor != null)
+        FirestoreFields.advisorTitle: FieldValidators.advisorTitle(
+          advisor.title,
+        ),
     });
   }
 

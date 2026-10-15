@@ -332,14 +332,15 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
   }
 
   /// SHT-10'da doğrulanan şikayeti yazar (`reportRepository.report`).
-  /// `true` → sheet kapanır ve view [showReportReceived] çağırır; aynı hedef
-  /// daha önce bildirilmişse de `true` (DLG-12 yine gösterilir). `false` →
-  /// sheet açık kalır: çevrimdışı / ağ (TST-24), yetki yok (TST-X18),
-  /// beklenmeyen hata.
-  Future<bool> submitReport(ReportReasonResult report) async {
+  /// [ReportSubmitOutcome.sent] → sheet kapanır ve view [showReportReceived]
+  /// çağırır; aynı hedef daha önce bildirilmişse de `sent` (DLG-12 yine
+  /// gösterilir). [ReportSubmitOutcome.dailyLimit] → günlük şikayet sınırı
+  /// doldu (T-45, kullanıcı kararı 3): sheet açık kalır, hata satırı (toast
+  /// yok). [ReportSubmitOutcome.failed] → sheet açık kalır: çevrimdışı / ağ
+  /// (TST-24), yetki yok (TST-X18), beklenmeyen hata.
+  Future<ReportSubmitOutcome> submitReport(ReportReasonResult report) async {
     final uid = ref.read(sessionViewModelProvider).uid;
-    if (uid == null) return false;
-    if (!ensureOnline()) return false;
+    if (uid == null || !ensureOnline()) return ReportSubmitOutcome.failed;
     final result = await reportRepository.report(
       reporterId: uid,
       target: report.target,
@@ -349,10 +350,15 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
     switch (result) {
       case FirebaseSuccess():
       case FirebaseFailure(error: FirestoreError.alreadyExists):
-        return true;
+        return ReportSubmitOutcome.sent;
+      case FirebaseFailure(
+        error: FirestoreError.ruleViolation,
+        detail: FirestoreFailureDetail(code: FirestoreRuleCode.reportLimit),
+      ):
+        return ReportSubmitOutcome.dailyLimit;
       case FirebaseFailure(:final error, :final message):
         _showWriteFailure(error, message, 'Şikayet gönderilemedi');
-        return false;
+        return ReportSubmitOutcome.failed;
     }
   }
 

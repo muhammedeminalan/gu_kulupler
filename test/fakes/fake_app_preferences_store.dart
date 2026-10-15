@@ -174,6 +174,26 @@ final class FakeAppPreferencesStore extends FakeBase
         eventIds.toList(),
       );
 
+  @override
+  String? pendingDisplayName(String uid) =>
+      switch (values[AppPreferenceKeys.pendingName(uid)]) {
+        final String name => name,
+        _ => null,
+      };
+
+  /// Gerçek depo gibi: `null` bekleyen adı kaldırır (anahtar silinir).
+  @override
+  Future<bool> setPendingDisplayName(String uid, String? name) async {
+    record('setPendingDisplayName', [uid, name]);
+    final key = AppPreferenceKeys.pendingName(uid);
+    if (name == null) {
+      values.remove(key);
+    } else {
+      values[key] = name;
+    }
+    return takeFailure() == null;
+  }
+
   /// Gerçek depoyla aynı JSON kodlaması (`ImageUrlsCodec`).
   @override
   Map<String, ({String url, DateTime at})> get imageUrls =>

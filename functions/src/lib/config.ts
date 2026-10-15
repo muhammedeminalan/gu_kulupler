@@ -82,8 +82,22 @@ export const CLEANUP_MAX_AGE_MS = 72 * 60 * 60 * 1000;
 export const CLEANUP_MAX_USERS = 50;
 /** Tarama sayfa boyu (`startAfter` ile sayfalanır). */
 export const CLEANUP_PAGE_SIZE = 50;
-/** Koşu süre bütçesi: aşılınca yeni sayfa açılmaz (fonksiyon zaman aşımı 540 sn). */
+/**
+ * Koşu süre bütçesi (fonksiyon zaman aşımı 540 sn): sayfa, hesap ve batch öncesi denetlenir; aşılınca koşu durur,
+ * kalanı sonraki koşu yapar (T-45 A5-02).
+ */
 export const CLEANUP_BUDGET_MS = 400 * 1000;
+/**
+ * Kişisel belgeler (`notifications` / `savedPosts` / `blocks`) okuma sayfası ve yazım batch'i (T-45 A5-02): okuma
+ * `orderBy(documentId()).limit(...)` + `startAfter`, yazım bu boyda gruplu batch (her yazım kendi `lastUpdateTime`
+ * önkoşuluyla; Firestore batch sınırı 500). Eşitlik süzgeçleri + `__name__` sırası → yeni indeks gerekmez.
+ */
+export const CLEANUP_PERSONAL_PAGE = 450;
+/**
+ * Koşu başına, hesap ve koleksiyon başına en çok bu kadar kişisel belge okunur / yazılır (bellek ve süre sınırı —
+ * kullanıcı bu belgeleri sınırsız üretebilir). Kalanı sonraki koşu okur: sorgu zaten `isDeleted == false` süzer.
+ */
+export const CLEANUP_PERSONAL_MAX_PER_USER = 900;
 
 /** `new_report` push'u: süper admin başına bu pencerede en çok bir push (kapsam kilidi — push_guard.ts). */
 export const NEW_REPORT_PUSH_WINDOW_MS = 15 * 60 * 1000;

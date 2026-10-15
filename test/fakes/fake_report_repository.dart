@@ -6,7 +6,10 @@
 //
 // Gerçek repository gibi: aynı hedefin ikinci şikayeti `alreadyExists`
 // (var olan değişmez); kendini şikayet, hedefle uyuşmayan kulüp ve uzun not
-// `invalidArgument`; geçersiz kimlik `invalidArgument`. Silme metodu yoktur
+// `invalidArgument`; geçersiz kimlik `invalidArgument`. Günlük kota (T-45,
+// kullanıcı kararı 3): `todayCounts[uid]` `Limits.reportDailyLimit`'e
+// ulaşınca yeni şikayet yazılmaz, `ruleViolation` + `reportLimit` döner (aynı
+// hedef zaten bildirilmişse önce `alreadyExists`). Silme metodu yoktur
 // (D-10).
 import 'package:gu_data/gu_data.dart';
 
@@ -16,6 +19,10 @@ final class FakeReportRepository extends FakeBase implements ReportRepository {
   /// `reports/{reporterId}_{targetType}_{targetId}` belgeleri (anahtar =
   /// belge kimliği); test ön veriyi buraya yazar.
   final Map<String, ReportModel> reports = <String, ReportModel>{};
+
+  /// Kullanıcı başına "bugünkü" şikayet sayısı (`reportCounters` karşılığı;
+  /// T-45). Her başarılı şikayet bir artırır; test sınırı buraya yazar.
+  final Map<String, int> todayCounts = <String, int>{};
 
   @override
   Future<FirestoreResult<void>> report({
@@ -43,6 +50,14 @@ final class FakeReportRepository extends FakeBase implements ReportRepository {
     if (reports.containsKey(key)) {
       return const FirebaseFailure(FirestoreError.alreadyExists);
     }
+    final today = todayCounts[reporterId] ?? 0;
+    if (today >= Limits.reportDailyLimit) {
+      return const FirebaseFailure(
+        FirestoreError.ruleViolation,
+        detail: FirestoreFailureDetail(FirestoreRuleCode.reportLimit),
+      );
+    }
+    todayCounts[reporterId] = today + 1;
     reports[key] = ReportModel(
       targetType: target.type,
       targetId: target.id,

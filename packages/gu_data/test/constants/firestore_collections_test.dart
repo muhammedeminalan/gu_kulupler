@@ -28,9 +28,11 @@ const Map<String, String> _actual = {
   'savedPosts': FirestoreCollections.savedPosts,
   'supportTickets': FirestoreCollections.supportTickets,
   'announcementCounters': FirestoreCollections.announcementCounters,
+  // T-45 (kullanıcı kararı 3): günlük şikayet sayacı.
+  'reportCounters': FirestoreCollections.reportCounters,
 };
 
-/// Kök koleksiyonlar (D-25: 15 düz koleksiyon).
+/// Kök koleksiyonlar (D-25: 15 düz koleksiyon + T-45 `reportCounters`).
 const List<String> _rootNames = [
   'users',
   'clubs',
@@ -47,6 +49,7 @@ const List<String> _rootNames = [
   'savedPosts',
   'supportTickets',
   'announcementCounters',
+  'reportCounters',
 ];
 
 /// PLAN §9.5 `FirestoreCollections` maddesindeki `ad='değer'` çiftleri.
@@ -81,8 +84,8 @@ Map<String, String> _readSourceMembers() {
 
 void main() {
   group('T-08 · FirestoreCollections · PLAN §9.5 paritesi', () {
-    test('PLAN listesi okunur: 20 ad', () {
-      expect(_readPlanCollections(), hasLength(20));
+    test('PLAN listesi okunur: 21 ad', () {
+      expect(_readPlanCollections(), hasLength(21));
     });
 
     test('adlar ve değerler PLAN §9.5 ile birebir (sıra dahil)', () {
@@ -110,17 +113,17 @@ void main() {
           .split('\n')
           .where((line) => RegExp('^ {2}[A-Za-z_@]').hasMatch(line));
 
-      expect(memberLines, hasLength(20));
+      expect(memberLines, hasLength(21));
       expect(memberLines, everyElement(startsWith('  static const String ')));
     });
   });
 
   group('T-08 · FirestoreCollections · adlar', () {
-    test('20 değerin tamamı tekildir', () {
-      expect(_actual.values.toSet(), hasLength(20));
+    test('21 değerin tamamı tekildir', () {
+      expect(_actual.values.toSet(), hasLength(21));
     });
 
-    test('15 kök koleksiyon + 2 alt koleksiyon + 3 sabit belge adı', () {
+    test('16 kök koleksiyon + 2 alt koleksiyon + 3 sabit belge adı', () {
       final subs = _actual.keys.where((name) => name.endsWith('Sub'));
       final docs = _actual.keys.where((name) => name.endsWith('Doc'));
       final roots = _actual.keys.where(
@@ -165,11 +168,11 @@ void main() {
         match.group(1)!,
     ];
 
-    test('şema başlıkları okunur: 16 yol', () {
-      expect(schemaPaths(), hasLength(16));
+    test('şema başlıkları okunur: 17 yol', () {
+      expect(schemaPaths(), hasLength(17));
     });
 
-    test('şemadaki kök koleksiyon kümesi = 15 kök sabit', () {
+    test('şemadaki kök koleksiyon kümesi = 16 kök sabit', () {
       final roots = {for (final path in schemaPaths()) path.split('/').first};
 
       expect(roots, _rootNames.toSet());

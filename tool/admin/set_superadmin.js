@@ -33,7 +33,7 @@ if (has('-h') || has('--help') || argv.length === 0) {
 }
 
 let admin;
-try { admin = require('firebase-admin'); } catch (e) { fail('firebase-admin kurulu değil: (cd tool/admin && npm install)', 2); }
+try { admin = require('firebase-admin'); } catch (e) { fail('firebase-admin kurulu değil: (cd tool/admin && npm ci --ignore-scripts)', 2); }
 
 const emulator = has('--emulator');
 let projectId = val('--project');

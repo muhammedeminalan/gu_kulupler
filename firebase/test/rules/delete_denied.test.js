@@ -2,7 +2,7 @@
 // T-10 — `delete` her koleksiyonda ve her alt koleksiyonda reddedilir, süper admin dahil (D-10,
 // rules-spec §1.2; PLAN §11.1: 18 yol × 12 bağlam = 216 ret vakası; T-22: + `events/{id}/private/counter`
 // yan belgesi = 19 yol; T-30: + `clubs/{id}/private/counter` = 20 yol × 12 bağlam = 240; T-42: + yalnızca sunucuya ait
-// `pushReceipts` = 21 yol × 12 bağlam = 252).
+// `pushReceipts` = 21 yol × 12 bağlam = 252; T-45: + günlük şikayet sayacı `reportCounters` = 22 yol × 12 bağlam = 264).
 //
 // Koleksiyon adları elle yazılmaz: Dart `FirestoreCollections` sabitleri
 // (packages/gu_data/lib/src/constants/firestore_collections.dart) ile `firestore.rules` `match`
@@ -56,8 +56,8 @@ function concretePath(match) {
 const targets = collectionMatches.map((m) => [m.pattern, concretePath(m)]);
 
 describe('delete-denied · FirestoreCollections ↔ firestore.rules match adları', () => {
-  test('Dart sabitleri: 15 kök koleksiyon, 2 alt koleksiyon, 3 sabit belge adı', () => {
-    expect(dart.roots).toHaveLength(15);
+  test('Dart sabitleri: 16 kök koleksiyon (T-45: + reportCounters), 2 alt koleksiyon, 3 sabit belge adı', () => {
+    expect(dart.roots).toHaveLength(16);
     expect(dart.subs.sort()).toEqual(['private', 'votes']);
     expect(dart.docs).toEqual({ accountDoc: 'account', contactDoc: 'contact', counterDoc: 'counter' });
   });
@@ -79,10 +79,10 @@ describe('delete-denied · FirestoreCollections ↔ firestore.rules match adlar�
     expect(groups.sort()).toEqual([...dart.subs].sort());
   });
 
-  test('toplam 21 yol (PLAN §11.1 + events/private + clubs/private + pushReceipts) ve her blokta açık `allow delete: if false`', () => {
-    expect(targets).toHaveLength(21);
+  test('toplam 22 yol (PLAN §11.1 + events/private + clubs/private + pushReceipts + reportCounters — T-45) ve her blokta açık `allow delete: if false`', () => {
+    expect(targets).toHaveLength(22);
     const denies = rulesText.match(/^\s*allow delete: if false;\s*$/gm) || [];
-    expect(denies).toHaveLength(21);
+    expect(denies).toHaveLength(22);
   });
 });
 

@@ -144,6 +144,9 @@ Belge kimliği talep numarasıdır (`supportTickets/GU-7K3Q9X` = `ticketNo`; oto
 ### 2.16 `announcementCounters/{clubId}_{yyyyMMdd}`  (Istanbul günü)
 `clubId`, `day` (s, `yyyy-MM-dd`), `count` (i, 0–2), `lastPostRef?` (s, `posts/{postId}` — sayacı son artıran bildirimli duyuru; iki yönlü eşlik, CD-141), `updatedAt`. Yalnızca bildirimli duyuru yayınıyla aynı işlemde yazılır; belge silinmez, sıfırlanmaz. Bkz. §7.
 
+### 2.17 `reportCounters/{uid}_{yyyyMMdd}`  (Istanbul günü — T-45, kullanıcı kararı 3)
+`userId`, `day` (s, `yyyy-MM-dd`), `count` (i, 1–`Limits.reportDailyLimit` = 20), `reportId?` (s — sayacı son artıran şikayetin kimliği; iki yönlü eşlik), `updatedAt`. Kullanıcı başına günde en çok 20 şikayet: yalnızca şikayetle aynı batch'te `count: increment(1)` yazılır (`ReportRepository.report`; istemci önce sayacı okur, dolu → SHT-10 satır içi hata). Yalnızca sahibi okur; belge silinmez, sıfırlanmaz — yeni gün yeni belgedir. Duyuru sayacıyla aynı gün kuralı (rules-spec §3.18, W-50).
+
 ## 3. Roller ve yetki matrisi
 
 Roller **kulüp bazlıdır** (`memberships.role`); `superadmin` global claim'dir. Brief §2.2'nin tam matrisi kodda **tek yerde**: `gu_data/lib/src/core/role_policy.dart` (`ClubPermission` enum + `RolePolicy.can(permission, role, {isSuper})`), saf Dart, **tablo testli**. Rules'taki yardımcı fonksiyonlarla birebir eşleşir (parite testi: `docs/testing.md §6`).
@@ -255,7 +258,7 @@ Tür → alıcı → ayar anahtarı (prototipte `TYPE_SETTING`) → tetikleyici.
 
 ## 9. Sabit sınırlar (`Limits`, tek yer)
 
-Şifre ≥ 8 + büyük harf + rakam · giriş: 5 hatalı denemede 30 sn kilit (istemci) · doğrulama maili tekrar gönderme 60 sn · ilgi alanı 1–5 · biyografi 140 · ad 2–60 · gönderi metni 1000 · duyuru başlığı 80 · yorum 500 (400'den sonra sayaç) · görsel ≤ 4 (dosya ≤ 5 MB) · anket: 2–4 seçenek, süre 1/3/7 gün · kısa açıklama 160 · uzun açıklama 1000 · başvuru notu 300 · etkinlik başlığı 80, açıklaması 1000 · destek mesajı 500 · yeniden başvuru bekleme **7 gün** · duyuru **2/gün** · son aramalar 6 · arama debounce 250 ms · sayfa boyutu 20 · yönetici karar geri alma 30 sn (Rules).
+Şifre ≥ 8 + büyük harf + rakam · giriş: 5 hatalı denemede 30 sn kilit (istemci) · doğrulama maili tekrar gönderme 60 sn · ilgi alanı 1–5 · biyografi 140 · ad 2–60 · gönderi metni 1000 · duyuru başlığı 80 · yorum 500 (400'den sonra sayaç) · görsel ≤ 4 (dosya ≤ 5 MB) · anket: 2–4 seçenek, süre 1/3/7 gün · kısa açıklama 160 · uzun açıklama 1000 · başvuru notu 300 · etkinlik başlığı 80, açıklaması 1000 · destek mesajı 500 · yeniden başvuru bekleme **7 gün** · duyuru **2/gün** · son aramalar 6 · arama debounce 250 ms · sayfa boyutu 20 · yönetici karar geri alma 30 sn (Rules) · kulüp belgesi (herkese açık; T-45): iletişim e-postası ≤ 254, web ≤ 200, kapak tohumu ≤ 64, amblem ikonu adı ≤ 40, danışman unvanı ≤ 60 · `settings.clubs` en çok 200 kayıt, değer dört bool (T-45; belge boyutu sınırı, kota değil).
 `Limits` değerleri ARB metinleriyle (`{n}` parametreleri) tutarlı olmalı.
 
 Sunum süreleri `Limits`'te **değildir** (CD-24, CD-58; PLAN §9.8): toast 4 sn → `GuMotion.toastDefault` · "Geri al"lı toast (geri alma penceresi) 6 sn → `GuMotion.toastUndo` · splash animasyonu 1.2 sn → `GuMotion.splash` · QR başarı (SHT-24) oto-kapanma 2 sn → `AppDurations.qrSuccessAutoClose` (`lib/core/constants/app_durations.dart`, T-35).

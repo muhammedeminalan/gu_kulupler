@@ -376,6 +376,8 @@
     "_doc": "T-15 — kulüp / üyelik / şikayet / engel repository'lerinin GERÇEK yazımları (FirebaseMembershipRepository, FirebaseReportRepository, FirebaseBlockRepository). Her senaryo bağımsızdır: `seed` belgeleri kurallar KAPALIYKEN kurulur (kulüp belgesi kurallarla oluşturulamaz), sonra çağrının `reads` okumaları ve `writes` yazımları kurallar AÇIKKEN hesabın sahibi olarak gönderilir — `tx: true` ise tek transaction içinde (okumalar da kurallardan geçer: var olmayan kendi belgesinin tekil okuması boş dönmelidir). `denied` aynı çağrının kasıtlı bozuk biçimleridir (jest tarafı; repository bunları üretmez): `without` = çıkarılan yazım sıraları, `patch` = yazım sırası → üzerine yazılan alanlar, `seed` = ön koşul belgesine yama (yol senaryoda yoksa tam belge), `role` = gönderen bağlam; hepsi reddedilmeli ve hiçbir belge değişmemelidir. Nöbetçiler: `@serverTimestamp` (yazımda FieldValue.serverTimestamp(); seed'de 'şimdi'), `@daysAgo:N` (seed: şimdiden N gün önce; negatif = sonra), `{\"@increment\": n}` (FieldValue.increment(n)), `@autoId` (FirestoreService.newId). `{\"$fixture\": ad, …}` = `fixtures[ad]` + üzerine yazılan alanlar. Dart tarafı aynı `seed` belgelerini kayıt tutan SDK çiftine koyar, gerçek repository'yi çağırır ve yakalanan okuma + yazımların `reads` / `writes` ile birebir aynı olduğunu doğrular; başvuran profili `fixtures.user`'dan ayrıştırılır (Rules `applicant` anlık görüntüsünü bu belgeyle karşılaştırır).",
     "autoId": "@autoId",
     "increment": "@increment",
+    "dayKey": "@yyyyMMdd",
+    "day": "@yyyy-MM-dd",
     "fixtures": {
       "user": {
         "name": "Ayşe Işık",
@@ -997,9 +999,9 @@
       },
       {
         "call": "ReportRepository.report · gönderi",
-        "note": "tek set; action / resolvedAt / resolvedBy anahtarları yazılmaz (W-51). Hedef gönderi vardır ve targetClubId onun kulübüdür (CD-137 madde 8u)",
+        "note": "ön okuma (günün şikayet sayacı yok → boş) + tek batch: şikayet + sayaç set(merge) increment(1) (T-45 karar 3: günde en çok Limits.reportDailyLimit). action / resolvedAt / resolvedBy anahtarları yazılmaz (W-51). Hedef gönderi vardır ve targetClubId onun kulübüdür (CD-137 madde 8u)",
         "seed": { "users/u_student": { "$fixture": "user" }, "posts/p01": { "clubId": "c01" } },
-        "reads": [],
+        "reads": ["reportCounters/u_student_@yyyyMMdd"],
         "writes": [
           {
             "op": "set",
@@ -1018,9 +1020,24 @@
               "deletedAt": null,
               "deletedBy": null
             }
+          },
+          {
+            "op": "set",
+            "merge": true,
+            "path": "reportCounters/u_student_@yyyyMMdd",
+            "data": {
+              "userId": "u_student",
+              "day": "@yyyy-MM-dd",
+              "count": { "@increment": 1 },
+              "reportId": "u_student_post_p01",
+              "updatedAt": "@serverTimestamp"
+            }
           }
         ],
         "denied": [
+          { "name": "sayaç artışı yok (T-45)", "without": [1] },
+          { "name": "günün şikayet kotası dolu (ön koşul: sayaç 20 — T-45 karar 3)", "seed": { "reportCounters/u_student_@yyyyMMdd": { "userId": "u_student", "day": "@yyyy-MM-dd", "count": 20, "reportId": null, "updatedAt": "@serverTimestamp" } } },
+          { "name": "sayaç başka kullanıcınınki (userId)", "patch": { "1": { "userId": "u_member" } } },
           { "name": "çözülmüş olarak oluşturma", "patch": { "0": { "status": "resolved" } } },
           { "name": "gönderi hedefinde kulüp yok", "patch": { "0": { "targetClubId": null } } },
           { "name": "gönderi başka kulübe atfedilmiş (targetClubId ≠ gönderinin kulübü)", "patch": { "0": { "targetClubId": "c02" } } },
@@ -1030,9 +1047,13 @@
       },
       {
         "call": "ReportRepository.report · kullanıcı",
-        "note": "kullanıcı hedefinde targetClubId anahtarı yoktur; hedef kullanıcı belgesi vardır (CD-137 madde 8u)",
-        "seed": { "users/u_student": { "$fixture": "user" }, "users/u_member": { "$fixture": "user" } },
-        "reads": [],
+        "note": "kullanıcı hedefinde targetClubId anahtarı yoktur; hedef kullanıcı belgesi vardır (CD-137 madde 8u). Günün sayacı var (count 1 → 2): sayaç set(merge) Rules'ta update dalıdır (T-45)",
+        "seed": {
+          "users/u_student": { "$fixture": "user" },
+          "users/u_member": { "$fixture": "user" },
+          "reportCounters/u_student_@yyyyMMdd": { "userId": "u_student", "day": "@yyyy-MM-dd", "count": 1, "reportId": "u_student_post_p01", "updatedAt": "@serverTimestamp" }
+        },
+        "reads": ["reportCounters/u_student_@yyyyMMdd"],
         "writes": [
           {
             "op": "set",
@@ -1050,15 +1071,32 @@
               "deletedAt": null,
               "deletedBy": null
             }
+          },
+          {
+            "op": "set",
+            "merge": true,
+            "path": "reportCounters/u_student_@yyyyMMdd",
+            "data": {
+              "userId": "u_student",
+              "day": "@yyyy-MM-dd",
+              "count": { "@increment": 1 },
+              "reportId": "u_student_user_u_member",
+              "updatedAt": "@serverTimestamp"
+            }
           }
         ],
-        "denied": [{ "name": "kullanıcı hedefinde kulüp verilmiş", "patch": { "0": { "targetClubId": "c01" } } }]
+        "denied": [
+          { "name": "kullanıcı hedefinde kulüp verilmiş", "patch": { "0": { "targetClubId": "c01" } } },
+          { "name": "sayaç artmıyor (mutlak 1 → 1)", "patch": { "1": { "count": 1 } } },
+          { "name": "dolu sayaç sıfırlanarak yeniden kullanılır (ön koşul: sayaç 20, mutlak 1)", "seed": { "reportCounters/u_student_@yyyyMMdd": { "count": 20 } }, "patch": { "1": { "count": 1 } } },
+          { "name": "yanlış `day` alanı (anahtar bugün — tolerans yok)", "patch": { "1": { "day": "2020-01-01" } } }
+        ]
       },
       {
         "call": "ReportRepository.report · kulüp (CLB-03 → SHT-10)",
         "note": "T-16 · CLB-03 'Bu kulübü şikayet et' (ClubDetailViewModel.submitReport): hedef kulübün kendisidir — targetClubId == targetId (CD-137 madde 8j / 8u), hedef kulüp belgesi vardır; neden 'Diğer' + açıklama (SHT-10)",
         "seed": { "users/u_student": { "$fixture": "user" }, "clubs/c01": { "$fixture": "club" } },
-        "reads": [],
+        "reads": ["reportCounters/u_student_@yyyyMMdd"],
         "writes": [
           {
             "op": "set",
@@ -1077,9 +1115,24 @@
               "deletedAt": null,
               "deletedBy": null
             }
+          },
+          {
+            "op": "set",
+            "merge": true,
+            "path": "reportCounters/u_student_@yyyyMMdd",
+            "data": {
+              "userId": "u_student",
+              "day": "@yyyy-MM-dd",
+              "count": { "@increment": 1 },
+              "reportId": "u_student_club_c01",
+              "updatedAt": "@serverTimestamp"
+            }
           }
         ],
-        "expect": { "reports/u_student_club_c01": { "targetType": "club", "targetClubId": "c01", "status": "open" } },
+        "expect": {
+          "reports/u_student_club_c01": { "targetType": "club", "targetClubId": "c01", "status": "open" },
+          "reportCounters/u_student_@yyyyMMdd": { "userId": "u_student", "count": 1, "reportId": "u_student_club_c01" }
+        },
         "denied": [
           { "name": "kulüp başka kulübe atfedilmiş (targetClubId ≠ targetId)", "patch": { "0": { "targetClubId": "c02" } } },
           { "name": "kulüp hedefinde targetClubId yok", "patch": { "0": { "targetClubId": null } } },
@@ -1098,8 +1151,8 @@
       },
       {
         "call": "BlockRepository.block · yeni engel",
-        "note": "önce tekil okuma (belge yok → boş), sonra set",
-        "seed": { "users/u_student": { "$fixture": "user" } },
+        "note": "önce tekil okuma (belge yok → boş), sonra set. Engellenen kullanıcının belgesi VAR olmalıdır (T-45: exists(users/{blockedId}))",
+        "seed": { "users/u_student": { "$fixture": "user" }, "users/u_member": { "$fixture": "user" } },
         "reads": ["blocks/u_student_u_member"],
         "writes": [
           {
@@ -5440,8 +5493,12 @@
       {
         "call": "NotificationRepository.createSelf · ilk dokunma",
         "role": "student",
-        "note": "yerel hatırlatıcıya dokunma (CD-44): kimlik event_reminder_{eventId}_{uid}; önce tekil okuma (olmayan KENDİ belgesi boş döner), yoksa tek set",
-        "seed": {},
+        "note": "yerel hatırlatıcıya dokunma (CD-44): kimlik event_reminder_{eventId}_{uid}; önce tekil okuma (olmayan KENDİ belgesi boş döner), yoksa tek set. Rules kendi katılım kaydını ister (T-45 A5-01: rsvps/{eventId}_{uid}; userId / eventId / clubId eşit)",
+        "seed": {
+          "rsvps/e01_u_student": {
+            "$fixture": "rsvp"
+          }
+        },
         "reads": [
           "notifications/event_reminder_e01_u_student"
         ],

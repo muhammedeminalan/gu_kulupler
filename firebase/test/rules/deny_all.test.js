@@ -9,6 +9,7 @@
 // yollar ve koleksiyon grupları kapalıdır — T-37 `private` grubunu yalnızca süper admine açtı; aşağıdaki bloklar onları sınar).
 // T-42 (Mod F, CD-165): 21. satır `pushReceipts` — yalnızca sunucunun (Admin SDK) koleksiyonu, istemciye KALICI olarak
 // kapalıdır; kapalı koleksiyon bloğu onu her bağlam × get / list / create / update ile sınar.
+// T-45 (karar 3): 22. satır `reportCounters` — günlük şikayet sayacı, açık doğar (`rules/report_limit.test.js`).
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -36,6 +37,7 @@ const budget = require('../helpers/budget');
  * T-19: `posts`, `posts/votes`, `comments`, `savedPosts`, `announcementCounters`.
  * T-22: `events`, `events/private` (yönetici sayaç işaretçisi — W-64), `rsvps`. T-25: `notifications`.
  * T-28: `supportTickets`. T-30: `clubs/private` (yönetici sayaç işaretçisi — W-64).
+ * T-45: `reportCounters` (günlük şikayet kotası — karar 3).
  */
 const OPENED = [
   'users', 'users/private', 'settings',
@@ -45,6 +47,7 @@ const OPENED = [
   'notifications',
   'supportTickets',
   'clubs/private',
+  'reportCounters',
 ];
 
 const DENY_OPS = ['get', 'list', 'create', 'update'];
@@ -60,8 +63,8 @@ const groupMatches = matches.filter((m) => m.recursive && m.names.length > 0);
 const seedTarget = (exp) => seedDocs({ [exp.docPath]: targetDoc() });
 
 describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
-  test('21 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22, clubs/private — T-30, pushReceipts — T-42)', () => {
-    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 21 }, (_, i) => i + 1));
+  test('22 koleksiyon satırı vardır ve her biri kendi match bloğuna sahiptir (PLAN §11.1 + events/private — T-22, clubs/private — T-30, pushReceipts — T-42, reportCounters — T-45)', () => {
+    expect(expectations.map((e) => e.row)).toEqual(Array.from({ length: 22 }, (_, i) => i + 1));
     expect(expectations.map((e) => e.match).sort()).toEqual(collectionMatches.map((m) => m.pattern).sort());
   });
 
@@ -86,7 +89,7 @@ describe('deny-all · beklenti dosyaları ↔ firestore.rules', () => {
 
 const CLOSED = expectations.filter((e) => !OPENED.includes(e.collection));
 
-test('kapalı koleksiyon satırı yalnızca sunucuya ait pushReceipts (T-42; 20 / 21 açık)', () => {
+test('kapalı koleksiyon satırı yalnızca sunucuya ait pushReceipts (T-42; 21 / 22 açık — T-45)', () => {
   expect(CLOSED.map((e) => e.collection)).toEqual(['pushReceipts']);
 });
 
@@ -182,7 +185,7 @@ describe('deny-all · gerçekçi veriyle (fixtures.seedBase): ret, eksik belge y
     if (membership) expect(docs[`memberships/${membership.clubId}_${uid}`].status).toBe(membership.status);
   });
 
-  test('temel veri kümesi 21 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
+  test('temel veri kümesi 22 koleksiyon satırının her birinde hedef belgeyi içerir', async () => {
     const docs = baseDocs();
     for (const exp of expectations) expect(Object.keys(docs)).toContain(exp.docPath);
     await seedBase();

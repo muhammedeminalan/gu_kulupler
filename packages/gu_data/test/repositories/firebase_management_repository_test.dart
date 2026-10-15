@@ -845,6 +845,21 @@ void main() {
         social: ClubSocialModel(web: 'ftp://gu.edu.tr'),
       ),
       'boş kapak tohumu': const ClubSettingsPatch(coverSeed: ''),
+      // T-45 F1: kulüp belgesi herkese açık — Rules ile aynı üst sınırlar.
+      'e-posta sınırı aşıyor': ClubSettingsPatch(
+        social: ClubSocialModel(
+          email:
+              '${'a' * 64}@${'b' * (Limits.socialEmailMax - 64 - 1 - 3 + 1)}.tr',
+        ),
+      ),
+      'web sınırı aşıyor': ClubSettingsPatch(
+        social: ClubSocialModel(
+          web: 'https://gu.edu.tr/${'a' * (Limits.socialWebMax - 18 + 1)}',
+        ),
+      ),
+      'kapak tohumu sınırı aşıyor': ClubSettingsPatch(
+        coverSeed: 'a' * (Limits.coverSeedMax + 1),
+      ),
     };
     for (final MapEntry(key: name, value: patch) in invalid.entries) {
       test('$name → invalidArgument, okuma ve yazım yok', () async {

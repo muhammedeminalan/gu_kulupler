@@ -217,7 +217,10 @@ abstract final class ProjectDependency {
       notificationDispatcher,
       appClock,
     );
-    final reportRepository = FirebaseReportRepository(firestoreService);
+    final reportRepository = FirebaseReportRepository(
+      firestoreService,
+      appClock,
+    );
     final blockRepository = FirebaseBlockRepository(firestoreService);
     // T-19 · gönderi, yorum, kayıt, duyuru sayacı. Yayın işlemi günlük
     // kaydını ve (bildirimli duyuruda) günün sayacını aynı işlemde yazar:

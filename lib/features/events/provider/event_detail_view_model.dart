@@ -366,8 +366,9 @@ final class EventDetailViewModel extends _$EventDetailViewModel
 
   // ──────────────────────────────── şikayet ─────────────────────────────────
 
-  /// SHT-10 gönderimi (`EVT-02.report`, `EVT-02.menu.report`).
-  Future<bool> submitReport(ReportReasonResult report) =>
+  /// SHT-10 gönderimi (`EVT-02.report`, `EVT-02.menu.report`); günlük
+  /// şikayet sınırında [ReportSubmitOutcome.dailyLimit] (T-45).
+  Future<ReportSubmitOutcome> submitReport(ReportReasonResult report) =>
       sendReport(reporterId: _uid, report: report);
 
   /// DLG-12 "Şikayetin alındı" (etkinlik şikayetinde engellenecek kişi yok).

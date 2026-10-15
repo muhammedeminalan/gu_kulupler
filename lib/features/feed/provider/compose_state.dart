@@ -353,6 +353,10 @@ final class ComposeState extends Equatable {
 /// FED-03 yerel taslağının JSON kodlaması (CD-45): cihazda
 /// `compose_draft_<clubId>` anahtarında, kulüp başına tek kayıt.
 ///
+/// **Taslak yazarın uid'siyle etiketlenir (T-45 · A3-02):** ortak cihazda
+/// başka hesabın taslağı forma yüklenmez; etiketsiz (eski) kayıt da yok
+/// sayılır. Sahibi yeniden girince taslağı geri gelir.
+///
 /// Yalnızca yazarın girdiği alanlar saklanır. **Görseller saklanmaz:**
 /// seçilen görsel bellekteki yeniden kodlanmış baytlardır (cihazda dosya yolu
 /// yoktur) ve megabaytlarca veri tercihlere yazılmaz; taslak açıldığında
@@ -366,23 +370,27 @@ abstract final class ComposeDraft {
   static const String _showAfterVote = 'showAfterVote';
   static const String _push = 'push';
   static const String _pin = 'pin';
+  static const String _ownerUid = 'ownerUid';
 
-  /// [state] formunun taslak metni.
-  static String encode(ComposeState state) => jsonEncode(<String, Object>{
-    _type: state.type.name,
-    _title: state.title,
-    _text: state.text,
-    _options: state.pollOptions,
-    _duration: state.pollDuration.days,
-    _showAfterVote: state.showResultsAfterVote,
-    _push: state.pushEnabled,
-    _pin: state.pinAfterPublish,
-  });
+  /// [state] formunun [ownerUid] hesabına ait taslak metni.
+  static String encode(ComposeState state, {required String ownerUid}) =>
+      jsonEncode(<String, Object>{
+        _ownerUid: ownerUid,
+        _type: state.type.name,
+        _title: state.title,
+        _text: state.text,
+        _options: state.pollOptions,
+        _duration: state.pollDuration.days,
+        _showAfterVote: state.showResultsAfterVote,
+        _push: state.pushEnabled,
+        _pin: state.pinAfterPublish,
+      });
 
   /// [json] taslağından kurulan form ([ComposeState.hasDraft] `true`);
-  /// taslak yoksa ya da okunamıyorsa (bozuk / eski biçim) `null`. Sınır dışı
-  /// değerler kesilir, tanınmayanlar varsayılana düşer.
-  static ComposeState? decode(String? json) {
+  /// taslak yoksa, okunamıyorsa (bozuk / eski biçim) ya da [uid] hesabının
+  /// değilse `null`. Sınır dışı değerler kesilir, tanınmayanlar varsayılana
+  /// düşer.
+  static ComposeState? decode(String? json, {required String uid}) {
     if (json == null || json.isEmpty) return null;
     final Object? parsed;
     try {
@@ -392,6 +400,7 @@ abstract final class ComposeDraft {
     }
     if (parsed is! Map<String, Object?>) return null;
     final decoded = parsed;
+    if (decoded[_ownerUid] != uid) return null;
     final options = switch (decoded[_options]) {
       final List<Object?> values =>
         values

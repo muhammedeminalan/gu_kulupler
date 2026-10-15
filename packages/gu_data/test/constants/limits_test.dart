@@ -40,6 +40,11 @@ const Map<String, Object> _actual = {
   'foundedMin': Limits.foundedMin,
   'foundedMax': Limits.foundedMax,
   'instagramHandlePattern': Limits.instagramHandlePattern,
+  'socialEmailMax': Limits.socialEmailMax,
+  'socialWebMax': Limits.socialWebMax,
+  'coverSeedMax': Limits.coverSeedMax,
+  'iconNameMax': Limits.iconNameMax,
+  'advisorTitleMax': Limits.advisorTitleMax,
   'applicationNoteMax': Limits.applicationNoteMax,
   'rejectNoteMax': Limits.rejectNoteMax,
   'reapplyCooldown': Limits.reapplyCooldown,
@@ -65,7 +70,9 @@ const Map<String, Object> _actual = {
   'supportMessageMax': Limits.supportMessageMax,
   'supportAttachmentsMax': Limits.supportAttachmentsMax,
   'announcementDailyLimit': Limits.announcementDailyLimit,
+  'reportDailyLimit': Limits.reportDailyLimit,
   'timeOfDayPattern': Limits.timeOfDayPattern,
+  'settingsClubsMax': Limits.settingsClubsMax,
   'quietFromDefault': Limits.quietFromDefault,
   'quietToDefault': Limits.quietToDefault,
   'isoDayPattern': Limits.isoDayPattern,
@@ -243,9 +250,9 @@ void main() {
   final planNames = [for (final limit in planLimits) limit.name];
 
   group('T-08 · Limits · PLAN §9.8 ad paritesi', () {
-    test('tablo okunur: 71 tekil sabit', () {
-      expect(planLimits, hasLength(71));
-      expect(planNames.toSet(), hasLength(71), reason: 'yinelenen ad');
+    test('tablo okunur: 78 tekil sabit', () {
+      expect(planLimits, hasLength(78));
+      expect(planNames.toSet(), hasLength(78), reason: 'yinelenen ad');
     });
 
     test('test değer haritası tablodaki adlarla birebir', () {
@@ -283,7 +290,7 @@ void main() {
           .where((line) => RegExp('^ {2}[A-Za-z_@]').hasMatch(line));
 
       expect(typeDeclarations, ['abstract final class Limits {']);
-      expect(memberLines, hasLength(71));
+      expect(memberLines, hasLength(78));
       expect(memberLines, everyElement(startsWith('  static ')));
     });
 

@@ -545,6 +545,7 @@ void main() {
         'taslak yüklenmez ve kaydedilmez', () async {
       prefs.values[AppPreferenceKeys.composeDraft('c01')] = ComposeDraft.encode(
         const ComposeState(text: 'başka kulüp'),
+        ownerUid: kComposeUid,
       );
       expect((await loaded()).read(provider).text, isEmpty);
 
@@ -552,8 +553,12 @@ void main() {
       expect((await loaded()).read(provider), isA<ComposeState>());
       expect((await loaded()).read(provider).hasDraft, isFalse);
 
-      prefs.values[AppPreferenceKeys.composeDraft(kComposeClubId)] =
-          ComposeDraft.encode(const ComposeState(text: 'taslak'));
+      prefs.values[AppPreferenceKeys.composeDraft(
+        kComposeClubId,
+      )] = ComposeDraft.encode(
+        const ComposeState(text: 'taslak'),
+        ownerUid: kComposeUid,
+      );
       final container = await loaded(of: editOf(kEditPost));
       final state = container.read(editOf(kEditPost));
       expect(state.text, kEditPost.text);
@@ -563,6 +568,42 @@ void main() {
         isFalse,
       );
       expect(feedback.toasts, isEmpty);
+    });
+
+    test('T-45 · A3-02 · ortak cihaz: başka hesabın taslağı forma yüklenmez '
+        've yayında silinmez; etiketsiz eski kayıt yok sayılır; sahibi '
+        'yeniden girince taslak geri gelir', () async {
+      final key = AppPreferenceKeys.composeDraft(kComposeClubId);
+      final otherDraft = ComposeDraft.encode(
+        const ComposeState(text: 'yayımlanmamış duyuru'),
+        ownerUid: 'u_baskasi',
+      );
+      prefs.values[key] = otherDraft;
+      var container = await loaded();
+      var state = container.read(provider);
+      expect(state.text, isEmpty);
+      expect(state.hasDraft, isFalse);
+
+      // Bu hesap kendi taslağı olmadan yayımlar: başkasının yuvası korunur.
+      container
+          .read(provider.notifier)
+          .setText('Cumartesi 07.00’de kampüs kapısında buluşuyoruz.');
+      expect(
+        await container.read(provider.notifier).publish(),
+        ComposeOutcome.published,
+      );
+      expect(prefs.values[key], otherDraft);
+
+      // Taslağın sahibi aynı cihazda yeniden girer.
+      container = await loaded(
+        session: composeSession().copyWith(uid: 'u_baskasi'),
+      );
+      state = container.read(provider);
+      expect(state.text, 'yayımlanmamış duyuru');
+      expect(state.hasDraft, isTrue);
+
+      prefs.values[key] = '{"text":"eski biçim"}';
+      expect((await loaded()).read(provider).hasDraft, isFalse);
     });
 
     test('T-36 (W-97) · `initialType` başlangıç türüdür: boş formda ve '
@@ -578,8 +619,12 @@ void main() {
       expect(state.type, PostType.announcement);
       expect(state.isDirty || state.hasDraft, isFalse);
 
-      prefs.values[AppPreferenceKeys.composeDraft(kComposeClubId)] =
-          ComposeDraft.encode(const ComposeState(text: 'taslak'));
+      prefs.values[AppPreferenceKeys.composeDraft(
+        kComposeClubId,
+      )] = ComposeDraft.encode(
+        const ComposeState(text: 'taslak'),
+        ownerUid: kComposeUid,
+      );
       final poll = typed(PostType.poll);
       state = (await loaded(of: poll)).read(poll);
       expect(state.type, PostType.poll);

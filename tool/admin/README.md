@@ -5,7 +5,7 @@ Yalnızca **senin makinende**, **senin terminalinde** çalışır. Claude Code b
 ## Süper admin atama (`set_superadmin.js`)
 
 1. Firebase Console → Proje ayarları → **Hizmet hesapları** → "Yeni özel anahtar oluştur". JSON'u **repo dışında** sakla (ör. `~/.secrets/gu-kulupler-admin.json`). Repo içindeki yol reddedilir; `.gitignore` zaten `*-adminsdk-*.json` ve `serviceAccount*.json`'u yok sayar.
-2. Bir kez: `cd tool/admin && npm install`
+2. Bir kez: `cd tool/admin && npm ci --ignore-scripts` — sürümler commit edilmiş `package-lock.json`'dan birebir (bütünlük karmasıyla) kurulur, kurulum betiği çalışmaz (T-45 · S4-02). Bağımlılık güncellemesi bilinçli yapılır: `npm install --package-lock-only --ignore-scripts` → `npm audit` → kilit dosyası commit edilir (CD-40).
 3. Kullanıcıyı önce uygulamadan **kayıt ol** ve e-postasını doğrula (Auth'ta var olmalı).
 4. Önce bak, uygulama:
    ```bash
@@ -63,7 +63,7 @@ node tool/admin/send_system_notification.js --text-key welcome --email sen@ogr.g
 
 ## Yarım kalan hesap silme temizliği (`finish_account_deletion.js` — W-91)
 
-> **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon her birimi okunduğu andaki `lastUpdateTime` önkoşuluyla yazar (araya giren yazımda birim reddedilir); betiğin böyle bir önkoşulu yoktur → betiği fonksiyonun koşu saatinde (03:30 civarı) çalıştırma.
+> **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon ve betik (T-45, `lib/account_cleanup_runner.js`) aynı ilkeyle yazar: **iki geçiş** (önce tüm hesapların kritik temizliği — hesap belgesi, katılım, üyelik, iletişim — sonra kişisel belgeler), **sayfalı okuma** (kişisel belgeler ve `--all-deleted` listesi `documentId()` sırasıyla sayfa sayfa; kuru çalıştırma kişisel belgeleri yalnızca sayar), kişisel yazımlar **≤ 450'lik gruplu batch** ve her yazım okunduğu andaki `lastUpdateTime` **önkoşuluyla** (kritik birimde ilk yazım). Araya giren yazımda (fonksiyonun ya da istemcinin eşzamanlı temizliği) batch bütünüyle reddedilir, yarım yazım ve çift sayaç düşüşü olmaz; çıktı `! … önkoşul` der → betiği yeniden çalıştır. Yine de fonksiyonun koşu saatinde (03:30 civarı) çalıştırmamak reddi azaltır.
 
 Hesap silme (SET-03) istemcide en iyi çabayla koşar: `markDeleted` sonrası parçalar yarım kalırsa (ağ, Rules reddi) ve kullanıcı hiç geri dönmezse üyelik anlık görüntüsü / iletişim belgesi / açık katılımı kalabilir. Betik `users.status == 'deleted'` hesaplar için T-29 dizisinin eşdeğerini tamamlar (`lib/account_cleanup.js`):
 

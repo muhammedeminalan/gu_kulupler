@@ -176,7 +176,7 @@ void main() {
       );
       expect(const FirebaseSuccess<int, FirestoreError>(1).isSuccess, isTrue);
       expect(FirestoreError.values, hasLength(16));
-      expect(FirestoreRuleCode.values, hasLength(12));
+      expect(FirestoreRuleCode.values, hasLength(13));
       expect(
         const FirestoreFailureDetail(FirestoreRuleCode.capacityFull).code,
         FirestoreRuleCode.capacityFull,

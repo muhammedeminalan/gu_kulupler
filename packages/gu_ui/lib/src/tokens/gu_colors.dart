@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 /// Registry renk token'ları — 27 alan × açık/koyu (D-14).
 ///
 /// Değerler `docs/token-map.md` §1 ile birebir; kaynak
-/// `design/extracted/registry.json#tokens.COLORS` (= `colors/tokens.json`),
-/// CSS değişkenleri css:3–30 (açık) / css:46–73 (koyu). `rgba(r,g,b,a)`
+/// `design/extracted/registry.json#tokens.COLORS` (= `colors/tokens.json`).
+/// CSS değişkenleri css:3–30 (açık) / css:46–73 (koyu). Tek bilinçli sapma:
+/// açık `textMuted` #62748E → #5E708A (K-91, AA). `rgba(r,g,b,a)`
 /// → `AA = round(a × 255)`. Registry dışı bileşen renkleri
 /// `GuComponentColors`'tadır (CD-17, CD-87).
 ///
@@ -64,7 +65,9 @@ final class GuColors extends ThemeExtension<GuColors> {
     textPrimary: Color(0xFF101828),
     textHeading: Color(0xFF1D293D),
     textSecondary: Color(0xFF45556C),
-    textMuted: Color(0xFF62748E),
+    // K-91: tasarım #62748E → #5E708A (T-45 kullanıcı kararı; AA,
+    // bgSurfaceMuted üzerinde 4.35 → 4.61).
+    textMuted: Color(0xFF5E708A),
     textDisabled: Color(0xFFA3AEBF),
     stateSuccess: Color(0xFF15803D),
     stateSuccessContainer: Color(0xFFDCFCE7),
@@ -165,6 +168,7 @@ final class GuColors extends ThemeExtension<GuColors> {
   final Color textSecondary;
 
   /// registry `text.muted` — yardımcı, zaman damgası (css:19 / css:62).
+  /// Açık değer tasarımdan koyu (#5E708A, K-91); koyu değer tasarımdaki gibi.
   final Color textMuted;
 
   /// registry `text.disabled` — devre dışı (css:20 / css:63).

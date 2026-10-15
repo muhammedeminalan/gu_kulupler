@@ -69,15 +69,30 @@ describe('sendPushOnNotificationCreated', () => {
     expect(sender.calls[0].body).toBe('Kulüpteki rolün güncellendi.');
   });
 
-  test('atlananlar: event_reminder, bilinmeyen tür, silinmiş belge, etkin olmayan kullanıcı, tercih, jetonsuz', async () => {
+  // T-45 (A5-01 / WF1 R-5): push üretmeyen tür makbuzdan ÖNCE elenir → `pushReceipts` yazımı yok (hatırlatıcı belgesi
+  // başına iki boşa yazım kalktı); aynı belgenin yeniden teslimi de push üretmez.
+  test('event_reminder ve bilinmeyen tür: makbuz yazılmaz, yeniden teslimde de push yok', async () => {
+    const uid = await seedUser({ tokens: [token('t1')] });
+    const sender = new FakeSender();
+    for (const n of [note(uid, 'event_reminder', { clubId: 'c', eventId: 'e' }), note(uid, 'brand_new_type', {}), {
+      id: `system_${uniq('k')}_${uid}`,
+      data: { userId: uid, type: 42, refs: {} } as Record<string, unknown>,
+    }]) {
+      expect(await handleNotificationCreated({ db, sender, now }, n.id, n.data)).toBe('skipped_type');
+      expect(await handleNotificationCreated({ db, sender, now }, n.id, n.data)).toBe('skipped_type');
+      expect((await db.doc(`pushReceipts/${n.id}`).get()).exists).toBe(false);
+    }
+    expect((await db.collection('pushReceipts').where('userId', '==', uid).get()).size).toBe(0);
+    expect(sender.calls).toHaveLength(0);
+  });
+
+  test('atlananlar: silinmiş belge, etkin olmayan kullanıcı, tercih, jetonsuz', async () => {
     const tokens = [token('t1')];
     const active = await seedUser({ tokens });
     const suspended = await seedUser({ status: 'suspended', tokens });
     const muted = await seedUser({ tokens, settings: { announcements: false } });
     const noTokens = await seedUser();
     const cases: Array<[ReturnType<typeof note>, string]> = [
-      [note(active, 'event_reminder', { clubId: 'c', eventId: 'e' }), 'skipped_type'],
-      [note(active, 'brand_new_type', {}), 'skipped_type'],
       [note(active, 'system', { textKey: 'welcome' }, { isDeleted: true }), 'filtered'],
       [note(suspended, 'removed_from_club', { clubId: 'c' }), 'inactive'],
       [note(muted, 'announcement', { clubId: 'c', postId: 'p' }), 'filtered'],
@@ -178,6 +193,62 @@ describe('sendPushOnNotificationCreated', () => {
       expect(await send(report(), sender, at('2026-10-15T12:16:00+03:00'))).toBe('sent');
 
       expect(sender.calls.map((c) => c.tokens[0])).toEqual(['s', 's', 'mgr', 'adm', 'adm']);
+    });
+
+    // T-45 S2-01 / A5-03: yönetim kurulu üyesi çıkar → geri al (M9 ↔ M12b), karar → geri al (M5 / M6 ↔ M12a) ve rol
+    // aç-kapa (M10) döngüleriyle her turda Rules'tan geçen yeni rastgele anahtarlı belge yazar; FORCED türler tercihle
+    // kapatılamaz → push (tür, kulüp, alıcı) başına Istanbul günü başına bir. Gelen kutusu belgesine dokunulmaz.
+    test.each([
+      ['removed_from_club', {}],
+      ['role_changed', { role: 'board' }],
+      ['application_approved', {}],
+      ['application_rejected', {}],
+    ] as Array<[string, Record<string, string>]>)(
+      'karar döngüsü (%s): aynı gün ikinci push throttled; başka kulüp / ertesi gün geçer; bildirim belgesi aynen',
+      async (type, extra) => {
+        const target = await seedUser({ tokens: [token('t')] });
+        const [clubA, clubB] = [uniq('c'), uniq('c')];
+        const sender = new FakeSender();
+        const turn = async (clubId: string, clock = now) => {
+          const n = keyed(target, type, { clubId, ...extra });
+          await db.doc(`notifications/${n.id}`).set(n.data);
+          return { n, status: await send(n, sender, clock) };
+        };
+
+        const first = await turn(clubA);
+        const second = await turn(clubA, at('2026-10-15T23:59:00+03:00'));
+        expect([first.status, second.status]).toEqual(['sent', 'throttled']);
+        expect(await send(keyed(target, type, { clubId: clubA, ...extra }), sender)).toBe('throttled');
+        expect((await turn(clubB)).status).toBe('sent');
+        expect((await turn(clubA, at('2026-10-16T00:00:00+03:00'))).status).toBe('sent');
+
+        expect(sender.calls).toHaveLength(3);
+        expect((await db.doc(`pushReceipts/${second.n.id}`).get()).data()).toMatchObject({
+          userId: target,
+          type,
+          status: 'throttled',
+          successCount: 0,
+        });
+        // Yalnızca telefona push frenlenir: uygulama içi bildirim belgeleri yazıldığı gibi kalır.
+        for (const { n } of [first, second]) {
+          expect((await db.doc(`notifications/${n.id}`).get()).data()).toEqual(n.data);
+        }
+        const gates = await db.collection('pushReceipts').where('userId', '==', target).where('kind', '==', 'gate').get();
+        expect(gates.size).toBe(3);
+        expect(gates.docs.every((d) => d.id.startsWith(`once_${type}_`) && d.id.endsWith(`_${target}`))).toBe(true);
+      },
+    );
+
+    test('karar türleri birbirini frenlemez; aynı kulübün başka alıcısı ayrı sayılır', async () => {
+      const [a, b] = [await seedUser({ tokens: [token('a')] }), await seedUser({ tokens: [token('b')] })];
+      const clubId = uniq('c');
+      const sender = new FakeSender();
+      expect(await send(keyed(a, 'application_approved', { clubId }), sender)).toBe('sent');
+      expect(await send(keyed(a, 'application_rejected', { clubId }), sender)).toBe('sent');
+      expect(await send(keyed(a, 'removed_from_club', { clubId }), sender)).toBe('sent');
+      expect(await send(keyed(b, 'removed_from_club', { clubId }), sender)).toBe('sent');
+      expect(await send(keyed(a, 'removed_from_club', { clubId }), sender)).toBe('throttled');
+      expect(sender.calls.map((c) => c.tokens[0])).toEqual(['a', 'a', 'a', 'b']);
     });
 
     test('loglar ham bildirim kimliğini (alıcı / başvuran uid) taşımaz', async () => {

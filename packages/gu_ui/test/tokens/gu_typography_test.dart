@@ -69,7 +69,8 @@ String _cssColorFromChain(List<String> chain) {
   fail('Renk bulunamadı: $chain');
 }
 
-/// CSS renk değeri → beklenen ARGB (`var(--x-y)` → `reg.COLORS['x.y']`).
+/// CSS renk değeri → beklenen ARGB (`var(--x-y)` → `reg.COLORS['x.y']`;
+/// bilinçli sapmada uygulama değeri — `designColorDeviations`, K-91).
 int _expectedArgb(String cssValue, int themeIndex) {
   final v = RegExp(r'^var\(--([a-z-]+)\)$').firstMatch(cssValue);
   if (v == null) return parseCssColor(cssValue);
@@ -78,9 +79,12 @@ int _expectedArgb(String cssValue, int themeIndex) {
       '${parts.first}.${parts[1]}'
       '${parts.skip(2).map((p) => p[0].toUpperCase() + p.substring(1)).join()}';
   final colors = registryTokens()['COLORS'] as Map<String, dynamic>;
-  final pair = colors[key] as List<dynamic>?;
-  expect(pair, isNotNull, reason: 'registry rengi yok: $key ($cssValue)');
-  return parseCssColor(pair![themeIndex] as String);
+  expect(
+    colors[key],
+    isNotNull,
+    reason: 'registry rengi yok: $key ($cssValue)',
+  );
+  return registryColorArgb(key, themeIndex);
 }
 
 /// `em` cinsinden `letter-spacing` değeri (`.08em` → 0.08).

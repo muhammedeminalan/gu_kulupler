@@ -8,10 +8,13 @@
 //     başlangıç durumu (`open`, karar alanları boş), sunucu zamanı.
 //  4. Null alanın iki biçimi (W-51): `targetClubId` / `action` / `resolvedAt` / `resolvedBy`.
 //  5. Hedef doğrulaması (CD-137 madde 8u): hedef belge var olmalı; `targetClubId` hedefin gerçek kulübü.
+//  6. T-45 (karar 3): her şikayet günün şikayet sayacıyla AYNI batch'te gider (`payloads.reportWrites`;
+//     kota ve sayaç biçimi `report_limit.test.js`). Buradaki vakalar sayacı geçerli tutar: ret şikayetten gelir.
 const fs = require('node:fs');
 const path = require('node:path');
 const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { Timestamp, doc, serverTimestamp, setDoc } = require('firebase/firestore');
+const { Timestamp, serverTimestamp } = require('firebase/firestore');
+const budget = require('../helpers/budget');
 const { contextFor, CLUB } = require('../helpers/contexts');
 const { readDoc, seedDocs, seedFixture } = require('../helpers/fixtures');
 const { runMatrix } = require('../helpers/matrix');
@@ -34,6 +37,20 @@ const reportPath = (target, uid = UID) => `reports/${uid}_${target.type}_${targe
 const targetOf = (type, id) => ({ type, id, clubId: type === 'user' ? undefined : type === 'club' ? id : CLUB });
 
 const studentDb = () => contextFor('student').firestore();
+/** Şikayet + günün sayacı tek batch (ReportRepository.report — T-45). */
+const sendReport = (writes) => budget.buildBatch(studentDb(), Object.values(writes)).commit();
+/** Bugünün sayacını sıfırlar (kurallar kapalı): günlük kota (T-45) bu dosyanın toplu vakalarını kesmesin. */
+const resetCounter = () =>
+  seedDocs({ [payloads.reportCounterPath(UID)]: { userId: UID, day: payloads.istanbulDay().day, count: 0, reportId: null, updatedAt: serverTimestamp() } });
+const DAY_MS = payloads.DAY_MS;
+const ISTANBUL_OFFSET_MS = 3 * 60 * 60 * 1000;
+/** Istanbul gün sınırına 5 sn'den az kaldıysa sınırı bekler (sayaç anahtarı ile istek aynı güne düşsün — W-50). */
+async function settleDay() {
+  const left = DAY_MS - ((Date.now() + ISTANBUL_OFFSET_MS) % DAY_MS);
+  if (left < 5000) await new Promise((resolve) => setTimeout(resolve, left + 50));
+}
+
+beforeEach(settleDay);
 const clientTime = () => Timestamp.fromMillis(Date.now() - 60 * 1000);
 const text = (length) => 'a'.repeat(length);
 const expectWrite = (request, expected) => (expected === 'allow' ? assertSucceeds(request) : assertFails(request));
@@ -53,11 +70,12 @@ describe('reports · create — 6 neden × 5 hedef (CD-33)', () => {
     await seedDocs(
       Object.fromEntries(TARGET_TYPES.flatMap((type) => REASONS.map((reason) => [`${COLLECTION_OF[type]}/t_${reason}`, { clubId: CLUB }]))),
     );
-    const db = studentDb();
     for (const type of TARGET_TYPES) {
+      // 30 şikayet tek günün kotasını (Limits.reportDailyLimit) aşar: her hedef türünden önce sayaç sıfırlanır.
+      await resetCounter();
       for (const reason of REASONS) {
         const target = targetOf(type, `t_${reason}`);
-        await assertSucceeds(setDoc(doc(db, reportPath(target)), payloads.reportCreate(UID, target, { reason })));
+        await assertSucceeds(sendReport(payloads.reportWrites({ uid: UID, target, extra: { reason } })));
       }
     }
     const sample = await readDoc(reportPath(targetOf('event', 't_offtopic')));
@@ -115,8 +133,12 @@ describe('reports · create — alan beyaz listesi, kimlik, sınırlar (rules-sp
     ['updatedAt yok', POST, {}, ['updatedAt'], 'deny'],
   ])('%s', async (_title, target, extra, removed, expected, docPath = reportPath(target)) => {
     await seedFixture('base');
-    const payload = omit(payloads.reportCreate(UID, target, extra), removed);
-    await expectWrite(setDoc(doc(studentDb(), docPath), payload), expected);
-    if (expected === 'deny') expect(await readDoc(docPath)).toBeNull();
+    const writes = payloads.reportWrites({ uid: UID, target, extra, path: docPath });
+    writes.report.data = omit(writes.report.data, removed);
+    await expectWrite(sendReport(writes), expected);
+    if (expected === 'deny') {
+      expect(await readDoc(docPath)).toBeNull();
+      expect(await readDoc(payloads.reportCounterPath(UID))).toBeNull();
+    }
   });
 });

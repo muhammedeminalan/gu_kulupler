@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T19:23:11.821Z",
+  "updated": "2026-10-15T22:18:41.041Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -582,11 +582,13 @@
       "notes": ""
     },
     "T-45": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-15T19:24:30.208Z",
+      "finishedAt": "2026-10-15T22:18:41.041Z",
+      "commits": [
+        "dac6396"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-46": {
@@ -1206,7 +1208,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.151Z",
+      "closeNote": "T-45: (a) hesap sayımı / e-posta gönderim sınırı ve (b) Storage kotası docs/reports/T-45-security.md §6'ya işlendi (sorulmadı → kabul + öneri: App Check, Email enumeration protection, bütçe uyarısı — konsol işleri W-60); (c) cihaz gerektirir → yeni T-46 borcu"
     },
     {
       "id": "W-60",
@@ -1224,7 +1229,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.308Z",
+      "closeNote": "T-45 kullanıcı kararı (H-11, 2026-10-15): gmail.com geçici izni kalır; kaldırma kullanıcı söyleyince yayından önce — yeni T-46 borcuna taşındı"
     },
     {
       "id": "W-62",
@@ -1533,7 +1541,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.196Z",
+      "closeNote": "T-45: (a) iptal → yeniden başvuru turu ve (b) event_new yayın penceresi docs/reports/T-45-security.md §6'da ölçüldü (sorulmadı → kabul + öneri: cancelled → pending 10 dk bekleme, kulüp / gün event_new kilidi); (c) canlı fan-out parça doğrulaması → yeni T-46 borcu"
     },
     {
       "id": "W-87",
@@ -1551,7 +1562,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.218Z",
+      "closeNote": "T-45 kullanıcı kararı (H-13, 2026-10-15): destek talebi / support/ eki SINIRSIZ kalır — kabul edilmiş sınırlama (rules-spec §9.13, PLAN R-27 / S-10); en kötü yük raporda (docs/reports/T-45-security.md §6)"
     },
     {
       "id": "W-89",
@@ -1772,7 +1786,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.240Z",
+      "closeNote": "T-45: docs/reports/T-45-security.md §6 — (a) kalıcı kuyruk yok ve (b) jeton tekilleştirme sorulmadı → kabul + öneri (ServerSideDispatcher, pushTokens/{sha256} sahip belgesi); (c) pushReceipts saklama ölçüldü (~3,3 M / yıl), TTL D-10 ile çelişir → kabul; A5-01 hatırlatıcı yolunu katılım kaydına bağladı, push üretmeyen tür artık makbuz yazmaz"
     },
     {
       "id": "W-106",
@@ -1781,7 +1798,10 @@
       "resolveIn": [
         "T-45"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-45",
+      "closedAt": "2026-10-15T22:00:58.263Z",
+      "closeNote": "T-45: (a) herkese açık etkinlik push'u kullanıcı kararıyla şimdiki gibi (H-15, rules-spec §9.17 g); (b) şikayet create kotası kapandı — kullanıcı başına günde en çok 20 (H-14, reportCounters, rules-spec §3.18), gelen kutusu kotası K-J kabulüyle yazılmaz; (c) W-105 (b) ile kabul; (d) role_changed + removed_from_club + application_approved / _rejected push döngü freni uygulandı ((tür, kulüp, alıcı) / Istanbul günü 1, push_guard.ts DECISION_TYPES); (e) once_ kilit belgeleri D-10 → kabul. Ayrıntı docs/reports/T-45-security.md §2.1, §6"
     },
     {
       "id": "W-107",
@@ -1796,6 +1816,42 @@
       "id": "W-108",
       "declaredIn": "T-44",
       "text": "Gerçek cihazda profil ölçümü (docs/reports/T-44-perf.md komutları): açılış, CLB-01 ve FED-01 kaydırma — 90p kare < 16 ms; ayrıca gerçek projede Crashlytics test hatası konsolda görünür",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-109",
+      "declaredIn": "T-14",
+      "text": "W-59 (c) devamı (T-14 güvenlik incelemesi, CD-135 madde 8; cihaz gerektirir): integration_test/auth_flow_test.dart fotoğraf adımı gerçek cihazda / simülatörde yerel SDK ile emülatöre karşı koşturulur — yerel yükleme storage.rules imageOk() üst veri koşullarından (contentEncoding / contentDisposition / özel üst veri yok) geçmeli; geçmezse T-14 yeniden açılır",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-110",
+      "declaredIn": "T-25",
+      "text": "W-86 (c) devamı: Limits.notificationFanOutChunkSize = 225 ve hesap silme üyelik parçası (Limits.accountDeletionChunk = 5) canlıda doğrulanır (erişim çağrısı önbelleği + 1000 ifade sınırı emülatörde ölçülemez — T-45 raporu §3.2): gerçek projede ≥ 225 alıcılı fan-out ve çok üyelikli hesap silme denenir; permissionDenied'da dağıtıcı yarılar, ölçümle yalnızca Limits küçültülür (kural değişmez), firebase/test/budget/fanout_result.json canlı değerle güncellenir",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-111",
+      "declaredIn": "T-14",
+      "text": "GEÇİCİ gmail.com izni: kullanıcı söyleyince (yayından önce) EmailDomainPolicy.temporaryTestDomains boşaltılır, rules + storage regex'inden gmail çıkarılır, kurallar canlıya yüklenir (CD-136)",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
+    },
+    {
+      "id": "W-112",
+      "declaredIn": "T-45",
+      "text": "T-45 güvenlik gözden geçirme → T-46 (docs/reports/T-45-security.md §7.2): (a) birleştirilmiş release manifest'inde (build/app/intermediates/merged_manifests/release/…) allowBackup=\"false\" + fullBackupContent + dataExtractionRules eklenti manifestlerince ezilmemiş, usesCleartextTraffic yok, dışa açık yalnızca MainActivity + mesajlaşma alıcısı (offline Gradle doğrulayamadı); (b) Google Cloud API anahtarı kısıtlaması — Android anahtarı paket adı + release SHA-1, iOS anahtarı bundle ID, API listesi yalnızca Firebase servisleri (rapor §5.1); (c) App Check (Play Integrity + App Attest / DeviceCheck; önce izleme, sonra zorlama — CD-64); (d) kullanıcı 'yükle' deyince canlıya yükleme sırası: firestore:rules + firestore:indexes → storage → functions (sendPushOnNotificationCreated, finishAccountDeletions); T-45 kuralları (şikayet kotası) yeni uygulama sürümüyle birlikte çıkar; APNs .p8 repo dışında (~/.secrets/, W-104)",
       "resolveIn": [
         "T-46"
       ],
@@ -1884,6 +1940,11 @@
       "date": "2026-10-15",
       "task": null,
       "text": "T-43 W-99 (T-43 hedefli) kapatılmadı, kullanıcı kararıyla (QR v1 kalır) gerçek cihaz denemesi olarak T-46'ya taşındı"
+    },
+    {
+      "date": "2026-10-15",
+      "task": "T-45",
+      "text": "W-61 kullanıcı kararıyla T-46'ya taşındı"
     }
   ],
   "knownIssuesAdded": [

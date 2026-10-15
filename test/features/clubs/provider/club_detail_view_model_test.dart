@@ -1047,9 +1047,12 @@ void main() {
       expect(vmOf(container).reportTarget, target);
     });
 
-    test('submitReport: yazılır → true', () async {
+    test('submitReport: yazılır → sent', () async {
       final container = await loaded(kVisitorSession);
-      expect(await vmOf(container).submitReport(report), isTrue);
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.sent,
+      );
       final written = reports.reports.values.single;
       expect(written.reporterId, kUid);
       expect(written.targetType, ReportTargetType.club);
@@ -1060,17 +1063,26 @@ void main() {
       expect(feedback.toasts, isEmpty);
     });
 
-    test('aynı kulüp ikinci kez → yine true (DLG-12 gösterilir)', () async {
+    test('aynı kulüp ikinci kez → yine sent (DLG-12 gösterilir)', () async {
       final container = await loaded(kVisitorSession);
-      expect(await vmOf(container).submitReport(report), isTrue);
-      expect(await vmOf(container).submitReport(report), isTrue);
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.sent,
+      );
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.sent,
+      );
       expect(reports.reports, hasLength(1));
     });
 
-    test('çevrimdışı → TST-24, false; yazılmaz', () async {
+    test('çevrimdışı → TST-24, failed; yazılmaz', () async {
       final container = await loaded(kVisitorSession);
       connectivity.isOffline = true;
-      expect(await vmOf(container).submitReport(report), isFalse);
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.failed,
+      );
       expect(feedback.toasts, [ToastId.tst24]);
       expect(reports.calls, isEmpty);
     });
@@ -1079,29 +1091,50 @@ void main() {
       (FirestoreError.permissionDenied, ToastId.tstX18),
       (FirestoreError.unavailable, ToastId.tst24),
     ]) {
-      test('sunucu: ${error.name} → ${toast.name}, false', () async {
+      test('sunucu: ${error.name} → ${toast.name}, failed', () async {
         final container = await loaded(kVisitorSession);
         reports.failNext(error);
-        expect(await vmOf(container).submitReport(report), isFalse);
+        expect(
+          await vmOf(container).submitReport(report),
+          ReportSubmitOutcome.failed,
+        );
         expect(feedback.toasts, [toast]);
       });
     }
 
-    test('beklenmeyen hata → false; günlüğe düşer', () async {
+    test('beklenmeyen hata → failed; günlüğe düşer', () async {
       final logs = captureLogs();
       final container = await loaded(kVisitorSession);
       reports.failNext(FirestoreError.unknown);
-      expect(await vmOf(container).submitReport(report), isFalse);
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.failed,
+      );
       expect(feedback.toasts, isEmpty);
       expect(logs.join('\n'), contains('Şikayet gönderilemedi: unknown'));
     });
 
-    test('oturum yok → false', () async {
+    test('oturum yok → failed', () async {
       final container = await loaded(
         kVisitorSession.copyWith(clearUid: true),
       );
-      expect(await vmOf(container).submitReport(report), isFalse);
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.failed,
+      );
       expect(reports.calls, isEmpty);
+    });
+
+    test('T-45 · günlük şikayet sınırı → dailyLimit: toast yok, yazılmaz, '
+        'sayfa açık kalır (SHT-10 hata satırı)', () async {
+      final container = await loaded(kVisitorSession);
+      reports.todayCounts[kUid] = Limits.reportDailyLimit;
+      expect(
+        await vmOf(container).submitReport(report),
+        ReportSubmitOutcome.dailyLimit,
+      );
+      expect(feedback.toasts, isEmpty);
+      expect(reports.reports, isEmpty);
     });
 
     test('showReportReceived → DLG-12 (engelleme seçeneği yok)', () async {

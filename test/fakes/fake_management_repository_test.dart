@@ -126,6 +126,24 @@ void main() {
     expect(missing.errorOrNull, FirestoreError.notFound);
   });
 
+  test('T-45 · kapak tohumu gerçek repository gibi FieldValidators.coverSeed '
+      'ile denetlenir: sınırda geçer, sınır + 1 invalidArgument', () async {
+    final atLimit = await fake.updateClubSettings(
+      _clubId,
+      ClubSettingsPatch(coverSeed: 'a' * Limits.coverSeedMax),
+      actorId: _manager,
+    );
+    final overLimit = await fake.updateClubSettings(
+      _clubId,
+      ClubSettingsPatch(coverSeed: 'a' * (Limits.coverSeedMax + 1)),
+      actorId: _manager,
+    );
+
+    expect(atLimit.isSuccess, isTrue);
+    expect(overLimit.errorOrNull, FirestoreError.invalidArgument);
+    expect(clubs.clubs[_clubId]?.coverSeed, 'a' * Limits.coverSeedMax);
+  });
+
   test('fan-out yalnızca kesinleşen yazımdan sonra: başarısız yayın '
       'dağıtım istemez; danışman salt okunur', () async {
     final failed = await fake.publishEvent(

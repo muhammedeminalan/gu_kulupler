@@ -4,15 +4,24 @@
 // `hasReported`, geçersiz kimlik (W-54) ve hata eşlemesi (PLAN §9.6.12,
 // §10.4; rules-spec §3.10; CD-33, D-10).
 //
+// T-45 (kullanıcı kararı 3): günlük şikayet kotası — ön okuma
+// (`reportCounters/{uid}_{yyyyMMdd}`) + tek batch (şikayet + sayaç
+// `set(merge)` `increment(1)`); kota dolu → yazmadan `reportLimit`; Rules
+// reddi sonrası sayaç doluysa `reportLimit`; gün sınırı penceresinde komşu
+// günle bir kez yeniden deneme (W-50, rules-spec §3.18).
+//
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); hata yolları el yazımı
 // çiftlerle (`test/fakes/sdk_firestore_stubs.dart`). `fake_cloud_firestore`
-// kural çalıştırmadığı için "var olan belgeye yazım Rules'ta reddedilir"
-// davranışını servis çifti kurar.
+// kural çalıştırmadığı için "var olan belgeye yazım Rules'ta reddedilir",
+// sayaç sınırı ve sunucu günü davranışlarını SDK çifti kurar
+// (`test/fakes/rules_report_firestore.dart`).
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
+import '../fakes/fake_app_clock.dart';
+import '../fakes/rules_report_firestore.dart';
 import '../fakes/sdk_firestore_stubs.dart';
 import '../helpers/plan_repository_table.dart';
 import '../helpers/plan_service_table.dart';
@@ -42,8 +51,22 @@ const List<ReportTarget> _targets = [
 /// Geçersiz belge kimlikleri (W-54).
 const List<String> _invalidIds = ['', 'u/1', '..', '__uid__'];
 
+/// Istanbul'da 13 Ekim 2026 12:00 — gün sınırı penceresinin dışında.
+final DateTime _noon = DateTime.utc(2026, 10, 13, 9);
+
+/// Istanbul'da 14 Ekim 00:00 (gün sınırı).
+final DateTime _midnight = DateTime.utc(2026, 10, 13, 21);
+
+const String _day13 = '20261013';
+const String _day14 = '20261014';
+
+/// [reporter] kullanıcısının [dayKey] günündeki sayaç belgesi yolu.
+String _counterPath(String dayKey, [String reporter = _reporter]) =>
+    'reportCounters/${reporter}_$dayKey';
+
 void main() {
   late FakeFirebaseFirestore db;
+  late FakeAppClock clock;
   late ReportRepository repository;
 
   Future<Json?> read(String id) async =>
@@ -56,11 +79,56 @@ void main() {
   /// Her çağrısı [code] hatasıyla biten veritabanına bağlı repository.
   ReportRepository failing(String code) => FirebaseReportRepository(
     FirebaseFirestoreService(StubFirestore(error: firestoreException(code))),
+    clock,
   );
+
+  /// Security Rules şikayet davranışlı (var olan şikayete set ret, sayaç
+  /// sınırı, [serverDayKey] verilirse sunucu günü) repository.
+  RulesReportFirestore useRules({String? serverDayKey}) {
+    final rules = RulesReportFirestore(db, serverDayKey: serverDayKey);
+    repository = FirebaseReportRepository(
+      FirebaseFirestoreService(rules),
+      clock,
+    );
+    return rules;
+  }
+
+  Future<Json?> readPath(String path) async =>
+      (await db.doc(path).get()).data();
+
+  /// [dayKey] gününün sayacını [count] ile kurar (kurallar dışında).
+  Future<void> seedCounter(String dayKey, int count) =>
+      db.doc(_counterPath(dayKey)).set({
+        'userId': _reporter,
+        'day':
+            '${dayKey.substring(0, 4)}-${dayKey.substring(4, 6)}-'
+            '${dayKey.substring(6)}',
+        'count': count,
+        'reportId': null,
+        'updatedAt': Timestamp.fromDate(_noon),
+      });
+
+  Future<FirestoreResult<void>> reportPost(
+    String id, {
+    ReportReason reason = ReportReason.spam,
+  }) => repository.report(
+    reporterId: _reporter,
+    target: (type: ReportTargetType.post, id: id, clubId: 'c01'),
+    reason: reason,
+  );
+
+  void expectLimit(FirestoreResult<void> result) {
+    expect(result.errorOrNull, FirestoreError.ruleViolation);
+    expect(
+      (result as FirebaseFailure<void, FirestoreError>).detail,
+      const FirestoreFailureDetail(FirestoreRuleCode.reportLimit),
+    );
+  }
 
   setUp(() {
     db = FakeFirebaseFirestore();
-    repository = FirebaseReportRepository(FirebaseFirestoreService(db));
+    clock = FakeAppClock(_noon);
+    repository = FirebaseReportRepository(FirebaseFirestoreService(db), clock);
   });
 
   group('T-15 · ReportRepository · sözleşme', () {
@@ -188,11 +256,10 @@ void main() {
       );
     });
 
-    test('aynı hedefe ikinci şikayet alreadyExists döner; ilk şikayet '
-        'değişmez', () async {
-      final guarded = FirebaseReportRepository(
-        _CreateOnlyService(FirebaseFirestoreService(db)),
-      );
+    test('aynı hedefe ikinci şikayet alreadyExists döner; ilk şikayet ve '
+        'sayaç değişmez', () async {
+      useRules();
+      final guarded = repository;
       final first = await guarded.report(
         reporterId: _reporter,
         target: _post,
@@ -212,6 +279,7 @@ void main() {
       expect(second.errorOrNull, FirestoreError.alreadyExists);
       expect(await read('u_ayse_post_p01'), before);
       expect(before, containsPair('note', 'ilk'));
+      expect(await readPath(_counterPath(_day13)), containsPair('count', 1));
     });
 
     for (final (code, error) in [
@@ -292,6 +360,189 @@ void main() {
         expect(await ids(), isEmpty);
       });
     }
+  });
+
+  group('T-45 · ReportRepository · günlük şikayet kotası (karar 3)', () {
+    test('şikayet ve günün sayacı tek batch: sayaç yoksa count 1, varsa +1; '
+        'sayaç alanları userId / day / count / reportId / updatedAt', () async {
+      final rules = useRules(serverDayKey: _day13);
+
+      expect((await reportPost('p01')).isSuccess, isTrue);
+      expect(await readPath(_counterPath(_day13)), {
+        'userId': _reporter,
+        'day': '2026-10-13',
+        'count': 1,
+        'reportId': 'u_ayse_post_p01',
+        'updatedAt': isA<Timestamp>(),
+      });
+
+      expect((await reportPost('p02')).isSuccess, isTrue);
+      expect(
+        await readPath(_counterPath(_day13)),
+        allOf(
+          containsPair('count', 2),
+          containsPair('reportId', 'u_ayse_post_p02'),
+        ),
+      );
+      expect(rules.commits, 2);
+      expect(await ids(), ['u_ayse_post_p01', 'u_ayse_post_p02']);
+    });
+
+    test('Limits.reportDailyLimit = 20 (kullanıcı kararı 3)', () {
+      expect(Limits.reportDailyLimit, 20);
+    });
+
+    test('20. şikayet geçer (19 → 20); 21. yazmadan reportLimit döner, '
+        'şikayet ve sayaç değişmez', () async {
+      final rules = useRules(serverDayKey: _day13);
+      await seedCounter(_day13, Limits.reportDailyLimit - 1);
+
+      expect((await reportPost('p20')).isSuccess, isTrue);
+      expect(
+        await readPath(_counterPath(_day13)),
+        containsPair('count', Limits.reportDailyLimit),
+      );
+
+      final over = await reportPost('p21');
+
+      expectLimit(over);
+      expect(rules.commits, 1, reason: 'kota doluyken batch gönderilmez');
+      expect(await read('u_ayse_post_p21'), isNull);
+      expect(
+        await readPath(_counterPath(_day13)),
+        containsPair('count', Limits.reportDailyLimit),
+      );
+    });
+
+    test('baştan 20 şikayet geçer, 21. reportLimit (istemci ön denetimi '
+        'Rules sınırıyla aynı)', () async {
+      useRules(serverDayKey: _day13);
+      for (var i = 0; i < Limits.reportDailyLimit; i++) {
+        expect((await reportPost('p$i')).isSuccess, isTrue, reason: 'p$i');
+      }
+
+      expectLimit(await reportPost('p_over'));
+      expect(await ids(), hasLength(Limits.reportDailyLimit));
+    });
+
+    test('kota doluyken aynı hedef zaten bildirilmişse alreadyExists '
+        '(DLG-12 "zaten bildirdin" önce gelir)', () async {
+      useRules(serverDayKey: _day13);
+      expect((await reportPost('p01')).isSuccess, isTrue);
+      await seedCounter(_day13, Limits.reportDailyLimit);
+
+      expect(
+        (await reportPost('p01')).errorOrNull,
+        FirestoreError.alreadyExists,
+      );
+    });
+
+    test('önceki günün dolu sayacı bugünü etkilemez', () async {
+      useRules(serverDayKey: _day13);
+      await seedCounter('20261012', Limits.reportDailyLimit);
+
+      expect((await reportPost('p01')).isSuccess, isTrue);
+      expect(await readPath(_counterPath(_day13)), containsPair('count', 1));
+      expect(
+        await readPath(_counterPath('20261012')),
+        containsPair('count', Limits.reportDailyLimit),
+      );
+    });
+
+    test('Rules reddi (ön denetimden sonra eşzamanlı şikayet sayacı '
+        'doldurdu): sayaç yeniden okunur ve reportLimit döner', () async {
+      final rules = useRules(serverDayKey: _day13);
+      await seedCounter(_day13, Limits.reportDailyLimit - 1);
+      rules.beforeCommit = () => seedCounter(_day13, Limits.reportDailyLimit);
+
+      expectLimit(await reportPost('p01'));
+      expect(rules.denied, [_counterPath(_day13)]);
+      expect(await read('u_ayse_post_p01'), isNull);
+    });
+
+    test('Rules reddi, sayaç dolu değil (etkin olmayan hesap vb.): '
+        'permissionDenied aynen döner', () async {
+      final rules = useRules(serverDayKey: _day13)..denyAll = true;
+
+      final result = await reportPost('p01');
+
+      expect(result.errorOrNull, FirestoreError.permissionDenied);
+      expect(rules.commits, 1);
+      expect(await ids(), isEmpty);
+    });
+
+    test('okuma hatası (ön denetim) aynen eşlenir; yazım denenmez', () async {
+      final result = await failing('unavailable').report(
+        reporterId: _reporter,
+        target: _post,
+        reason: ReportReason.spam,
+      );
+
+      expect(result.errorOrNull, FirestoreError.unavailable);
+    });
+  });
+
+  group('T-45 · ReportRepository · gün sınırı (W-50 — rules-spec §3.18)', () {
+    test('gün başından sonraki pencere: cihaz yarında, sunucu dünde → ret, '
+        'dünün sayacıyla bir kez yeniden denenir', () async {
+      final rules = useRules(serverDayKey: _day13);
+      clock.set(_midnight.add(const Duration(minutes: 2)));
+
+      expect((await reportPost('p01')).isSuccess, isTrue);
+      expect(rules.commits, 2);
+      expect(rules.denied, [_counterPath(_day14)]);
+      expect(await readPath(_counterPath(_day13)), containsPair('count', 1));
+      expect(await readPath(_counterPath(_day14)), isNull);
+      expect(await ids(), ['u_ayse_post_p01']);
+    });
+
+    test('gün bitmeden önceki pencere: cihaz bugünde, sunucu yarında → '
+        'yarının sayacıyla yeniden denenir', () async {
+      final rules = useRules(serverDayKey: _day14);
+      clock.set(_midnight.subtract(const Duration(minutes: 3)));
+
+      expect((await reportPost('p01')).isSuccess, isTrue);
+      expect(rules.commits, 2);
+      expect(await readPath(_counterPath(_day14)), containsPair('count', 1));
+      expect(await readPath(_counterPath(_day13)), isNull);
+    });
+
+    test('pencere dışında yeniden deneme yok: ret olduğu gibi döner', () async {
+      final rules = useRules(serverDayKey: _day14);
+
+      expect(
+        (await reportPost('p01')).errorOrNull,
+        FirestoreError.permissionDenied,
+      );
+      expect(rules.commits, 1);
+      expect(await ids(), isEmpty);
+    });
+
+    test('komşu günün hakkı dolmuşsa yeniden deneme yazmadan reportLimit '
+        'döner', () async {
+      final rules = useRules(serverDayKey: _day13);
+      clock.set(_midnight.add(const Duration(minutes: 2)));
+      await seedCounter(_day13, Limits.reportDailyLimit);
+
+      expectLimit(await reportPost('p01'));
+      expect(rules.commits, 1);
+      expect(await ids(), isEmpty);
+    });
+
+    test('aynı hedef zaten bildirilmişse pencere içinde de yeniden deneme '
+        'yok: alreadyExists', () async {
+      final rules = useRules(serverDayKey: _day14);
+      await db.collection('reports').doc('u_ayse_post_p01').set({
+        'status': 'open',
+      });
+      clock.set(_midnight.add(const Duration(minutes: 2)));
+
+      expect(
+        (await reportPost('p01')).errorOrNull,
+        FirestoreError.alreadyExists,
+      );
+      expect(rules.commits, 1);
+    });
   });
 
   group('T-15 · ReportRepository · hasReported', () {
@@ -382,37 +633,4 @@ void main() {
       });
     }
   });
-}
-
-/// Security Rules'un şikayet yazımındaki davranışını kuran servis: belge
-/// yokken `set` oluşturmadır ve [_inner] servise gider; belge varken `set`
-/// güncellemedir, şikayet edene kapalıdır (`permission-denied`). Okumalar
-/// [_inner] servise gider.
-final class _CreateOnlyService implements FirestoreService {
-  _CreateOnlyService(this._inner);
-
-  final FirestoreService _inner;
-
-  @override
-  DocumentReference<Json> doc(String collectionPath, String id) =>
-      _inner.doc(collectionPath, id);
-
-  @override
-  Future<FirestoreResult<FirestoreDoc?>> getDoc(DocumentReference<Json> ref) =>
-      _inner.getDoc(ref);
-
-  @override
-  Future<FirestoreResult<void>> set(
-    DocumentReference<Json> ref,
-    Json data, {
-    bool merge = false,
-  }) async {
-    if ((await ref.get()).exists) {
-      return const FirebaseFailure(FirestoreError.permissionDenied);
-    }
-    return _inner.set(ref, data);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- T-45 (A3-01), API 31+: Firebase Auth oturumu (shared_prefs/com.google.firebase.auth.api.Store.*),
+     Firestore kalıcı önbelleği (databases/), FlutterSharedPreferences (jetonlu görsel adresleri,
+     yazı taslakları, son aramalar), FCM / Installations kimlikleri ne bulut yedeğine ne de
+     cihazdan cihaza aktarıma girer. Auth oturumu ve tercihler aynı shared_prefs klasöründe
+     durduğundan tercihler için istisna yapılmaz. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+        <exclude domain="device_root" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+        <exclude domain="device_root" path="."/>
+    </device-transfer>
+</data-extraction-rules>

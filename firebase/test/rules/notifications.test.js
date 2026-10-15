@@ -17,7 +17,7 @@ const { assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { Timestamp, collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, where } = require('firebase/firestore');
 const budget = require('../helpers/budget');
 const { contextFor, CLUB, OTHER_CLUB } = require('../helpers/contexts');
-const { readDoc, seedDocs, seedFixture } = require('../helpers/fixtures');
+const { readDoc, rsvpDoc, seedDocs, seedFixture } = require('../helpers/fixtures');
 const { runMatrix } = require('../helpers/matrix');
 const payloads = require('../helpers/payloads');
 
@@ -175,12 +175,52 @@ describe('notifications · event_reminder (cihaz kendi belgesini yazar — CD-44
   });
 
   test('ikinci yazım (belge var) update sayılır ve reddedilir; createSelf önce okur (olmayan kendi belgesi boş döner)', async () => {
+    // T-45 A5-01: `u_member`'ın e_public katılım kaydı var (fixture); `u_student`'ın yok.
     await seedFixture('base');
-    const path = payloads.reminderPath('e_public', 'u_student');
-    expect((await assertSucceeds(getDoc(doc(db('student'), path)))).exists()).toBe(false);
-    await assertSucceeds(commit('student', one('event_reminder', 'u_student', refs, { path })));
-    await assertFails(commit('student', one('event_reminder', 'u_student', refs, { path })));
-    expect((await assertSucceeds(getDoc(doc(db('student'), path)))).data()).toMatchObject({ type: 'event_reminder', userId: 'u_student' });
+    const path = payloads.reminderPath('e_public', 'u_member');
+    expect((await assertSucceeds(getDoc(doc(db('member'), path)))).exists()).toBe(false);
+    await assertSucceeds(commit('member', one('event_reminder', 'u_member', refs, { path })));
+    await assertFails(commit('member', one('event_reminder', 'u_member', refs, { path })));
+    expect((await assertSucceeds(getDoc(doc(db('member'), path)))).data()).toMatchObject({ type: 'event_reminder', userId: 'u_member' });
+  });
+
+  // T-45 A5-01: hatırlatıcı yazarın KENDİ katılım kaydına bağlıdır (`rsvps/{eventId}_{uid}`; userId / eventId /
+  // clubId eşit, durum aranmaz). Önceden yalnızca kimlik eşitliği aranıyordu: kulübe üye olmayan etkin bir hesap
+  // uydurma eventId'lerle sınırsız belge yazıp her biri için push tetikleyicisini (makbuz create + update) çalıştırabiliyordu.
+  const RSVP_EDIT = (eventId, uid, extra) => ({ [payloads.rsvpPath(eventId, uid)]: { ...rsvpDoc(eventId, uid, 'going'), ...extra } });
+  test.each([
+    ['katılım kaydı yok (student · e_public)', 'student', 'u_student', { clubId: CLUB, eventId: 'e_public' }, null, 'deny'],
+    ['uydurma etkinlik + kulüp (kayıt yok)', 'student', 'u_student', { clubId: 'no_such_club', eventId: 'fake_1' }, null, 'deny'],
+    ['refs.clubId kaydın kulübü değil', 'member', 'u_member', { clubId: OTHER_CLUB, eventId: 'e_public' }, null, 'deny'],
+    ['kayıt alanı başka kullanıcıyı gösteriyor (kimlik birleşimi belirsizliği)', 'student', 'u_student', { clubId: CLUB, eventId: 'e_members' },
+      RSVP_EDIT('e_members', 'u_student', { userId: 'u_member' }), 'deny'],
+    ['kayıt alanı başka etkinliği gösteriyor', 'student', 'u_student', { clubId: CLUB, eventId: 'e_members' },
+      RSVP_EDIT('e_members', 'u_student', { eventId: 'e_public' }), 'deny'],
+    ['going (member · e_live)', 'member', 'u_member', { clubId: CLUB, eventId: 'e_live' }, null, 'allow'],
+    ['waitlist (student · e_live)', 'student', 'u_student', { clubId: CLUB, eventId: 'e_live' }, null, 'allow'],
+    ['attended (board · e_live — yoklamadan sonra dokunuş)', 'board', 'u_board', { clubId: CLUB, eventId: 'e_live' }, null, 'allow'],
+    ['cancelled (iptal edilen kayıt soft kalır — dokunuş / açılış senkronu yine yazar)', 'student', 'u_student', { clubId: CLUB, eventId: 'e_members' },
+      RSVP_EDIT('e_members', 'u_student', { status: 'cancelled', ticketCode: null }), 'allow'],
+  ])('kendi katılım kaydı: %s → %s', async (_title, role, uid, reminderRefs, extraDocs, expected) => {
+    await seedFixture('base');
+    if (extraDocs) await seedDocs(extraDocs);
+    const path = payloads.reminderPath(reminderRefs.eventId, uid);
+    await expectWrite(commit(role, one('event_reminder', uid, reminderRefs, { path })), expected);
+    if (expected === 'deny') expect(await readDoc(path)).toBeNull();
+  });
+
+  // PoC 450 belgelik batch'ti (eski kuralda geçiyordu). Yeni kuralda her belgenin başarısız `get`'i istek
+  // bütçesini doldurur: 450'de emülatör "1000 ifade" hatası döner (permission-denied değil — SDK yeniden dener);
+  // ret davranışı küçük batch'le sınanır.
+  test('saldırı yükü: tek batch\'te uydurma eventId\'li hatırlatıcılar → deny (hiçbir belge yazılmaz)', async () => {
+    await seedFixture('base');
+    const writes = {};
+    for (let i = 0; i < 5; i++) {
+      const fake = { clubId: 'no_such_club', eventId: `fake_${i}` };
+      writes[`n${i}`] = one('event_reminder', 'u_student', fake, { path: payloads.reminderPath(fake.eventId, 'u_student') }).n;
+    }
+    await assertFails(commit('student', writes));
+    expect(await readDoc(payloads.reminderPath('fake_0', 'u_student'))).toBeNull();
   });
 
   test('başka tür `event_reminder_…` kimliğini işgal edemez', async () => {

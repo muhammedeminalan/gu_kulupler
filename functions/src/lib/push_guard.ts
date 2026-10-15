@@ -10,10 +10,17 @@
  *    | `announcement` | `memberships/{clubId}_{uid}.status == 'active'` (`membersOf`) |
  *    | `event_cancelled` | `rsvps/{eventId}_{uid}.status ∈ {going, waitlist}` (`rsvpUsersOf`) |
  *    | `event_new` | etkin üye, ya da etkinlik bu kulübün ve `visibility == 'public'` (ilgi eşleşmesi — CD-38) |
- *    Diğer türler Rules'ta zaten alıcının kendi geçişine / tek seferlik olaya bağlıdır → denetlenmez.
+ *    Diğer türler Rules'ta alıcının kendi geçişine bağlıdır → bağ denetlenmez. Geçiş tek seferlik DEĞİLDİR (T-45 S2-01 /
+ *    A5-03): `removed_from_club` (FORCED; hedef member ise yönetim kurulu da — M9 ↔ M12b 30 sn geri al), `role_changed`
+ *    (FORCED; başkanın rol aç-kapa döngüsü — M10) ve `application_approved` / `_rejected` (tercihle kapatılabilir —
+ *    M5 / M6 ↔ M12a) döngüyle sınırsız yinelenebilir; her tur Rules'tan geçen yeni bir gelen kutusu belgesidir (kabul —
+ *    K-J, CD-65), push'u ise aşağıdaki kapsam kilidi frenler.
  * 2. **Kapsam kilidi** ([gateIdFor]) — aynı kapsamın ikinci push'u gönderilmez: `pushReceipts/once_{type}_{key}_{uid}`
  *    `create()` (zaten varsa `throttled`). Kapsamlar: `event_new` üyeye etkinlik başına, üye olmayana kulüp başına
- *    günde bir; `application_received` (kulüp, başvuran) başına günde bir; `new_report` admin başına 15 dakikada bir.
+ *    günde bir; `application_received` (kulüp, başvuran) başına günde bir; `new_report` admin başına 15 dakikada bir;
+ *    karar türleri ([DECISION_TYPES]: `removed_from_club`, `role_changed`, `application_approved`,
+ *    `application_rejected`) (tür, kulüp, alıcı) başına Istanbul günü başına bir (T-45 — aynı günün meşru ikinci kararı
+ *    da yalnızca gelen kutusunda görünür; tür kimlikte olduğundan onay ve ret ayrı sayılır).
  *    `once_` öneki bildirim kimliği olamaz (tür öneki beyaz listede) → makbuzlarla çakışmaz.
  */
 import { Firestore } from 'firebase-admin/firestore';
@@ -28,6 +35,17 @@ const OPEN_RSVP: ReadonlySet<unknown> = new Set(['going', 'waitlist']);
 
 /** Kapsam kilidi belgelerinin kimlik öneki (`pushReceipts` içinde). */
 export const GATE_PREFIX = 'once_';
+
+/**
+ * Yöneticinin geri alınabilir kararından doğan türler (T-45 S2-01 / A5-03): döngüyle yinelenebilir → (tür, kulüp,
+ * alıcı) başına Istanbul günü başına bir push.
+ */
+export const DECISION_TYPES: ReadonlySet<string> = new Set([
+  'removed_from_club',
+  'role_changed',
+  'application_approved',
+  'application_rejected',
+]);
 
 async function activeMember(db: Firestore, clubId: string | undefined, userId: string): Promise<boolean> {
   if (!isValidId(clubId)) return false;
@@ -88,7 +106,7 @@ export function gateIdFor(type: string, refs: Refs, userId: string, link: Link, 
       scope = `report|${Math.floor(now.getTime() / NEW_REPORT_PUSH_WINDOW_MS)}`;
       break;
     default:
-      scope = null;
+      scope = DECISION_TYPES.has(type) ? `decision|${refs.clubId}|${istanbulDay(now)}` : null;
   }
   return scope === null ? null : `${GATE_PREFIX}${type}_${eventKeyOf(scope)}_${userId}`;
 }

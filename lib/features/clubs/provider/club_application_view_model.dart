@@ -392,7 +392,8 @@ final class ClubApplicationViewModel extends _$ClubApplicationViewModel
           FirestoreRuleCode.presidentCannotBeRemoved ||
           FirestoreRuleCode.eventHasRegistrations ||
           FirestoreRuleCode.attendanceWindowClosed ||
-          FirestoreRuleCode.notMember:
+          FirestoreRuleCode.notMember ||
+          FirestoreRuleCode.reportLimit:
         // Üyelik geçişlerinde üretilmeyen kurallar.
         AppLogger.warn('Kulübe katılınamadı: ${code.name}');
         state = state.copyWith(submitError: SubmitError.unknown);

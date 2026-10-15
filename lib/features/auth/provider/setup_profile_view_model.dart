@@ -1,6 +1,7 @@
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
+import 'package:gu_kulupler/core/l10n/app_l10n_lookup.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/auth/provider/setup_profile_state.dart';
@@ -22,8 +23,11 @@ part 'setup_profile_view_model.g.dart';
 /// profili yazar. Yazım sırası Rules sözleşmesine bağlıdır (W-56, W-57):
 ///
 /// 1. Profil belgesi yoksa `createProfile` — e-posta kimlik jetonundaki
-///    adrestir, ad kimlik hesabının görünen adıdır (CD-134); çağrı yeniden
-///    denemeye karşı güvenlidir.
+///    adrestir, ad kimlik hesabının görünen adı, o yoksa kayıtta cihaza
+///    yazılmış bekleyen addır (CD-134; T-45 · F2). Ad **e-postadan
+///    türetilmez** (D-29): iki kaynak da yoksa kişiyi tanıtmayan yer tutucu
+///    yazılır (PRF-02'de düzenlenir). Çağrı yeniden denemeye karşı
+///    güvenlidir; başarıda bekleyen ad cihazdan kaldırılır.
 /// 2. Bölüm + sınıf + ilgi alanları + `profileComplete: true` tek yamada
 ///    (`updateProfile`).
 /// 3. Fotoğraf seçildiyse `updateAvatar` — profil artık tamamlandığından tek
@@ -218,17 +222,26 @@ final class SetupProfileViewModel extends _$SetupProfileViewModel
       clearSubmitError: true,
     );
 
+    // Ad kaynağı yoksa (görünen ad yazılamadı + kayıt başka cihazda ya da
+    // yeniden kurulumdan önce): e-posta türevi değil, yer tutucu (T-45 · F2).
+    final name = form.name.trim().isNotEmpty
+        ? form.name.trim()
+        : _placeholderName();
     if (!hasProfile) {
       final created = await userRepository.createProfile(
         uid: uid,
         email: email,
-        name: form.name,
-        nameLower: form.name.trLower(),
+        name: name,
+        nameLower: name.trLower(),
         avatarSeed: form.avatarSeed,
       );
       if (created case FirebaseFailure(:final error, :final message)) {
         return _fail(error, message);
       }
+    }
+    if (appPreferencesStore.pendingDisplayName(uid) != null &&
+        !await appPreferencesStore.setPendingDisplayName(uid, null)) {
+      AppLogger.warn('Bekleyen ad cihazdan kaldırılamadı');
     }
 
     // İlgi alanlarını taşıyan yama fotoğraf yazımından önce gider (W-57).
@@ -270,7 +283,7 @@ final class SetupProfileViewModel extends _$SetupProfileViewModel
     } else {
       feedback.showToast(
         ToastId.tst05,
-        params: ToastParams(name: form.firstName),
+        params: ToastParams(name: form.copyWith(name: name).firstName),
       );
     }
     return SetupProfileOutcome.success;
@@ -353,11 +366,23 @@ final class SetupProfileViewModel extends _$SetupProfileViewModel
     },
   );
 
-  /// Kimlik hesabından ad: görünen ad, yoksa e-postanın yerel kısmı (CD-134).
-  /// Boş görünen ad yok sayılır: `createProfile` boş adı kabul etmez.
-  static String _nameOf(AuthUserInfo? account) {
+  /// Kimlik hesabından ad: görünen ad, yoksa kayıtta cihaza yazılmış
+  /// bekleyen ad, yoksa boş (CD-134; T-45 · F2). E-postanın yerel kısmı
+  /// (öğrenci numarası / ad.soyad) **kullanılmaz** — profil adı her doğrulanmış
+  /// kullanıcıya açıktır, e-posta yalnızca `private/*`'tadır (D-29). Boş
+  /// görünen ad yok sayılır.
+  String _nameOf(AuthUserInfo? account) {
     final displayName = account?.displayName?.trim() ?? '';
     if (displayName.isNotEmpty) return displayName;
-    return account?.email?.split('@').first.trim() ?? '';
+    if (account == null) return '';
+    return appPreferencesStore.pendingDisplayName(account.uid)?.trim() ?? '';
+  }
+
+  /// Ad kaynağı yokken yazılan, kişiyi tanıtmayan ad (Rules 2 – 60 karakter);
+  /// uygulama dilinde. Kullanıcı PRF-02'de değiştirir.
+  String _placeholderName() {
+    AppLogger.warn('Profil adı bulunamadı; yer tutucu ad yazılıyor');
+    final l10n = appL10nOf(appPreferencesStore.locale);
+    return l10n.authSetupPlaceholderName;
   }
 }

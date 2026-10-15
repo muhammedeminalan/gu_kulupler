@@ -10,10 +10,23 @@
          AndroidScheduleMode.inexactAllowWhileIdle ile kurulur: SCHEDULE_EXACT_ALARM /
          USE_EXACT_ALARM bilerek YOK. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- T-45 (A3-01): uygulama verisi Google bulut yedeğine ve cihazdan cihaza aktarıma
+         GİRMEZ. Yedeğe girmemesi gerekenler: Firebase Auth oturumu (yenileme jetonu —
+         shared_prefs/com.google.firebase.auth.api.Store.*), Firestore kalıcı önbelleği
+         (databases/ — kendi private/account ve yöneticide üyelerin private/contact
+         e-postaları, D-29), FlutterSharedPreferences (jetonlu görsel adresleri
+         media.imageUrls, yazı taslakları compose_draft_*, son aramalar), FCM / Installations
+         kimlikleri. allowBackup=false API ≤ 30'da bulut + D2D yedeğini, API 31+'da bulut
+         yedeğini kapatır; dataExtractionRules API 31+'da D2D'yi de kapatır;
+         fullBackupContent API ≤ 30 için ikinci önlemdir. T-46: birleştirilmiş release
+         manifest'inde bir eklentinin allowBackup="true" ile ezmediği denetlenir. -->
     <application
         android:label="GÜ Kulüpler"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
