@@ -8331,6 +8331,96 @@
         ]
       },
       {
+        "call": "ManagementRepository.updateClubSettings · SHT-31 şablona dön (kapak bırakılır)",
+        "role": "president",
+        "note": "T-36 güvenlik incelemesi: yüklenmiş kapağı olan kulüpte SHT-31 şablonu seçilip kaydedilir — aynı ayar batch'inde şablon alanları + coverPath: null (ClubSettingsPatch.clearCoverPath; Rules coverClearOk yalnızca null ya da eski değer). Dosya silinmez (D-10); logoPath dokunulmaz.",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club",
+            "logoPath": "clubs/c01/20261008T201500Z_1a2b3c4d5e6f7081.jpg",
+            "coverPath": "clubs/c01/20261008T201501Z_3f9a1c2b7d4e5f60.png"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "palette": "slate",
+              "pattern": "dots",
+              "coverSeed": "sablon-1",
+              "coverPath": null,
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/@autoId",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "settings_changed",
+              "refs": {},
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "coverPath": null,
+            "palette": "slate",
+            "logoPath": "clubs/c01/20261008T201500Z_1a2b3c4d5e6f7081.jpg"
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman kapağı bırakamaz (Q-09)",
+            "role": "advisor",
+            "patch": {
+              "1": {
+                "actorId": "u_advisor"
+              }
+            }
+          },
+          {
+            "name": "üye kapağı bırakamaz",
+            "role": "member",
+            "patch": {
+              "1": {
+                "actorId": "u_member"
+              }
+            }
+          },
+          {
+            "name": "ayar dalı coverPath'e yeni yol yazamaz (yol yalnızca medya dalında)",
+            "patch": {
+              "0": {
+                "coverPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.png"
+              }
+            }
+          },
+          {
+            "name": "ayar dalı logoPath'i kaldıramaz",
+            "patch": {
+              "0": {
+                "logoPath": null
+              }
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive)",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          }
+        ]
+      },
+      {
         "call": "AttendanceRepository.markAttended · going → attended",
         "role": "board",
         "note": "MGT-06 / SHT-24 tek transaction: etkinlik + kayıt okunur (K-G penceresi açık); kayıt attended + scannedAt sunucu zamanı + scannedBy, attendedCount +1, yan belge events/e01/private/counter {clubId, lastRsvpRef, updatedAt} (W-64, W-77)",
@@ -8633,6 +8723,249 @@
             "without": [
               2
             ]
+          }
+        ]
+      }
+    ]
+  },
+  "t36": {
+    "_doc": "T-36 — kulüp görsellerinin GERÇEK okuma + yükleme + yazımları (FirebaseManagementRepository.updateClubMedia; MGT-09 logo / kapak; rules-spec §3.3 U(medya), §7 clubs/). Biçim `t30` ile aynıdır (ön okuma + tek batch, `@autoId` = otomatik günlük kimliği, `swap` = ret varyantında aktör kimliğinin alt dizgi değişimi); ek olarak `uploads` = yazımdan ÖNCE senaryonun bağlamıyla sırayla gönderilen Storage yüklemeleri (yol, tür, `customMetadata` {clubId, uploaderId} — Storage kuralı KLASÖRDEKİ kulübün etkin yöneticisini ister, kulüp belgesini okumaz). Dosya adları sabit saat (`2026-10-13T09:00Z`) + 16 sabit rastgele bayttan: önce logo (ilk 8 bayt), sonra kapak (sonraki 8). Ret varyantları yalnızca Firestore yazımını gönderir (dosya yüklenmiş olsa da yol iliştirilemez — yetim dosya, D-10); yükleme retleri jest tarafında ayrıca sınanır.",
+    "autoId": "@autoId",
+    "actors": {
+      "board": "u_board",
+      "president": "u_president",
+      "member": "u_member",
+      "advisor": "u_advisor",
+      "super": "u_super",
+      "otherManager": "u_mgr2"
+    },
+    "fixtures": {
+      "club": {
+        "name": "Test Kulübü c01",
+        "nameLower": "test kulübü c01",
+        "categoryId": "k01",
+        "iconName": "cpu",
+        "palette": "red",
+        "pattern": "mountain",
+        "coverSeed": "club-c01",
+        "memberCount": 4,
+        "approvalRequired": true,
+        "applicationsOpen": true,
+        "requireNote": false,
+        "founded": 2015,
+        "summary": "Sözleşme testi kulübü.",
+        "about": "",
+        "conditions": [],
+        "social": {},
+        "presidentId": "u_president",
+        "status": "active",
+        "createdBy": "u_super",
+        "createdAt": "@daysAgo:90",
+        "updatedAt": "@daysAgo:90",
+        "isDeleted": false,
+        "deletedAt": null,
+        "deletedBy": null
+      }
+    },
+    "scenarios": [
+      {
+        "call": "ManagementRepository.updateClubMedia · logo + kapak",
+        "role": "board",
+        "note": "MGT-09 Kaydet: ön okuma (yok / silinmiş → dosya gönderilmez) → logo, sonra kapak clubs/c01/{yeni ad} → TEK batch: kulüpte logoPath + coverPath + updatedAt, settings_changed günlüğü (otomatik kimlik, refs boş)",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "uploads": [
+          {
+            "path": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+            "contentType": "image/jpeg",
+            "customMetadata": {
+              "clubId": "c01",
+              "uploaderId": "u_board"
+            }
+          },
+          {
+            "path": "clubs/c01/20261013T090000Z_8192a3b4c5d6e7f8.png",
+            "contentType": "image/png",
+            "customMetadata": {
+              "clubId": "c01",
+              "uploaderId": "u_board"
+            }
+          }
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "logoPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+              "coverPath": "clubs/c01/20261013T090000Z_8192a3b4c5d6e7f8.png",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/@autoId",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_board",
+              "kind": "settings_changed",
+              "refs": {},
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "logoPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.jpg",
+            "coverPath": "clubs/c01/20261013T090000Z_8192a3b4c5d6e7f8.png",
+            "summary": "Sözleşme testi kulübü."
+          }
+        },
+        "denied": [
+          {
+            "name": "üye kulüp görselini değiştiremez",
+            "role": "member",
+            "swap": {
+              "u_board": "u_member"
+            }
+          },
+          {
+            "name": "danışman salt okunur (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "u_board": "u_advisor"
+            }
+          },
+          {
+            "name": "süper admin yönetim alanını yazmaz",
+            "role": "super",
+            "swap": {
+              "u_board": "u_super"
+            }
+          },
+          {
+            "name": "başka kulübün yöneticisi",
+            "role": "otherManager",
+            "swap": {
+              "u_board": "u_mgr2"
+            }
+          },
+          {
+            "name": "askıdaki kulüp (clubLive) — yüklenen dosya yetim kalır",
+            "seed": {
+              "clubs/c01": {
+                "status": "suspended"
+              }
+            }
+          },
+          {
+            "name": "başka kulübün klasörü (clubs/c02/…)",
+            "patch": {
+              "0": {
+                "logoPath": "clubs/c02/20261013T090000Z_0a1b2c3d4e5f6071.jpg"
+              }
+            }
+          },
+          {
+            "name": "StoragePaths.newFileName şeması dışı (sabit logo.jpg)",
+            "patch": {
+              "0": {
+                "logoPath": "clubs/c01/logo.jpg"
+              }
+            }
+          },
+          {
+            "name": "kilitli alan (ad) medya yamasında",
+            "patch": {
+              "0": {
+                "name": "Yeni ad"
+              }
+            }
+          },
+          {
+            "name": "günlük başka aktör adına",
+            "patch": {
+              "1": {
+                "actorId": "u_president"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "call": "ManagementRepository.updateClubMedia · yalnızca kapak",
+        "role": "president",
+        "note": "Yalnızca kapak verildi: logoPath yazılmaz (eski değer kalır); tek yükleme, ilk 8 rastgele bayt",
+        "seed": {
+          "clubs/c01": {
+            "$fixture": "club"
+          }
+        },
+        "reads": [
+          "clubs/c01"
+        ],
+        "uploads": [
+          {
+            "path": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.webp",
+            "contentType": "image/webp",
+            "customMetadata": {
+              "clubId": "c01",
+              "uploaderId": "u_president"
+            }
+          }
+        ],
+        "writes": [
+          {
+            "op": "update",
+            "path": "clubs/c01",
+            "data": {
+              "coverPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.webp",
+              "updatedAt": "@serverTimestamp"
+            }
+          },
+          {
+            "op": "set",
+            "path": "activity/@autoId",
+            "data": {
+              "clubId": "c01",
+              "actorId": "u_president",
+              "kind": "settings_changed",
+              "refs": {},
+              "createdAt": "@serverTimestamp"
+            }
+          }
+        ],
+        "expect": {
+          "clubs/c01": {
+            "coverPath": "clubs/c01/20261013T090000Z_0a1b2c3d4e5f6071.webp"
+          }
+        },
+        "denied": [
+          {
+            "name": "danışman salt okunur (Q-09)",
+            "role": "advisor",
+            "swap": {
+              "u_president": "u_advisor"
+            }
+          },
+          {
+            "name": "logo kaldırılamaz (logoPath null — kapak bırakma yalnızca ayar dalında, t30)",
+            "seed": {
+              "clubs/c01": {
+                "logoPath": "clubs/c01/20261008T201501Z_3f9a1c2b7d4e5f60.png"
+              }
+            },
+            "patch": {
+              "0": {
+                "logoPath": null
+              }
+            }
           }
         ]
       }

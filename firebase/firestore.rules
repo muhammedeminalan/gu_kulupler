@@ -392,8 +392,10 @@ service cloud.firestore {
     // (+1) · remove (−1) · undoDecision (−1, yalnızca onay geri alınırsa) · undoRemoval (+1), yan belge
     // `private/counter` aynı işlemde · `presidentId` dalı — transferPresidency (iki üyelik + kulüp, tek işlem) ·
     // yönetim alanları — ManagementRepository.updateClubSettings (`ClubSettingsPatch`).
+    // Yazma yolu (T-36): medya yolları — ManagementRepository.updateClubMedia (`logoPath` / `coverPath`; dosya önce
+    // Storage `clubs/{clubId}/{file}` yoluna yüklenir).
     // Kapalı kalan dallar: C (süper admin, ADM-03 — T-37) · U süper admin `status` / `suspendReason` / ad alanları ·
-    // `presidentId` ataması (T-37) · `logoPath` / `coverPath` (T-36). Hesap silme (M14 — T-29) sahibin −1 dalını kullanır.
+    // `presidentId` ataması (T-37). Hesap silme (M14 — T-29) sahibin −1 dalını kullanır.
     match /clubs/{clubId} {
       // U (sayaç dalı, PLAN §11.2b) — yalnızca `memberCount` ±1 (+ `updatedAt`).
       // T-15 aktörü yalnızca üyeliğin sahibidir: eşlik eden belge oturumun BU kulüpteki üyeliğidir
@@ -470,7 +472,7 @@ service cloud.firestore {
       // U (yönetim alanları — ManagementRepository.updateClubSettings, MGT-09; T-30) — yalnızca
       // `ClubSettingsPatch` alanları (+ `updatedAt`). Kilitli alanlar (`name`, `nameLower`, `categoryId`,
       // `iconName`, `founded`, `status`, `presidentId`), sayaçlar, sabitleme ve medya yolları (`logoPath`,
-      // `coverPath` — T-36) beyaz listede yoktur. Sonuç belge (birleşmiş) tip ve sınırlarla doğrulanır: kulüp
+      // `coverPath` — ayrı dal `canUpdateMedia`, T-36) beyaz listede yoktur. Sonuç belge (birleşmiş) tip ve sınırlarla doğrulanır: kulüp
       // belgesi doğrulanmış herkese açıktır (FieldValidators.clubSummary / clubAbout / conditions / instagram).
       // Aktör: kulübün etkin yöneticisi (başkan, yönetim kurulu), aktif hesap, askıda / silinmiş olmayan kulüp.
       // Danışman ve süper admin YAZAMAZ (Q-09; süper adminin kimlik alanları T-37). 3 erişim yolu: users/{uid} ·
@@ -509,10 +511,38 @@ service cloud.firestore {
             && d.pattern in ['dots', 'lines', 'mountain', 'waves']
             && d.coverSeed is string && d.coverSeed.size() > 0;
       }
+      // `coverPath` bu dalda yalnızca eski değerinde kalır ya da `null` olur (SHT-31 şablona dönüş —
+      // ClubSettingsPatch.clearCoverPath; T-36 güvenlik incelemesi). Yeni yol yalnızca medya dalındadır
+      // (`clubFileOk`); `logoPath` beyaz listede yoktur (logo kaldırılamaz). Eski dosya silinmez (D-10).
+      function coverClearOk() {
+        let now = request.resource.data.get('coverPath', null);
+        return now == null || now == resource.data.get('coverPath', null);
+      }
       function canUpdateSettings() {
         return touches(['summary', 'about', 'conditions', 'social', 'approvalRequired', 'applicationsOpen',
-                        'requireNote', 'palette', 'pattern', 'coverSeed'])
+                        'requireNote', 'palette', 'pattern', 'coverSeed', 'coverPath'])
+            && coverClearOk()
             && settingsOk(request.resource.data)
+            && activeUser() && isManager(clubId) && clubLive(clubId);
+      }
+
+      // U (medya yolları — ManagementRepository.updateClubMedia, MGT-09; T-36) — yalnızca `logoPath` / `coverPath`
+      // (+ `updatedAt`), en az biri gerçekten değişir. Her alan ya eski değerinde kalır ya da BU kulübün klasöründe,
+      // StoragePaths.newFileName şemasında bir yoldur (StoragePaths.isClubFile — parity.test.js deseni karşılaştırır):
+      // başka kulübün klasörü, alt klasör, keyfi ad ya da `null` yazılamaz (kapak kaldırma ayar dalındadır —
+      // `coverClearOk`). Firestore yalnızca yol DESENİNE bakar (dosyanın varlığını / yükleyenini denetlemez — Storage
+      // `clubs/` kuralı yükleyeni o kulübün etkin yöneticisiyle sınırlar). `settings_changed` günlüğü aynı batch'te (`canLogSettings`). Aktör
+      // `updateClubSettings` ile aynı: etkin yönetici, aktif hesap, askıda / silinmiş olmayan kulüp; danışman ve süper
+      // admin yazamaz (Q-09). Eski dosya silinmez (D-10). 3 erişim yolu: users/{uid} · üyelik · kulüp.
+      function clubFileOk(f) {
+        let now = request.resource.data.get(f, null);
+        return now == resource.data.get(f, null)
+            || (now is string && now.matches('clubs/' + clubId + '/\\d{8}T\\d{6}Z_[0-9a-f]{16}\\.(?:jpg|png|webp)'));
+      }
+      function canUpdateMedia() {
+        return touches(['logoPath', 'coverPath'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasAny(['logoPath', 'coverPath'])
+            && clubFileOk('logoPath') && clubFileOk('coverPath')
             && activeUser() && isManager(clubId) && clubLive(clubId);
       }
 
@@ -549,7 +579,7 @@ service cloud.firestore {
       allow list: if emailOk() && (resource.data.isDeleted == false || isSuper());
       allow create: if false;
       allow update: if canBumpMemberCount() || canSetPin() || canBumpManagedMemberCount() || canTransferPresidency()
-                    || canUpdateSettings();
+                    || canUpdateSettings() || canUpdateMedia();
       allow delete: if false;
 
       // 3b · clubs/{clubId}/private/counter — T-30 (W-64) · rules-spec §3.3 · sözleşme docs/plans/T-30.md §4 b

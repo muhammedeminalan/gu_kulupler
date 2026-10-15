@@ -119,8 +119,7 @@ mixin ActivityLogViewMixin on ConsumerState<ActivityLogView> {
       case ActivityLogTargetKind.applications:
         ManageApplicationsRoute(clubId: widget.clubId).go(context);
       case ActivityLogTargetKind.settings:
-      // TODO(T-36): `ClubSettingsRoute(clubId: widget.clubId)`
-      // (MGT-09; W-96).
+        ClubSettingsRoute(clubId: widget.clubId).go(context);
       case ActivityLogTargetKind.event:
       case ActivityLogTargetKind.post:
       case ActivityLogTargetKind.profile:

@@ -5,7 +5,8 @@ part of 'shell_route.dart';
 // profilini, T-20 gönderi detayını, T-21 gönderi oluşturmayı, T-31 yönetim
 // panelini ve faaliyet geçmişini, T-32 başvuru yönetimini, T-33 üye
 // yönetimini, T-34 etkinlik yönetimini ve formunu, T-35 katılımcılar /
-// yoklama ile QR tarayıcıyı kurar; kalan alt rotalar
+// yoklama ile QR tarayıcıyı, T-36 içerik yönetimi ile kulüp ayarlarını
+// kurar; kalan alt rotalar
 // PLAN §13.3.2
 // tablosundaki task'larda eklenir.
 //
@@ -49,6 +50,10 @@ const TypedGoRoute<ClubsRoute> clubsRouteTree = TypedGoRoute<ClubsRoute>(
                 ),
               ],
             ),
+            TypedGoRoute<ManageContentRoute>(
+              path: ManageContentRoute.segment,
+            ),
+            TypedGoRoute<ClubSettingsRoute>(path: ClubSettingsRoute.segment),
             TypedGoRoute<ActivityLogRoute>(path: ActivityLogRoute.segment),
           ],
         ),
@@ -210,16 +215,17 @@ final class PostDetailRoute extends GoRouteData
       PostDetailView(clubId: clubId, postId: postId);
 }
 
-/// FED-03 Yeni gönderi — `/clubs/:clubId/compose?edit=`. CLB-03'ün alt
-/// rotasıdır (guard `M`: yalnızca yönetim kurulu / başkan; danışman yönetim
-/// paneline, diğerleri kulüp sayfasına yönlenir — `RouteAccessTable`).
-/// CLB-03 / FED-01 "yazı oluştur" ve SHT-08 "Düzenle" (`edit`) `go` ile açar,
-/// geri kulübe döner.
+/// FED-03 Yeni gönderi — `/clubs/:clubId/compose?edit=&type=`. CLB-03'ün
+/// alt rotasıdır (guard `M`: yalnızca yönetim kurulu / başkan; danışman
+/// yönetim paneline, diğerleri kulüp sayfasına yönlenir —
+/// `RouteAccessTable`). CLB-03 / FED-01 "yazı oluştur" ve SHT-08 "Düzenle"
+/// (`edit`) `go` ile açar; MGT-01 "Duyuru yap" [type] ile duyuru türü ön
+/// seçili açar (W-97). Geri kulübe döner.
 final class ComposeRoute extends GoRouteData
     with $ComposeRoute, PlatformPageMixin {
   /// [clubId] kulübünde yeni gönderi; [edit] verilirse o gönderinin
-  /// düzenlemesi.
-  const ComposeRoute({required this.clubId, this.edit});
+  /// düzenlemesi; [type] yeni gönderinin başlangıç türü.
+  const ComposeRoute({required this.clubId, this.edit, this.type});
 
   /// `/clubs/:clubId` altındaki yol parçası.
   static const String segment = 'compose';
@@ -231,9 +237,15 @@ final class ComposeRoute extends GoRouteData
   /// gönderide `null`.
   final String? edit;
 
+  /// Yeni gönderinin başlangıç türü (sorgu parametresi
+  /// `?type=post|announcement|poll`); `null` ya da tanınmayan değer → cihaz
+  /// taslağının türü (yoksa gönderi). Düzenlemede yok sayılır (tür
+  /// değişmez).
+  final PostType? type;
+
   @override
   Widget build(BuildContext context, GoRouterState state) =>
-      ComposeView(clubId: clubId, editPostId: edit);
+      ComposeView(clubId: clubId, editPostId: edit, initialType: type);
 }
 
 /// MGT-01 Yönetim paneli — `/clubs/:clubId/manage`. CLB-03'ün alt rotasıdır
@@ -446,6 +458,53 @@ final class ScanRoute extends GoRouteData with $ScanRoute, PlatformPageMixin {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       ScanView(clubId: clubId, eventId: eventId);
+}
+
+/// MGT-08 İçerik yönetimi — `/clubs/:clubId/manage/content?tab=`. MGT-01'in
+/// alt rotasıdır (guard `V`: yönetici ya da danışman; danışman salt okunur
+/// görür, yazma eylemleri TST-26 — `RouteAccessTable`). MGT-01 "Bu ay
+/// duyuru" göstergesi duyurular sekmesiyle (`?tab=announcement`; W-40) `go`
+/// ile açar, geri panele döner.
+final class ManageContentRoute extends GoRouteData
+    with $ManageContentRoute, PlatformPageMixin {
+  /// [clubId] kulübünün içerik yönetimi; [tab] ilk açılan sekme.
+  const ManageContentRoute({required this.clubId, this.tab});
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'content';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  /// İlk açılan sekme (`?tab=post|announcement|poll`); `null` ya da
+  /// tanınmayan değer → gönderiler.
+  final PostType? tab;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ManageContentView(clubId: clubId, tab: tab);
+}
+
+/// MGT-09 Kulüp ayarları — `/clubs/:clubId/manage/settings`. MGT-01'in alt
+/// rotasıdır (guard `V`: yönetici ya da danışman; danışman salt okunur
+/// görür, yazma eylemleri TST-26 — `RouteAccessTable`). MGT-01 hızlı eylemi
+/// "Kulüp ayarları" (W-40), CLB-03 menüsü (SHT-06) "Kulüp ayarları" (W-13)
+/// ve MGT-01 / MGT-10 faaliyet satırı (ayar ya da hedefsiz kayıt; W-96) `go`
+/// ile açar, geri panele döner.
+final class ClubSettingsRoute extends GoRouteData
+    with $ClubSettingsRoute, PlatformPageMixin {
+  /// [clubId] kulübünün ayarları.
+  const ClubSettingsRoute({required this.clubId});
+
+  /// `/clubs/:clubId/manage` altındaki yol parçası.
+  static const String segment = 'settings';
+
+  /// Kulüp kimliği (yol parametresi).
+  final String clubId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ClubSettingsView(clubId: clubId);
 }
 
 /// MGT-10 Faaliyet geçmişi — `/clubs/:clubId/manage/activity`. MGT-01'in alt

@@ -410,6 +410,10 @@ function transferWrites({ club, uid, from = 'u_president', to = 'u_board', prior
 
 /** `ManagementRepository.updateClubSettings` — `ClubSettingsPatch.toJson()` + `updatedAt`. */
 const clubSettingsPatch = (extra) => ({ summary: 'Güncel özet.', applicationsOpen: false, ...baseUpdate(), ...extra });
+/** T-36 · `ManagementRepository.updateClubMedia` yolu: `clubs/{club}/` + StoragePaths.newFileName. */
+const clubMediaPath = (club, ext = 'jpg') => `clubs/${requireId(club, 'club')}/20261015T090000Z_0a1b2c3d4e5f6071.${ext}`;
+/** `updateClubMedia` kulüp yükü: yalnızca verilen görselin yolu + `updatedAt`. */
+const clubMediaPatch = (extra) => ({ logoPath: clubMediaPath('c01'), coverPath: clubMediaPath('c01', 'png'), ...baseUpdate(), ...extra });
 /** Otomatik kimlikli `settings_changed` günlüğü (ActivityDraft.id: null). */
 const SETTINGS_ACTIVITY_PATH = 'activity/AutoSettingsLog0000001';
 function settingsWrites({ club, uid }, extra) {
@@ -999,6 +1003,20 @@ const variants = new Map([
   ['clubCreate', (ctx) => clubCreate(ctx.uid)],
   ['clubSettingsUpdate', () => clubSettingsPatch()],
   ['clubLockedField', () => clubSettingsPatch({ name: 'Yeni Ad' })],
+  // T-36 · clubs medya yolları (`canUpdateMedia`)
+  ['clubMediaUpdate', () => clubMediaPatch()],
+  ['clubMediaCoverOnly', () => ({ coverPath: clubMediaPath('c01', 'webp'), ...baseUpdate() })],
+  ['clubMediaOtherClub', () => clubMediaPatch({ logoPath: clubMediaPath('c02') })],
+  ['clubMediaSubfolder', () => clubMediaPatch({ coverPath: 'clubs/c01/alt/20261015T090000Z_0a1b2c3d4e5f6071.png' })],
+  ['clubMediaBadName', () => clubMediaPatch({ logoPath: 'clubs/c01/logo.jpg' })],
+  ['clubMediaForeignRoot', () => clubMediaPatch({ logoPath: 'users/u_board/20261015T090000Z_0a1b2c3d4e5f6071.jpg' })],
+  ['clubMediaClear', () => ({ logoPath: null, ...baseUpdate() })],
+  ['clubMediaWithSettings', () => clubMediaPatch({ summary: 'Güncel özet.' })],
+  // T-36 güvenlik incelemesi · ayar dalında kapak bırakma (`coverClearOk`: yalnızca `null` ya da eski değer)
+  ['clubCoverClear', () => ({ palette: 'slate', pattern: 'dots', coverSeed: 'sablon-1', coverPath: null, ...baseUpdate() })],
+  ['clubCoverClearOnly', () => ({ coverPath: null, ...baseUpdate() })],
+  ['clubSettingsCoverToPath', () => clubSettingsPatch({ coverPath: clubMediaPath('c01', 'png') })],
+  ['clubSettingsLogoClear', () => clubSettingsPatch({ logoPath: null })],
   ['clubPresidentAlone', () => ({ presidentId: 'u_board', ...baseUpdate() })],
   ['clubSuspend', () => ({ status: 'suspended', suspendReason: SUSPEND_REASON, ...baseUpdate() })],
   ['clubBumpAlone', () => memberCountBump(1)],

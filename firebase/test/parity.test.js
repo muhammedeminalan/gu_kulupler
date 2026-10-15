@@ -500,6 +500,33 @@ describe('parite (g) · supportTickets ve Storage support/ ↔ Dart (T-28)', () 
   });
 });
 
+describe('parite (g) · clubs medya yolları ve Storage clubs/ ↔ Dart (T-36)', () => {
+  const SRC = path.join(REPO_ROOT, 'packages', 'gu_data', 'lib', 'src');
+  const readDart = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
+
+  test('clubs.logoPath / coverPath deseni = clubs/{clubId}/ + StoragePaths.fileNamePattern (StoragePaths.isClubFile)', () => {
+    const pattern = /static const String fileNamePattern =\s*r'([^']+)'/.exec(readDart('constants/storage_paths.dart'));
+    expect(pattern).not.toBeNull();
+    expect(firestoreRules).toContain(`now.matches('clubs/' + clubId + '/${dart.toRulesLiteral(pattern[1])}')`);
+    expect(firestoreRules).toContain("clubFileOk('logoPath') && clubFileOk('coverPath')");
+    expect(readDart('constants/storage_paths.dart')).toContain('static String clubLogo(String clubId, String file) =>\n      _path(clubsRoot, clubId, file);');
+  });
+
+  test('clubs/ yüklemesi: FirebaseManagementRepository.updateClubMedia yalnızca `clubId` + `uploaderId` özel üst verisi gönderir (CD-143)', () => {
+    // Rules `metadata.keys().hasOnly(['clubId', 'uploaderId', jeton])`, `metadata.clubId == clubId` (klasör) ve
+    // `uploaderId == request.auth.uid` ister: anahtar adı değişirse üretimde her logo / kapak yüklemesi `unauthorized` olur.
+    const repository = readDart('repositories/firebase_management_repository.dart');
+    expect(repository).toContain("static const String _clubIdMetadata = 'clubId';");
+    expect(repository).toContain("static const String _uploaderIdMetadata = 'uploaderId';");
+    expect(repository).toMatch(/customMetadata: \{\s*_clubIdMetadata: clubId,\s*_uploaderIdMetadata: uploaderId,\s*\}/);
+    expect(repository.match(/customMetadata:/g)).toHaveLength(1);
+    expect(repository).toContain('StoragePaths.clubLogo(clubId, file)');
+    expect(repository).toContain('StoragePaths.clubCover(clubId, file)');
+    expect(storageRules).toContain('&& clubMetadataOnly() && request.resource.metadata.clubId == clubId');
+    expect(storageRules).toContain('&& isManagerOf(clubId) && accountActive();');
+  });
+});
+
 describe('parite (a) · Limits ↔ Rules sayıları', () => {
   test('Rules\'taki her `// limit:` etiketi bir Limits sabitine çözülür (statik denetim: check_rules_parity RP01)', () => {
     const limits = dart.readLimits(REPO_ROOT);

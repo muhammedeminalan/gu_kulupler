@@ -14,4 +14,10 @@ abstract final class AppDurations {
   /// kamerada kalınca yeniden "Zaten okutulmuş" açılmasın). Prototipte
   /// karşılığı yok (kamera simüle); SHT-24 oto-kapanma süresine eşit (T-35).
   static const Duration scanRepeatCooldown = Duration(seconds: 2);
+
+  /// MGT-09: başvuru durumu değiştiğinde TST-21'den sonra TST-54'ün
+  /// gösterilme gecikmesi (prototip `screens-manage.js:176`
+  /// `setTimeout(() => app.toast('TST-54', …), 1200)`; aynı anda tek toast;
+  /// T-36).
+  static const Duration applicationsToastDelay = Duration(milliseconds: 1200);
 }

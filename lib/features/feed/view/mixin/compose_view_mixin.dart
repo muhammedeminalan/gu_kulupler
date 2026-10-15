@@ -35,10 +35,12 @@ import 'package:gu_ui/gu_ui.dart';
 ///   "Gönderiler" sekmesine dönülür; TST-14 "Görüntüle" FED-02'yi açar (toast
 ///   ekran kapandıktan sonra da durur — gezinme router üzerindendir).
 mixin ComposeViewMixin on UnsavedChangesMixin<ComposeView> {
-  /// Ekranın ViewModel sağlayıcısı (kulüp + düzenlenen gönderi ailesi).
+  /// Ekranın ViewModel sağlayıcısı (kulüp + düzenlenen gönderi + başlangıç
+  /// türü ailesi).
   ComposeViewModelProvider get provider => composeViewModelProvider(
     clubId: widget.clubId,
     editPostId: widget.editPostId,
+    initialType: widget.initialType,
   );
 
   /// Ekranın ViewModel'i.
@@ -57,13 +59,13 @@ mixin ComposeViewMixin on UnsavedChangesMixin<ComposeView> {
   Future<bool> Function()? get onSaveRequested =>
       isEditing ? null : viewModel.saveDraft;
 
-  /// Önceki sayfa; yığın yoksa kulübün "Gönderiler" sekmesi. Düzenlemede
-  /// her zaman sekmeye gidilir: `pop` sorguyu (`?edit=`) üst sayfanın
-  /// konumunda bırakır (düzenleme zaten yalnızca akıştan / FED-02'den, `go`
-  /// ile açılır — altındaki sayfa kulübün sayfasıdır).
+  /// Önceki sayfa; yığın yoksa kulübün "Gönderiler" sekmesi. Düzenlemede ve
+  /// başlangıç türüyle açılışta (`?type=`, W-97) her zaman sekmeye gidilir:
+  /// `pop` sorguyu (`?edit=` / `?type=`) üst sayfanın konumunda bırakır (iki
+  /// giriş de `go` ile açılır — altındaki sayfa kulübün sayfasıdır).
   @override
   void leaveScreen() {
-    if (!isEditing && context.canPop()) {
+    if (!isEditing && widget.initialType == null && context.canPop()) {
       context.pop();
     } else {
       _goToFeed();

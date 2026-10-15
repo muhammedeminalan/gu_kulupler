@@ -27,13 +27,21 @@ import 'package:gu_ui/gu_ui.dart';
 /// `FED-03.addOption`, `FED-03.duration.<gün>`, `FED-03.showAfterVote`.
 class PollEditor extends ConsumerStatefulWidget {
   /// [clubId] kulübündeki yazı formunun (düzenlemede [editPostId]) anketi.
-  const PollEditor({required this.clubId, this.editPostId, super.key});
+  const PollEditor({
+    required this.clubId,
+    this.editPostId,
+    this.initialType,
+    super.key,
+  });
 
   /// Kulüp kimliği.
   final String clubId;
 
   /// Düzenlenen gönderi; yeni gönderide `null`.
   final String? editPostId;
+
+  /// Yeni gönderinin başlangıç türü (ViewModel ailesinin parçası).
+  final PostType? initialType;
 
   @override
   ConsumerState<PollEditor> createState() => _PollEditorState();
@@ -49,6 +57,7 @@ class _PollEditorState extends ConsumerState<PollEditor> {
   ComposeViewModelProvider get _provider => composeViewModelProvider(
     clubId: widget.clubId,
     editPostId: widget.editPostId,
+    initialType: widget.initialType,
   );
 
   ComposeViewModel get _viewModel => ref.read(_provider.notifier);

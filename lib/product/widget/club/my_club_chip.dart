@@ -7,7 +7,7 @@ import 'package:gu_ui/gu_ui.dart';
 /// "Kulüplerim" şeridindeki küçük kulüp kartı — prototip `MyClubChip`
 /// (`cards.js:41–45`; K-30: adı "chip", kendisi 132 genişliğinde karttır).
 ///
-/// * 16:9 kapak; [manager] ise "Yönetici" rozeti, kulüp askıdaysa "Askıda"
+/// * 16:9 kapak (yüklenmişse [coverImage], yoksa şablon); [manager] ise "Yönetici" rozeti, kulüp askıdaysa "Askıda"
 ///   rozeti (kapağın sol üstü, 6 / 6). Prototip ikisini aynı konuma üst üste
 ///   çizer; burada askı önceliklidir (tek rozet).
 /// * Gövde dolgusu 8 / 10 / 10: ad (`labelM`, başlık rengi, 2 satır) ve
@@ -37,6 +37,7 @@ class MyClubChip extends StatelessWidget {
     required this.onTap,
     this.unread = false,
     this.manager = false,
+    this.coverImage,
     this.actionKey,
     super.key,
   });
@@ -50,6 +51,10 @@ class MyClubChip extends StatelessWidget {
   /// Kullanıcı kulübün yöneticisi (başkan / yönetim kurulu): "Yönetici"
   /// rozeti.
   final bool manager;
+
+  /// Yüklenmiş kapak (`club.coverPath`, çağıran `ref.clubCoverImage(club)`
+  /// ile çözer); `null` → şablon kapak.
+  final ImageProvider? coverImage;
 
   /// Dokunma — kulübü açar (CLB-03).
   final VoidCallback onTap;
@@ -86,6 +91,7 @@ class MyClubChip extends StatelessWidget {
           children: [
             CoverMapper.club(
               club,
+              image: coverImage,
               overlays: [
                 if (badge != null)
                   Positioned(

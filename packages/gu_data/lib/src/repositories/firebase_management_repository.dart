@@ -1,14 +1,23 @@
+import 'dart:math';
+
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
+import 'package:gu_data/src/constants/limits.dart';
+import 'package:gu_data/src/constants/storage_paths.dart';
+import 'package:gu_data/src/core/app_clock.dart';
 import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/bulk_result.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/role_policy.dart';
+import 'package:gu_data/src/core/storage_error.dart';
 import 'package:gu_data/src/models/activity_draft.dart';
+import 'package:gu_data/src/models/club_media_upload.dart';
 import 'package:gu_data/src/models/club_settings_patch.dart';
 import 'package:gu_data/src/models/enums/activity_kind.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
+import 'package:gu_data/src/models/enums/club_status.dart';
 import 'package:gu_data/src/models/enums/post_type.dart';
 import 'package:gu_data/src/models/enums/reject_reason.dart';
 import 'package:gu_data/src/models/enums/rsvp_status.dart';
@@ -25,6 +34,7 @@ import 'package:gu_data/src/repositories/membership_repository.dart';
 import 'package:gu_data/src/repositories/post_repository.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
+import 'package:gu_data/src/services/storage_service.dart';
 import 'package:gu_data/src/utils/field_validators.dart';
 
 /// [ManagementRepository] uygulaması — kompozisyon (PLAN §10.4; sözleşme
@@ -38,16 +48,23 @@ import 'package:gu_data/src/utils/field_validators.dart';
 /// yazım **kesinleştikten sonra** dağıtılır; alıcı çözümü ya da dağıtım
 /// başarısız olsa da sonuç asıl yazımınkidir (en iyi çaba — rules-spec §5).
 ///
-/// Kendi yazdığı tek yol kulüp ayarlarıdır ([updateClubSettings]: kulüp +
-/// `settings_changed` günlüğü tek batch). Yetkiyi Security Rules uygular
-/// (danışman hiçbir yazımı yapamaz — Q-09).
+/// Kendi yazdığı iki yol kulüp ayarları ([updateClubSettings]) ve kulüp
+/// görselleridir ([updateClubMedia] — T-36: önce Storage yüklemesi, sonra
+/// yollar); ikisi de kulüp + `settings_changed` günlüğünü tek batch'te yazar.
+/// Yetkiyi Security Rules uygular (danışman hiçbir yazımı yapamaz — Q-09).
 final class FirebaseManagementRepository implements ManagementRepository {
   /// Kompozisyon kökü bağımlılıkları verir: ayar yazımı [_firestore] ve
   /// [_activity] ile; devredilen yazımlar [_memberships], [_events],
   /// [_posts], [_comments]; fan-out alıcıları [_recipients] (kulüp
-  /// [_clubs]'tan), dağıtım [_notifications].
+  /// [_clubs]'tan), dağıtım [_notifications]. Kulüp görselleri [_storage]
+  /// ile yüklenir; dosya adının damgası [_clock] saatinden, rastgele kısmı
+  /// [_random] kaynağından gelir (kompozisyon kökü `Random.secure()` verir —
+  /// ad tahmin edilemez, üzerine yazma olmaz).
   FirebaseManagementRepository({
     required this._firestore,
+    required this._storage,
+    required this._clock,
+    required this._random,
     required this._memberships,
     required this._events,
     required this._posts,
@@ -59,6 +76,9 @@ final class FirebaseManagementRepository implements ManagementRepository {
   });
 
   final FirestoreService _firestore;
+  final StorageService _storage;
+  final AppClock _clock;
+  final Random _random;
   final MembershipRepository _memberships;
   final EventRepository _events;
   final PostRepository _posts;
@@ -67,6 +87,16 @@ final class FirebaseManagementRepository implements ManagementRepository {
   final FirebaseActivityRepository _activity;
   final NotificationDispatcher _notifications;
   final RecipientResolver _recipients;
+
+  /// Kulüp görselinin özel üst veri anahtarı: Storage Rules değerin yolun
+  /// klasöründeki kulüp olmasını ve yükleyenin o kulübün etkin yöneticisi
+  /// olmasını ister (`clubMetadataOnly()` + `isManagerOf(clubId)`).
+  /// [_uploaderIdMetadata] dışında özel üst veri gönderilmez (Rules reddeder).
+  static const String _clubIdMetadata = 'clubId';
+
+  /// Yükleyenin kimliği: Storage Rules değerin oturumdaki uid olmasını ister
+  /// (dosyayı kimin yüklediği yalnızca bu alandan izlenir — CD-143).
+  static const String _uploaderIdMetadata = 'uploaderId';
 
   /// `event_cancelled` alıcılarının katılım durumları.
   static const Set<RsvpStatus> _cancelRecipients = {
@@ -238,6 +268,123 @@ final class FirebaseManagementRepository implements ManagementRepository {
         ),
       );
     });
+  }
+
+  @override
+  Future<MediaUpdateResult<ClubMediaPaths>> updateClubMedia(
+    String clubId, {
+    required String uploaderId,
+    ClubMediaUpload? logo,
+    ClubMediaUpload? cover,
+  }) async {
+    // Ön denetim dosya gönderilmeden: yüklenen dosya silinemez (D-10).
+    final invalid = RepositoryHelpers.rejectInvalidIds<void>({
+      'clubId': clubId,
+      'uploaderId': uploaderId,
+    });
+    if (invalid case FirebaseFailure(:final error, :final message)) {
+      return FirebaseFailure(MediaDocumentError(error), message: message);
+    }
+    if (logo == null && cover == null) {
+      return const FirebaseFailure(
+        MediaDocumentError(FirestoreError.invalidArgument),
+        message: 'updateClubMedia: görsel yok',
+      );
+    }
+    // İki görsel de yüklemeden ÖNCE denetlenir: kapak geçersizse logo da
+    // yüklenmez (yetim dosya yok).
+    final extensions = <bool, String>{};
+    for (final (isLogo, image) in [(true, logo), (false, cover)]) {
+      if (image == null) continue;
+      switch (_extensionOf(image)) {
+        case FirebaseFailure(:final error):
+          return FirebaseFailure(MediaUploadError(error));
+        case FirebaseSuccess(data: final extension):
+          extensions[isLogo] = extension;
+      }
+    }
+    // Ön okuma hata ayrımı ve yetim dosyayı önlemek içindir; iki durumda da
+    // dosya gönderilmez: "yok / silinmiş" → `notFound`, askıdaki kulüp →
+    // `permissionDenied` (Storage kulübü okumaz — dosya yüklenir ama yol
+    // yazımı `clubLive`'da düşer, silinemeyen dosya kalırdı; T-36 güvenlik
+    // incelemesi). Yetki yine Rules'tadır.
+    final clubRef = _firestore.doc(FirestoreCollections.clubs, clubId);
+    switch (await _firestore.getDoc(clubRef)) {
+      case FirebaseFailure(:final error, :final message):
+        return FirebaseFailure(MediaDocumentError(error), message: message);
+      case FirebaseSuccess(data: final doc):
+        if (doc == null || RepositoryHelpers.isSoftDeleted(doc)) {
+          return FirebaseFailure(
+            const MediaDocumentError(FirestoreError.notFound),
+            message: '${clubRef.path}: yok',
+          );
+        }
+        if (doc.data[FirestoreFields.status] != ClubStatus.active.json) {
+          return FirebaseFailure(
+            const MediaDocumentError(FirestoreError.permissionDenied),
+            message: '${clubRef.path}: askıda',
+          );
+        }
+    }
+
+    // Her görsel yeni adla yüklenir (üzerine yazma yok); önce logo, sonra
+    // kapak. Biri reddedilirse yol yazılmaz: daha önce yüklenen dosya yetim
+    // kalır (silinmez — D-10), kulüp eski görsellerini gösterir.
+    final paths = <bool, String>{};
+    for (final (isLogo, image) in [(true, logo), (false, cover)]) {
+      if (image == null) continue;
+      final file = StoragePaths.newFileName(
+        _clock,
+        _random,
+        extensions[isLogo]!,
+      );
+      final upload = await _storage.upload(
+        path: isLogo
+            ? StoragePaths.clubLogo(clubId, file)
+            : StoragePaths.clubCover(clubId, file),
+        bytes: image.bytes,
+        contentType: image.contentType,
+        customMetadata: {
+          _clubIdMetadata: clubId,
+          _uploaderIdMetadata: uploaderId,
+        },
+      );
+      switch (upload) {
+        case FirebaseFailure(:final error, :final message):
+          return FirebaseFailure(MediaUploadError(error), message: message);
+        case FirebaseSuccess(data: final path):
+          paths[isLogo] = path;
+      }
+    }
+
+    // Kulüp + günlük tek batch (ayar yazımıyla aynı): Rules günlüğü
+    // `getAfter(clubs/c).updatedAt == request.time` ile bu yazıma bağlar.
+    final written = await _firestore.commitBatch((batch) {
+      batch.update(clubRef, {
+        FirestoreFields.logoPath: ?paths[true],
+        FirestoreFields.coverPath: ?paths[false],
+        ...BaseFieldsPayload.update(),
+      });
+      _activity.addToBatch(
+        batch,
+        ActivityDraft(
+          clubId: clubId,
+          actorId: uploaderId,
+          kind: ActivityKind.settingsChanged,
+        ),
+      );
+    });
+    return switch (written) {
+      FirebaseSuccess() => FirebaseSuccess(
+        ClubMediaPaths(logoPath: paths[true], coverPath: paths[false]),
+      ),
+      // Dosyalar yerinde kalır (D-10); `logoPath` / `coverPath` eski
+      // değerindedir, yeniden deneme yeni ad üretir.
+      FirebaseFailure(:final error, :final message) => FirebaseFailure(
+        MediaDocumentError(error),
+        message: message,
+      ),
+    };
   }
 
   @override
@@ -422,6 +569,21 @@ final class FirebaseManagementRepository implements ManagementRepository {
         }
       }
     }
+  }
+
+  /// [image] yüklenebilir mi (Storage Rules `imageOk()` + `fileNameOk`
+  /// ile aynı): içerik türünden uzantı ya da yükleme hatası.
+  static StorageResult<String> _extensionOf(ClubMediaUpload image) {
+    final extension = StoragePaths.extensionByContentType[image.contentType];
+    if (extension == null) {
+      return const FirebaseFailure(StorageError.invalidType);
+    }
+    if (image.bytes.isEmpty) return const FirebaseFailure(StorageError.noFile);
+    // Storage Rules `size < imageMaxBytes` ister: sınırın kendisi de ret.
+    if (image.bytes.length >= Limits.imageMaxBytes) {
+      return const FirebaseFailure(StorageError.sizeLimit);
+    }
+    return FirebaseSuccess(extension);
   }
 
   /// [patch] yamasının belge okunmadan denetlenebilen kuralları: boş yama

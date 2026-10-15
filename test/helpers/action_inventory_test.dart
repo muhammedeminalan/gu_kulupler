@@ -78,8 +78,9 @@ void main() {
       expect(all.where(_isExempt), hasLength(totals['exemptActions'] as int));
     });
 
-    test('muaf kalıplar dosyadan (5); JS aynı iki dosyayı okur', () {
-      expect(ActionInventory.exemptPatterns, hasLength(5));
+    test('muaf kalıplar dosyadan (8 — 5 demo + 3 DLG-04 sızıntısı, '
+        'CD-159(6)); JS aynı iki dosyayı okur', () {
+      expect(ActionInventory.exemptPatterns, hasLength(8));
       final all = [
         for (final m in DesignIds.screenMeta.values) ...m.actions,
       ];
@@ -307,7 +308,13 @@ void main() {
     });
 
     test('envanterdeki diğer önekler (ör. dialog) beklenir ve sayılır', () {
-      final all = ActionInventory.expected(_crossPrefix.id);
+      // Tek örnek (MGT-08 DLG-04.*) muaf dosyasında (CD-159(6)); düzenek
+      // muafsız sınanır.
+      const noExempt = <String>[];
+      final all = ActionInventory.expected(
+        _crossPrefix.id,
+        exemptPatterns: noExempt,
+      );
       final foreign = all.firstWhere(
         (a) => ActionInventory.prefixOf(a) != _crossPrefix.id,
       );
@@ -315,11 +322,15 @@ void main() {
       final unrelated = DesignIds.dialogs.firstWhere(
         (d) => all.every((a) => ActionInventory.prefixOf(a) != d),
       );
-      final diff = ActionInventory.diff(_crossPrefix.id, {
-        ...all.difference({foreign}),
-        '$prefix.bogus',
-        '$unrelated.other',
-      });
+      final diff = ActionInventory.diff(
+        _crossPrefix.id,
+        {
+          ...all.difference({foreign}),
+          '$prefix.bogus',
+          '$unrelated.other',
+        },
+        exemptPatterns: noExempt,
+      );
       expect(diff.missing, {foreign});
       expect(diff.extra, {'$prefix.bogus'});
     });

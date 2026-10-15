@@ -195,5 +195,25 @@ void main() {
       expect(find.bySemanticsLabel('Onay gerekli'), findsOneWidget);
       handle.dispose();
     });
+
+    testWidgets('T-36 · GuBadge · `background` zemini ezer, metin rengi '
+        'türde kalır (MGT-09 kapak rozeti)', (tester) async {
+      late GuColors colors;
+      await tester.pumpApp(
+        Builder(
+          builder: (context) {
+            colors = context.gu.colors;
+            return Center(
+              child: GuBadge(label: 'Kapak', background: colors.bgSurface),
+            );
+          },
+        ),
+      );
+      expect(_decoration(tester).color, colors.bgSurface);
+      expect(
+        tester.widget<Text>(find.text('Kapak')).style!.color,
+        colors.textMuted,
+      );
+    });
   });
 }

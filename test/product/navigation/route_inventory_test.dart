@@ -36,8 +36,11 @@
 // (`…/events/:eventId/edit`) — tek `EventFormView` (MGT-05, CD-54).
 // T-35 · `AttendanceRoute` (`…/events/:eventId/attendance`, MGT-06),
 // `ScanRoute` (`…/attendance/scan`, MGT-07).
+// T-36 · `ManageContentRoute` (`/clubs/:clubId/manage/content`, MGT-08),
+// `ClubSettingsRoute` (`…/manage/settings`, MGT-09); `ComposeRoute` `?type=`.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gu_data/gu_data.dart' show PostType;
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/app_router.dart';
 import 'package:gu_kulupler/product/navigation/route_guards.dart';
@@ -50,7 +53,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -96,6 +99,9 @@ const Map<GoRouteData, String> _routes = {
       '/clubs/:clubId/manage/events/:eventId/attendance',
   ScanRoute(clubId: _clubId, eventId: _eventId):
       '/clubs/:clubId/manage/events/:eventId/attendance/scan',
+  // T-36: MGT-08, MGT-09
+  ManageContentRoute(clubId: _clubId): '/clubs/:clubId/manage/content',
+  ClubSettingsRoute(clubId: _clubId): '/clubs/:clubId/manage/settings',
   EventsRoute(): '/events',
   // Etkinlikler dalı (T-17: CLB-02, paylaşılan yaprak; T-23: EVT-02, EVT-03;
   // T-24: EVT-04)
@@ -193,10 +199,51 @@ void main() {
     test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2)', () {
+        'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(49));
+      expect(_routes, hasLength(51));
     });
+
+    test(
+      "T-36 · MGT-08 ve MGT-09 MGT-01'in altındadır; ikisi de yönetici ya da "
+      'danışman (V) ister; `clubId` yol parametresidir',
+      () {
+        expect(ManageContentRoute.segment, 'content');
+        expect(ClubSettingsRoute.segment, 'settings');
+        for (final MapEntry(key: route, value: location)
+            in <GoRouteData, String>{
+              const ManageContentRoute(clubId: _clubId):
+                  '/clubs/c01/manage/content',
+              const ClubSettingsRoute(clubId: _clubId):
+                  '/clubs/c01/manage/settings',
+            }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, RouteAccess.managerOrAdvisor, reason: name);
+          expect(match.clubId, _clubId, reason: name);
+        }
+        expect(
+          const ClubSettingsRoute(clubId: 'a/b').location,
+          '/clubs/a%2Fb/manage/settings',
+        );
+        // W-40: MGT-01 "Bu ay duyuru" sekmeyi `?tab=` ile seçer; sorgu
+        // guard'ı değiştirmez.
+        const announcements = ManageContentRoute(
+          clubId: _clubId,
+          tab: PostType.announcement,
+        );
+        expect(
+          announcements.location,
+          '/clubs/c01/manage/content?tab=announcement',
+        );
+        expect(
+          RouteAccessTable.match(Uri.parse(announcements.location)).access,
+          RouteAccess.managerOrAdvisor,
+        );
+      },
+    );
 
     test(
       "T-35 · MGT-06 MGT-04'ün altındadır (V); MGT-07 MGT-06'nın altındadır "
@@ -480,8 +527,19 @@ void main() {
       expect(ComposeRoute.segment, 'compose');
       const edit = ComposeRoute(clubId: _clubId, edit: _postId);
       expect(edit.location, '/clubs/c01/compose?edit=p01');
+      // T-36 (W-97): başlangıç türü `?type=` sorgusudur.
+      expect(compose.type, isNull);
+      const announcement = ComposeRoute(
+        clubId: _clubId,
+        type: PostType.announcement,
+      );
+      expect(announcement.location, '/clubs/c01/compose?type=announcement');
       // Sorgu yolu ve guard'ı değiştirmez.
-      for (final location in [compose.location, edit.location]) {
+      for (final location in [
+        compose.location,
+        edit.location,
+        announcement.location,
+      ]) {
         final match = RouteAccessTable.match(Uri.parse(location));
         expect(match.pattern, '/clubs/:clubId/compose', reason: location);
         expect(match.access, RouteAccess.manager, reason: location);

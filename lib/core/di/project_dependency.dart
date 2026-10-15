@@ -249,8 +249,13 @@ abstract final class ProjectDependency {
     // T-30 · yönetim paneli: kompozisyon (üyelik, etkinlik, gönderi, yorum,
     // kulüp; ayar yazımı + günlük tek batch) ve fan-out alıcıları; yoklama /
     // terfi tek transaction (kayıt + sayaç + yan belge + terfi bildirimi).
+    // T-36 · kulüp logosu / kapağı repository metoduyla yüklenir
+    // (`updateClubMedia`); dosya adının rastgele kısmı kriptografik kaynaktan.
     final managementRepository = FirebaseManagementRepository(
       firestore: firestoreService,
+      storage: storageService,
+      clock: appClock,
+      random: Random.secure(),
       memberships: membershipRepository,
       events: eventRepository,
       posts: postRepository,

@@ -16,8 +16,11 @@
 //    yolunda özel üst veri reddedilir (D-10: yüklenen dosya sonradan silinemez).
 //
 // T-16 — `clubs/{clubId}/{file}` (logo / kapak): tek dosya okuması doğrulanmış her kullanıcıya açık
-// (CLB-01, CLB-03), klasör listesi kapalı; yükleme, üzerine yazma, üst veri güncelleme ve silme
-// herkes için ret — kulübün başkanı ve süper admin dahil (yükleme T-36'da açılır).
+// (CLB-01, CLB-03), klasör listesi kapalı.
+// T-36 — `clubs/{clubId}/{file}` yüklemesi (MGT-09, ManagementRepository.updateClubMedia): posts/ / events/
+// kalıbı, ama yetki KLASÖRE bağlıdır — `metadata.clubId == clubId` ve `isManagerOf(clubId)` (klasördeki kulübün
+// etkin yöneticisi; danışman, üye, süper admin ve başka kulübün yöneticisi yükleyemez) + `accountActive()` =
+// 2 Firestore belgesi (CD-143). Kulüp belgesi okunmaz (askıdaki kulübün yolunu Firestore `clubLive` reddeder).
 //
 // T-21 — `posts/{postId}/{file}` (gönderi görseli, CD-39): tek dosya okuması doğrulanmış her kullanıcıya
 // açık, klasör listesi kapalı; yükleme yalnızca `metadata.clubId` kulübünün ETKİN yöneticisine (yönetim
@@ -44,8 +47,8 @@ const { CONTEXTS, VARIANTS, contextFor, definition, uidOf } = require('../helper
 const { buildFixture, editDocs, seedDocs } = require('../helpers/fixtures');
 const { STORAGE_PREFIX, parseMatches } = require('../helpers/matrix');
 
-/** Yükleme (`create`) kuralı açılmış yol kökleri. T-14: users/ · T-21: posts/ · T-22: events/ · T-28: support/. */
-const OPENED = ['users', 'posts', 'events', 'support'];
+/** Yükleme (`create`) kuralı açılmış yol kökleri. T-14: users/ · T-21: posts/ · T-22: events/ · T-28: support/ · T-36: clubs/. */
+const OPENED = ['users', 'posts', 'events', 'support', 'clubs'];
 
 /** Tek dosya okuması (`get`) açılmış yol kökleri. T-14: users/ · T-16: clubs/ · T-21: posts/ · T-22: events/. */
 const READABLE = ['users', 'clubs', 'posts', 'events'];
@@ -57,11 +60,12 @@ const UPLOADER_READABLE = ['support'];
  * Çapraz servis yardımcıları → okudukları Firestore belgesi sayısı. Üretimde tek kural değerlendirmesi
  * en çok `MAX_FIRESTORE_DOCS` belgeye erişebilir; emülatör bu sınırı uygulamaz (yapı testi sayar).
  * T-22 yeni yardımcı EKLEMEDİ: events/ yolu posts/ ile aynı ikiliyi kullanır (etkinlik belgesi okunmaz — W-73).
+ * T-36 de eklemedi: clubs/ yolu aynı ikiliyi klasördeki kulüple kullanır (kulüp belgesi okunmaz).
  */
 const CROSS_SERVICE = { accountActive: 1, isManagerOf: 1 };
 const MAX_FIRESTORE_DOCS = 2;
 /** Yol kökü → `create` kuralının okuduğu Firestore belgesi sayısı (bütçe tablosu; rules-spec §7). */
-const CREATE_BUDGET = { users: 1, posts: 2, events: 2, support: 1 };
+const CREATE_BUDGET = { users: 1, posts: 2, events: 2, support: 1, clubs: 2 };
 
 /** PLAN §11.5'in beş yol kökü (StoragePaths ile aynı). */
 const ROOTS = ['users', 'clubs', 'events', 'posts', 'support'];
@@ -192,7 +196,7 @@ describe('storage · storage.rules yapısı', () => {
     }
   });
 
-  test('yol başına Firestore okuması: users/ 1 · posts/ 2 · events/ 2 (etkinlik belgesi okunmaz — W-73) · support/ 1', () => {
+  test('yol başına Firestore okuması: users/ 1 · posts/ 2 · events/ 2 (etkinlik belgesi okunmaz — W-73) · support/ 1 · clubs/ 2 (kulüp belgesi okunmaz)', () => {
     expect(Object.keys(CREATE_BUDGET).sort()).toEqual([...OPENED].sort());
     for (const [root, budgeted] of Object.entries(CREATE_BUDGET)) {
       const create = new RegExp(`match \\/${root}\\/\\{\\w+\\}\\/\\{file\\} \\{[^}]*?(allow create:[^;]*;)`).exec(rulesText);
@@ -207,6 +211,7 @@ describe('storage · storage.rules yapısı', () => {
     }
     expect(rulesText).not.toMatch(/function eventClubId/);
     expect(rulesText).not.toMatch(/documents\/events\//);
+    expect(rulesText).not.toMatch(/documents\/clubs\//);
   });
 
   test('events/ yüklemesi: posts/ ile aynı kalıp — `clubId` / `uploaderId` üst verisi + yönetici ve hesap durumu (CD-47, W-73)', () => {
@@ -261,16 +266,25 @@ describe('storage · storage.rules yapısı', () => {
     expect(allows[3]).toBe('allow update, delete: if false;');
   });
 
-  test('clubs/ yüklemesi kapalıdır (T-36\'da açılır)', () => {
+  test('clubs/ yüklemesi (T-36): posts/ kalıbı + klasördeki kulüp — `metadata.clubId == clubId`, yönetici ve hesap durumu Firestore\'dan (CD-143)', () => {
     const create = /match \/clubs\/\{clubId\}\/\{file\} \{[^}]*?(allow create:[^;]*;)/.exec(rulesText);
     expect(create).not.toBeNull();
-    expect(create[1]).toBe('allow create: if false;');
+    const rule = create[1].replace(/\s+/g, ' ');
+    expect(rule).toBe(
+      'allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file) '
+        + '&& clubMetadataOnly() && request.resource.metadata.clubId == clubId '
+        + '&& isManagerOf(clubId) && accountActive();',
+    );
+    // Yetki klasöre bağlıdır: üst verideki kulüp kimliğiyle değil (posts/ / events/ farkı).
+    expect(rule).not.toContain('isManagerOf(request.resource.metadata.clubId)');
+    expect(rule).not.toContain('noCustomMetadata()');
+    expect(rule).not.toContain('isSuperAdmin()');
   });
 });
 
 const CLOSED_ROOTS = ROOTS.filter((r) => !OPENED.includes(r) && !READABLE.includes(r));
 
-test('storage · T-28 sonrası tamamen kapalı yol kökü kalmadı (clubs/ yalnızca okuma — yükleme T-36)', () => {
+test('storage · T-28 sonrası tamamen kapalı yol kökü kalmadı (T-36: clubs/ yüklemesi de açık)', () => {
   expect(CLOSED_ROOTS).toEqual([]);
 });
 
@@ -1421,10 +1435,12 @@ describe('storage support/{ticketNo}/{file} · üzerine yazma / üst veri / silm
   });
 });
 
-// ── clubs/{clubId}/{file} — logo ve kapak (T-16: yalnızca okuma) ──────────────────────────────
+// ── clubs/{clubId}/{file} — logo ve kapak (T-16: okuma · T-36: yükleme) ──────────────────────
+
+const CLUB_ID = 'c01';
+const clubFile = (file, clubId = CLUB_ID) => `clubs/${clubId}/${file}`;
 
 describe('storage clubs/{clubId}/{file} · okuma', () => {
-  const CLUB_ID = 'c01';
   const logo = `clubs/${CLUB_ID}/${EXISTING_FILE}`;
   const otherClubCover = `clubs/c02/${EXISTING_FILE}`;
 
@@ -1462,24 +1478,159 @@ describe('storage clubs/{clubId}/{file} · okuma', () => {
   });
 });
 
-describe('storage clubs/{clubId}/{file} · yükleme / üzerine yazma / üst veri / silme (kapalı — yükleme T-36)', () => {
-  const CLUB_ID = 'c01';
-  const existing = `clubs/${CLUB_ID}/${EXISTING_FILE}`;
-  const created = `clubs/${CLUB_ID}/${NEW_FILE}`;
+describe('storage clubs/{clubId}/{file} · yükleme (rol: KLASÖRDEKİ kulübün etkin yöneticisi — T-36)', () => {
+  const path = clubFile(NEW_FILE);
 
-  // Yönetici rolleri (board, president), danışman ve süper admin dahil: yükleme kuralı henüz yok.
-  test.each(ALL_ROLES)('%s · create / üzerine yazma / metadata / delete → deny', async (role) => {
-    await seedUsers();
+  beforeEach(() => seedIdentity());
+
+  test.each(MANAGERS)('%s · kendi kulübünün (c01) logosunu / kapağını yükler → allow; nesne yükleyenin izini taşır', async (role) => {
+    await assertSucceeds(upload(role, path, PNG, metaOf(role)));
+    const stored = await getMetadata(ref((await getAdminContext()).storage(), path));
+    expect(stored.customMetadata).toMatchObject({ clubId: CLUB_ID, uploaderId: uidOf(role) });
+  });
+
+  // Üye, danışman, başvurusu bekleyen, ayrılmış, üye olmayan, süper admin, başka kulübün yöneticisi,
+  // askıdaki / silinmiş hesap, doğrulanmamış ve oturumsuz bağlam.
+  test.each(ALL_ROLES.filter((role) => !MANAGERS.includes(role)))('%s · c01 klasörüne yükleyemez → deny', async (role) => {
+    await assertFails(upload(role, path, PNG, metaOf(role)));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  // posts/ / events/ farkı: klasör adı kulübün kendisidir — başka kulübün yöneticisi c01 klasörüne KENDİ kulübü
+  // adına da yükleyemez (yetim dosya bile oluşmaz); kendi kulübünün klasörüne yükler.
+  test('başka kulübün yöneticisi: c01 klasörüne (c01 ya da c02 adına) → deny; kendi klasörüne (c02) → allow', async () => {
+    await assertFails(upload('otherManager', path, PNG, metaOf('otherManager', 'c01')));
+    await assertFails(upload('otherManager', path, PNG, metaOf('otherManager', 'c02')));
+    expect(await fileExists(path)).toBe(false);
+    const own = clubFile(NEW_FILE, 'c02');
+    await assertSucceeds(upload('otherManager', own, PNG, metaOf('otherManager', 'c02')));
+    expect(await fileExists(own)).toBe(true);
+  });
+
+  test('c01 yöneticisi başka kulübün klasörüne (c02) — c02 ya da c01 adına → deny', async () => {
+    const other = clubFile(NEW_FILE, 'c02');
+    await assertFails(upload(MANAGER, other, PNG, clubMeta('c02')));
+    await assertFails(upload(MANAGER, other, PNG, clubMeta('c01')));
+    expect(await fileExists(other)).toBe(false);
+  });
+
+  test('alt klasör ve kök düzeyi dosya `clubs/{clubId}/{file}` kalıbına girmez → deny', async () => {
+    await assertFails(upload(MANAGER, `clubs/${CLUB_ID}/alt/${NEW_FILE}`, PNG, clubMeta()));
+    await assertFails(upload(MANAGER, `clubs/${NEW_FILE}`, PNG, clubMeta()));
+  });
+});
+
+describe('storage clubs/{clubId}/{file} · yükleme (üyelik ve hesap durumu: Firestore — T-36)', () => {
+  const path = clubFile(NEW_FILE);
+
+  test.each([
+    ['üyelik belgesi yok', () => seedIdentity({ without: [MANAGER_MEMBERSHIP] })],
+    ['üyelik status = left', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { status: 'left' } } })],
+    ['üyelik status = removed', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { status: 'removed' } } })],
+    ['üyelik role = member (yönetimden çıkmış)', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { role: 'member' } } })],
+    ['üyelik role = advisor', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { role: 'advisor' } } })],
+    ['üyelik belgesinin userId alanı kimliğiyle uyuşmuyor', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { userId: 'u_baskasi' } } })],
+    ['üyelik belgesinin clubId alanı klasörle uyuşmuyor', () => seedIdentity({ patch: { [MANAGER_MEMBERSHIP]: { clubId: 'c02' } } })],
+    ['profil belgesi yok', () => seedIdentity({ without: [MANAGER_DOC] })],
+    ['yöneticinin hesabı askıda (üyeliği active kalsa da)', () => seedIdentity({ patch: { [MANAGER_DOC]: { status: 'suspended' } } })],
+    ['yöneticinin hesabı silinmiş', () => seedIdentity({ patch: { [MANAGER_DOC]: { status: 'deleted' } } })],
+  ])('%s → deny', async (_title, seed) => {
+    await seed();
+    await assertFails(upload(MANAGER, path, PNG, clubMeta()));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  // Storage kuralı kulüp belgesini okumaz (2 belge sınırı): askıdaki kulübün yöneticisi dosyayı yükler, yol yazımı
+  // Firestore `clubLive`'da düşer (rules/repository_payloads.test.js T-36 "askıdaki kulüp") — dosya yetim kalır.
+  test('askıdaki kulüp: Storage kuralı kulüp belgesini OKUMAZ → allow (iliştirmeyi Firestore reddeder)', async () => {
+    await seedIdentity({ patch: { 'clubs/c01': { status: 'suspended' } } });
+    await assertSucceeds(upload(MANAGER, path, PNG, clubMeta()));
+  });
+});
+
+describe('storage clubs/{clubId}/{file} · yükleme (üst veri, tür, boyut, dosya adı — T-36)', () => {
+  const path = clubFile(NEW_FILE);
+  const UID = uidOf(MANAGER);
+
+  beforeEach(() => seedIdentity());
+
+  test.each([
+    ['üst veri yok', IMAGE],
+    ['boş özel üst veri', { ...IMAGE, customMetadata: {} }],
+    ['clubId yok (yalnızca uploaderId)', { ...IMAGE, customMetadata: { uploaderId: UID } }],
+    ['uploaderId yok (yalnızca clubId)', { ...IMAGE, customMetadata: { clubId: CLUB_ID } }],
+    ['uploaderId başka yöneticinin kimliği', clubMeta(CLUB_ID, { uploaderId: uidOf('president') })],
+    ['clubId klasörle uyuşmuyor (c02)', clubMeta('c02')],
+    ['clubId klasörün önek / uzantısı', clubMeta('c01x')],
+    ['clubId yol ayırıcı taşır', clubMeta('c01/x')],
+    ['fazladan anahtar (kind: logo)', clubMeta(CLUB_ID, { kind: 'logo' })],
+    ['jeton + fazladan anahtar', clubMeta(CLUB_ID, { firebaseStorageDownloadTokens: 'jeton', x: '1' })],
+    ['contentEncoding: gzip', { ...clubMeta(), contentEncoding: 'gzip' }],
+    ['contentDisposition: attachment + dosya adı', { ...clubMeta(), contentDisposition: 'attachment; filename="logo.exe"' }],
+    ['izinli olmayan içerik türü (image/gif)', { ...clubMeta(), contentType: 'image/gif' }],
+    ['izinli olmayan içerik türü (image/svg+xml)', { ...clubMeta(), contentType: 'image/svg+xml' }],
+    ['uzantı içerik türüyle uyuşmuyor (image/jpeg + .png)', { ...clubMeta(), contentType: 'image/jpeg' }],
+  ])('%s → deny', async (_title, metadata) => {
+    await assertFails(upload(MANAGER, path, PNG, metadata));
+    expect(await fileExists(path)).toBe(false);
+  });
+
+  // Gerçek sunucu indirme jetonunu ve `contentDisposition` varsayılanını kendisi doldurur (T-14 canlı dersi).
+  test('clubId + uploaderId + indirme jetonu + sunucu varsayılanı sunum üst verisi → allow', async () => {
+    const disposition = `inline; filename*=utf-8''clubs%2F${CLUB_ID}%2F${NEW_FILE}`;
+    const metadata = { ...clubMeta(CLUB_ID, { firebaseStorageDownloadTokens: 'jeton' }), contentDisposition: disposition, contentEncoding: 'identity' };
+    await assertSucceeds(upload(MANAGER, path, PNG, metadata));
+    expect(await fileExists(path)).toBe(true);
+  });
+
+  test.each(TYPES)('%s + .%s → allow', async (contentType, extension) => {
+    const target = clubFile(`${STAMP}.${extension}`);
+    await assertSucceeds(upload(MANAGER, target, PNG, { ...clubMeta(), contentType }));
+    expect(await fileExists(target)).toBe(true);
+  });
+
+  test('boyut sınırı: imageMaxBytes − 1 → allow, imageMaxBytes (5 MB) → deny; boş dosya → deny', async () => {
+    const under = clubFile(`${STAMP}.jpg`);
+    const exact = clubFile('20261008T201503Z_0a1b2c3d4e5f6071.jpg');
+    const empty = clubFile('20261008T201504Z_0a1b2c3d4e5f6071.jpg');
+    const jpeg = { ...clubMeta(), contentType: 'image/jpeg' };
+    await assertSucceeds(upload(MANAGER, under, new Uint8Array(IMAGE_MAX_BYTES - 1), jpeg));
+    await assertFails(upload(MANAGER, exact, new Uint8Array(IMAGE_MAX_BYTES), jpeg));
+    await assertFails(upload(MANAGER, empty, new Uint8Array(0), jpeg));
+    expect([await fileExists(under), await fileExists(exact), await fileExists(empty)]).toEqual([true, false, false]);
+  });
+
+  test.each([['logo.png'], ['cover.png'], ['20261008T201502Z_0A1B2C3D4E5F6071.png'], ['20261008T201502Z_0a1b2c3d4e5f6071.png.png'], ['20261008T201502Z_0a1b2c3d4e5f6071.gif']])(
+    'StoragePaths.newFileName şeması dışındaki ad "%s" → deny (sabit `logo.jpg` / `cover.jpg` yok)',
+    async (file) => {
+      await assertFails(upload(MANAGER, clubFile(file), PNG, clubMeta()));
+      expect(await fileExists(clubFile(file))).toBe(false);
+    },
+  );
+});
+
+describe('storage clubs/{clubId}/{file} · üzerine yazma / üst veri / silme (D-10 — T-36)', () => {
+  const existing = clubFile(EXISTING_FILE);
+
+  beforeEach(() => seedIdentity());
+
+  test.each(ALL_ROLES)('%s · var olan logoda üzerine yazma / metadata / delete → deny (yönetici dahil)', async (role) => {
     await seedFile(existing);
     const storage = contextFor(role).storage();
-    await assertFails(uploadBytes(ref(storage, created), PNG, IMAGE));
-    await assertFails(uploadBytes(ref(storage, existing), PNG, IMAGE));
+    // Aynı ada ikinci yükleme `create`tir: üzerine yazmayı kuraldaki `isNewFile()` engeller.
+    await assertFails(uploadBytes(ref(storage, existing), PNG, metaOf(role)));
     await assertFails(updateMetadata(ref(storage, existing), { contentType: 'image/jpeg' }));
-    await assertFails(updateMetadata(ref(storage, existing), { customMetadata: { clubId: CLUB_ID } }));
+    await assertFails(updateMetadata(ref(storage, existing), { customMetadata: { clubId: 'c02' } }));
+    await assertFails(updateMetadata(ref(storage, existing), { customMetadata: { uploaderId: 'u_baskasi' } }));
     // D-10 ret vakası: dosya silme yalnızca burada, reddedildiğini kanıtlamak için denenir.
     await assertFails(deleteObject(ref(storage, existing)));
     expect(await fileExists(existing)).toBe(true);
-    expect(await fileExists(created)).toBe(false);
+  });
+
+  test('logo değişimi = yeni adla ikinci yükleme → allow; eski dosya yerinde kalır', async () => {
+    await seedFile(existing);
+    await assertSucceeds(upload(MANAGER, clubFile(NEW_FILE), PNG, clubMeta()));
+    expect([await fileExists(existing), await fileExists(clubFile(NEW_FILE))]).toEqual([true, true]);
   });
 });
 

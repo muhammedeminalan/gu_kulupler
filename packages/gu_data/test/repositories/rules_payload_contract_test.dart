@@ -55,6 +55,12 @@
 // bildirim geçişle aynı transaction'dadır (W-83). Sayaç işaretçisi yalnızca
 // yan belgededir (`clubs|events/{id}/private/counter` — W-64).
 //
+// T-36: `t36.scenarios` — `FirebaseManagementRepository.updateClubMedia`
+// (kulüp logosu / kapağı): ön okuma, sırayla Storage yüklemeleri (`uploads`:
+// yol, tür, `customMetadata`), sonra kulüp + `settings_changed` günlüğü tek
+// batch. Dosya adları sabit saat + 16 sabit rastgele bayttan (logo ilk 8,
+// kapak sonraki 8).
+//
 // T-28: `t28.scenarios` — `FirebaseSupportRepository.createTicket` (eksiz /
 // ekli). Belge kimliği talep numarasıdır; ek yüklemesi (`upload`) yazımdan
 // öncedir.
@@ -726,6 +732,17 @@ void main() {
                 ),
                 actorId: uid,
               ),
+          'ManagementRepository.updateClubSettings · SHT-31 şablona dön '
+              '(kapak bırakılır)': (uid) => management.updateClubSettings(
+            clubId,
+            const ClubSettingsPatch(
+              palette: ClubPalette.slate,
+              pattern: ClubPattern.dots,
+              coverSeed: 'sablon-1',
+              clearCoverPath: true,
+            ),
+            actorId: uid,
+          ),
           'AttendanceRepository.markAttended · going → attended': (uid) =>
               attendance.markAttended(
                 eventId: eventId,
@@ -776,6 +793,9 @@ void main() {
       );
       management = FirebaseManagementRepository(
         firestore: service,
+        storage: storage,
+        clock: clock,
+        random: SequenceRandom(_randomBytes),
         memberships: memberships,
         events: events,
         posts: FirebasePostRepository(
@@ -920,6 +940,208 @@ void main() {
             variant.keys.toSet().difference({
               'name',
               'without',
+              'patch',
+              'seed',
+              'role',
+              'swap',
+            }),
+            isEmpty,
+            reason: reason,
+          );
+          expect(variant.length, greaterThan(1), reason: reason);
+          for (final MapEntry(:key, :value)
+              in (variant['swap'] as Map<String, Object?>? ?? const {})
+                  .entries) {
+            expect(value, isA<String>(), reason: reason);
+            expect(jsonEncode(writes), contains(key), reason: reason);
+          }
+        }
+      }
+    });
+  });
+
+  group('T-36 · Rules yük sözleşmesi (kulüp görselleri: logo / kapak)', () {
+    final t36 = contract['t36']! as Map<String, Object?>;
+    final fixtures = t36['fixtures']! as Map<String, Object?>;
+    final actors = (t36['actors']! as Map<String, Object?>)
+        .cast<String, String>();
+    final scenarios = (t36['scenarios']! as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final clock = FakeAppClock(_scenarioNow);
+
+    /// Logo ve kapak aynı saniyede yüklenir: 16 bayt, iki ayrı ad.
+    const randomBytes = [
+      0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71, //
+      0x81, 0x92, 0xa3, 0xb4, 0xc5, 0xd6, 0xe7, 0xf8,
+    ];
+
+    late FirebaseManagementRepository management;
+
+    ClubMediaUpload image(String contentType) =>
+        ClubMediaUpload(bytes: _image, contentType: contentType);
+
+    /// Sözleşmedeki her senaryonun gerçek repository karşılığı; argüman
+    /// senaryonun `role` bağlamının uid'idir (= `uploaderId`).
+    late final calls =
+        <String, Future<FirebaseResult<Object?, Object>> Function(String uid)>{
+          'ManagementRepository.updateClubMedia · logo + kapak': (uid) =>
+              management.updateClubMedia(
+                clubId,
+                uploaderId: uid,
+                logo: image('image/jpeg'),
+                cover: image('image/png'),
+              ),
+          'ManagementRepository.updateClubMedia · yalnızca kapak': (uid) =>
+              management.updateClubMedia(
+                clubId,
+                uploaderId: uid,
+                cover: image('image/webp'),
+              ),
+        };
+
+    setUp(() {
+      final service = FirebaseFirestoreService(db);
+      final activity = FirebaseActivityRepository(service);
+      final dispatcher = ClientFanOutDispatcher(
+        writer: FirebaseNotificationRepository(service),
+        recipients: const _FixedRecipients([]),
+      );
+      management = FirebaseManagementRepository(
+        firestore: service,
+        storage: storage,
+        clock: clock,
+        random: SequenceRandom(randomBytes),
+        memberships: FirebaseMembershipRepository(
+          service,
+          activity,
+          dispatcher,
+          clock,
+        ),
+        events: FirebaseEventRepository(
+          service,
+          storage,
+          activity,
+          clock,
+          SequenceRandom(_randomBytes),
+        ),
+        posts: FirebasePostRepository(
+          service,
+          storage,
+          activity,
+          FirebaseAnnouncementCounterRepository(service, clock),
+          clock,
+          SequenceRandom(_randomBytes),
+        ),
+        comments: FirebaseCommentRepository(service, clock),
+        clubs: FirebaseClubRepository(service),
+        activity: activity,
+        notifications: dispatcher,
+        recipients: const _FixedRecipients([]),
+      );
+    });
+
+    test('sözleşmedeki her senaryonun repository karşılığı var; fazlası '
+        'yok; bağlamlar roles.json bağlamları', () {
+      expect(
+        scenarios.map((scenario) => scenario['call']),
+        unorderedEquals(calls.keys),
+      );
+      expect(t36['autoId'], _autoId);
+      expect(
+        [
+          for (final scenario in scenarios) ...[
+            scenario['role'],
+            for (final variant
+                in (scenario['denied']! as List<Object?>)
+                    .cast<Map<String, Object?>>())
+              ?variant['role'],
+          ],
+        ],
+        everyElement(isIn(actors.keys)),
+      );
+    });
+
+    for (final scenario in scenarios) {
+      final call = scenario['call']! as String;
+      test('$call — okuma, yüklemeler, yazımlar ve işlem biçimi sözleşmeyle '
+          'birebir', () async {
+        final seed = scenario['seed']! as Map<String, Object?>;
+        for (final MapEntry(key: path, value: entry) in seed.entries) {
+          db.docs[path] = _seedDoc(fixtures, entry);
+        }
+        final uid = actors[scenario['role']]!;
+
+        final result = await calls[call]!(uid);
+
+        expect(result.isSuccess, isTrue, reason: '$result');
+        expect(db.reads, scenario['reads']);
+        expect(
+          [
+            for (final upload in storage.uploads)
+              {
+                'path': upload.path,
+                'contentType': upload.contentType,
+                'customMetadata': upload.customMetadata,
+              },
+          ],
+          scenario['uploads'],
+        );
+        expect(_normalized(db.log), scenario['writes']);
+        // Ön okuma + tek batch (kulüp + günlük); transaction yok.
+        expect(db.transactions, 0);
+        expect(db.commits, [(scenario['writes']! as List<Object?>).length]);
+      });
+    }
+
+    test("Firestore'a yazılan logoPath / coverPath yüklenen dosyaların "
+        'yollarıdır ve kulübün klasöründedir (StoragePaths.isClubFile); '
+        'üst veri yalnızca clubId + uploaderId (yükleyen = aktör)', () {
+      for (final scenario in scenarios) {
+        final uploads = (scenario['uploads']! as List<Object?>)
+            .cast<Map<String, Object?>>();
+        final writes = (scenario['writes']! as List<Object?>)
+            .cast<Map<String, Object?>>();
+        final club = writes.first['data']! as Map<String, Object?>;
+        final activity = writes.last['data']! as Map<String, Object?>;
+        final uid = actors[scenario['role']]!;
+
+        expect(
+          [club['logoPath'], club['coverPath']].nonNulls,
+          uploads.map((upload) => upload['path']),
+        );
+        for (final upload in uploads) {
+          expect(
+            StoragePaths.isClubFile(upload['path']! as String, clubId),
+            isTrue,
+          );
+          expect(upload['customMetadata'], {
+            'clubId': clubId,
+            'uploaderId': uid,
+          });
+        }
+        expect(activity['actorId'], uid);
+        expect(activity['kind'], ActivityKind.settingsChanged.json);
+      }
+    });
+
+    test('bozuk varyantlar yalnızca var olan yazım sıralarına dokunur; '
+        '`swap` yalnızca dizgi → dizgi', () {
+      for (final scenario in scenarios) {
+        final writes = scenario['writes']! as List<Object?>;
+        for (final variant
+            in (scenario['denied']! as List<Object?>)
+                .cast<Map<String, Object?>>()) {
+          final reason = '${scenario['call']} · ${variant['name']}';
+          expect(
+            (variant['patch'] as Map<String, Object?>? ?? const {}).keys.map(
+              int.parse,
+            ),
+            everyElement(lessThan(writes.length)),
+            reason: reason,
+          );
+          expect(
+            variant.keys.toSet().difference({
+              'name',
               'patch',
               'seed',
               'role',

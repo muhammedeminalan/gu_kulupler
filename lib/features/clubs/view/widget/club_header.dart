@@ -41,6 +41,8 @@ class ClubHeader extends StatelessWidget {
     this.role,
     this.isAdvisor = false,
     this.memberPreview = const [],
+    this.coverImage,
+    this.logoImage,
     this.backKey,
     this.shareKey,
     this.menuKey,
@@ -63,6 +65,14 @@ class ClubHeader extends StatelessWidget {
 
   /// Avatar grubunda gösterilecek aktif üyeler (ilk dördü çizilir).
   final List<MembershipModel> memberPreview;
+
+  /// Yüklenmiş kapak (`club.coverPath`; çağıran `ref.clubCoverImage(club)`
+  /// ile çözer — T-36); `null` → şablon kapak.
+  final ImageProvider? coverImage;
+
+  /// Yüklenmiş logo (`club.logoPath`; `ref.clubLogoImage(club)`); `null` →
+  /// ikonlu amblem.
+  final ImageProvider? logoImage;
 
   /// Geri (`CLB-03.back`).
   final VoidCallback onBack;
@@ -116,7 +126,11 @@ class ClubHeader extends StatelessWidget {
             maxHeight: GuSizes.parallaxHeight,
             child: GuParallaxHeader(
               scrollOffset: scrollOffset,
-              cover: CoverMapper.club(club, ratio: GuCoverRatio.fill),
+              cover: CoverMapper.club(
+                club,
+                image: coverImage,
+                ratio: GuCoverRatio.fill,
+              ),
               leading: GuIconButton(
                 key: backKey,
                 icon: GuIcons.arrowLeft,
@@ -165,8 +179,9 @@ class ClubHeader extends StatelessWidget {
                 alignment: Alignment.bottomCenter,
                 minHeight: GuSizes.emblem,
                 maxHeight: GuSizes.emblem,
-                child: GuEmblem(
+                child: CoverMapper.emblem(
                   icon: CoverMapper.icon(club.iconName) ?? fallbackIcon,
+                  logo: logoImage,
                   size: GuEmblemSize.lg,
                 ),
               ),

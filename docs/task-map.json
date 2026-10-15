@@ -11,7 +11,7 @@
   "toastsAssigned": 77,
   "menus": 1,
   "actions": 1072,
-  "exemptActions": 12
+  "exemptActions": 15
  },
  "phases": {
   "A": "Temel (altyapı, tasarım sistemi, veri katmanı, uygulama iskeleti)",
@@ -2137,7 +2137,7 @@
    ],
    "conditional": null,
    "actionCount": 32,
-   "exemptActions": 0,
+   "exemptActions": 3,
    "cumulative": {
     "screens": 46,
     "sheets": 33,

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gu_data/gu_data.dart' show PostType;
 import 'package:gu_kulupler/features/clubs/view/club_application_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
@@ -18,8 +19,10 @@ import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
 import 'package:gu_kulupler/features/management/view/activity_log_view.dart';
 import 'package:gu_kulupler/features/management/view/attendance_view.dart';
+import 'package:gu_kulupler/features/management/view/club_settings_view.dart';
 import 'package:gu_kulupler/features/management/view/event_form_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_applications_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_content_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_events_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_members_view.dart';
 import 'package:gu_kulupler/features/management/view/manage_view.dart';

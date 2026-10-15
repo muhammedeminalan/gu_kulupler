@@ -28,6 +28,16 @@ const ISTANBUL_OFFSET_MS = 3 * HOUR_MS;
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 900;
 
+/**
+ * Yüklenmiş logo + kapağı olan demo kulüpler (T-36, Q-19 / K-C): kulüp → yer tutucu tohumları. Diğer
+ * kulüpler tasarım kapağıyla (palet × desen şablonu) kalır. Dosyalar `clubs/{clubId}/<StoragePaths
+ * .newFileName>` yolunda, yükleyen kulübün başkanıdır (uygulamanın `updateClubMedia` üst verisiyle aynı).
+ */
+const CLUB_MEDIA = Object.freeze({ c03: Object.freeze({ logo: 'c03-logo', cover: 'c03-cover' }) });
+const CLUB_LOGO_SIZE = 512;
+const CLUB_COVER_WIDTH = 1600;
+const CLUB_COVER_HEIGHT = 900;
+
 /** `rsvps.ticketCode` deseni (Dart `FirestoreIds.ticketCodePattern`). */
 const TICKET_CODE = /^GU-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
 
@@ -217,6 +227,21 @@ function convert(raw, { now, randomHex }) {
       userId: advisorId,
     };
   };
+  /** Demo kulübün logo / kapak yolları ([CLUB_MEDIA]); dosyalar `images`'a eklenir. */
+  const clubMedia = (clubId, club) => {
+    const media = CLUB_MEDIA[clubId];
+    if (media === undefined) return { logoPath: null, coverPath: null };
+    const stamp = fileStamp(time(club, 'createdAt'));
+    const file = (seed, width, height) => {
+      const path = `clubs/${clubId}/${stamp}_${randomHex()}.png`;
+      images.push({ path, seed, clubId, uploaderId: club.presidentId, width, height });
+      return path;
+    };
+    return {
+      logoPath: file(media.logo, CLUB_LOGO_SIZE, CLUB_LOGO_SIZE),
+      coverPath: file(media.cover, CLUB_COVER_WIDTH, CLUB_COVER_HEIGHT),
+    };
+  };
   const clubDocs = {};
   for (const [clubId, club] of entries(clubs)) {
     clubDocs[clubId] = {
@@ -227,8 +252,7 @@ function convert(raw, { now, randomHex }) {
       palette: orNull(club.palette),
       pattern: orNull(club.pattern),
       coverSeed: orNull(club.coverSeed),
-      logoPath: null,
-      coverPath: null,
+      ...clubMedia(clubId, club),
       memberCount: memberCount(clubId),
       approvalRequired: orNull(club.approvalRequired),
       applicationsOpen: orNull(club.applicationsOpen),
@@ -552,6 +576,8 @@ function expectedCounts(raw) {
 
 /** Gönderi görseli yolu: `posts/{postId}/<StoragePaths.newFileName>` (firestore.rules `imageOk` ile aynı desen). */
 const POST_IMAGE = /^posts\/([^/]+)\/\d{8}T\d{6}Z_[0-9a-f]{16}\.(?:jpg|png|webp)$/;
+/** Kulüp logo / kapak yolu: `clubs/{clubId}/<StoragePaths.newFileName>` (`StoragePaths.isClubFile`). */
+const CLUB_FILE = /^clubs\/([^/]+)\/\d{8}T\d{6}Z_[0-9a-f]{16}\.(?:jpg|png|webp)$/;
 
 /**
  * Dönüştürülmüş verinin iç tutarlılığı (PLAN §9.12 "Doğrulama"). Sorun listesi döner; boş = tutarlı.
@@ -608,6 +634,10 @@ function validate(docs, { announcementDailyLimit }) {
   for (const [clubId, club] of Object.entries(docs.clubs)) {
     if (club.pinnedPostId !== null && docs.posts[club.pinnedPostId]?.clubId !== clubId) {
       problems.push(`clubs/${clubId}: pinnedPostId ${club.pinnedPostId} bu kulübün gönderisi değil`);
+    }
+    for (const field of ['logoPath', 'coverPath']) {
+      const value = club[field];
+      if (value !== null && CLUB_FILE.exec(value)?.[1] !== clubId) problems.push(`clubs/${clubId}: ${field} kulübün klasöründe değil (${value})`);
     }
   }
   for (const [key, vote] of Object.entries(docs.votes)) {

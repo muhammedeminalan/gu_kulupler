@@ -17,9 +17,8 @@ import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 ///
 /// * Danışman (Q-09) yazan hızlı işlemlerde ("Gönderi yaz", "Duyuru yap",
 ///   "Etkinlik oluştur") TST-26 alır (`ManageViewModel.ensureWritable`).
-/// * Henüz yazılmamış yönetim ekranları (MGT-02…09) bağlama borcudur:
-///   W-36 (T-32), W-37 (T-33), W-38 (T-34), W-39 (T-35), W-40 (T-36);
-///   faaliyet satırı başvuru → MGT-02 W-95, ayar → MGT-09 W-96.
+/// * Yönetim ekranlarının (MGT-02…10) tümü bağlıdır; faaliyet satırı
+///   başvuru → MGT-02, ayar ya da hedefsiz kayıt → MGT-09.
 mixin ManageViewMixin on ConsumerState<ManageView> {
   /// Başvuru türleri (satır → MGT-02).
   static const Set<ActivityKind> _applicationKinds = {
@@ -90,15 +89,13 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
   void openEvents() => ManageEventsRoute(clubId: widget.clubId).go(context);
 
   /// "Bu ay duyuru" (`MGT-01.kpi.announcements`) → MGT-08 duyurular sekmesi.
-  void openAnnouncements() {
-    // TODO(T-36): `ManageContentRoute(clubId:)` duyurular sekmesi (MGT-08;
-    // W-40).
-  }
+  void openAnnouncements() => ManageContentRoute(
+    clubId: widget.clubId,
+    tab: PostType.announcement,
+  ).go(context);
 
   /// "Kulüp ayarları" (`MGT-01.quick.settings`) → MGT-09.
-  void openSettings() {
-    // TODO(T-36): `ClubSettingsRoute(clubId:).go` (MGT-09; W-40).
-  }
+  void openSettings() => ClubSettingsRoute(clubId: widget.clubId).go(context);
 
   /// "Gönderi yaz" (`MGT-01.quick.post`) → FED-03.
   void composePost() {
@@ -106,12 +103,14 @@ mixin ManageViewMixin on ConsumerState<ManageView> {
     ComposeRoute(clubId: widget.clubId).go(context);
   }
 
-  /// "Duyuru yap" (`MGT-01.quick.announce`) → FED-03.
+  /// "Duyuru yap" (`MGT-01.quick.announce`) → FED-03, duyuru türü ön seçili
+  /// (`?type=announcement`; W-97).
   void composeAnnouncement() {
     if (!viewModel.ensureWritable()) return;
-    // TODO(T-36): FED-03 rotası tür taşımaz (`ComposeRoute({clubId, edit})`);
-    // duyuru türü ön seçimi rota parametresi ister (W-97).
-    ComposeRoute(clubId: widget.clubId).go(context);
+    ComposeRoute(
+      clubId: widget.clubId,
+      type: PostType.announcement,
+    ).go(context);
   }
 
   /// "Etkinlik oluştur" (`MGT-01.quick.event`) → MGT-05.
