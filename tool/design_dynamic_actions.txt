@@ -171,3 +171,4 @@ MGT-08.edit.*          # design/prototype/app/screens-manage.js:167 — satır m
 MGT-08.delete.*        # design/prototype/app/screens-manage.js:167 — satır menüsünün "Sil" satırı (gönderi başına, → DLG-10) yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
 MGT-09.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
 MGT-09.retry           # lib/features/management/view/club_settings_view.dart — yalnızca kulüp okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+ADM-01.retry           # lib/features/admin/view/admin_view.dart — yalnızca genel bakış okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

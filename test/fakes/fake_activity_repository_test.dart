@@ -106,4 +106,60 @@ void main() {
       );
     });
   });
+
+  group('T-38 · FakeActivityRepository.countByWeek', () {
+    final from = DateTime.utc(2026, 9, 2);
+
+    ActivityModel at(String id, ActivityKind kind, int day, {String? club}) =>
+        ActivityModel(
+          id: id,
+          clubId: club ?? 'c01',
+          actorId: 'u1',
+          kind: kind,
+          createdAt: from.add(Duration(days: day)),
+        );
+
+    test('tüm kulüplerde haftalık kovalar; tür süzgeci, aralık dışı ve boş '
+        'hafta 0', () async {
+      fake.entries.addAll([
+        at('a1', ActivityKind.memberJoined, 0),
+        at('a2', ActivityKind.applicationApproved, 6, club: 'c02'),
+        at('a3', ActivityKind.memberJoined, 7),
+        at('a4', ActivityKind.memberLeft, 8),
+        at('a5', ActivityKind.memberJoined, 20, club: 'c03'),
+        at('a6', ActivityKind.memberJoined, 21),
+        at('a7', ActivityKind.memberJoined, -1),
+      ]);
+
+      final result = await fake.countByWeek(
+        kinds: {ActivityKind.memberJoined, ActivityKind.applicationApproved},
+        fromUtc: from,
+        weeks: 3,
+      );
+
+      expect(result.dataOrNull, [2, 1, 1]);
+    });
+
+    test('geçersiz girdi → invalidArgument; enjekte hata döner', () async {
+      final empty = await fake.countByWeek(
+        kinds: const {},
+        fromUtc: from,
+        weeks: 8,
+      );
+      expect(empty.errorOrNull, FirestoreError.invalidArgument);
+      final zero = await fake.countByWeek(
+        kinds: const {ActivityKind.memberJoined},
+        fromUtc: from,
+        weeks: 0,
+      );
+      expect(zero.errorOrNull, FirestoreError.invalidArgument);
+      fake.failNext(FirestoreError.permissionDenied);
+      final denied = await fake.countByWeek(
+        kinds: const {ActivityKind.memberJoined},
+        fromUtc: from,
+        weeks: 8,
+      );
+      expect(denied.errorOrNull, FirestoreError.permissionDenied);
+    });
+  });
 }

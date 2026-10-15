@@ -47,8 +47,9 @@ void main() {
   });
 
   group('T-15 · ActivityRepository · sözleşme', () {
-    test('PLAN §10.4: arayüz yalnızca listActivity taşır (listKinds T-31, '
-        'countByWeek T-38); addToBatch aynı imzayla uygulama sınıfında', () {
+    test('PLAN §10.4: arayüz listActivity + countByWeek (T-38) taşır '
+        '(listKinds T-31 yazılmadı); addToBatch aynı imzayla uygulama '
+        'sınıfında', () {
       final plan = readPlanRepositoryMembers('$ActivityRepository');
       final byMember = {for (final row in plan) row.member: row};
 
@@ -62,6 +63,7 @@ void main() {
       expect(byMember['countByWeek']!.note, '(T-38)');
       expect(interfaceMembers(_interface, '$ActivityRepository'), [
         normalizeDartSource(byMember['listActivity']!.signature),
+        normalizeDartSource(byMember['countByWeek']!.signature),
       ]);
       // SDK tipi alan üye arayüz dosyasına giremez (sınır kuralı B08).
       expect(
@@ -248,6 +250,65 @@ void main() {
         )).errorOrNull,
         FirestoreError.parse,
       );
+    });
+  });
+
+  group('T-38 · ActivityRepository.countByWeek (CD-46)', () {
+    // 1 Eylül 2026 Istanbul gün başı.
+    final from = DateTime.utc(2026, 8, 31, 21);
+
+    Future<void> seedAt(
+      String id,
+      ActivityKind kind,
+      Duration offset, {
+      String clubId = _clubId,
+    }) => db.collection('activity').doc(id).set({
+      'clubId': clubId,
+      'actorId': 'u_pres',
+      'kind': kind.json,
+      'refs': const <String, Object?>{},
+      'createdAt': Timestamp.fromDate(from.add(offset)),
+    });
+
+    test('tüm kulüpler, haftalık kovalar (yarı açık aralık), tür süzgeci; '
+        'boş hafta 0', () async {
+      const day = Duration(days: 1);
+      await seedAt('a1', ActivityKind.memberJoined, Duration.zero);
+      await seedAt(
+        'a2',
+        ActivityKind.applicationApproved,
+        day * 7 - const Duration(seconds: 1),
+        clubId: 'c02',
+      );
+      await seedAt('a3', ActivityKind.memberJoined, day * 7);
+      await seedAt('a4', ActivityKind.memberLeft, day * 8);
+      await seedAt('a5', ActivityKind.memberJoined, day * 21, clubId: 'c03');
+      await seedAt('a6', ActivityKind.memberJoined, -day);
+      await seedAt('a7', ActivityKind.memberJoined, day * 28);
+
+      final result = await repository.countByWeek(
+        kinds: {ActivityKind.memberJoined, ActivityKind.applicationApproved},
+        fromUtc: from,
+        weeks: 4,
+      );
+
+      expect(result.dataOrNull, [2, 1, 0, 1]);
+    });
+
+    test('boş tür kümesi / pozitif olmayan hafta → invalidArgument (sorgu '
+        'yok)', () async {
+      final empty = await repository.countByWeek(
+        kinds: const {},
+        fromUtc: from,
+        weeks: 8,
+      );
+      final zero = await repository.countByWeek(
+        kinds: const {ActivityKind.memberJoined},
+        fromUtc: from,
+        weeks: 0,
+      );
+      expect(empty.errorOrNull, FirestoreError.invalidArgument);
+      expect(zero.errorOrNull, FirestoreError.invalidArgument);
     });
   });
 }

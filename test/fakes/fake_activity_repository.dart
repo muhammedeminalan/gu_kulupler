@@ -46,6 +46,43 @@ final class FakeActivityRepository extends FakeBase
     return FirebaseSuccess(_pager.slice(matching, page));
   }
 
+  /// Gerçek repository gibi tüm kulüplerde sayar: kova `i` =
+  /// `[fromUtc + i·7 gün, fromUtc + (i+1)·7 gün)`; zamanı olmayan kayıt
+  /// sayılmaz (sunucu zamanı henüz yazılmamış).
+  @override
+  Future<FirestoreResult<List<int>>> countByWeek({
+    required Set<ActivityKind> kinds,
+    required DateTime fromUtc,
+    required int weeks,
+  }) async {
+    record('countByWeek', [kinds, fromUtc, weeks]);
+    final failure = switch (takeFailure()) {
+      null => null,
+      final FirestoreError error => error,
+      _ => FirestoreError.unknown,
+    };
+    if (failure != null) return FirebaseFailure(failure);
+    if (kinds.isEmpty ||
+        kinds.length > RepositoryHelpers.whereInMax ||
+        weeks <= 0) {
+      return const FirebaseFailure(FirestoreError.invalidArgument);
+    }
+    final counts = List<int>.filled(weeks, 0);
+    for (final entry in entries) {
+      final at = entry.createdAt;
+      if (at == null || !kinds.contains(entry.kind) || at.isBefore(fromUtc)) {
+        continue;
+      }
+      final index = at.difference(fromUtc).inMicroseconds ~/ _weekMicros;
+      if (index < weeks) counts[index]++;
+    }
+    return FirebaseSuccess(counts);
+  }
+
+  static final int _weekMicros = const Duration(
+    days: DateTime.daysPerWeek,
+  ).inMicroseconds;
+
   /// `createdAt` azalan; zamanı olmayan kayıt sonda.
   static int _newestFirst(ActivityModel a, ActivityModel b) {
     final left = a.createdAt;
