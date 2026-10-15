@@ -3,11 +3,15 @@
 // T-11 · DebugMenu · demo hesap girişi (CD-132 (23)): yalnızca emülatörde
 // `authRepository.signIn(e-posta, demo parolası)` (T-12); hata → `isError`;
 // çıkış.
+// T-43 · çevrimdışı simülasyonu: ConnectivityViewModel bayrağı + gate; üretim
+// derlemesinde etkisiz.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/connectivity/connectivity_gate.dart';
+import 'package:gu_kulupler/core/connectivity/connectivity_view_model.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_accounts.dart';
@@ -213,6 +217,45 @@ void main() {
       final session = container.read(sessionViewModelProvider);
       expect(session.status, AuthStatus.signedOut);
       expect(session.uid, isNull);
+    });
+  });
+
+  group('T-43 · DebugMenuViewModel · çevrimdışı simülasyonu', () {
+    test('açılınca kök bağlantı durumu ve yazma kapısı çevrimdışı; '
+        'kapanınca geri döner', () {
+      final container = _container();
+      final viewModel = container.read(debugMenuViewModelProvider.notifier)
+        ..setSimulatedOffline(true, debugMenuEnabled: true);
+      expect(
+        container.read(debugMenuViewModelProvider).isSimulatedOffline,
+        isTrue,
+      );
+      final connectivity = container.read(connectivityViewModelProvider);
+      expect(connectivity.isOffline, isTrue);
+      expect(connectivity.isSimulated, isTrue);
+      expect(GetIt.I<ConnectivityGate>().simulatedOffline, isTrue);
+
+      viewModel.setSimulatedOffline(false, debugMenuEnabled: true);
+      expect(
+        container.read(debugMenuViewModelProvider).isSimulatedOffline,
+        isFalse,
+      );
+      expect(container.read(connectivityViewModelProvider).isOffline, isFalse);
+      expect(GetIt.I<ConnectivityGate>().simulatedOffline, isFalse);
+    });
+
+    test('DebugMenu kapalı derlemede (üretim) etkisiz', () {
+      final container = _container();
+      // Varsayılan `AppEnvironment.debugMenuEnabled` testte `false`'tur.
+      container
+          .read(debugMenuViewModelProvider.notifier)
+          .setSimulatedOffline(true);
+      expect(
+        container.read(debugMenuViewModelProvider).isSimulatedOffline,
+        isFalse,
+      );
+      expect(container.read(connectivityViewModelProvider).isOffline, isFalse);
+      expect(GetIt.I<ConnectivityGate>().simulatedOffline, isFalse);
     });
   });
 }

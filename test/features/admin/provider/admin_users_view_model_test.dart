@@ -15,10 +15,12 @@ import 'package:gu_kulupler/features/admin/provider/admin_users_view_model.dart'
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 
 import '../../../fakes/fake_admin_repository.dart';
 import '../../../fakes/fake_auth_repository.dart';
 import '../../../fakes/fake_auth_service.dart';
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_user_repository.dart';
@@ -242,6 +244,20 @@ void main() {
       expect(ok, isFalse);
       expect(read(container).userById(target)!.status, UserStatus.active);
       expect(read(container).pendingIds, isEmpty);
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('çevrimdışı (T-43): yazım yok, durum aynı + TST-24', () async {
+      final container = await loaded();
+      final target = read(container).users.first.uid;
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+
+      final ok = await vm(container).suspend(target, 'Neden');
+
+      expect(ok, isFalse);
+      expect(admin.callsTo('suspendUser'), isEmpty);
+      expect(read(container).userById(target)!.status, UserStatus.active);
       expect(feedback.toasts, [ToastId.tst24]);
     });
 

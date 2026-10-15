@@ -115,7 +115,10 @@ mixin ActivityLogViewMixin on ConsumerState<ActivityLogView> {
       case ActivityLogTargetKind.post when id != null:
         PostDetailRoute(clubId: widget.clubId, postId: id).go(context);
       case ActivityLogTargetKind.profile when id != null:
-        ClubUserProfileRoute(userId: id, clubId: widget.clubId).go(context);
+        ClubDetailUserProfileRoute(
+          clubId: widget.clubId,
+          userId: id,
+        ).go(context);
       case ActivityLogTargetKind.applications:
         ManageApplicationsRoute(clubId: widget.clubId).go(context);
       case ActivityLogTargetKind.settings:

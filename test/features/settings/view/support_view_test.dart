@@ -32,6 +32,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_image_picker_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_support_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -168,6 +169,7 @@ void main() {
       expect(find.text(l10n.commonOptional), findsOneWidget);
       expect(_button(tester, _send).full, isTrue);
       expect(find.byType(SupportSentCard), findsNothing);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('hatalar: konu, mesaj, ek ve gönderim satırı', (tester) async {

@@ -224,6 +224,51 @@ describe('admin · updateClubIdentity / updateClubMedia / askı (§4 a.2, a.5, g
     await assertFails(commit('super', admin.identityWrites({}, extra)));
   });
 
+  // W-102 — ClubIdentityPatch.clearCoverPath: yüklenmiş kapak bırakılır (SHT-31 şablona dönüş); süper dal
+  // `coverClearOk` (yalnızca null ya da eski değer — yönetim dalıyla aynı). Yeni yol yalnızca medya dalındadır.
+  const COVERED = Object.freeze({ patch: { ...EDIT.patch, [`clubs/${CLUB}`]: { ...EDIT.patch[`clubs/${CLUB}`], coverPath: MEDIA_PATH(CLUB) } } });
+  const TEMPLATE = Object.freeze({ palette: 'slate', pattern: 'dots', coverSeed: 'sablon-1' });
+  /** Kulüp belgesinde yalnızca [data] alanları (+ `updatedAt`) — tek güncelleme. */
+  const clubUpdate = (data) => ({ club: { op: 'update', path: `clubs/${CLUB}`, data: { ...data, ...payloads.baseUpdate() } } });
+
+  test('W-102 kapak bırak: süper admin coverPath: null (şablonla; tek başına; kimlik alanlarıyla) → allow', async () => {
+    await seed(COVERED);
+    await assertSucceeds(commit('super', clubUpdate({ ...TEMPLATE, coverPath: null })));
+    expect(await readDoc(`clubs/${CLUB}`)).toMatchObject({ coverPath: null, palette: 'slate', logoPath: null });
+    await seed(COVERED);
+    await assertSucceeds(commit('super', clubUpdate({ coverPath: null })));
+    await seed(COVERED);
+    await assertSucceeds(commit('super', admin.identityWrites({}, { ...TEMPLATE, coverPath: null })));
+    expect(await readDoc(`clubs/${CLUB}`)).toMatchObject({ coverPath: null, categoryId: 'k03', name: 'Robotik Topluluğu' });
+  });
+
+  test.each([
+    ['bu kulübün yeni yolu (yalnızca medya dalında)', () => MEDIA_PATH(CLUB, 'png')],
+    ['başka kulübün yolu', () => MEDIA_PATH(OTHER)],
+    ['desen dışı yol', () => `clubs/${CLUB}/kapak.png`],
+    ['dizgi olmayan değer', () => 0],
+  ])('W-102 kimlik yamasında coverPath %s → deny', async (_title, value) => {
+    await seed(COVERED);
+    await assertFails(commit('super', admin.identityWrites({}, { ...TEMPLATE, coverPath: value() })));
+    expect(await readDoc(`clubs/${CLUB}`)).toMatchObject({ coverPath: MEDIA_PATH(CLUB) });
+  });
+
+  test.each([...CONTEXTS.filter((role) => role !== 'super'), ...VARIANTS])(
+    'W-102 claim yok: %s · kimlik yaması + coverPath: null → deny',
+    async (role) => {
+      await seed(COVERED);
+      await assertFails(commit(role, admin.identityWrites({}, { ...TEMPLATE, coverPath: null })));
+      expect(await readDoc(`clubs/${CLUB}`)).toMatchObject({ coverPath: MEDIA_PATH(CLUB), name: `Test Kulübü ${CLUB}` });
+    },
+  );
+
+  test('W-102 yönetici olmayan üye / danışman yalnızca coverPath: null → deny (yönetim dalı etkin yöneticiye)', async () => {
+    for (const role of ['member', 'advisor', 'student']) {
+      await seed(COVERED);
+      await assertFails(commit(role, clubUpdate({ coverPath: null })));
+    }
+  });
+
   test('medya: süper admin askıdaki kulübün logosunu yazar; desen dışı yol → deny', async () => {
     await seed();
     await assertSucceeds(commit('super', admin.mediaWrites({ club: OTHER })));

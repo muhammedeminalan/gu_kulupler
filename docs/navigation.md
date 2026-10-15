@@ -53,11 +53,13 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 |---|---|---|---|---|---|
 | CLB-01 | `/clubs` | `ClubsRoute` | T | A | `/clubs` |
 | CLB-02 | `/clubs/search` | `ClubsSearchRoute` | CLB-01 | A | `/clubs/search` |
-| CLB-07 | `/clubs/user/:userId?clubId=` | `ClubUserProfileRoute` | CLB-01 | A (+ `clubId` varsa üyelik bağlamı) | `/users/:id` |
+| CLB-07 (kulüpsüz bağlam) | `/clubs/user/:userId?clubId=` | `ClubUserProfileRoute` | CLB-01 | A (+ `clubId` varsa üyelik bağlamı) | `/users/:id` |
 | CLB-03 (+FED-01) | `/clubs/:id?tab=about\|events\|posts\|members` | `ClubDetailRoute` | CLB-01 | A | `/clubs/:id` |
 | CLB-04 | `/clubs/:id/applied` | `ClubAppliedRoute` | CLB-03 | A | `/clubs/:id/applied` |
 | CLB-05 | `/clubs/:id/application` | `ClubApplicationRoute` | CLB-03 | A | `…/application` |
 | CLB-06 | `/clubs/:id/members` | `ClubMembersRoute` | CLB-03 | üye (`seesInside`) | `…/members` |
+| CLB-07 (üye listesi) | `/clubs/:id/members/:userId` | `ClubMembersUserProfileRoute` | CLB-06 | üye (üyelik bağlamı `:id`) | `/users/:id` |
+| CLB-07 (kulüp bağlamı) | `/clubs/:id/user/:userId` | `ClubDetailUserProfileRoute` | CLB-03 | A (üyelik bağlamı `:id`) | `/users/:id` |
 | FED-02 | `/clubs/:id/posts/:postId` | `PostDetailRoute` | CLB-03 | üye | `…/posts/:postId` |
 | FED-03 | `/clubs/:id/compose?edit=` | `ComposeRoute` | CLB-03 | M | `…/compose` |
 | MGT-01 | `/clubs/:id/manage` | `ManageRoute` | CLB-03 | V | `/manage/:clubId` |
@@ -72,6 +74,8 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 | MGT-10 | `/clubs/:id/manage/activity` | `ActivityLogRoute` | MGT-01 | V | `…/activity` |
 
 `:id` ve `:clubId` aynı kulüp kimliğidir (yol parametresi adı `clubId` olarak birleştirilir; prototipteki `id`/`clubId` ikiliği taşınmaz).
+
+**CLB-07 geri dönüşü (K-69 kapandı — kullanıcı kararı 2026-10-15: "geldiği kulübe"):** kulüp içinden açılan profil kulübün alt rotasıdır, geri açıldığı kulüp ekranına döner. CLB-06 üye satırı → `ClubMembersUserProfileRoute` (geri → CLB-06); CLB-03 kişi / üye önizleme satırları, FED-01 yazar satırı, FED-02 yazar / yorum avatarı ve yönetim ekranlarının kişi bağlantıları (MGT-01 / 02 / 03 / 10) → `ClubDetailUserProfileRoute` (geri → CLB-03; yönetim ekranlarından açılan gönderi FED-02 gibi). Üyelik bağlamı (`clubId`) yoldan gelir. `ClubUserProfileRoute` kulüpsüz bağlam içindir; `?clubId=` geriye dönük bağlantılar için kalır.
 
 ### 2.3 Sekme: Etkinlikler (`/events`)
 
@@ -118,7 +122,7 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 | CLB-07 (paylaşılan) | `/admin/users/:userId` | `AdminUserProfileRoute` | ADM-05 | S |
 
 - Sekme çubuğu: `Kulüpler · Etkinlikler · Bildirimler · [Admin] · Profil`; **Admin yalnızca `isSuperAdmin`** (kabuk bunu gösterir/gizler; rota guard'ı yine de uygular). Bildirim rozeti: okunmamış sayısı, 9 üstü "9+".
-- **Paylaşılan yaprak ekranlar** (bir görünüm sınıfı, birden çok rota sınıfı): `Search` (clubs, events), `NotificationPrefs` (notifications, profile), `UserProfile/CLB-07` (clubs, profile, admin). Gerekçe: bu ekranlar birden çok sekmeden doğal olarak açılır ve ağır alt ağaçları yoktur; sekme değiştirmek yanlış hissettirirdi.
+- **Paylaşılan yaprak ekranlar** (bir görünüm sınıfı, birden çok rota sınıfı): `Search` (clubs, events), `NotificationPrefs` (notifications, profile), `UserProfile/CLB-07` (clubs ×3 — kulüpsüz, CLB-03 altı, CLB-06 altı; profile, admin). Gerekçe: bu ekranlar birden çok sekmeden doğal olarak açılır ve ağır alt ağaçları yoktur; sekme değiştirmek yanlış hissettirirdi.
 - Rota sınıfı sayısı artmasın diye paylaşılanların `build()` gövdeleri aynı view'a delege eder (tekrarlı widget yasağı D-16).
 
 ## 3. Yönlendirme (redirect) tablosu

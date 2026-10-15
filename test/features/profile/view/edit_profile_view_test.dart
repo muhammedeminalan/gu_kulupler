@@ -30,6 +30,7 @@ import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fixtures/user_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -188,6 +189,7 @@ void main() {
       expect(save.label, l10n.commonSave);
       expect(save.disabled, isTrue);
       expect(save.loading, isFalse);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('hatalar: ad, ilgi alanı, fotoğraf ve kaydetme', (

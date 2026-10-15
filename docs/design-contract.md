@@ -26,7 +26,7 @@
 - **Sınıf izi (D-19):** her ekran/sheet/dialog widget'ının üstünde `/// Design: CLB-01` (birden fazla ise virgülle). Toast için `ToastId` enum üyesinin dokümantasyon yorumu `/// Design: TST-12`.
 - **Aksiyon anahtarı (D-18):** `GuKey.action('CLB-01.join.c03')`. Dinamik kısım şablonlanır: kodda `GuKey.action('CLB-01.join.${club.id}')`; envanter karşılaştırması şablonu `*` olarak genişletir. Sekme çubuğu: `NAV.tab.<tab>` (ortak kabuk, ayrı ekranlarda tekrar sayılır; kabuk bir kez uygulanır).
 - **Uygulanmayan (demo/mock) aksiyonlar** — envanterden **muaf** (`tool/check_design_coverage.js` `EXEMPT_ACTIONS` listesi, gerekçeli):
-  `AUT-01.demoAccount.*` (6), `AUT-01.demoToggle`, `AUT-03.demoVerify` (e-posta bağlantısı gerçekte posta kutusundan), `EVT-03.demoScan`, `MGT-07.demoScan.valid|used|invalid`, ayrıca Kontrol Paneli / Demo FAB / cihaz çerçevesi / sahte durum çubuğu / `TST-58` ("Demo: … açılıyor"). Bunların işlevi gerçek akışlarla karşılanır (örn. `MGT-07.demoScan.*` yerine gerçek QR okutma ve manuel kod).
+  `AUT-01.demoAccount.*` (6), `AUT-01.demoToggle`, `AUT-03.demoVerify` (e-posta bağlantısı gerçekte posta kutusundan), `EVT-03.demoScan`, `MGT-07.demoScan.valid|used|invalid`, `DLG-04.allow|notNow|scrim` (MGT-08 yakalama sızıntısı — K-86, CD-159; kullanıcı onayı 2026-10-15), `FED-01.back` (QA sayfasından açılan bağımsız "Akış" sayfasının geri düğmesi; FED-01 CLB-03 sekmesidir — K-70, W-72; kullanıcı onayı 2026-10-15), ayrıca Kontrol Paneli / Demo FAB / cihaz çerçevesi / sahte durum çubuğu / `TST-58` ("Demo: … açılıyor"). Bunların işlevi gerçek akışlarla karşılanır (örn. `MGT-07.demoScan.*` yerine gerçek QR okutma ve manuel kod).
 
 ## 3. Doğrulama katmanları (her biri otomatik; kırmızıysa commit yok)
 

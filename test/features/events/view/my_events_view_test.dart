@@ -28,6 +28,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fixtures/club_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -158,6 +159,7 @@ void main() {
       final leave = tester.widget<GuIconButton>(find.byKey(_k('leave.e01')));
       expect(leave.icon, GuIcons.x);
       expect(leave.semanticLabel, l10n.eventCtaLeave);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('bekleme sekmesi: yalnızca "Ayrıl"; geçmiş: "Katıldın", '

@@ -43,6 +43,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../../fakes/fake_connectivity_service.dart';
 import '../../../../fakes/fake_feedback_service.dart';
+import '../../../../helpers/a11y_guidelines.dart';
 import '../../../../helpers/action_inventory.dart';
 import '../../../../helpers/device_matrix.dart';
 import '../../../../helpers/fake_app_clock.dart';
@@ -156,13 +157,14 @@ Future<GoRouter> _pumpRoute(
       routes: [
         GoRoute(path: '/start', builder: (_, _) => const _Stub('/start')),
         GoRoute(
-          path: '/clubs/user/:userId',
-          builder: (_, state) => _Stub(state.uri.toString()),
-        ),
-        GoRoute(
           path: '/clubs/:clubId',
           builder: (_, _) => const _Host(),
           routes: [
+            // T-43 · K-69: kulüp bağlamlı CLB-07 (geri → CLB-03).
+            GoRoute(
+              path: 'user/:userId',
+              builder: (_, state) => _Stub(state.uri.toString()),
+            ),
             GoRoute(
               path: 'posts/:postId',
               builder: (_, state) => _Stub(state.uri.toString()),
@@ -261,6 +263,7 @@ void main() {
         );
         expect(find.byType(FeedComposeEntry), findsNothing);
         expect(find.byKey(_compose), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 
@@ -441,10 +444,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tapKey(tester, _author(kImagePost.id));
       await tester.pumpAndSettle();
-      expect(
-        _location(router),
-        '/clubs/user/${kImagePost.authorId}?clubId=$kFeedClubId',
-      );
+      expect(_location(router), '$_feedPath/user/${kImagePost.authorId}');
     });
 
     testWidgets('FED-02 sayfasından geri dönülünce gönderi yeniden okunur', (

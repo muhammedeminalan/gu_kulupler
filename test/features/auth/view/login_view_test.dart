@@ -37,6 +37,7 @@ import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/register_fakes.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -319,6 +320,7 @@ void main() {
           '${l10n.authLegalPrefix}  ${l10n.commonAnd} ${l10n.authLegalSuffix}',
         );
         expect(legal.textAlign, TextAlign.center);
+        await expectA11yGuidelines(tester);
       });
     }
 

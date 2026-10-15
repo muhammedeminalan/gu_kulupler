@@ -39,6 +39,7 @@ import '../../../fakes/fake_club_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -288,6 +289,7 @@ void main() {
         expect(cards.map((c) => c.club), kDefaultState.suggested);
         expect(cards.every((c) => !c.grid), isTrue);
         expect(cards.every((c) => c.access == ClubAccess.visitor), isTrue);
+        await expectA11yGuidelines(tester);
       });
     }
 

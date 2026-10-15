@@ -1378,6 +1378,17 @@ void main() {
               advisor: AdvisorInput(name: 'Ayşe Yılmaz', title: 'Doç. Dr.'),
             ),
           ),
+          'AdminRepository.updateClubIdentity · SHT-31 şablona dön (kapak '
+              'bırakılır)': () => admin.updateClubIdentity(
+            clubId,
+            const ClubIdentityPatch(
+              categoryId: 'k03',
+              palette: ClubPalette.slate,
+              pattern: ClubPattern.dots,
+              coverSeed: 'sablon-1',
+              clearCoverPath: true,
+            ),
+          ),
           'AdminRepository.updateClubMedia · logo': () => admin.updateClubMedia(
             clubId,
             uploaderId: superId,

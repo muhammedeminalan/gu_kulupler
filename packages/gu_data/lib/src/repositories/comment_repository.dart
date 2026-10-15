@@ -82,6 +82,19 @@ abstract interface class CommentRepository {
     required String clubId,
   });
 
+  /// [commentId] yorumu (W-103: ADM-04 satır başlığı / SHT-26 yorum hedefi
+  /// önizlemesi — `PostRepository.getPost` ile aynı sözleşme).
+  ///
+  /// Okunan belge silinmişse [FirestoreError.notFound]. Gizlenmiş ve
+  /// silinmiş yorumu Security Rules yalnızca yazarına, kulüp yönetimine ve
+  /// süper admine verir (rules-spec §6.d; süper admin gönderiye bakılmadan
+  /// okur): gizlenmiş yorum bu okuyuculara **döner**; diğerleri ve var
+  /// olmayan yorumu soranlar [FirestoreError.permissionDenied] alır (çağıran
+  /// ikisini de "bulunamadı" sayar). Security Rules kapalıyken var olmayan
+  /// belge [FirestoreError.notFound]. Geçersiz kimlik
+  /// [FirestoreError.invalidArgument].
+  Future<FirestoreResult<CommentModel>> getComment(String commentId);
+
   /// [commentId] yorumunu moderasyonla gizler (süper admin; şikayet çözümü
   /// "kaldırıldı"): tek yazımda `isHidden: true`, `hiddenBy: actorId`,
   /// `hiddenAt` sunucu zamanı. `commentCount` **değişmez** (sayaç silinmemiş

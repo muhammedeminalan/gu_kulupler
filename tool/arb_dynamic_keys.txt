@@ -1,0 +1,176 @@
+# ARB anahtar istisnaları — `node tool/check_arb_parity.js --unused` (ARB14).
+# Biçim: satır başına bir anahtar; `önek*` joker; `#` sonrası yorum.
+# Tarayıcı yalnız `l10n.` / `loc.` / `localizations.` / `strings.` / `AppLocalizations.of(…).` alıcılarını görür;
+# aşağıdaki anahtarlar başka alıcıyla (`l`, `_l10n`, örtük `this`) ya da ID / tür kataloğundan seçilerek kullanılır.
+# Her satır ilk kullanım yerini gösterir. Kullanım kalkarsa satırı da sil (joker kullanılmadı: ölü anahtar gizlenmesin).
+
+# ── lib/product/widget/manage/activity_texts.dart — Aktivite türü → `activity.<tür>` metni (switch, alıcı `l` / `_l10n`).
+activityAnnouncement                # lib/product/widget/manage/activity_texts.dart:79
+activityApplicationApproved         # lib/product/widget/manage/activity_texts.dart:51
+activityApplicationReceived         # lib/product/widget/manage/activity_texts.dart:50
+activityApplicationRejected         # lib/product/widget/manage/activity_texts.dart:55
+activityEventCancelled              # lib/product/widget/manage/activity_texts.dart:74
+activityEventPublished              # lib/product/widget/manage/activity_texts.dart:70
+activityMemberJoined                # lib/product/widget/manage/activity_texts.dart:59
+activityMemberLeft                  # lib/product/widget/manage/activity_texts.dart:60
+activityMemberRemoved               # lib/product/widget/manage/activity_texts.dart:61
+activityPoll                        # lib/product/widget/manage/activity_texts.dart:80
+activityPostCreated                 # lib/product/widget/manage/activity_texts.dart:78
+activityRoleChanged                 # lib/product/widget/manage/activity_texts.dart:65
+activitySettingsChanged             # lib/product/widget/manage/activity_texts.dart:81
+
+# ── lib/features/admin/view/admin_view.dart — ADM-01 KPI / grafik yardımcıları `AppLocalizations l` parametresiyle okur.
+adminAttendanceDesc                 # lib/features/admin/view/admin_view.dart:268
+adminAttendanceRate                 # lib/features/admin/view/admin_view.dart:259
+adminKpiActiveClubs                 # lib/features/admin/view/admin_view.dart:108
+adminKpiNewUsers                    # lib/features/admin/view/admin_view.dart:117
+adminKpiOpenReports                 # lib/features/admin/view/admin_view.dart:132
+adminKpiSuspended                   # lib/features/admin/view/admin_view.dart:125
+adminKpiUsers                       # lib/features/admin/view/admin_view.dart:115
+adminTopClubs                       # lib/features/admin/view/admin_view.dart:195
+adminWau                            # lib/features/admin/view/admin_view.dart:164
+mgtChartPoint                       # lib/features/admin/view/admin_view.dart:171
+mgtChartTooltip                     # lib/features/admin/view/admin_view.dart:173
+mgtWeekN                            # lib/features/admin/view/admin_view.dart:156
+
+# ── lib/features/management/view/manage_view.dart — MGT-01 KPI / grafik yardımcıları `AppLocalizations l` parametresiyle okur.
+mgtChartAria                        # lib/features/management/view/manage_view.dart:249
+mgtGrowth                           # lib/features/management/view/manage_view.dart:238
+mgtKpiAnnouncements                 # lib/features/management/view/manage_view.dart:154
+mgtKpiEvents                        # lib/features/management/view/manage_view.dart:147
+mgtKpiMembers                       # lib/features/management/view/manage_view.dart:131
+mgtKpiNewThisMonth                  # lib/features/management/view/manage_view.dart:133
+mgtKpiPending                       # lib/features/management/view/manage_view.dart:139
+mgtWeeks8                           # lib/features/management/view/manage_view.dart:242
+
+# ── lib/product/widget/notification/notification_texts.dart — Bildirim türü → `notifType.<tür>.title|body` (switch, alıcı `l` / `_l10n`); `notifTargetRemoved` silinmiş hedef yer tutucusu.
+notifTargetRemoved                  # lib/product/widget/notification/notification_texts.dart:115
+notifTypeAnnouncementBody           # lib/product/widget/notification/notification_texts.dart:82
+notifTypeAnnouncementTitle          # lib/product/widget/notification/notification_texts.dart:40
+notifTypeApplicationApprovedBody    # lib/product/widget/notification/notification_texts.dart:68
+notifTypeApplicationReceivedBody    # lib/product/widget/notification/notification_texts.dart:63
+notifTypeApplicationRejectedBody    # lib/product/widget/notification/notification_texts.dart:72
+notifTypeEventCancelledBody         # lib/product/widget/notification/notification_texts.dart:89
+notifTypeEventNewBody               # lib/product/widget/notification/notification_texts.dart:85
+notifTypeEventNewTitle              # lib/product/widget/notification/notification_texts.dart:43
+notifTypeNewReportBody              # lib/product/widget/notification/notification_texts.dart:97
+notifTypeRemovedFromClubBody        # lib/product/widget/notification/notification_texts.dart:75
+notifTypeReportResolvedBody         # lib/product/widget/notification/notification_texts.dart:96
+notifTypeRoleChangedBody            # lib/product/widget/notification/notification_texts.dart:78
+notifTypeSystemMaintenanceBody      # lib/product/widget/notification/notification_texts.dart:100
+notifTypeSystemMaintenanceTitle     # lib/product/widget/notification/notification_texts.dart:53
+notifTypeSystemWelcomeBody          # lib/product/widget/notification/notification_texts.dart:101
+notifTypeWaitlistPromotedBody       # lib/product/widget/notification/notification_texts.dart:93
+
+# ── lib/product/format/relative_time_formatter.dart — Göreli zaman biçimleyici: süreye göre seçilen anahtar (alıcı `_l10n`).
+timeDayAt                           # lib/product/format/relative_time_formatter.dart:53
+timeDaysAgo                         # lib/product/format/relative_time_formatter.dart:35
+timeHoursAgo                        # lib/product/format/relative_time_formatter.dart:32
+timeInDays                          # lib/product/format/relative_time_formatter.dart:61
+timeMinutesAgo                      # lib/product/format/relative_time_formatter.dart:29
+timeTomorrow                        # lib/product/format/relative_time_formatter.dart:46
+timeWeeksAgo                        # lib/product/format/relative_time_formatter.dart:37
+timeYesterday                       # lib/product/format/relative_time_formatter.dart:34
+
+# ── lib/product/feedback/catalogs/toasts/toast_catalog.dart — ToastId → metin kataloğu: `ToastId.x => _kind((l, p) => l.x…)`; anahtar ToastId değerinden switch ile seçilir (FeedbackService.showToast).
+tst01                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:183
+tst02                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:184
+tst03                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:185
+tst04                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:186
+tst05                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:187
+tst06                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:188
+tst07                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:189
+tst08                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:190
+tst09Blocked                        # lib/product/feedback/catalogs/toasts/toast_catalog.dart:192
+tst09Unblocked                      # lib/product/feedback/catalogs/toasts/toast_catalog.dart:192
+tst10                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:195
+tst11Removed                        # lib/product/feedback/catalogs/toasts/toast_catalog.dart:197
+tst11Saved                          # lib/product/feedback/catalogs/toasts/toast_catalog.dart:197
+tst12                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:200
+tst13                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:201
+tst14                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:202
+tst15                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:203
+tst16                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:204
+tst17                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:205
+tst18                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:206
+tst19                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:207
+tst20                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:208
+tst21                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:209
+tst22                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:210
+tst23                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:211
+tst24                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:212
+tst25                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:213
+tst26                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:214
+tst27                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:217
+tst28                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:218
+tst29                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:219
+tst30                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:220
+tst31                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:221
+tst32                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:222
+tst33                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:223
+tst34                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:225
+tst35                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:228
+tst36                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:229
+tst37Off                            # lib/product/feedback/catalogs/toasts/toast_catalog.dart:230
+tst37Set                            # lib/product/feedback/catalogs/toasts/toast_catalog.dart:230
+tst38                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:231
+tst39                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:232
+tst40                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:233
+tst41                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:235
+tst42                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:238
+tst43                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:239
+tst44                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:240
+tst45                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:241
+tst46                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:242
+tst47                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:243
+tst48                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:244
+tst49                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:245
+tst50Activated                      # lib/product/feedback/catalogs/toasts/toast_catalog.dart:247
+tst50Suspended                      # lib/product/feedback/catalogs/toasts/toast_catalog.dart:247
+tst51                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:249
+tst52Suspended                      # lib/product/feedback/catalogs/toasts/toast_catalog.dart:251
+tst52Unsuspended                    # lib/product/feedback/catalogs/toasts/toast_catalog.dart:251
+tst53Pinned                         # lib/product/feedback/catalogs/toasts/toast_catalog.dart:254
+tst53Unpinned                       # lib/product/feedback/catalogs/toasts/toast_catalog.dart:254
+tst54Closed                         # lib/product/feedback/catalogs/toasts/toast_catalog.dart:256
+tst54Opened                         # lib/product/feedback/catalogs/toasts/toast_catalog.dart:256
+tst55                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:258
+tst56                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:261
+tst57                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:262
+tstX1                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:263
+tstX10                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:272
+tstX11                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:273
+tstX12                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:274
+tstX13                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:275
+tstX14                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:276
+tstX15Closed                        # lib/product/feedback/catalogs/toasts/toast_catalog.dart:277
+tstX15Opened                        # lib/product/feedback/catalogs/toasts/toast_catalog.dart:277
+tstX16                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:278
+tstX17                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:279
+tstX18                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:280
+tstX19                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:281
+tstX2                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:264
+tstX20                              # lib/product/feedback/catalogs/toasts/toast_catalog.dart:282
+tstX3                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:265
+tstX4                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:266
+tstX5                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:267
+tstX6                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:268
+tstX7                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:269
+tstX8                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:270
+tstX9                               # lib/product/feedback/catalogs/toasts/toast_catalog.dart:271
+
+# ── lib/core/l10n/build_context_l10n_x.dart — `AppLocalizationsX.systemWelcomeTitle` örtük `this` ile çağırır (D-01 ürün adı yer tutucusu).
+notifTypeSystemWelcomeTitle         # lib/core/l10n/build_context_l10n_x.dart:22
+
+# ── Uygulamada çizilmeyen (demo / prototip kabuğu) ama testte YOKLUK doğrulaması ya da test başlığı olarak okunan anahtarlar.
+#    Test `l10n.<anahtar>` okuduğundan ARB'den çıkarılamaz; test sabit metne geçerse buradan ve ARB'den silinebilir.
+authDemoAccounts                    # test/features/auth/view/login_view_test.dart:399 — demo hesap bölümü çizilmez
+authDemoPassword                    # test/features/auth/view/login_view_test.dart:401 — demo şifre çizilmez
+authVerifyDemoLink                  # test/features/auth/view/verify_email_view_test.dart:255 — "(Demo) Bağlantıya tıkladım" çizilmez
+scanDemoValid                       # test/features/management/view/scan_view_test.dart:165 — MGT-07 demo tarama düğmeleri çizilmez (K-85 a)
+ticketDemoScan                      # test/features/events/view/ticket_view_test.dart:189 — "Okutuldu simüle et" çizilmez
+ticketBrightness                    # test/features/events/view/ticket_view_test.dart:190 — parlaklık rozeti yok (CD-145)
+sht16Pick                           # test/product/feedback/photo_source_sheet_test.dart:177 — SHT-16 mock galeri ızgarası yok (CD-16)
+authLoginTitle                      # test/product/navigation/route_placeholder_view_test.dart:19 — yer tutucu sayfa başlığı örneği (AUT-01 başlıksız)
+authSetupTitle                      # test/product/navigation/route_placeholder_view_test.dart:40 — yer tutucu sayfa başlığı örneği
+feedTitle                           # test/features/clubs/view/widget/club_feed_tab_test.dart:99 — test iskelesinin AppBar başlığı (FED-01 sekme, CD-10)

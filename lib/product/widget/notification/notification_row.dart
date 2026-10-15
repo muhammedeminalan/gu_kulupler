@@ -285,46 +285,52 @@ class _NotificationRowState extends ConsumerState<NotificationRow> {
             ),
     };
 
-    return Semantics(
-      customSemanticsActions: {
-        if (_unread)
-          CustomSemanticsAction(label: l10n.notifMarkRead): widget.onToggleRead,
-        CustomSemanticsAction(label: l10n.commonDelete): widget.onDelete,
-      },
-      child: ColoredBox(
-        color: colors.bgCanvas,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Padding(
-                padding: GuInsets.sym(h: GuSpacing.s20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _swipeLabel(
-                      color: colors.stateInfo,
-                      label: l10n.notifMarkRead,
-                      icon: GuIcons.check,
-                      visible: _dx > 0 && _unread,
-                      iconFirst: true,
-                    ),
-                    _swipeLabel(
-                      color: colors.stateDanger,
-                      label: l10n.commonDelete,
-                      icon: GuIcons.trash2,
-                      visible: _dx < 0,
-                      iconFirst: false,
-                    ),
-                  ],
+    // Tek erişilebilirlik düğümü: satır etiketi + aç (dokunma) + menü (uzun
+    // basma) + "Okundu yap" / "Sil" özel eylemleri (T-43 a11y: etiketsiz
+    // uzun basma düğümü kalmaz).
+    return MergeSemantics(
+      child: Semantics(
+        customSemanticsActions: {
+          if (_unread)
+            CustomSemanticsAction(label: l10n.notifMarkRead):
+                widget.onToggleRead,
+          CustomSemanticsAction(label: l10n.commonDelete): widget.onDelete,
+        },
+        child: ColoredBox(
+          color: colors.bgCanvas,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: GuInsets.sym(h: GuSpacing.s20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _swipeLabel(
+                        color: colors.stateInfo,
+                        label: l10n.notifMarkRead,
+                        icon: GuIcons.check,
+                        visible: _dx > 0 && _unread,
+                        iconFirst: true,
+                      ),
+                      _swipeLabel(
+                        color: colors.stateDanger,
+                        label: l10n.commonDelete,
+                        icon: GuIcons.trash2,
+                        visible: _dx < 0,
+                        iconFirst: false,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            RawGestureDetector(
-              key: widget.swipeKey,
-              gestures: gestures,
-              child: front,
-            ),
-          ],
+              RawGestureDetector(
+                key: widget.swipeKey,
+                gestures: gestures,
+                child: front,
+              ),
+            ],
+          ),
         ),
       ),
     );

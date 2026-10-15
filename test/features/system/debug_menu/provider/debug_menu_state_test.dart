@@ -1,5 +1,5 @@
 // T-11 · DebugMenu · DebugMenuState: props / copyWith tüm alanlar
-// (PLAN §12.16).
+// (PLAN §12.16). T-43 · `isSimulatedOffline` (çevrimdışı simülasyonu).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_menu_state.dart';
@@ -9,8 +9,8 @@ void main() {
   group('T-11 · DebugMenuState', () {
     const a = DebugMenuState();
 
-    test('props tüm alanları içerir (alan sayısı = 6)', () {
-      expect(a.props.length, 6);
+    test('props tüm alanları içerir (alan sayısı = 7)', () {
+      expect(a.props.length, 7);
     });
 
     test('varsayılanlar: sistem teması, sistem dili, %100; süren giriş ve '
@@ -18,6 +18,7 @@ void main() {
       expect(a.themeMode, ThemeMode.system);
       expect(a.locale, isNull);
       expect(a.textScale, GuTextScaleLevel.s100);
+      expect(a.isSimulatedOffline, isFalse);
       expect(a.signingInId, isNull);
       expect(a.isError, isFalse);
       expect(a.errorCode, isNull);
@@ -33,6 +34,8 @@ void main() {
         GuTextScaleLevel.s160,
       );
       expect(a.copyWith(textScale: GuTextScaleLevel.s160), isNot(a));
+      expect(a.copyWith(isSimulatedOffline: true).isSimulatedOffline, isTrue);
+      expect(a.copyWith(isSimulatedOffline: true), isNot(a));
       expect(a.copyWith(signingInId: 'u_ayse').signingInId, 'u_ayse');
       expect(a.copyWith(signingInId: 'u_ayse'), isNot(a));
       expect(a.copyWith(isError: true).isError, isTrue);
@@ -47,6 +50,7 @@ void main() {
         themeMode: ThemeMode.light,
         locale: const Locale('tr'),
         textScale: GuTextScaleLevel.s130,
+        isSimulatedOffline: true,
         signingInId: 'u_elif',
         isError: true,
         errorCode: 'network',

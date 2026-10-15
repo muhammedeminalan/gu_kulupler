@@ -3272,7 +3272,7 @@ Arayüz dosyası T-15'te açılır; sonraki task'lar **metot ekler** (önceki im
 | `restoreComment` | `Future<FirestoreResult<void>> restoreComment(String commentId, {required String postId})` | **B**: `restore` + `posts/{postId}` update `{commentCount: increment(1), lastCommentRef: 'comments/{commentId}'}` (TST-45) | `+1` | §3.6 U |
 | `watchComments` | `Stream<FirestoreResult<List<CommentModel>>> watchComments(String postId, {required String clubId})` | `where postId==P, clubId==X, isDeleted==false, isHidden==false` `orderBy createdAt asc` **canlı** (§10.6) | — | §6 FED-02; indeks (`postId`,`clubId`,`isDeleted`,`isHidden`,`createdAt`) |
 | `hide` | `Future<FirestoreResult<void>> hide(String commentId, {required String actorId})` | süper admin `isHidden*` (`AdminRepository` batch'inden) | — | §3.6 U(süper) |
-| `getComment` (T-40) | `Future<FirestoreResult<CommentModel>> getComment(String commentId)` | 1 get; SHT-26 şikayet hedefi önizlemesi (süper admin: gizli/silinmiş belge de döner; diğer çağıranlar için `isDeleted`/`isHidden` → `notFound`) | — | §3.6 R |
+| `getComment` (T-40) | `Future<FirestoreResult<CommentModel>> getComment(String commentId)` | 1 get; SHT-26 şikayet hedefi önizlemesi (T-43 / W-103, CD-166: `getPost` sözleşmesi — silinmiş belge herkese `notFound` (SHT-26 "İçerik kaldırıldı"); gizlenmiş belge süper admine döner, diğer çağıranlara `notFound`) | — | §3.6 R |
 
 Engellenen kullanıcıların yorumları `SessionState.blockedUserIds` ile ViewModel'de süzülür (domain-model §2.13).
 
@@ -4317,7 +4317,7 @@ ViewModel testi aynı dosyanın yanında `post_detail_view_model_test.dart`: `cr
 - T-11'de beş kök sayfa **geçici yer tutucu** (`Placeholder` + `// TODO(T-17)`, `// TODO(T-24)`, `// TODO(T-26)`, `// TODO(T-38)`, `// TODO(T-27)`); T-43 `TODO01` taraması sıfır bulur.
 - Sheet/dialog/toast `rootNavigatorKey` üzerinden açılır (`useRootNavigator: true`), böylece alt çubuğun üstünde durur ve geri tuşu önce onları kapatır.
 
-### 13.3 Rota tablosu — nihai (51 ekran · 57 rota sınıfı; `/debug` tasarım ID'si olmayan tek rota — CD-69)
+### 13.3 Rota tablosu — nihai (51 ekran · 59 rota sınıfı; `/debug` tasarım ID'si olmayan tek rota — CD-69)
 
 Guard kodları navigation.md §2 ile aynı: `A` aktif oturum (doğrulanmış + profil tamam), `M` o kulüpte `manager` (board/president), `V` `manager|advisor`, `S` süper admin, `G` misafir (oturum yok), `üye` = `session.accessTo(clubId) ∈ {member, manager, advisor}` (`seesInside`), `—` guard yok. "View" sütunu `lib/features/<feature>/view/<ad>_view.dart` dosyasıdır (§4.5 ağacı); "Task" = view'ın gerçek olduğu task (rota sınıfı T-11'de kök/yer tutucuyla kurulanlarda parantezle).
 
@@ -4338,17 +4338,19 @@ Guard kodları navigation.md §2 ile aynı: `A` aktif oturum (doğrulanmış + p
 | AUT-05 | `SetupProfileRoute` | `/setup-profile` | kök | doğrulanmış, profil eksik | `SetupProfileView` `lib/features/auth/view/setup_profile_view.dart` | T-14 (T-11 yer tutucu, W-02) |
 | AUT-06 | `LegalRoute({required LegalTab tip, LegalOrigin? from})` | `/legal/:tip` (`?from=register`: kayıt formundan açılış → `AUT-06.accept` çubuğu; CD-134 madde 16) | kök | — (`push` ile açılan tek rota) | `LegalView` `lib/features/auth/view/legal_view.dart`; `enum LegalTab { kvkk, gizlilik, kosullar }` (sekme sırası; `lib/product/navigation/legal_tab.dart`, `routes/auth_routes.dart` yeniden dışa aktarır — B05: rotayı clubs ve settings feature'ları da açar, CD-134 madde 6) | T-13 |
 
-#### 13.3.2 Sekme Kulüpler — dal 0 (20 rota sınıfı)
+#### 13.3.2 Sekme Kulüpler — dal 0 (22 rota sınıfı)
 
 | ID | Rota sınıfı | Flutter yolu | Ebeveyn | Guard | View (dosya) | Task |
 |---|---|---|---|---|---|---|
 | CLB-01 | `ClubsRoute` | `/clubs` | T (dal kökü) | A | `ClubListView` `lib/features/clubs/view/club_list_view.dart` | T-17 (T-11 yer tutucu) |
 | CLB-02 | `ClubsSearchRoute` | `/clubs/search` | `ClubsRoute` | A | `SearchView(scope: SearchScope.clubs)` `lib/features/search/view/search_view.dart` | T-17 |
-| CLB-07 | `ClubUserProfileRoute({required String userId, String? clubId})` | `/clubs/user/:userId?clubId=` | `ClubsRoute` | A (`clubId` varsa üyelik bağlamı) | `UserProfileView` `lib/features/clubs/view/user_profile_view.dart` | T-18 |
+| CLB-07 (kulüpsüz bağlam) | `ClubUserProfileRoute({required String userId, String? clubId})` | `/clubs/user/:userId?clubId=` | `ClubsRoute` | A (`clubId` varsa üyelik bağlamı; `?clubId=` geriye dönük) | `UserProfileView` `lib/features/clubs/view/user_profile_view.dart` | T-18 |
 | CLB-03 (+ FED-01) | `ClubDetailRoute({required String clubId, ClubDetailTab? tab})` | `/clubs/:clubId?tab=about\|events\|posts\|members` | `ClubsRoute` | A | `ClubDetailView` `lib/features/clubs/view/club_detail_view.dart`; Gönderiler sekmesi `ClubFeedTab` `lib/features/clubs/view/widget/club_feed_tab.dart` (`/// Design: FED-01`; ViewModel `lib/features/clubs/provider/club_feed_view_model.dart` — CD-10) | T-16; FED-01 T-20 (W-10) |
 | CLB-04 | `ClubAppliedRoute({required String clubId})` | `/clubs/:clubId/applied` | `ClubDetailRoute` | A | `ClubAppliedView` `lib/features/clubs/view/club_applied_view.dart` | T-16 |
 | CLB-05 | `ClubApplicationRoute({required String clubId})` | `/clubs/:clubId/application` | `ClubDetailRoute` | A | `ClubApplicationView` `lib/features/clubs/view/club_application_view.dart` | T-16 |
 | CLB-06 | `ClubMembersRoute({required String clubId})` | `/clubs/:clubId/members` | `ClubDetailRoute` | üye | `ClubMembersView` `lib/features/clubs/view/club_members_view.dart` | T-18 (W-11) |
+| CLB-07 (üye listesi) | `ClubMembersUserProfileRoute({required String clubId, required String userId})` | `/clubs/:clubId/members/:userId` | `ClubMembersRoute` | üye | `UserProfileView(userId: userId, clubId: clubId)`; geri → CLB-06 (K-69, kullanıcı kararı 2026-10-15) | T-43 |
+| CLB-07 (kulüp bağlamı) | `ClubDetailUserProfileRoute({required String clubId, required String userId})` | `/clubs/:clubId/user/:userId` | `ClubDetailRoute` | A | `UserProfileView(userId: userId, clubId: clubId)`; geri → CLB-03 (CLB-03 kişi / üye satırları, FED-01 / FED-02 yazar, MGT-01 / 02 / 03 / 10 kişi bağlantıları; K-69) | T-43 |
 | FED-02 | `PostDetailRoute({required String clubId, required String postId})` | `/clubs/:clubId/posts/:postId` | `ClubDetailRoute` | üye | `PostDetailView` `lib/features/feed/view/post_detail_view.dart` | T-20 |
 | FED-03 | `ComposeRoute({required String clubId, String? edit})` | `/clubs/:clubId/compose?edit=` | `ClubDetailRoute` | M | `ComposeView` `lib/features/feed/view/compose_view.dart` | T-21 (W-16, W-24, W-25) |
 | MGT-01 | `ManageRoute({required String clubId})` | `/clubs/:clubId/manage` | `ClubDetailRoute` | V | `ManageView` `lib/features/management/view/manage_view.dart` | T-31 (W-12, W-26, W-31) |
@@ -4412,7 +4414,7 @@ EVT-02 veri kararı: Firestore `permission-denied` (üyelere özel etkinlik, üy
 | ADM-05 | `AdminUsersRoute` | `/admin/users` | `AdminRoute` | S | `AdminUsersView` `lib/features/admin/view/admin_users_view.dart` | T-41 (W-47) |
 | CLB-07 (paylaşılan) | `AdminUserProfileRoute({required String userId})` | `/admin/users/:userId` | `AdminUsersRoute` | S | `UserProfileView(userId: userId)` | T-41 |
 
-Sayım: 12 + 20 + 5 + 2 + 11 + 7 = **57 rota sınıfı** (56 tasarım rotası + `DebugMenuRoute`); `registry.json#inventory` 51 ekranın her biri en az bir rota sınıfına bağlı (FED-01 → `ClubDetailRoute(tab: posts)`); `/debug` hiçbir tasarım ID'sine bağlı değildir ve `route_inventory_test.dart` onu "ID'siz rota" beyaz listesinde (`{'/debug'}`) tutar; paylaşılan 3 view 7 rota sınıfıyla açılır (§13.9).
+Sayım: 12 + 22 + 5 + 2 + 11 + 7 = **59 rota sınıfı** (58 tasarım rotası + `DebugMenuRoute`; T-43 K-69: +2 kulüp bağlamlı CLB-07); `registry.json#inventory` 51 ekranın her biri en az bir rota sınıfına bağlı (FED-01 → `ClubDetailRoute(tab: posts)`); `/debug` hiçbir tasarım ID'sine bağlı değildir ve `route_inventory_test.dart` onu "ID'siz rota" beyaz listesinde (`{'/debug'}`) tutar; paylaşılan 3 view 9 rota sınıfıyla açılır (§13.9).
 
 ### 13.4 `AppRedirect.resolve(SessionState, Uri)` — tablo testi (14 satır)
 
@@ -4442,7 +4444,7 @@ Silinmiş kaynak (gönderi/etkinlik/kulüp `isDeleted == true` ya da `not-found`
 | Test dosyası | Doğruladığı | Task |
 |---|---|---|
 | `app_redirect_test.dart` | R1–R14 (14 `test()`), evaluasyon sırası (R14 ve R12 R2'den önce), `from` kodlaması (`Uri.encodeQueryComponent`) ve R7'de `from` geçersizse (`http://example.com`, `/login`) `/clubs` | T-11 |
-| `route_access_table_test.dart` | `RouteAccessTable` 57 yol kalıbı ↔ §13.3 Guard sütunu (tek tablo, satır başına assert; `/debug` → `RouteAccess.debugOnly`) | T-11 |
+| `route_access_table_test.dart` | `RouteAccessTable` 59 yol kalıbı ↔ §13.3 Guard sütunu (tek tablo, satır başına assert; `/debug` → `RouteAccess.debugOnly`) | T-11 |
 | `route_inventory_test.dart` | `GoRouter.configuration.routes` ağacından toplanan 57 path = beklenen küme; `registry.json#inventory` 51 ID'nin her biri bir rota sınıfına eşlenmiş (`test/helpers/design_ids.dart`); ID'siz rota beyaz listesi `{'/debug'}` (CD-69); path parametre adları `clubId/eventId/postId/userId/tip` | T-11 (kabuk + sistem + `/debug`), her ekran task'ı satırını ekler, T-43 tam 51 |
 | `shell_branches_test.dart` | 5 dal sırası `registry.json#tabs` ile aynı; `isSuperAdmin == false` iken görünür sekme 4, `true` iken 5; sekme ↔ dal index eşlemesi; rozet `9+` | T-11 |
 | `tab_stack_isolation_test.dart` | Kulüpler'de derinleş (`/clubs/c01`) → Etkinlikler → Kulüpler: yığın korunur; aktif sekmeye tekrar dokunma köke indirir; kökte tekrar dokunma `scrollTopRequestProvider` sayacını artırır | T-11 |
@@ -4525,7 +4527,7 @@ Ad hoc `CustomTransitionPage` yasağı: `push_scan_test.dart` aynı taramada `Cu
 |---|---|---|---|
 | `SearchView` (`lib/features/search/view/search_view.dart`, `/// Design: CLB-02`) | `ClubsSearchRoute` (`/clubs/search`), `EventsSearchRoute` (`/events/search`) | `SearchView(scope: SearchScope.clubs)` / `SearchView(scope: SearchScope.events)`; `enum SearchScope { clubs, events }` yalnızca başlangıç sekmesini seçer (CLB-02 iki sonuç sekmesi de her iki rotada vardır) | T-17 |
 | `NotificationPrefsView` (`/// Design: NTF-02`) | `NotificationPrefsRoute` (`/notifications/preferences`), `SettingsNotificationPrefsRoute` (`/profile/settings/notifications`) | `const NotificationPrefsView()` | T-26 (sınıf + ilk rota), T-28 (ikinci rota) |
-| `UserProfileView` (`/// Design: CLB-07`) | `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`), `BlockedUserProfileRoute` (`/profile/settings/blocked/:userId`), `AdminUserProfileRoute` (`/admin/users/:userId`) | `UserProfileView(userId: userId, clubId: clubId)` (`clubId` yalnızca ilk rotada) | T-18, T-28, T-41 |
+| `UserProfileView` (`/// Design: CLB-07`) | `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`), `ClubDetailUserProfileRoute` (`/clubs/:clubId/user/:userId`), `ClubMembersUserProfileRoute` (`/clubs/:clubId/members/:userId`), `BlockedUserProfileRoute` (`/profile/settings/blocked/:userId`), `AdminUserProfileRoute` (`/admin/users/:userId`) | `UserProfileView(userId: userId, clubId: clubId)` (`clubId` yalnızca kulüp rotalarında) | T-18, T-28, T-41, T-43 |
 
 D-16 gereği gövde tek view'dadır; rota sınıfı yalnızca parametre taşır. Test: `shared_leaf_routes_test.dart` (§13.5).
 

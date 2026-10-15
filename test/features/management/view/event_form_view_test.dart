@@ -33,6 +33,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_management_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -187,6 +188,7 @@ void main() {
       expect(find.byKey(_back), findsNothing);
       expect(find.byKey(_publish), findsNothing);
       expect(find.text(l10n.eventTypeSosyal), findsOneWidget);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('3. adım: "Geri" + "Taslak olarak kaydet" + "Yayınla"', (

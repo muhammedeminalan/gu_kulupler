@@ -293,9 +293,11 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   void openWeb() => unawaited(viewModel.openWeb());
 
   /// Kişi satırı (`CLB-03.about.person.<userId>`, `CLB-03.member.<userId>`)
-  /// → CLB-07; kulüp bağlamı `?clubId=` ile taşınır.
-  void openPerson(String userId) =>
-      ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+  /// → CLB-07, CLB-03'ün altında (geri → kulüp; K-69).
+  void openPerson(String userId) => ClubDetailUserProfileRoute(
+    clubId: widget.clubId,
+    userId: userId,
+  ).go(context);
 
   /// "Tüm üyeler" (`CLB-03.allMembers`, SHT-06 "Üyeler") → CLB-06.
   void openAllMembers() => ClubMembersRoute(clubId: widget.clubId).go(context);

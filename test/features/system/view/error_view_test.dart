@@ -12,6 +12,7 @@ import '../../../fakes/fake_auth_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/test_router.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -62,6 +63,7 @@ void main() {
       final body = tester.getRect(find.byType(GuErrorState));
       expect(body.center.dx, 195);
       expect(body.top, greaterThan(GuSizes.appBarMinHeight));
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('aksiyon envanteri: SYS-02.back / .retry / .home', (

@@ -13,6 +13,8 @@
 // sayacı değiştirmez. Rules'un reddettiği **kör** yazımlar `permissionDenied`
 // döner ve hiçbir şey değişmez: olmayan / silinmiş / gizli gönderiye yorum,
 // çift kaldırma, silinmemiş yorumu geri alma, olmayan yorum, çift gizleme.
+// `getComment` süper admin okumasını izler (W-103): gizli yorum döner,
+// silinmiş `notFound`, olmayan `permissionDenied`.
 // Çağıranın rolü burada bilinmez: yetki reddini test
 // `failNext(FirestoreError.permissionDenied)` ile kurar. Engellenen yazarlar
 // süzülmez (ViewModel süzer).
@@ -185,6 +187,22 @@ final class FakeCommentRepository extends FakeBase
       },
     );
     return output.stream;
+  }
+
+  /// Süper admin okuması gibi (W-103): gizlenmiş yorum döner; silinmiş
+  /// yorum `notFound`; olmayan yorum `permissionDenied` (Rules açıkken).
+  @override
+  Future<FirestoreResult<CommentModel>> getComment(String commentId) async {
+    record('getComment', [commentId]);
+    if (_rejected<CommentModel>([commentId]) case final failure?) {
+      return failure;
+    }
+    final comment = comments[commentId];
+    if (comment == null) return _denied();
+    if (comment.isDeleted) {
+      return const FirebaseFailure(FirestoreError.notFound);
+    }
+    return FirebaseSuccess(comment);
   }
 
   @override

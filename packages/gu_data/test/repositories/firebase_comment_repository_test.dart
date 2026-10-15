@@ -133,8 +133,8 @@ void main() {
   });
 
   group('T-19 · CommentRepository · sözleşme', () {
-    test('PLAN §10.4 tablosundaki T-19 üyeleri arayüzde aynı imzayla var; '
-        'getComment T-40, başka üye yok', () {
+    test('PLAN §10.4 tablosundaki üyeler arayüzde aynı imzayla var '
+        "(getComment T-40 satırı W-103 ile T-43'te); başka üye yok", () {
       final plan = readPlanRepositoryMembers('$CommentRepository');
       final byMember = {for (final row in plan) row.member: row};
 
@@ -148,8 +148,7 @@ void main() {
       ]);
       expect(byMember['getComment']!.note, '(T-40)');
       expect(interfaceMembers(_interface, '$CommentRepository').toSet(), {
-        for (final row in plan)
-          if (row.member != 'getComment') normalizeDartSource(row.signature),
+        for (final row in plan) normalizeDartSource(row.signature),
       });
     });
 
@@ -482,6 +481,48 @@ void main() {
     });
   });
 
+  group('W-103 · CommentRepository · getComment', () {
+    test('yorumu döner; gizlenmiş yorum da döner (Rules okumaya izin '
+        'verdiyse — süper admin)', () async {
+      await seedComment(_commentId);
+      await seedComment('cm02', isHidden: true);
+
+      final visible = (await repository.getComment(_commentId)).dataOrNull;
+      expect(visible?.id, _commentId);
+      expect(visible?.text, 'yorum cm01');
+      expect(visible?.authorId, _author);
+      expect(visible?.postId, _postId);
+      expect(visible?.clubId, _clubId);
+      expect(
+        (await repository.getComment('cm02')).dataOrNull?.isHidden,
+        isTrue,
+      );
+    });
+
+    test('silinmiş ya da olmayan yorum notFound; okuma hatası aynen '
+        'eşlenir; yazım yok', () async {
+      await seedComment(_commentId, isDeleted: true);
+
+      expect(
+        (await repository.getComment(_commentId)).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(
+        (await repository.getComment('cm_yok')).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(
+        (await failing('permission-denied').getComment(_commentId)).errorOrNull,
+        FirestoreError.permissionDenied,
+      );
+      expect(
+        (await failing('unavailable').getComment(_commentId)).errorOrNull,
+        FirestoreError.unavailable,
+      );
+      expect(await commentIds(), [_commentId]);
+    });
+  });
+
   group('T-19 · CommentRepository · hide', () {
     test('tek yazımda gizler (hiddenBy, hiddenAt); gönderinin sayacı ve '
         'işaretçisi değişmez', () async {
@@ -546,6 +587,7 @@ void main() {
             await repository.restoreComment(_commentId, postId: id),
             await repository.hide(id, actorId: 'u_super'),
             await repository.hide(_commentId, actorId: id),
+            await repository.getComment(id),
             await repository.watchComments(id, clubId: _clubId).first,
             await repository.watchComments(_postId, clubId: id).first,
           ];

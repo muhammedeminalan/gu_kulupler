@@ -31,6 +31,31 @@ void main() {
   int count() => posts.posts[_post]!.commentCount;
 
   group('T-19 · FakeCommentRepository', () {
+    test('W-103 getComment: gizli yorum döner; silinmiş notFound, olmayan '
+        'permissionDenied; geçersiz kimlik invalidArgument', () async {
+      await fake.hide('cm02', actorId: 'u_admin');
+      expect((await fake.getComment('cm01')).dataOrNull?.id, 'cm01');
+      expect((await fake.getComment('cm02')).dataOrNull?.isHidden, isTrue);
+      await fake.softDeleteComment('cm01', postId: _post, actorId: _me);
+      expect(
+        (await fake.getComment('cm01')).errorOrNull,
+        FirestoreError.notFound,
+      );
+      expect(
+        (await fake.getComment('cm_yok')).errorOrNull,
+        FirestoreError.permissionDenied,
+      );
+      expect(
+        (await fake.getComment('a/b')).errorOrNull,
+        FirestoreError.invalidArgument,
+      );
+      fake.failNext(FirestoreError.unavailable);
+      expect(
+        (await fake.getComment('cm03')).errorOrNull,
+        FirestoreError.unavailable,
+      );
+    });
+
     test('CommentRepository arayüzünü uygular; registerDefaultFakes kayıtlı '
         'gönderi fake’iyle paylaşımlı kaydeder', () {
       addTearDown(GetIt.I.reset);

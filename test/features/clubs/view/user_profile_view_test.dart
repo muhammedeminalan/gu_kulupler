@@ -16,6 +16,7 @@ import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_ui/gu_ui.dart';
 
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -88,6 +89,7 @@ void main() {
         final chip = tester.widget<GuChip>(find.byKey(_club));
         expect(chip.label, kSharedClub.name);
         expect(chip.icon, GuIcons.codeXml);
+        await expectA11yGuidelines(tester);
       });
     }
 

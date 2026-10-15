@@ -13,10 +13,13 @@ import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-/// Kullanıcı profili — paylaşılan yaprak ekran (PLAN §13.9): üç rota aynı
+/// Kullanıcı profili — paylaşılan yaprak ekran (PLAN §13.9): beş rota aynı
 /// view'ı açar — `ClubUserProfileRoute` (`/clubs/user/:userId?clubId=`),
-/// `BlockedUserProfileRoute` (T-28), `AdminUserProfileRoute` (T-41). Prototip
-/// `UserProfile` (`screens-clubs.js:151–162`).
+/// kulüp bağlamlı `ClubDetailUserProfileRoute` (`/clubs/:clubId/user/:userId`)
+/// ve `ClubMembersUserProfileRoute` (`/clubs/:clubId/members/:userId`; geri →
+/// geldiği kulüp, K-69), `BlockedUserProfileRoute` (T-28),
+/// `AdminUserProfileRoute` (T-41). Prototip `UserProfile`
+/// (`screens-clubs.js:151–162`).
 ///
 /// Çubuk: geri + "Profil" + "⋮" (SHT-27; kendi profilinde ve silinmiş
 /// kullanıcıda çizilmez). Gövde, yukarıdan aşağı:
@@ -53,7 +56,8 @@ class UserProfileView extends ConsumerStatefulWidget {
   /// Profili açılan kullanıcının kimliği (yol parametresi).
   final String userId;
 
-  /// Açıldığı kulüp (`?clubId=`); kulüp bağlamı yoksa `null`.
+  /// Açıldığı kulüp (yol `:clubId` ya da `?clubId=`); kulüp bağlamı yoksa
+  /// `null`.
   final String? clubId;
 
   @override

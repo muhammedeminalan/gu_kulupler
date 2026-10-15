@@ -26,6 +26,7 @@ import 'package:gu_ui/gu_ui.dart';
 import '../../../fakes/fake_block_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -117,6 +118,7 @@ void main() {
       expect(button.label, l10n.userprofileUnblock);
       expect(button.variant, GuButtonVariant.outline);
       expect(button.size, GuButtonSize.sm);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('aksiyon envanteri', (tester) async {

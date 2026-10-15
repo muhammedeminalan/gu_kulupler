@@ -14,8 +14,10 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/notification/unread_notification_clubs.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/widget/notification/notification_texts.dart';
 
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_settings_repository.dart';
@@ -202,6 +204,23 @@ void main() {
       expect(stateOf(c).items.firstWhere((n) => n.id == 'n007').read, isFalse);
       expect(feedback.toasts, [ToastId.tst24]);
     });
+
+    test(
+      'çevrimdışı (T-43): okundu / sil yazılmaz, liste kalır + TST-24',
+      () async {
+        seedNotifications();
+        final c = await notificationsContainer();
+        (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+            true;
+        ntfInbox.calls.clear();
+        await vmOf(c).markRead('n005');
+        await vmOf(c).softDelete('n005');
+        expect(ntfInbox.calls, isEmpty);
+        expect(idsOf(c), contains('n005'));
+        expect(stateOf(c).unreadCount, kNtfUnread.length);
+        expect(feedback.toasts, [ToastId.tst24, ToastId.tst24]);
+      },
+    );
 
     test('tümünü okundu: görünür okunmamışlar tek çağrıda + TST-18', () async {
       seedNotifications();

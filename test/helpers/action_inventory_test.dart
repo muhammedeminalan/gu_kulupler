@@ -78,9 +78,9 @@ void main() {
       expect(all.where(_isExempt), hasLength(totals['exemptActions'] as int));
     });
 
-    test('muaf kalıplar dosyadan (8 — 5 demo + 3 DLG-04 sızıntısı, '
-        'CD-159(6)); JS aynı iki dosyayı okur', () {
-      expect(ActionInventory.exemptPatterns, hasLength(8));
+    test('muaf kalıplar dosyadan (9 — 5 demo + 3 DLG-04 sızıntısı, '
+        'CD-159(6) + FED-01.back, W-72 / K-70); JS aynı iki dosyayı okur', () {
+      expect(ActionInventory.exemptPatterns, hasLength(9));
       final all = [
         for (final m in DesignIds.screenMeta.values) ...m.actions,
       ];

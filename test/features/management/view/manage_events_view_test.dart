@@ -36,6 +36,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fixtures/demo_data.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -205,6 +206,7 @@ void main() {
       expect(find.text(l10n.statusPublished), findsNWidgets(3));
       expect(find.byKey(_create), findsOneWidget);
       expect(find.byType(GuBanner), findsNothing);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('sekme: Taslak → e22 "Taslak"; Geçmiş → e19; İptal → boş '

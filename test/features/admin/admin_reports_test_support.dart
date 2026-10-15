@@ -14,6 +14,7 @@ import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
 
 import '../../fakes/fake_admin_repository.dart';
 import '../../fakes/fake_club_repository.dart';
+import '../../fakes/fake_comment_repository.dart';
 import '../../fakes/fake_post_repository.dart';
 import '../../fakes/fake_user_repository.dart';
 import '../../fixtures/club_model_fixtures.dart';
@@ -64,8 +65,7 @@ List<ReportModel> demoReportsWith(ReportStatus status) => [
     if (report.status == status) report,
 ];
 
-/// Satır önizlemeleri (ViewModel'in okuyacağı hedefler; yorum hedefi
-/// state kipinde doğrudan verilir).
+/// Satır önizlemeleri (ViewModel'in okuyacağı hedefler).
 Map<String, ReportTargetPreview> demoPreviews() => {
   'comment_cm24': ReportTargetPreview(
     comment: CommentModelFixtures.byId('cm24'),
@@ -92,8 +92,8 @@ ReportGroup demoGroup(String key) => ReportGroup.groupOf(
   demoReports(),
 ).firstWhere((group) => group.key == key);
 
-/// Kayıtlı fake'lere şikayetleri ve hedef belgelerini yazar (yorum hedefi
-/// okunamaz — `CommentRepository.getComment` yok).
+/// Kayıtlı fake'lere şikayetleri ve hedef belgelerini yazar (yorum hedefleri
+/// cm24 · cm12 — `CommentRepository.getComment`, W-103).
 void seedAdminReports() {
   final admin = GetIt.I<AdminRepository>() as FakeAdminRepository;
   for (final report in demoReports()) {
@@ -102,6 +102,10 @@ void seedAdminReports() {
   final posts = GetIt.I<PostRepository>() as FakePostRepository;
   for (final id in ['p13', 'p17', 'p24']) {
     posts.posts[id] = PostModelFixtures.byId(id);
+  }
+  final comments = GetIt.I<CommentRepository>() as FakeCommentRepository;
+  for (final id in ['cm24', 'cm12']) {
+    comments.put(CommentModelFixtures.byId(id));
   }
   final users = (GetIt.I<UserRepository>() as FakeUserRepository).users;
   for (final id in ['u077', 'u007', 'u044', 'u051', 'u052', 'u053']) {

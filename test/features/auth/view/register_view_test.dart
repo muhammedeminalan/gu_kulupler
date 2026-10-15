@@ -26,6 +26,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_user_repository.dart';
 import '../../../fakes/test_router.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -284,6 +285,7 @@ void main() {
         // Hata satırı yok.
         expect(find.text(l10n.authErrRequired), findsNothing);
         expect(find.text(l10n.sysErrorTitle), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

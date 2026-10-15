@@ -29,6 +29,7 @@ import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fixtures/membership_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -95,7 +96,11 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
         GoRoute(path: '/events/:eventId', builder: (_, s) => stub(s)),
-        GoRoute(path: '/clubs/user/:userId', builder: (_, s) => stub(s)),
+        // T-43 · K-69: kulüp bağlamlı CLB-07 (geri → CLB-03).
+        GoRoute(
+          path: '/clubs/:clubId/user/:userId',
+          builder: (_, s) => stub(s),
+        ),
         GoRoute(
           path: '/clubs/:clubId',
           builder: (_, s) => stub(s),
@@ -211,6 +216,7 @@ void main() {
         );
         expect(find.byType(GuBanner), findsNothing);
         expect(find.byKey(_share), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

@@ -9,3 +9,4 @@ MGT-07.demoScan.*      # Sahte QR sonucu (valid|used|invalid) — gerçek kamera
 DLG-04.allow           # MGT-08 envanterine yakalama sızıntısı (K-54, K-86): MGT-07 kamera izni dialogu MGT-08 çekiminde açık kalmış — DLG-04 MGT-07'de (T-35) uygulanır, MGT-08'de kamera yok (CD-159)
 DLG-04.notNow          # aynı sızıntı (K-86, CD-159)
 DLG-04.scrim           # aynı sızıntı (K-86, CD-159)
+FED-01.back           # Prototipte yalnızca QA sayfasından açılan bağımsız 'Akış' sayfasının geri düğmesi (K-70); uygulamada FED-01 CLB-03 'Gönderiler' sekmesi, geri = CLB-03.back — W-72, kullanıcı onayı 2026-10-15

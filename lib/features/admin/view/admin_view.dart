@@ -208,17 +208,17 @@ class _AdminViewState extends ConsumerState<AdminView> with AdminViewMixin {
   Widget _topClubRow(ClubModel club, AppDateFormats formats) {
     final gu = context.gu;
     final count = formats.number(club.memberCount);
-    // Satırlar bitişik ve ~24 dp (`button.col.gap4`): 44 / 48'e simetrik
-    // genişletme alttaki komşu satırın üstüne taşar ve dokunuşu ona verirdi
-    // (sonra çizilen önce vurulur) → hedef satırın kendi kutusu
-    // (`minSize: 0`; aradaki 4 dp boşluk dahil).
+    // Satır en az 44 dp (D-22; kullanıcı kararı 2026-10-15 — prototipte
+    // ~24 dp `button.col.gap4`): satır kutusu hedefin kendisidir; komşu
+    // satırlar bitişik olduğundan 48'e simetrik genişletme alttaki satırın
+    // üstüne taşardı (sonra çizilen önce vurulur) → `minSize` satır yüksekliği.
     return GuTapTarget(
       key: GuKey.action('ADM-01.topClub.${club.id}'),
-      minSize: 0,
+      minSize: GuSizes.tapTargetIos,
       semanticLabel: '${club.name}, $count',
       onTap: () => openClub(club.id),
-      child: Padding(
-        padding: GuInsets.only(bottom: GuSpacing.s4),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: GuSizes.tapTargetIos),
         child: Row(
           spacing: GuSpacing.s8,
           children: [

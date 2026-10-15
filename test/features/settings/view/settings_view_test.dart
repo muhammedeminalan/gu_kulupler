@@ -26,6 +26,7 @@ import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_auth_repository.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -178,6 +179,7 @@ void main() {
             .danger,
         isTrue,
       );
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('EN: yüzdeler yerel ayara göre, dil "English"', (

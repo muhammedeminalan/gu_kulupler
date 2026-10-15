@@ -21,9 +21,11 @@ import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/mixin/manage_member_actions_mixin.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/file_service.dart';
 import 'package:gu_kulupler/product/service/share_service.dart';
 
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_file_service.dart';
 import '../../../fakes/fake_management_repository.dart';
@@ -158,6 +160,23 @@ void main() {
       await pumpEventQueue();
       expect(stored('u032').status, MembershipStatus.active);
       expect(container.read(provider).find('u032')?.role, ClubRole.member);
+    });
+
+    test('çevrimdışı (T-43): çıkarma yazılmaz, satır kalır → TST-24', () async {
+      final container = await loaded();
+      feedback.dialogResults[DialogId.dlg19] = '';
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+      management.calls.clear();
+      expect(
+        await container
+            .read(provider.notifier)
+            .removeMember(kManageClubId, stored('u032'), name: 'x'),
+        isFalse,
+      );
+      expect(management.calls, isEmpty);
+      expect(container.read(provider).find('u032'), isNotNull);
+      expect(feedback.toasts, [ToastId.tst24]);
     });
 
     test('menü → "Profili gör" → viewProfile sonucu, yazım yok', () async {

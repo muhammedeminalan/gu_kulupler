@@ -26,6 +26,7 @@ import '../../../fakes/fake_app_preferences_store.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/test_router.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -129,6 +130,7 @@ void main() {
         expect(next.iconTrailing, GuIcons.arrowRight);
         expect(find.byKey(_start), findsNothing);
       }
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('slaytlar sırasıyla Keşfet, Katıl, Takip et; sayı state ile '

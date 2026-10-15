@@ -29,6 +29,7 @@ import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_saved_post_repository.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fixtures/club_model_fixtures.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -120,6 +121,7 @@ void main() {
       );
       expect(button.icon, GuIcons.bookmark);
       expect(button.tone, GuIconButtonTone.brand);
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('kaldırılmış gönderi: "İçerik kaldırıldı", çöp kutusu, '

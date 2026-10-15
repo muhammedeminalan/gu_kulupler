@@ -13,6 +13,7 @@ import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -188,6 +189,7 @@ void main() {
 
         expect(find.byType(GuBanner), findsNothing);
         expect(find.byType(GuSkeletonList), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 

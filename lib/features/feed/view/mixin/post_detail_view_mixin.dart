@@ -102,7 +102,10 @@ mixin PostDetailViewMixin on ConsumerState<PostDetailView> {
   /// bağlamıyla.
   void openProfile(String userId) {
     if (!mounted) return;
-    ClubUserProfileRoute(userId: userId, clubId: widget.clubId).go(context);
+    ClubDetailUserProfileRoute(
+      clubId: widget.clubId,
+      userId: userId,
+    ).go(context);
   }
 
   /// Beğen / geri al (`FED-02.like.<postId>`).

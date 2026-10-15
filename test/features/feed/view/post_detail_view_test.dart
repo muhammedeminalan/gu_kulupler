@@ -44,6 +44,7 @@ import '../../../fakes/fake_comment_repository.dart';
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_post_repository.dart';
+import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
@@ -133,13 +134,14 @@ Future<GoRouter> _pumpRoute(
           builder: (_, _) => const _Stub('/not-found'),
         ),
         GoRoute(
-          path: '/clubs/user/:userId',
-          builder: (_, state) => _Stub(state.uri.toString()),
-        ),
-        GoRoute(
           path: '/clubs/:clubId',
           builder: (_, state) => _Stub(state.uri.toString()),
           routes: [
+            // T-43 · K-69: kulüp bağlamlı CLB-07 (geri → CLB-03).
+            GoRoute(
+              path: 'user/:userId',
+              builder: (_, state) => _Stub(state.uri.toString()),
+            ),
             GoRoute(
               path: 'posts/:postId',
               builder: (_, state) => PostDetailView(
@@ -271,6 +273,7 @@ void main() {
         expect(send.disabled, isTrue);
         expect(send.semanticLabel, l10n.commonSend);
         expect(find.byType(GuBanner), findsNothing);
+        await expectA11yGuidelines(tester);
       });
     }
 
@@ -426,7 +429,7 @@ void main() {
       await _tapKey(tester, _postAuthor);
       expect(
         _location(router),
-        '/clubs/user/${kPost.authorId}?clubId=$kPostClubId',
+        '/clubs/$kPostClubId/user/${kPost.authorId}',
       );
 
       router.go(_postPath);
@@ -434,7 +437,7 @@ void main() {
       await _tapKey(tester, _commentAuthor(kOtherComment.id));
       expect(
         _location(router),
-        '/clubs/user/${kOtherComment.authorId}?clubId=$kPostClubId',
+        '/clubs/$kPostClubId/user/${kOtherComment.authorId}',
       );
 
       router.go(_postPath);
@@ -558,7 +561,7 @@ void main() {
       expect(_feedback().sheets, [SheetId.sht27]);
       expect(
         _location(router),
-        '/clubs/user/${kOtherComment.authorId}?clubId=$kPostClubId',
+        '/clubs/$kPostClubId/user/${kOtherComment.authorId}',
       );
     });
 

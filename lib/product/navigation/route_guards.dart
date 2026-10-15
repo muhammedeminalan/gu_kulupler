@@ -69,7 +69,7 @@ final class RouteAccessMatch {
   String? get clubId => pathParameters[RouteAccessTable.clubIdParameter];
 }
 
-/// Yol kalıbı → [RouteAccess] tablosu (PLAN §13.3; 57 kalıp).
+/// Yol kalıbı → [RouteAccess] tablosu (PLAN §13.3; 59 kalıp).
 ///
 /// Rota sınıfları sahip task'larında eklenir; guard tablosu ise baştan
 /// tamdır — bir ekranın rotası eklendiği anda koruması hazırdır.
@@ -102,7 +102,7 @@ abstract final class RouteAccessTable {
     AppPaths.verify: RouteAccess.unverified,
     AppPaths.setupProfile: RouteAccess.profileIncomplete,
     legalPattern: RouteAccess.public,
-    // Kulüpler (20)
+    // Kulüpler (22)
     AppPaths.clubs: RouteAccess.active,
     '/clubs/search': RouteAccess.active,
     '/clubs/user/:userId': RouteAccess.active,
@@ -110,6 +110,8 @@ abstract final class RouteAccessTable {
     '/clubs/:clubId/applied': RouteAccess.active,
     '/clubs/:clubId/application': RouteAccess.active,
     '/clubs/:clubId/members': RouteAccess.member,
+    '/clubs/:clubId/members/:userId': RouteAccess.member,
+    '/clubs/:clubId/user/:userId': RouteAccess.active,
     '/clubs/:clubId/posts/:postId': RouteAccess.member,
     '/clubs/:clubId/compose': RouteAccess.manager,
     '/clubs/:clubId/manage': RouteAccess.managerOrAdvisor,

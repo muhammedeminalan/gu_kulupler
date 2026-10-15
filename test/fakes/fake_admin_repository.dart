@@ -231,6 +231,7 @@ final class FakeAdminRepository extends FakeBase implements AdminRepository {
               userId: bound,
             ),
       clearAdvisor: patch.clearAdvisor,
+      clearCoverPath: patch.clearCoverPath,
       updatedAt: _clock.nowUtc(),
     );
     return const FirebaseSuccess(null);

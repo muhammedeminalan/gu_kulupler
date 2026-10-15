@@ -4,6 +4,8 @@
 // T-11 · DebugMenu · demo hesaplar (CD-132 (23)): yalnızca emülatörde altı
 // hesap satırı → `signIn(e-posta, demo parolası)` + uygulamaya gidiş; hata
 // satırı; "Çıkış yap"; SYS-02 / 03 / 04 kısayolları.
+// T-43 · çevrimdışı simülasyonu anahtarı: açılınca kök çevrimdışı bandı
+// (SYS-03) görünür, kapanınca kalkar + TST-25; üretim derlemesinde etkisiz.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,13 +18,17 @@ import 'package:gu_kulupler/features/onboarding/view/onboarding_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/provider/debug_demo_accounts.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/debug_menu_view.dart';
 import 'package:gu_kulupler/features/system/debug_menu/view/widget/debug_menu_corner_button.dart';
+import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/init/app_preferences_state.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/widget/system/offline_banner.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../../fakes/fake_auth_service.dart';
 import '../../../../fakes/fake_base.dart';
+import '../../../../fakes/fake_feedback_service.dart';
 import '../../../../fakes/fake_session_states.dart';
 import '../../../../fakes/test_router.dart';
 import '../../../../helpers/action_inventory.dart';
@@ -343,6 +349,46 @@ void main() {
         ],
         safeAreas: true,
       );
+    });
+  });
+
+  group('T-43 · DebugMenu · çevrimdışı simülasyonu', () {
+    Future<void> pumpMenu(WidgetTester tester, {required bool enabled}) =>
+        tester.pumpApp(
+          OfflineBanner(child: DebugMenuView(debugMenuEnabled: enabled)),
+          size: _tall,
+        );
+
+    GuSwitch toggle(WidgetTester tester) =>
+        tester.widget<GuSwitch>(find.byKey(DebugMenuView.simulateOfflineKey));
+
+    testWidgets('anahtar açılınca kök çevrimdışı bandı görünür; kapanınca '
+        'kalkar ve TST-25 gösterilir', (tester) async {
+      await pumpMenu(tester, enabled: true);
+      final l10n = tester.l10n;
+      expect(find.text(l10n.debugMenuSimulateOffline), findsOneWidget);
+      expect(toggle(tester).value, isFalse);
+      expect(find.text(l10n.sysOfflineBanner), findsNothing);
+
+      await tester.tap(find.byKey(DebugMenuView.simulateOfflineKey));
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isTrue);
+      expect(find.text(l10n.sysOfflineBanner), findsOneWidget);
+
+      await tester.tap(find.byKey(DebugMenuView.simulateOfflineKey));
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isFalse);
+      expect(find.text(l10n.sysOfflineBanner), findsNothing);
+      final feedback = GetIt.I<FeedbackService>() as FakeFeedbackService;
+      expect(feedback.toasts, [ToastId.tst25]);
+    });
+
+    testWidgets('DebugMenu kapalı derlemede anahtar etkisiz', (tester) async {
+      await pumpMenu(tester, enabled: false);
+      await tester.tap(find.byKey(DebugMenuView.simulateOfflineKey));
+      await tester.pumpAndSettle();
+      expect(toggle(tester).value, isFalse);
+      expect(find.text(tester.l10n.sysOfflineBanner), findsNothing);
     });
   });
 
