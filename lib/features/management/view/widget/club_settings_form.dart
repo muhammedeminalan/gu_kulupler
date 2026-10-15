@@ -9,6 +9,7 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/widget/club/club_look_picker.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -209,78 +210,24 @@ class _ClubSettingsFormState extends ConsumerState<ClubSettingsForm> {
 
   // ── Görünüm ───────────────────────────────────────────────────────
 
-  Widget _look(AppLocalizations l10n) => SizedBox(
-    // Kapak satırı logonun yüksekliğindedir (`height:72px` = `.emblem`).
-    height: GuEmblemSize.lg.dimension,
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: GuSpacing.s12,
-      children: [
-        GuActionSurface(
-          key: GuKey.action('MGT-09.logo'),
-          borderRadius: GuEmblemSize.lg.borderRadius,
-          semanticLabel: l10n.clubSettingsLogo,
-          onTap: widget.onLogoTap,
-          builder: (context, _) => _logo(),
-        ),
-        Expanded(
-          child: GuActionSurface(
-            key: GuKey.action('MGT-09.cover'),
-            borderRadius: GuRadius.borderMd,
-            semanticLabel: l10n.clubSettingsCover,
-            onTap: widget.onCoverTap,
-            builder: (context, _) => _cover(l10n),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _logo() {
-    final pending = _state.pendingLogo;
-    return CoverMapper.emblem(
+  Widget _look() {
+    final pendingLogo = _state.pendingLogo;
+    final pendingCover = _state.pendingCover;
+    return ClubLookPicker(
       icon: _clubIcon,
-      logo: pending != null
-          ? MemoryImage(pending.bytes)
+      palette: _state.coverPalette,
+      pattern: _state.coverPattern,
+      logo: pendingLogo != null
+          ? MemoryImage(pendingLogo.bytes)
           : ref.clubLogoImage(_state.original),
-      size: GuEmblemSize.lg,
-      iconSize: GuSizes.icon30,
+      cover: pendingCover != null
+          ? MemoryImage(pendingCover.bytes)
+          : ref.watch(storageImageResolverProvider)(_state.coverPath),
+      logoKey: GuKey.action('MGT-09.logo'),
+      coverKey: GuKey.action('MGT-09.cover'),
+      onLogoTap: widget.onLogoTap,
+      onCoverTap: widget.onCoverTap,
     );
-  }
-
-  Widget _cover(AppLocalizations l10n) {
-    final pending = _state.pendingCover;
-    final image = pending != null
-        ? MemoryImage(pending.bytes)
-        : ref.watch(storageImageResolverProvider)(_state.coverPath);
-    final overlays = <Widget>[
-      Positioned(
-        right: GuSpacing.s8,
-        bottom: GuSpacing.s8,
-        // Görsel etiket; semantik kapak düğmesindedir.
-        child: ExcludeSemantics(
-          child: GuBadge(
-            label: l10n.clubSettingsCover,
-            background: context.gu.colors.bgSurface,
-          ),
-        ),
-      ),
-    ];
-    return image != null
-        ? GuCover.image(
-            image: image,
-            ratio: GuCoverRatio.fill,
-            borderRadius: GuRadius.borderMd,
-            overlays: overlays,
-          )
-        : GuCover.template(
-            palette: CoverMapper.palette(_state.coverPalette),
-            pattern: CoverMapper.pattern(_state.coverPattern),
-            icon: _clubIcon,
-            ratio: GuCoverRatio.fill,
-            borderRadius: GuRadius.borderMd,
-            overlays: overlays,
-          );
   }
 
   // ── Bilgiler ──────────────────────────────────────────────────────
@@ -490,7 +437,7 @@ class _ClubSettingsFormState extends ConsumerState<ClubSettingsForm> {
             text: l10n.sysErrorTitle,
             card: true,
           ),
-        _group(l10n.clubSettingsGroupLook, GuSpacing.s8, [_look(l10n)]),
+        _group(l10n.clubSettingsGroupLook, GuSpacing.s8, [_look()]),
         _group(l10n.clubSettingsGroupInfo, GuSpacing.s12, _info(l10n)),
         _group(l10n.clubSettingsGroupContact, GuSpacing.s12, _contact(l10n)),
         _group(l10n.clubSettingsGroupJoin, GuSpacing.s8, _join(l10n)),

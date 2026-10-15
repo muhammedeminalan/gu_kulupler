@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T07:03:15.144Z",
+  "updated": "2026-10-15T07:32:38.850Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
   },
-  "currentTask": null,
+  "currentTask": "T-39",
   "statusValues": [
     "pending",
     "planning",
@@ -521,8 +521,8 @@
       "notes": ""
     },
     "T-39": {
-      "status": "pending",
-      "startedAt": null,
+      "status": "in_progress",
+      "startedAt": "2026-10-15T07:03:34.371Z",
       "finishedAt": null,
       "commits": [],
       "gate": null,
@@ -1021,7 +1021,10 @@
       "resolveIn": [
         "T-39"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-39",
+      "closedAt": "2026-10-15T07:32:38.825Z",
+      "closeNote": "T-39: ADM-01 'Aktif kulüp' KPI / 'Kulüpler' bölmesi → AdminClubsRoute(), 'Askıdaki kulüp' KPI + bekleyen iş satırı → AdminClubsRoute(tab: suspended) (admin_view_mixin; admin_view_test + admin_clubs_flow_test)"
     },
     {
       "id": "W-46",
@@ -1685,7 +1688,7 @@
     {
       "id": "W-101",
       "declaredIn": "T-37",
-      "text": "T-37 güvenlik incelemesi (CD-160 madde 8): (a) ADM-03 danışman 'kaldır' eylemi clubs.advisor.userId doluyken üyelik etkin danışman olmasa da gösterilir (bayat bağ — hesap silme; setAdvisor(active: false) yalnızca bağı ayırır) → T-39; (b) ADM-05 oturumdaki süper adminin kendi satırında askıya al / askıyı kaldır eylemi gösterilmez (AdminRepository.suspendUser / activateUser kendi hesabında invalidArgument, Rules reddeder) → T-41",
+      "text": "T-37 güvenlik incelemesi (CD-160 madde 8): (a) ADM-03 danışman 'kaldır' eylemi clubs.advisor.userId doluyken üyelik etkin danışman olmasa da gösterilir (bayat bağ — hesap silme; setAdvisor(active: false) yalnızca bağı ayırır) → T-39; (b) ADM-05 oturumdaki süper adminin kendi satırında askıya al / askıyı kaldır eylemi gösterilmez (AdminRepository.suspendUser / activateUser kendi hesabında invalidArgument, Rules reddeder) → T-41 — (a) T-39'da bitti: ADM-03 \"Kaldır\" (ADM-03.unlinkAdvisor) clubs.advisor.userId doluyken hep görünür, kayıtta setAdvisor(active: false) (CD-162); (b) T-41'de açık",
       "resolveIn": [
         "T-39",
         "T-41"
@@ -1694,6 +1697,18 @@
       "actions": [
         "ADM-03",
         "ADM-05"
+      ]
+    },
+    {
+      "id": "W-102",
+      "declaredIn": "T-39",
+      "text": "ADM-03 kapak bırakma: AdminRepository ClubIdentityPatch'te clearCoverPath yok (yönetici dalında var — CD-159(8)); düzenlemede yüklenmiş kapağın yerine SHT-31 şablonu seçilince coverPath bırakılamıyor (önizleme yüklenmiş kapağı gösterir) → gu_data yama alanı + Rules süper admin dalı + rules testi → T-43",
+      "resolveIn": [
+        "T-43"
+      ],
+      "status": "open",
+      "actions": [
+        "ADM-03.cover"
       ]
     }
   ],

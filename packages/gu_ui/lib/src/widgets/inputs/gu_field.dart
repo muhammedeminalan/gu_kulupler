@@ -25,6 +25,7 @@ class GuField extends StatelessWidget {
     this.help,
     this.errorText,
     this.excludeLabelSemantics = false,
+    this.spacing = GuSizes.fieldGap,
     super.key,
   });
 
@@ -49,6 +50,11 @@ class GuField extends StatelessWidget {
   /// Görünür etiketi semantikten çıkarır.
   final bool excludeLabelSemantics;
 
+  /// Etiket, kontrol ve yardım satırı arası boşluk; varsayılan `.field`
+  /// `gap:6px`. Alan-dışı kontrolü (düğme, kart) sarmalayan prototip
+  /// `col gap8` grupları `GuSpacing.s8` verir (ADM-03 "Başkan").
+  final double spacing;
+
   @override
   Widget build(BuildContext context) {
     final gu = context.gu;
@@ -60,7 +66,7 @@ class GuField extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: GuSizes.fieldGap,
+      spacing: spacing,
       children: [
         if (label != null)
           Row(

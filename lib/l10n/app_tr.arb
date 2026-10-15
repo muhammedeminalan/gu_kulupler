@@ -408,6 +408,15 @@
   "@adminClubsEmpty": {
     "description": "Key adminClubs.empty"
   },
+  "adminClubsPresident": "Başkan: {name}",
+  "@adminClubsPresident": {
+    "description": "Key adminClubs.president",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminClubsSuspend": "Askıya al",
   "@adminClubsSuspend": {
     "description": "Key adminClubs.suspend"
@@ -1224,6 +1233,14 @@
   "clubFormAdvisorTitle": "Unvan",
   "@clubFormAdvisorTitle": {
     "description": "Key clubForm.advisorTitle"
+  },
+  "clubFormAdvisorLinked": "Hesap bağlı",
+  "@clubFormAdvisorLinked": {
+    "description": "Key clubForm.advisorLinked"
+  },
+  "clubFormAdvisorTitlePlaceholder": "Dr.",
+  "@clubFormAdvisorTitlePlaceholder": {
+    "description": "Key clubForm.advisorTitlePlaceholder"
   },
   "clubFormAssignPresident": "Başkan ata",
   "@clubFormAssignPresident": {

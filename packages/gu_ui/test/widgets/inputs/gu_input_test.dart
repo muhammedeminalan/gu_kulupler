@@ -427,5 +427,38 @@ void main() {
       expect(tester.getSize(_boxOf(_plain)).height, 48);
       expect(find.text('${note.text.length}/20'), findsOneWidget);
     });
+
+    testWidgets('T-39 · GuField · spacing: etiket → kontrol → hata arası '
+        'varsayılan 6, verilen değer (col gap8)', (tester) async {
+      const control = Key('field.control');
+      const wide = Key('field.wide');
+      await tester.pumpApp(
+        _host([
+          const GuField(
+            label: 'Başkan',
+            errorText: 'Bu alan zorunlu',
+            child: SizedBox(key: control, height: 48),
+          ),
+          const GuField(
+            label: 'Başkan',
+            errorText: 'Bu alan zorunlu',
+            spacing: GuSpacing.s8,
+            child: SizedBox(key: wide, height: 48),
+          ),
+        ]),
+      );
+      double gapAbove(Key key) =>
+          tester.getTopLeft(find.byKey(key)).dy -
+          tester
+              .getBottomLeft(find.text('Başkan').at(key == control ? 0 : 1))
+              .dy;
+      double gapBelow(Key key) =>
+          tester.getTopLeft(find.byType(GuIcon).at(key == control ? 0 : 1)).dy -
+          tester.getBottomLeft(find.byKey(key)).dy;
+      expect(gapAbove(control), GuSizes.fieldGap);
+      expect(gapBelow(control), GuSizes.fieldGap);
+      expect(gapAbove(wide), GuSpacing.s8);
+      expect(gapBelow(wide), GuSpacing.s8);
+    });
   });
 }

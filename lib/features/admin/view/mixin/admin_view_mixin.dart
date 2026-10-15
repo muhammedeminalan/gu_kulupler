@@ -16,9 +16,10 @@ import 'package:gu_ui/gu_ui.dart';
 ///   içeriği başa kaydırır.
 /// * En aktif kulüp satırı CLB-03'ü `go` ile açar: Kulüpler sekmesinin
 ///   yığınında kurulur, Admin yığını değişmez (Q-20 = A, navigation.md §4).
-/// * Admin alt ekranları (prototip `nav.replace`) sahip task'larında
-///   bağlanır: Kulüpler / askıdaki kulüpler → ADM-02 (T-39, W-45),
-///   şikayetler → ADM-04 (T-40, W-46), kullanıcılar → ADM-05 (T-41, W-47).
+/// * Admin alt ekranları (prototip `nav.replace`) `go` ile açılır: Kulüpler
+///   / askıdaki kulüpler → ADM-02 (`?tab=suspended`; T-39, W-45). Şikayetler
+///   → ADM-04 (T-40, W-46), kullanıcılar → ADM-05 (T-41, W-47) sahip
+///   task'larında bağlanır.
 mixin AdminViewMixin on ConsumerState<AdminView> {
   /// İçeriğin kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -81,15 +82,12 @@ mixin AdminViewMixin on ConsumerState<AdminView> {
   }
 
   /// "Aktif kulüp" (`ADM-01.kpi.clubs`) / "Kulüpler" bölmesi → ADM-02.
-  void openClubs() {
-    // TODO(T-39): `AdminClubsRoute().go(context)` (W-45).
-  }
+  void openClubs() => const AdminClubsRoute().go(context);
 
   /// "Askıdaki kulüp" (`ADM-01.kpi.suspended`, `ADM-01.task.suspended`) →
   /// ADM-02 askıdakiler sekmesi.
-  void openSuspendedClubs() {
-    // TODO(T-39): `AdminClubsRoute(tab: suspended).go(context)` (W-45).
-  }
+  void openSuspendedClubs() =>
+      const AdminClubsRoute(tab: AdminClubsTab.suspended).go(context);
 
   /// "Açık şikayet" (`ADM-01.kpi.reports`, `ADM-01.task.reports`) /
   /// "Şikayetler" bölmesi → ADM-04.

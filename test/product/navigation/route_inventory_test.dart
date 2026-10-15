@@ -38,6 +38,9 @@
 // `ScanRoute` (`…/attendance/scan`, MGT-07).
 // T-36 · `ManageContentRoute` (`/clubs/:clubId/manage/content`, MGT-08),
 // `ClubSettingsRoute` (`…/manage/settings`, MGT-09); `ComposeRoute` `?type=`.
+// T-39 · `AdminClubsRoute` (`/admin/clubs?tab=`, ADM-02),
+// `AdminClubFormRoute` (`/admin/clubs/new`) + `AdminClubEditRoute`
+// (`/admin/clubs/:clubId/edit`) — tek `AdminClubFormView` (ADM-03, CD-54).
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
@@ -53,7 +56,7 @@ import '../../helpers/design_ids.dart';
 
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
-/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36).
+/// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -113,6 +116,10 @@ const Map<GoRouteData, String> _routes = {
   // Bildirimler dalı (T-26: NTF-02)
   NotificationPrefsRoute(): '/notifications/preferences',
   AdminRoute(): '/admin',
+  // Admin dalı (T-39: ADM-02, ADM-03 — iki rota sınıfı, tek view, CD-54)
+  AdminClubsRoute(): '/admin/clubs',
+  AdminClubFormRoute(): '/admin/clubs/new',
+  AdminClubEditRoute(clubId: _clubId): '/admin/clubs/:clubId/edit',
   ProfileRoute(): '/profile',
   // Profil dalı (T-27: PRF-02, PRF-03, PRF-04)
   EditProfileRoute(): '/profile/edit',
@@ -149,9 +156,10 @@ const Set<String> _idlessPaths = {'/debug'};
 
 /// navigation.md §2'de kendi satırı olmayan, bir satırın **ikinci yolu**
 /// olan rota sınıfları (CD-54: bir rota sınıfı = bir yol) → o satırın sınıfı
-/// ve ikinci yolun `…` sonrası parçası.
+/// ve ikinci yolun, ilk yolun ebeveynine eklenen parçası.
 const Map<String, (String, String)> _secondPathRoutes = {
-  'EventEditRoute': ('EventFormRoute', '/events/:eventId/edit'),
+  'EventEditRoute': ('EventFormRoute', '/:eventId/edit'),
+  'AdminClubEditRoute': ('AdminClubFormRoute', '/:clubId/edit'),
 };
 
 /// Router ağacındaki tüm tam yollar.
@@ -199,10 +207,56 @@ void main() {
     test('router yolları = kapsamdaki 44 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
-        'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2)', () {
+        'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2, '
+        'T-39: +3)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(51));
+      expect(_routes, hasLength(54));
     });
+
+    test(
+      "T-39 · ADM-02 ADM-01'in altındadır (`tab` sorgu parametresi); ADM-03 "
+      "iki rota sınıfı tek view'dır (CD-54) ve ADM-02'nin altındadır; hepsi "
+      'süper admin (S) ister',
+      () {
+        expect(AdminClubsRoute.segment, 'clubs');
+        expect(AdminClubFormRoute.segment, 'new');
+        expect(AdminClubEditRoute.segment, ':clubId/edit');
+        expect(AdminClubsTab.values.map((tab) => tab.name), [
+          'active',
+          'suspended',
+        ]);
+        const plain = AdminClubsRoute();
+        expect(plain.tab, isNull);
+        expect(plain.location, '/admin/clubs');
+        final deep = Uri.parse(
+          const AdminClubsRoute(tab: AdminClubsTab.suspended).location,
+        );
+        expect(deep.path, '/admin/clubs');
+        expect(deep.queryParameters, {'tab': 'suspended'});
+        for (final MapEntry(key: route, value: location)
+            in <GoRouteData, String>{
+              plain: '/admin/clubs',
+              const AdminClubFormRoute(): '/admin/clubs/new',
+              const AdminClubEditRoute(clubId: _clubId):
+                  '/admin/clubs/c01/edit',
+            }.entries) {
+          final name = '${route.runtimeType}';
+          expect(route.location, location, reason: name);
+          final match = RouteAccessTable.match(Uri.parse(location));
+          expect(match.pattern, _routes[route], reason: name);
+          expect(match.access, RouteAccess.superAdmin, reason: name);
+        }
+        expect(
+          const AdminClubEditRoute(clubId: 'a/b').location,
+          '/admin/clubs/a%2Fb/edit',
+        );
+        // navigation.md ADM-03 satırı iki yolu birlikte yazar (CD-54).
+        final row = readText('docs/navigation.md')
+            .split('\n')
+            .firstWhere((line) => line.contains('`AdminClubFormRoute`'));
+        expect(row, contains('`/admin/clubs/:id/edit`'));
+      },
+    );
 
     test(
       "T-36 · MGT-08 ve MGT-09 MGT-01'in altındadır; ikisi de yönetici ya da "
@@ -703,10 +757,11 @@ void main() {
         if (_idlessPaths.contains(path)) continue;
         final name = '${route.runtimeType}';
         if (_secondPathRoutes[name] case (final owner, final tail)) {
-          // Satırın ilk yolunun `/events/…` öncesi + ikinci yolun parçası.
+          // Satırın ilk yolunun ebeveyni (`…/new` öncesi) + ikinci yolun
+          // parçası.
           final first = documented[owner]!;
           expect(
-            '${first.substring(0, first.lastIndexOf('/events/'))}$tail',
+            '${first.substring(0, first.lastIndexOf('/'))}$tail',
             path,
             reason: name,
           );
