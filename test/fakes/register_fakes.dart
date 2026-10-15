@@ -79,7 +79,7 @@ final DateTime kDefaultFakeNowUtc = DateTime.utc(2026, 10, 12, 16, 30);
 /// başkanlık ön denetimi, M14).
 /// T-30: `FakeManagementRepository` kayıtlı üyelik / etkinlik / gönderi /
 /// yorum fake'lerine devreder, ayarları kayıtlı `FakeClubRepository`'ye
-/// yazar; `FakeAttendanceRepository` kayıtlı `FakeRsvpRepository` (ve onun
+/// yazar, kulüp görsellerini (T-36) kayıtlı `FakeStorageService`'e yükler; `FakeAttendanceRepository` kayıtlı `FakeRsvpRepository` (ve onun
 /// `FakeEventRepository`'si) üzerinde çalışır.
 void registerDefaultFakes() {
   final connectivity = FakeConnectivityService();
@@ -93,12 +93,13 @@ void registerDefaultFakes() {
   final events = FakeEventRepository(clock);
   final comments = FakeCommentRepository(clock, posts: posts);
   final rsvps = FakeRsvpRepository(clock, events: events);
+  final storage = FakeStorageService();
   GetIt.I
     ..registerSingleton<FeedbackService>(FakeFeedbackService())
     // T-10 · Firebase servisleri
     ..registerSingleton<AuthService>(authService)
     ..registerSingleton<FirestoreService>(FakeFirestoreService())
-    ..registerSingleton<StorageService>(FakeStorageService())
+    ..registerSingleton<StorageService>(storage)
     ..registerSingleton<RemoteConfigService>(FakeRemoteConfigService())
     ..registerSingleton<CrashService>(FakeCrashService())
     // T-11 · saat, cihaz servisleri, tercihler, çevrimdışı kapısı
@@ -154,6 +155,7 @@ void registerDefaultFakes() {
         posts: posts,
         comments: comments,
         clubs: clubs,
+        storage: storage,
       ),
     )
     ..registerSingleton<AttendanceRepository>(

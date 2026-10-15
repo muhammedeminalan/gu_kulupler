@@ -5,8 +5,8 @@ rules_version = '2';
 //
 // T-10: VARSAYILAN RET iskeleti. Beş yol kökü (StoragePaths ile aynı) açık `match` bloğu olarak durur;
 // okuma ve yükleme sahibi task'ta açılır (blok başlıklarındaki T-xx). Çapraz servis yardımcıları
-// ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi (events/ de onu kullanır — yeni yardımcı yok).
-// Açılan yollar: users/ (T-14) · clubs/ yalnızca okuma (T-16; yükleme T-36) · posts/ (T-21) · events/ (T-22)
+// ilk kullanan task'ta eklenir: `isManagerOf` T-21'de eklendi (events/ T-22 ve clubs/ T-36 de onu kullanır — yeni yardımcı yok).
+// Açılan yollar: users/ (T-14) · clubs/ (T-16 okuma; T-36 yükleme) · posts/ (T-21) · events/ (T-22)
 // · support/ (T-28; okuma yalnızca yükleyen + süper admin).
 //
 // ÇAPRAZ SERVİS SINIRI (T-21): tek kural değerlendirmesinde EN ÇOK 2 Firestore belgesine erişilebilir
@@ -99,8 +99,8 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
-    // posts/ ve events/ yüklemesi yalnızca iki özel üst veri taşır (CD-39, CD-143): `clubId` — yükleyenin hangi kulüp adına
-    // yüklediği — ve `uploaderId` — yükleyenin kendi kimliği.
+    // posts/, events/ ve clubs/ yüklemesi yalnızca iki özel üst veri taşır (CD-39, CD-143): `clubId` — yükleyenin hangi
+    // kulüp adına yüklediği (clubs/ yolunda klasördeki kulübe EŞİT olmalıdır) — ve `uploaderId` — yükleyenin kendi kimliği.
     //  - `clubId` belge yoluna gömülür (`memberships/{clubId}_{uid}`): kimlik karakter kümesi dışındaki
     //    değer (boş, `/`, `.` …) başka bir belgeyi gösteremesin diye reddedilir (Firestore `posts`
     //    create kuralındaki `postId` deseniyle aynı).
@@ -153,18 +153,32 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
-    // clubs/{clubId}/{file} — logo ve kapak · T-16 (okuma) · T-36 (yükleme)
+    // clubs/{clubId}/{file} — logo ve kapak · T-16 (okuma) · T-36 (yükleme; posts/ / events/ kalıbı)
     //  - Okuma: doğrulanmış her kullanıcı, yalnızca TEK dosya (`get`) — kulüp belgesi (`clubs.logoPath`,
     //    `clubs.coverPath`) doğrulanmış herkese açıktır; görseller de öyle (CLB-01, CLB-03). Klasör
     //    listelenemez: eski logo / kapak silinmediği için (D-10) liste, kulübün değiştirdiği görselleri
     //    de açardı; uygulama yalnızca belgedeki yolu okur. Askıdaki hesabın okuması açık kalır (users/
     //    ile aynı).
-    //  - Yükleme: KAPALI. Kulüp ayarları (MGT-09) T-36'da açar: `isManagerOf(clubId) || isSuperAdmin()`
-    //    + users/ ile aynı kalıp (`isNewFile()`, `imageOk()`, `fileNameOk(file)`, `noCustomMetadata()`).
+    //  - Yükleme (MGT-09, ManagementRepository.updateClubMedia): yalnızca KLASÖRDEKİ kulübün etkin
+    //    yöneticisi (yönetim kurulu / başkan), yeni adla (`isNewFile()`), hesabı etkinken; üst veride kendi
+    //    kimliğiyle (`uploaderId`) ve klasördeki kulüple (`metadata.clubId == clubId`). posts/ / events/
+    //    yollarının aksine klasör adı kulübün KENDİSİDİR: yetki klasöre bağlanır (üye, danışman, süper
+    //    admin ve başka kulübün yöneticisi bu klasöre — kendi kulübü adına da — yükleyemez). `clubId`
+    //    deseni `clubMetadataOnly()`'dedir (`[A-Za-z0-9_-]+`; eşitlik klasör adını da kapsar).
+    //  - Süper admin yükleyemez (kulüp ayarlarını yalnızca kulüp yönetimi değiştirir — Q-09; süper adminin
+    //    kulüp oluşturma / kimlik alanları T-37).
+    //  - Kulübün durumu okunmaz (aşağıdaki 2 belge sınırı): askıdaki / silinmiş kulübün yöneticisi dosyayı
+    //    yükler, `logoPath` / `coverPath` yazımı Firestore `clubLive`'da düşer (yetim dosya; fren = hesabın
+    //    askıya alınması — rules-spec §9.11g). İstemci yüklemeden önce kulübü okur (yok / silinmiş → dosya
+    //    gönderilmez).
+    //  - Çapraz servis: 2 belge (üyelik + hesap) = sınırın tamamı (CD-143; emülatör sınırı uygulamaz —
+    //    yapı testi sayar).
     match /clubs/{clubId}/{file} {
       allow get: if signedInVerified();
       allow list: if false;
-      allow create: if false;
+      allow create: if signedInVerified() && isNewFile() && imageOk() && fileNameOk(file)
+          && clubMetadataOnly() && request.resource.metadata.clubId == clubId
+          && isManagerOf(clubId) && accountActive();
       allow update, delete: if false;
     }
 

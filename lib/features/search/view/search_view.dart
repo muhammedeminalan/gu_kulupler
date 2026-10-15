@@ -11,6 +11,7 @@ import 'package:gu_kulupler/features/search/provider/search_view_model.dart';
 import 'package:gu_kulupler/features/search/view/mixin/search_view_mixin.dart';
 import 'package:gu_kulupler/features/search/view/widget/recent_searches_section.dart';
 import 'package:gu_kulupler/features/search/view/widget/search_result_section.dart';
+import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -90,6 +91,8 @@ class _SearchViewState extends ConsumerState<SearchView>
           seed: manager.applicant.avatarSeed,
         ),
     ],
+    coverImage: ref.clubCoverImage(club),
+    logoImage: ref.clubLogoImage(club),
     actionKey: GuKey.action('CLB-02.card.${club.id}'),
     joinKey: GuKey.action('CLB-02.join.${club.id}'),
     statusKey: GuKey.action('CLB-02.status.${club.id}'),

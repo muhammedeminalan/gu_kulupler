@@ -6,18 +6,26 @@
 // ayarı tek batch (yalnızca yama alanları + `updatedAt` + `settings_changed`
 // günlüğü) ve sınır denetimleri; danışman salt okunur (PLAN §10.4, §10.5;
 // rules-spec §3.3, §5; docs/plans/T-30.md §4 a, c; Q-09, D-10, W-83).
+// T-36: kulüp görselleri (`updateClubMedia`) — ön denetim dosya gönderilmeden,
+// ön okuma (yok / silinmiş → yükleme yok), `clubs/{clubId}/{yeni ad}`
+// yüklemeleri yalnızca `clubId` + `uploaderId` üst verisiyle, sonra yollar +
+// günlük tek batch; kısmi hata dosyayı silmez (D-10).
 //
 // Devredilen repository'ler ve alıcı çözücü çağrıları kaydeden el yazımı
 // çiftlerdir (`_Script`); ayar yazımı `fake_cloud_firestore` + kayıt tutan
 // servis çiftiyle. Yetki Security Rules'tadır: burada reddin olduğu gibi
 // döndüğü doğrulanır.
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
+import '../fakes/fake_app_clock.dart';
 import '../fakes/fake_notification_dispatcher.dart';
 import '../fakes/recording_firestore_service.dart';
+import '../fakes/recording_storage_service.dart';
 import '../fakes/sdk_firestore_stubs.dart';
 import '../helpers/plan_repository_table.dart';
 import '../helpers/plan_service_table.dart';
@@ -32,6 +40,17 @@ const String _clubPath = 'clubs/c01';
 const String _eventId = 'e01';
 const String _postId = 'p01';
 const String _actor = 'u_board';
+
+/// Görsel yüklemesinin sabit saati ve rastgele baytları (dosya adı:
+/// `20261015T090000Z_<16 hex>`; ilk 8 bayt logo, sonraki 8 bayt kapak).
+final DateTime _uploadedAt = DateTime.utc(2026, 10, 15, 9);
+const List<int> _randomBytes = [
+  0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71, //
+  0x81, 0x92, 0xa3, 0xb4, 0xc5, 0xd6, 0xe7, 0xf8,
+];
+const String _logoPath = 'clubs/c01/20261015T090000Z_0a1b2c3d4e5f6071.jpg';
+const String _coverPath = 'clubs/c01/20261015T090000Z_8192a3b4c5d6e7f8.png';
+const List<String> _invalidIds = ['', 'c/1', '..', '__id__'];
 const String _ayse = 'u_ayse';
 
 /// Devredilen çağrıların ortak kaydı: her çağrı `ad arg1 arg2 …` etiketiyle
@@ -357,11 +376,16 @@ void main() {
   late FakeNotificationDispatcher dispatcher;
   late FakeFirebaseFirestore db;
   late RecordingFirestoreService service;
+  late RecordingStorageService storage;
   late ManagementRepository repository;
 
   ManagementRepository repositoryOn(FirestoreService firestore) =>
       FirebaseManagementRepository(
         firestore: firestore,
+        storage: storage,
+        clock: FakeAppClock(_uploadedAt),
+        // 16 bayt: aynı saniyede yüklenen logo ve kapağın adları ayrışır.
+        random: SequenceRandom(_randomBytes),
         memberships: _Memberships(script),
         events: events,
         posts: _Posts(script),
@@ -378,17 +402,27 @@ void main() {
     dispatcher = FakeNotificationDispatcher();
     db = FakeFirebaseFirestore();
     service = RecordingFirestoreService(FirebaseFirestoreService(db));
+    storage = RecordingStorageService();
     repository = repositoryOn(service);
   });
 
   group('T-30 · ManagementRepository · sözleşme', () {
-    test('PLAN §10.4 tablosundaki 19 üye arayüzde aynı imzayla var; başka üye '
-        'yok', () {
+    test('PLAN §10.4 tablosundaki 19 üye arayüzde aynı imzayla var; tablo '
+        'dışı tek üye T-36 `updateClubMedia` (PLAN §5 satır 731)', () {
       final plan = readPlanRepositoryMembers('$ManagementRepository');
-
-      expect(plan, hasLength(19));
-      expect(interfaceMembers(_interface, '$ManagementRepository').toSet(), {
+      final planned = {
         for (final row in plan) normalizeDartSource(row.signature),
+      };
+      final members = interfaceMembers(
+        _interface,
+        '$ManagementRepository',
+      ).toSet();
+
+      expect(plan.length, greaterThanOrEqualTo(19));
+      expect(members.containsAll(planned), isTrue);
+      expect(members.difference(planned).map((m) => m.split('(').first), {
+        if (!planned.any((m) => m.contains('updateClubMedia(')))
+          'Future<MediaUpdateResult<ClubMediaPaths>>updateClubMedia',
       });
     });
 
@@ -823,6 +857,36 @@ void main() {
       });
     }
 
+    test('SHT-31 şablona dönüş: clearCoverPath → coverPath null, logoPath '
+        'dokunulmaz; günlük aynı batch (dosya silinmez — D-10)', () async {
+      await db.doc(_clubPath).set({
+        ..._clubDoc(),
+        'logoPath': 'clubs/c01/logo.jpg',
+        'coverPath': 'clubs/c01/kapak.png',
+      });
+
+      final result = await update(
+        const ClubSettingsPatch(
+          pattern: ClubPattern.waves,
+          clearCoverPath: true,
+        ),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(service.outsideWrites, 1);
+      final after = await club();
+      expect(after.containsKey('coverPath'), isTrue);
+      expect(after['coverPath'], isNull);
+      expect(after['logoPath'], 'clubs/c01/logo.jpg');
+      expect(after['pattern'], 'waves');
+      expect(await activity(), hasLength(1));
+      expect(
+        const ClubSettingsPatch(clearCoverPath: true).toJson(),
+        {'coverPath': null},
+      );
+      expect(const ClubSettingsPatch().isEmpty, isTrue);
+    });
+
     test('kulüp yok / silinmiş → notFound; Rules reddi (danışman, üye, '
         'askıdaki kulüp) → permissionDenied; üçünde de yazım yok', () async {
       const patch = ClubSettingsPatch(requireNote: true);
@@ -849,4 +913,276 @@ void main() {
       expect(await activity(), isEmpty);
     });
   });
+
+  group('T-36 · updateClubMedia (MGT-09)', () {
+    ClubMediaUpload image(String contentType, [int length = 3]) =>
+        ClubMediaUpload(bytes: Uint8List(length), contentType: contentType);
+
+    Future<MediaUpdateResult<ClubMediaPaths>> media({
+      ManagementRepository? on,
+      String clubId = _clubId,
+      String uploaderId = _actor,
+      ClubMediaUpload? logo,
+      ClubMediaUpload? cover,
+    }) => (on ?? repository).updateClubMedia(
+      clubId,
+      uploaderId: uploaderId,
+      logo: logo,
+      cover: cover,
+    );
+
+    Future<Json> club() async => (await db.doc(_clubPath).get()).data()!;
+
+    Future<List<Json>> activity() async => [
+      for (final doc in (await db.collection('activity').get()).docs)
+        doc.data(),
+    ];
+
+    test('logo + kapak: önce logo, sonra kapak clubs/{clubId}/{yeni ad} '
+        'yoluna yalnızca clubId + uploaderId üst verisiyle yüklenir; yollar + '
+        'updatedAt ve settings_changed günlüğü tek batch', () async {
+      await db.doc(_clubPath).set(_clubDoc());
+      final before = await club();
+      final logo = image('image/jpeg');
+
+      final result = await media(logo: logo, cover: image('image/png'));
+
+      expect(
+        result.dataOrNull,
+        const ClubMediaPaths(logoPath: _logoPath, coverPath: _coverPath),
+      );
+      expect(storage.uploads.map((u) => u.path), [_logoPath, _coverPath]);
+      expect(storage.uploads.first.bytes, same(logo.bytes));
+      expect(storage.uploads.map((u) => u.contentType), [
+        'image/jpeg',
+        'image/png',
+      ]);
+      for (final upload in storage.uploads) {
+        // Rules: `metadata.clubId == klasör`, `uploaderId == request.auth.uid`.
+        expect(upload.customMetadata, {
+          'clubId': _clubId,
+          'uploaderId': _actor,
+        });
+        expect(StoragePaths.isClubFile(upload.path, _clubId), isTrue);
+      }
+      expect(service.outsideWrites, 1);
+      expect(service.transactions, 0);
+      final after = await club();
+      expect(
+        {
+          for (final key in after.keys)
+            if (after[key].toString() != before[key].toString()) key,
+        },
+        {'logoPath', 'coverPath', 'updatedAt'},
+      );
+      expect(after, containsPair('logoPath', _logoPath));
+      expect(after, containsPair('coverPath', _coverPath));
+      expect(await activity(), [
+        {
+          'clubId': _clubId,
+          'actorId': _actor,
+          'kind': 'settings_changed',
+          'refs': <String, Object?>{},
+          'createdAt': isA<Timestamp>(),
+        },
+      ]);
+    });
+
+    test('yalnızca kapak: logoPath yazılmaz (eski değer kalır), sonuçta '
+        'logoPath null', () async {
+      await db.doc(_clubPath).set({..._clubDoc(), 'logoPath': 'eski'});
+
+      final result = await media(cover: image('image/webp'));
+
+      const cover = 'clubs/c01/20261015T090000Z_0a1b2c3d4e5f6071.webp';
+      expect(result.dataOrNull, const ClubMediaPaths(coverPath: cover));
+      expect(storage.uploads.single.path, cover);
+      final after = await club();
+      expect(after['logoPath'], 'eski');
+      expect(after['coverPath'], cover);
+    });
+
+    test('ön denetim dosya gönderilmeden ve okumadan: geçersiz kimlik / '
+        'görsel yok → belge hatası; izinsiz tür, boş, sınırdaki dosya → '
+        'yükleme hatası (kapak geçersizse logo da yüklenmez)', () async {
+      await db.doc(_clubPath).set(_clubDoc());
+      final logo = image('image/jpeg');
+
+      for (final id in _invalidIds) {
+        for (final result in [
+          await media(clubId: id, logo: logo),
+          await media(uploaderId: id, logo: logo),
+        ]) {
+          expect(
+            result.errorOrNull,
+            const MediaDocumentError(FirestoreError.invalidArgument),
+            reason: 'kimlik "$id"',
+          );
+        }
+      }
+      expect(
+        (await media()).errorOrNull,
+        const MediaDocumentError(FirestoreError.invalidArgument),
+      );
+      final rejected = <ClubMediaUpload, StorageError>{
+        image('image/gif'): StorageError.invalidType,
+        image('image/svg+xml'): StorageError.invalidType,
+        image('image/jpeg', 0): StorageError.noFile,
+        // Storage Rules `size < imageMaxBytes`: sınırın kendisi de ret.
+        image('image/jpeg', Limits.imageMaxBytes): StorageError.sizeLimit,
+      };
+      for (final MapEntry(key: bad, value: error) in rejected.entries) {
+        expect((await media(logo: bad)).errorOrNull, MediaUploadError(error));
+        expect(
+          (await media(logo: logo, cover: bad)).errorOrNull,
+          MediaUploadError(error),
+        );
+      }
+      expect(storage.uploads, isEmpty);
+      expect(service.outsideWrites, 0);
+      expect(await activity(), isEmpty);
+    });
+
+    test('kulüp yok / silinmiş → notFound, dosya gönderilmez (yetim dosya '
+        'yok)', () async {
+      expect(
+        (await media(logo: image('image/jpeg'))).errorOrNull,
+        const MediaDocumentError(FirestoreError.notFound),
+      );
+      await db.doc(_clubPath).set(_clubDoc(isDeleted: true));
+      expect(
+        (await media(logo: image('image/jpeg'))).errorOrNull,
+        const MediaDocumentError(FirestoreError.notFound),
+      );
+      expect(storage.uploads, isEmpty);
+      expect(service.outsideWrites, 0);
+    });
+
+    test('yükleme reddi (Storage Rules: yönetici değil) → yükleme hatası, '
+        'yol yazılmaz; kapak reddedilirse yüklenen logo yerinde kalır '
+        '(silinmez — D-10) ama logoPath da yazılmaz', () async {
+      await db.doc(_clubPath).set(_clubDoc());
+      final before = await club();
+
+      storage.nextError = StorageError.unauthorized;
+      expect(
+        (await media(logo: image('image/jpeg'))).errorOrNull,
+        const MediaUploadError(StorageError.unauthorized),
+      );
+      expect(storage.uploads, hasLength(1));
+
+      storage.uploads.clear();
+      // Logo geçer, kapak reddedilir.
+      final split = FirebaseManagementRepository(
+        firestore: service,
+        storage: _FailSecondUpload(storage),
+        clock: FakeAppClock(_uploadedAt),
+        random: SequenceRandom(_randomBytes),
+        memberships: _Memberships(script),
+        events: events,
+        posts: _Posts(script),
+        comments: _Comments(script),
+        clubs: _Clubs(script),
+        activity: FirebaseActivityRepository(service),
+        notifications: dispatcher,
+        recipients: _Recipients(script),
+      );
+      expect(
+        (await split.updateClubMedia(
+          _clubId,
+          uploaderId: _actor,
+          logo: image('image/jpeg'),
+          cover: image('image/png'),
+        )).errorOrNull,
+        const MediaUploadError(StorageError.unauthorized),
+      );
+      expect(storage.uploads.map((u) => u.path), [_logoPath, _coverPath]);
+      expect(service.outsideWrites, 0);
+      expect(await club(), before);
+      expect(await activity(), isEmpty);
+    });
+
+    test('askıdaki kulüp → permissionDenied, dosya gönderilmez (yetim dosya '
+        'yok — T-36 güvenlik incelemesi)', () async {
+      await db.doc(_clubPath).set({..._clubDoc(), 'status': 'suspended'});
+      final before = await club();
+
+      expect(
+        (await media(
+          logo: image('image/jpeg'),
+          cover: image('image/png'),
+        )).errorOrNull,
+        const MediaDocumentError(FirestoreError.permissionDenied),
+      );
+      expect(storage.uploads, isEmpty);
+      expect(service.outsideWrites, 0);
+      expect(await club(), before);
+      expect(await activity(), isEmpty);
+    });
+
+    test('dosyalar yüklendi ama yol yazımı reddedildi (Rules: danışman / '
+        'yönetici değil) → belge hatası; dosyalar yerinde, alanlar eski '
+        'değerinde', () async {
+      await db.doc(_clubPath).set(_clubDoc());
+      final denied = repositoryOn(
+        FirebaseFirestoreService(
+          FailingBatchFirestore(
+            db,
+            error: firestoreException('permission-denied'),
+          ),
+        ),
+      );
+
+      expect(
+        (await media(
+          on: denied,
+          logo: image('image/jpeg'),
+          cover: image('image/png'),
+        )).errorOrNull,
+        const MediaDocumentError(FirestoreError.permissionDenied),
+      );
+      expect(storage.uploads, hasLength(2));
+      final after = await club();
+      expect(after.containsKey('logoPath'), isFalse);
+      expect(after.containsKey('coverPath'), isFalse);
+      expect(await activity(), isEmpty);
+    });
+  });
+}
+
+/// İlk yüklemeyi [_inner]'a geçiren, ikinciyi (kapak) Storage Rules reddi
+/// gibi düşüren servis; iki yükleme de iç servisin `uploads` listesine
+/// kaydedilir.
+final class _FailSecondUpload implements StorageService {
+  _FailSecondUpload(this._inner);
+
+  final RecordingStorageService _inner;
+
+  @override
+  Future<StorageResult<String>> upload({
+    required String path,
+    required Uint8List bytes,
+    required String contentType,
+    Map<String, String> customMetadata = const {},
+    void Function(double fraction)? onProgress,
+  }) {
+    if (_inner.uploads.isNotEmpty) {
+      _inner.nextError = StorageError.unauthorized;
+    }
+    return _inner.upload(
+      path: path,
+      bytes: bytes,
+      contentType: contentType,
+      customMetadata: customMetadata,
+      onProgress: onProgress,
+    );
+  }
+
+  @override
+  Future<StorageResult<String>> downloadUrl(String path) =>
+      _inner.downloadUrl(path);
+
+  @override
+  Future<StorageResult<StorageFileInfo>> metadata(String path) =>
+      _inner.metadata(path);
 }

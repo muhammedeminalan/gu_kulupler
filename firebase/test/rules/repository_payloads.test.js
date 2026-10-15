@@ -1339,3 +1339,147 @@ describe('T-30 · yönetim — senaryolar (kendi bağlamı, kurallar açık)', (
     expect(await readDoc('clubs/c01')).toMatchObject({ memberCount: 5 });
   });
 });
+
+// 12. T-36 — `contract.t36.scenarios`: FirebaseManagementRepository.updateClubMedia'nın GERÇEK okuma + yükleme +
+//     yazımları (biçim `t30` ile aynı: ön okuma + tek batch; `swap` ret varyantında aktör kimliği). Ek: `uploads`
+//     — dosyalar yazımdan ÖNCE, sırayla, senaryonun bağlamıyla sözleşmedeki yol / tür / `customMetadata` ile
+//     Storage'a yüklenir (Storage kuralı klasördeki kulübün etkin yöneticisini ister). Ret varyantları yalnızca
+//     Firestore yazımını gönderir: yüklenmiş dosya bile başka kulübün / askıdaki kulübün yoluna iliştirilemez.
+describe('T-36 · kulüp görselleri — senaryolar (kendi bağlamı, kurallar açık)', () => {
+  const t36 = contract.t36;
+  const DAYS_AGO = '@daysAgo:';
+  /** Görsel baytları (ImagePickerService yeniden kodlar; içerik Storage kuralını ilgilendirmez). */
+  const BYTES = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0]);
+
+  const identityDocs = () =>
+    Object.fromEntries(Object.entries(baseDocs()).filter(([path]) => /^(users|memberships)\/[^/]+$/.test(path)));
+
+  /** Koşunun TEK üretilen kimliği (otomatik günlük kimliği; 20 karakter). */
+  const tokensFor = (db) => ({ [t36.autoId]: doc(collection(db, 'activity')).id });
+
+  function replaceAll(value, pairs) {
+    if (typeof value === 'string') {
+      return Object.entries(pairs).reduce((text, [from, to]) => text.split(from).join(to), value);
+    }
+    if (Array.isArray(value)) return value.map((inner) => replaceAll(inner, pairs));
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, replaceAll(inner, pairs)]));
+    }
+    return value;
+  }
+
+  function seedValue(value) {
+    if (value === SENTINEL) return serverTimestamp();
+    if (typeof value === 'string' && value.startsWith(DAYS_AGO)) {
+      return Timestamp.fromMillis(Date.now() - Number(value.slice(DAYS_AGO.length)) * DAY_MS);
+    }
+    if (Array.isArray(value)) return value.map(seedValue);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, seedValue(inner)]));
+    }
+    return value;
+  }
+
+  function seedOf(scenario, variant) {
+    const docs = Object.fromEntries(
+      Object.entries(scenario.seed).map(([path, { $fixture: name, ...fields }]) => {
+        if (name !== undefined && !t36.fixtures[name]) throw new Error(`bilinmeyen fixture: ${name}`);
+        return [path, { ...(name === undefined ? {} : t36.fixtures[name]), ...fields }];
+      }),
+    );
+    for (const [path, patch] of Object.entries(variant.seed || {})) {
+      if (!docs[path]) throw new Error(`varyant yaması senaryoda olmayan belgeye: ${path}`);
+      docs[path] = { ...docs[path], ...patch };
+    }
+    const content = Object.fromEntries(Object.entries(docs).map(([path, data]) => [path, seedValue(data)]));
+    return { ...identityDocs(), ...content };
+  }
+
+  /** Varyantın okuma + yazımları: önce `swap` (aktör kimliği), sonra `patch`, en son koşu kimliği. */
+  function callOf(scenario, variant, tokens) {
+    const swap = variant.swap || {};
+    const patch = variant.patch || {};
+    const writes = replaceAll(scenario.writes, swap).map((write, index) =>
+      patch[index] ? { ...write, data: { ...write.data, ...patch[index] } } : write,
+    );
+    return { reads: scenario.reads, writes: replaceAll(writes, tokens) };
+  }
+
+  /** Repository'nin gönderdiği biçim: ön okuma + tek batch. */
+  async function run(db, { reads, writes }) {
+    for (const path of reads) await getDoc(doc(db, path));
+    const batch = writeBatch(db);
+    for (const write of writes) applyWrite(db, batch, write);
+    return batch.commit();
+  }
+
+  const uploadOf = (role, upload) =>
+    uploadBytes(ref(contextFor(role).storage(), upload.path), BYTES, {
+      contentType: upload.contentType,
+      customMetadata: upload.customMetadata,
+    });
+
+  async function snapshot(paths) {
+    const out = {};
+    for (const path of paths) out[path] = await readDoc(path);
+    return out;
+  }
+
+  test('sözleşme: bağlamlar roles.json ile aynı; nöbetçi t15 ile aynı; her yükleme kulübün klasöründe, üst veri {clubId, uploaderId = bağlam}', () => {
+    expect(t36.autoId).toBe(contract.t15.autoId);
+    for (const [role, uid] of Object.entries(t36.actors)) expect(definition(role).uid).toBe(uid);
+    for (const scenario of t36.scenarios) {
+      expect(scenario.uploads.length).toBeGreaterThan(0);
+      for (const upload of scenario.uploads) {
+        expect(upload.path).toMatch(/^clubs\/c01\/\d{8}T\d{6}Z_[0-9a-f]{16}\.(jpg|png|webp)$/);
+        expect(upload.customMetadata).toEqual({ clubId: 'c01', uploaderId: definition(scenario.role).uid });
+      }
+      const club = scenario.writes.find((write) => write.path === 'clubs/c01');
+      expect([club.data.logoPath, club.data.coverPath].filter(Boolean)).toEqual(scenario.uploads.map((upload) => upload.path));
+    }
+  });
+
+  describe.each(t36.scenarios.map((scenario) => [scenario.call, scenario]))('%s', (_call, scenario) => {
+    test(`gerçek yüklemeler + okuma + yazımlar geçer (${scenario.role})`, async () => {
+      const db = contextFor(scenario.role).firestore();
+      const tokens = tokensFor(db);
+      await seedDocs(seedOf(scenario, {}));
+
+      for (const upload of scenario.uploads) await assertSucceeds(uploadOf(scenario.role, upload));
+      const call = callOf(scenario, {}, tokens);
+      await assertSucceeds(run(db, call));
+
+      for (const write of call.writes) expect(await readDoc(write.path)).not.toBeNull();
+      for (const [path, fields] of Object.entries(scenario.expect || {})) {
+        expect(await readDoc(path)).toMatchObject(fields);
+      }
+      for (const upload of scenario.uploads) {
+        const meta = await getMetadata(ref((await getAdminContext()).storage(), upload.path));
+        expect(meta.customMetadata).toEqual(upload.customMetadata);
+      }
+    });
+
+    test.each(scenario.denied.map((variant) => [variant.name, variant]))('ret: %s', async (_name, variant) => {
+      const db = contextFor(variant.role || scenario.role).firestore();
+      const tokens = tokensFor(db);
+      const seed = seedOf(scenario, variant);
+      await seedDocs(seed);
+      const call = callOf(scenario, variant, tokens);
+      const paths = [...new Set([...Object.keys(seed), ...call.writes.map((write) => write.path)])];
+      const before = await snapshot(paths);
+
+      await assertFails(run(db, call));
+
+      expect(await snapshot(paths)).toEqual(before);
+    });
+  });
+
+  test('yükleme: üye, danışman, süper admin ve başka kulübün yöneticisi kendi kimlikleriyle de yükleyemez (Storage — klasördeki kulüp)', async () => {
+    const scenario = t36.scenarios[0];
+    await seedDocs(seedOf(scenario, {}));
+    for (const role of ['member', 'advisor', 'super', 'otherManager']) {
+      const upload = scenario.uploads[0];
+      await assertFails(uploadOf(role, { ...upload, customMetadata: { ...upload.customMetadata, uploaderId: definition(role).uid } }));
+    }
+  });
+});

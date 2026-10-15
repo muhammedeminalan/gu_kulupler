@@ -27,6 +27,8 @@ import 'package:gu_ui/gu_ui.dart';
 /// kartı.
 ///
 /// * [editPostId] verilirse düzenleme kipidir (`?edit=`; SHT-08 "Düzenle").
+/// * [initialType] yeni gönderinin başlangıç türüdür (`?type=`; MGT-01
+///   "Duyuru yap" → duyuru — W-97); düzenlemede yok sayılır.
 ///   Durum sırası: hata ("Yeniden dene") → yükleniyor (iskelet) → form.
 ///   Yeni gönderide okuma beklenmez: form hemen çizilir (cihazdaki taslakla).
 /// * "Yayınla" form geçersizken soluktur; dokunuş eksik alanların hatasını
@@ -43,8 +45,13 @@ import 'package:gu_ui/gu_ui.dart';
 /// Design: FED-03
 class ComposeView extends ConsumerStatefulWidget {
   /// [clubId] kulübünde yeni gönderi; [editPostId] verilirse o gönderinin
-  /// düzenlemesi.
-  const ComposeView({required this.clubId, this.editPostId, super.key});
+  /// düzenlemesi; [initialType] yeni gönderinin başlangıç türü.
+  const ComposeView({
+    required this.clubId,
+    this.editPostId,
+    this.initialType,
+    super.key,
+  });
 
   /// Kulüp kimliği (`ComposeRoute.clubId`).
   final String clubId;
@@ -52,6 +59,10 @@ class ComposeView extends ConsumerStatefulWidget {
   /// Düzenlenen gönderinin kimliği (`ComposeRoute.edit`); yeni gönderide
   /// `null`.
   final String? editPostId;
+
+  /// Yeni gönderinin başlangıç türü (`ComposeRoute.type`); `null` → cihaz
+  /// taslağının türü (yoksa gönderi).
+  final PostType? initialType;
 
   @override
   ConsumerState<ComposeView> createState() => _ComposeViewState();
@@ -115,6 +126,7 @@ class _ComposeViewState extends ConsumerState<ComposeView>
                 ComposeForm(
                   clubId: widget.clubId,
                   editPostId: widget.editPostId,
+                  initialType: widget.initialType,
                   onAddImage: () => unawaited(addImage()),
                   onSwitchClub: canSwitchClub
                       ? () => unawaited(switchClub())

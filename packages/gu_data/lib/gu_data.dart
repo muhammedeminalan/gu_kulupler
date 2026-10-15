@@ -39,6 +39,7 @@ export 'src/models/activity_model.dart';
 export 'src/models/activity_refs_model.dart';
 export 'src/models/block_model.dart';
 export 'src/models/club_advisor_model.dart';
+export 'src/models/club_media_upload.dart';
 export 'src/models/club_model.dart';
 export 'src/models/club_notification_prefs_model.dart';
 export 'src/models/club_settings_patch.dart';

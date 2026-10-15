@@ -12,6 +12,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_list_toolbar.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/first_club_card.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/my_clubs_strip.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
+import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/notification/unread_notification_clubs.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
@@ -75,6 +76,7 @@ class _ClubListViewState extends ConsumerState<ClubListView>
                 membership.role == ClubRole.board ||
                 membership.role == ClubRole.president,
             unread: unreadClubIds.contains(club.id),
+            coverImage: ref.clubCoverImage(club),
             actionKey: GuKey.action('CLB-01.myClub.${club.id}'),
             onTap: () => openClub(club.id),
           ),
@@ -103,6 +105,8 @@ class _ClubListViewState extends ConsumerState<ClubListView>
             ),
         ],
         grid: grid,
+        coverImage: ref.clubCoverImage(club),
+        logoImage: ref.clubLogoImage(club),
         actionKey: GuKey.action('CLB-01.card.${club.id}'),
         joinKey: GuKey.action('CLB-01.join.${club.id}'),
         statusKey: GuKey.action('CLB-01.status.${club.id}'),

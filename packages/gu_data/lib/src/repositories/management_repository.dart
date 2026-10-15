@@ -1,7 +1,9 @@
 import 'package:gu_data/src/core/bulk_result.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
+import 'package:gu_data/src/core/media_update_error.dart';
 import 'package:gu_data/src/core/role_policy.dart';
+import 'package:gu_data/src/models/club_media_upload.dart';
 import 'package:gu_data/src/models/club_settings_patch.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
 import 'package:gu_data/src/models/enums/reject_reason.dart';
@@ -110,6 +112,8 @@ abstract interface class ManagementRepository {
   /// MGT-09 — kulüp ayarlarını [patch] ile günceller: **tek batch**
   /// `clubs/{clubId}` update (yalnızca yamanın alanları + `updatedAt`) +
   /// `settings_changed` günlüğü. Bildirim yoktur.
+  /// `ClubSettingsPatch.clearCoverPath` yüklenmiş kapağı bırakır
+  /// (`coverPath: null` — SHT-31 şablona dönüş; dosya silinmez, D-10).
   ///
   /// Hatalar: boş yama ya da sınır dışı alan (`Limits.clubSummaryMax`,
   /// `clubAboutMax`, `conditionsMax`, `instagramHandlePattern`) →
@@ -120,6 +124,41 @@ abstract interface class ManagementRepository {
     String clubId,
     ClubSettingsPatch patch, {
     required String actorId,
+  });
+
+  /// MGT-09 — kulübün logosunu ([logo]) ve / veya kapağını ([cover])
+  /// yükler, yeni Storage yollarını döner (T-36; Q-19, K-C).
+  ///
+  /// Sırayla: (0) kulüp ön okuması (yok / silinmiş / askıda → dosya
+  /// gönderilmez);
+  /// (1) her görsel — önce logo, sonra kapak — `clubs/{clubId}/{yeni dosya
+  /// adı}` yoluna (`StoragePaths.clubLogo` / `clubCover` +
+  /// `StoragePaths.newFileName`; sabit ad yok), `customMetadata: {'clubId':
+  /// clubId, 'uploaderId': uploaderId}` ile yüklenir — Storage Rules
+  /// yükleyenin o kulübün etkin yöneticisi olduğunu ve [uploaderId] değerinin
+  /// oturumdaki kullanıcı olduğunu doğrular; (2) `clubs/{clubId}` belgesinde
+  /// yalnızca verilen görselin `logoPath` / `coverPath` alanı bu yola çekilir
+  /// (`updatedAt` ile) ve `settings_changed` günlüğü ([uploaderId] aktör)
+  /// AYNI batch'te yazılır (`updateClubSettings` ile aynı). Var olan dosyanın
+  /// üzerine yazılmaz, eski logo / kapak silinmez (D-10).
+  ///
+  /// En az biri verilmelidir. Hatalar: ön denetim (dosya gönderilmeden;
+  /// iki görsel de yüklemeden önce denetlenir) — geçersiz kimlik ya da iki
+  /// görsel de `null` → [MediaDocumentError]
+  /// ([FirestoreError.invalidArgument]); izinsiz tür / boş bayt /
+  /// `Limits.imageMaxBytes` sınırı → [MediaUploadError]; kulüp yok /
+  /// silinmiş → [MediaDocumentError] ([FirestoreError.notFound]); askıdaki
+  /// kulüp → [MediaDocumentError] ([FirestoreError.permissionDenied]; dosya
+  /// gönderilmez); yükleme
+  /// reddi → [MediaUploadError] (`StorageError.unauthorized`) ve hiçbir yol
+  /// yazılmaz (kapak reddedilirse önceden yüklenen logo yetim kalır); dosya
+  /// yüklendi ama yol yazılamadı (danışman, yarış — Rules) →
+  /// [MediaDocumentError] (dosya yetim kalır, silinmez).
+  Future<MediaUpdateResult<ClubMediaPaths>> updateClubMedia(
+    String clubId, {
+    required String uploaderId,
+    ClubMediaUpload? logo,
+    ClubMediaUpload? cover,
   });
 
   /// MGT-05 / DLG-22 — `EventRepository.publish` (taslak → yayında +

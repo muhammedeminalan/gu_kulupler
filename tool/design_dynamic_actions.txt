@@ -163,3 +163,11 @@ MGT-06.attended.*      # design/prototype/app/screens-manage.js:133 — "Katıld
 MGT-07.codeInput         # design/prototype/app/screens-manage.js:154 — elle kod alanı yalnızca "Kod gir" sonrası (`manual`); yakalama kapalı alan
 MGT-07.verify            # design/prototype/app/screens-manage.js:154 — "Doğrula" yalnızca elle kod alanı açıkken (`manual`); yakalama kapalı alan
 MGT-07.permission.retry  # design/prototype/app/screens-manage.js:149 — "Ayarlara git" yalnızca kamera izni reddedildiğinde (`perm === 'denied'`); yakalama izin penceresi (DLG-04)
+MGT-08.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-08.retry           # lib/features/management/view/manage_content_view.dart — yalnızca gönderiler okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur
+MGT-08.scrim           # design/prototype/app/ui.js:191 + screens-manage.js:167 — satır menüsünün (`PopMenu id="MGT-08"`) saydam scrim'i; yalnızca menü açıkken
+MGT-08.pin.*           # design/prototype/app/screens-manage.js:167 — satır menüsünün "Sabitle" / "Sabitlemeyi kaldır" satırı (gönderi başına) yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-08.edit.*          # design/prototype/app/screens-manage.js:167 — satır menüsünün "Düzenle" satırı (gönderi başına) yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-08.delete.*        # design/prototype/app/screens-manage.js:167 — satır menüsünün "Sil" satırı (gönderi başına, → DLG-10) yalnızca "⋮" menüsü açıkken; yakalama kapalı menü
+MGT-09.switchClub      # design/prototype/app/screens-manage.js:8 — `MgtHeader` kulüp adı düğmesi yalnızca birden çok kulüp yöneten kullanıcıda (`managed.length > 1`); yakalama tek kulüp yöneten u_burak
+MGT-09.retry           # lib/features/management/view/club_settings_view.dart — yalnızca kulüp okunamadığında (`isError`) çizilen hata durumunun "Yeniden dene" düğmesi; prototip verisi eşzamanlıdır, hata durumu yoktur

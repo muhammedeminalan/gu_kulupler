@@ -10,6 +10,7 @@
 // T-20 · FED-02 `/clubs/:clubId/posts/:postId` (guard `üye`); SHT-09 gövdesi
 // kulüp sayfasına rotadan verilir (`commentsSheetBuilder`).
 // T-21 · FED-03 `/clubs/:clubId/compose?edit=` (guard `M`).
+// T-36 · FED-03 `?type=` başlangıç türü (W-97).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -23,6 +24,8 @@ import 'package:gu_kulupler/features/clubs/view/user_profile_view.dart';
 import 'package:gu_kulupler/features/feed/view/compose_view.dart';
 import 'package:gu_kulupler/features/feed/view/post_detail_view.dart';
 import 'package:gu_kulupler/features/feed/view/widget/comments_sheet.dart';
+import 'package:gu_kulupler/features/management/view/club_settings_view.dart';
+import 'package:gu_kulupler/features/management/view/manage_content_view.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -64,6 +67,72 @@ ClubDetailView _detail(WidgetTester tester) =>
     tester.widget<ClubDetailView>(find.byType(ClubDetailView));
 
 void main() {
+  group('T-36 · içerik yönetimi ve kulüp ayarları rotaları (MGT-08, '
+      'MGT-09)', () {
+    testWidgets('/clubs/:clubId/manage/content ve …/settings → view(clubId); '
+        'geri panele döner; danışman açar, üye kulüp sayfasına yönlenir', (
+      tester,
+    ) async {
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeManager('c01'),
+        location: '/clubs/c01/manage/content',
+      );
+      expect(app.location, '/clubs/c01/manage/content');
+      expect(
+        tester.widget<ManageContentView>(find.byType(ManageContentView)).clubId,
+        'c01',
+      );
+      expect(find.byType(GuBottomNav), findsNothing);
+      expect(app.stackDepth(GuTab.clubs), 4);
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01/manage');
+
+      // W-40: `?tab=` ilk sekmedir; tanınmayan değer yok sayılır.
+      await app.go('/clubs/c01/manage/content?tab=announcement');
+      expect(
+        tester.widget<ManageContentView>(find.byType(ManageContentView)).tab,
+        PostType.announcement,
+      );
+      await app.go('/clubs/c01/manage/content?tab=bogus');
+      expect(
+        tester.widget<ManageContentView>(find.byType(ManageContentView)).tab,
+        isNull,
+      );
+
+      await app.go('/clubs/c01/manage/settings');
+      expect(
+        tester.widget<ClubSettingsView>(find.byType(ClubSettingsView)).clubId,
+        'c01',
+      );
+      expect(app.stackDepth(GuTab.clubs), 4);
+      expect(await app.systemBack(), isTrue);
+      expect(app.location, '/clubs/c01/manage');
+    });
+
+    testWidgets('danışman iki ekranı açar; üye kulüp sayfasına yönlenir', (
+      tester,
+    ) async {
+      final app = await _pump(
+        tester,
+        session: FakeSessionStates.activeAdvisor('c01'),
+        location: '/clubs/c01/manage/settings',
+      );
+      expect(app.location, '/clubs/c01/manage/settings');
+      expect(find.byType(ClubSettingsView), findsOneWidget);
+      await app.go('/clubs/c01/manage/content');
+      expect(find.byType(ManageContentView), findsOneWidget);
+
+      final member = await _pump(
+        tester,
+        session: FakeSessionStates.activeMember('c01'),
+        location: '/clubs/c01/manage/settings',
+      );
+      expect(member.location, '/clubs/c01');
+      expect(find.byType(ClubSettingsView), findsNothing);
+    });
+  });
+
   group('T-21 · gönderi oluşturma rotası (FED-03)', () {
     testWidgets('/clubs/:clubId/compose?edit= → ComposeView(clubId, '
         'editPostId); yönetici olmayan kulüp sayfasına yönlenir; geri '
@@ -91,6 +160,13 @@ void main() {
       expect(await app.systemBack(), isTrue);
       expect(app.location, '/clubs/c01');
       expect(find.byType(ComposeView), findsNothing);
+
+      // T-36 (W-97): `?type=` başlangıç türüdür; tanınmayan değer yok
+      // sayılır.
+      await app.go('/clubs/c01/compose?type=announcement');
+      expect(compose().initialType, PostType.announcement);
+      await app.go('/clubs/c01/compose?type=bogus');
+      expect(compose().initialType, isNull);
 
       // Başka kulübün yöneticisi: yazma ekranı açılmaz.
       await app.go('/clubs/c03/compose');

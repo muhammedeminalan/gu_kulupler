@@ -15,7 +15,9 @@ import 'package:gu_data/src/models/enums/club_pattern.dart';
 /// bu yamayla **değiştirilemez** (tipte yoktur; Rules da reddeder). Logo ve
 /// kapak dosyası (`logoPath`, `coverPath`) ayrı akıştır (T-36
 /// `updateClubMedia`); burada yalnızca hazır kapak şablonu ([palette],
-/// [pattern], [coverSeed]) seçilir.
+/// [pattern], [coverSeed]) seçilir ve yüklenmiş kapak bırakılabilir
+/// ([clearCoverPath] → `coverPath: null`; dosya silinmez — D-10). Logo
+/// kaldırılamaz.
 final class ClubSettingsPatch extends Equatable {
   /// Verilen alanları taşıyan yama.
   const ClubSettingsPatch({
@@ -29,6 +31,7 @@ final class ClubSettingsPatch extends Equatable {
     this.palette,
     this.pattern,
     this.coverSeed,
+    this.clearCoverPath = false,
   });
 
   /// Kısa tanıtım (≤ `Limits.clubSummaryMax`).
@@ -61,6 +64,11 @@ final class ClubSettingsPatch extends Equatable {
   /// Kapak şablonunun tohumu (boş olamaz).
   final String? coverSeed;
 
+  /// Yüklenmiş kapak bırakılıp şablona dönülüyor mu (SHT-31 "Kullan")?
+  /// `true` → `coverPath: null` yazılır (Rules §3.3 U(yönetim) yalnızca
+  /// `null`'a izin verir; yeni yol yalnızca `updateClubMedia` dalındadır).
+  final bool clearCoverPath;
+
   /// Yama hiçbir alan taşımıyor mu?
   bool get isEmpty => toJson().isEmpty;
 
@@ -77,6 +85,7 @@ final class ClubSettingsPatch extends Equatable {
     FirestoreFields.palette: ?palette?.json,
     FirestoreFields.pattern: ?pattern?.json,
     FirestoreFields.coverSeed: ?coverSeed,
+    if (clearCoverPath) FirestoreFields.coverPath: null,
   };
 
   @override
@@ -91,5 +100,6 @@ final class ClubSettingsPatch extends Equatable {
     palette,
     pattern,
     coverSeed,
+    clearCoverPath,
   ];
 }

@@ -41,6 +41,7 @@ class ComposeForm extends ConsumerStatefulWidget {
     required this.clubId,
     required this.onAddImage,
     this.editPostId,
+    this.initialType,
     this.onSwitchClub,
     super.key,
   });
@@ -50,6 +51,10 @@ class ComposeForm extends ConsumerStatefulWidget {
 
   /// Düzenlenen gönderi; yeni gönderide `null`.
   final String? editPostId;
+
+  /// Yeni gönderinin başlangıç türü (`ComposeView.initialType`; ViewModel
+  /// ailesinin parçası).
+  final PostType? initialType;
 
   /// "Görsel ekle" dokunuşu (`FED-03.addImage`): view SHT-16'yı açar; sınır
   /// dolmuşsa TST-X5.
@@ -101,6 +106,7 @@ class _ComposeFormState extends ConsumerState<ComposeForm> {
   ComposeViewModelProvider get _provider => composeViewModelProvider(
     clubId: widget.clubId,
     editPostId: widget.editPostId,
+    initialType: widget.initialType,
   );
 
   ComposeViewModel get _viewModel => ref.read(_provider.notifier);
@@ -480,7 +486,11 @@ class _ComposeFormState extends ConsumerState<ComposeForm> {
             if (!state.isEditing) _notificationPreview(state),
           ],
           PostType.poll => [
-            PollEditor(clubId: widget.clubId, editPostId: widget.editPostId),
+            PollEditor(
+              clubId: widget.clubId,
+              editPostId: widget.editPostId,
+              initialType: widget.initialType,
+            ),
           ],
         },
       ],

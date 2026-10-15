@@ -30,7 +30,7 @@ QQ-07.demoScan.*#bitişik yorum
     });
 
     test('readPatterns: tool kalıp dosyaları', () {
-      expect(readPatterns('tool/design_exempt_actions.txt'), hasLength(5));
+      expect(readPatterns('tool/design_exempt_actions.txt'), hasLength(8));
       expect(
         readPatterns('tool/design_dynamic_actions.txt'),
         isA<List<String>>(),

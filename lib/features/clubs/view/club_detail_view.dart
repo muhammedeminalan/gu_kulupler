@@ -13,6 +13,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/club_feed_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_header.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_locked_tab.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_members_tab.dart';
+import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/navigation/club_detail_tab.dart';
 import 'package:gu_kulupler/product/widget/club/club_cta.dart';
 import 'package:gu_kulupler/product/widget/event/event_cta.dart';
@@ -253,6 +254,8 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
                     role: state.activeRole,
                     isAdvisor: state.access == ClubAccess.advisor,
                     memberPreview: state.memberPreview,
+                    coverImage: ref.clubCoverImage(club),
+                    logoImage: ref.clubLogoImage(club),
                     onBack: back,
                     onShare: openShare,
                     onMenu: openMenu,

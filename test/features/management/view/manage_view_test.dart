@@ -108,6 +108,8 @@ Future<GoRouter> _pumpRoute(WidgetTester tester) async {
                   ManageView(clubId: s.pathParameters['clubId']!),
               routes: [
                 GoRoute(path: 'activity', builder: (_, s) => stub(s)),
+                GoRoute(path: 'content', builder: (_, s) => stub(s)),
+                GoRoute(path: 'settings', builder: (_, s) => stub(s)),
                 GoRoute(
                   path: 'events',
                   builder: (_, s) => stub(s),
@@ -327,6 +329,28 @@ void main() {
       await tester.pumpAndSettle();
       await _tapKey(tester, _back);
       expect(_location(router), '/clubs/$kManageClubId');
+    });
+
+    testWidgets('T-36 (W-40) · "Bu ay duyuru" → MGT-08 duyurular sekmesi; '
+        '"Kulüp ayarları" → MGT-09', (tester) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, GuKey.action('MGT-01.kpi.announcements'));
+      expect(_location(router), '$_managePath/content?tab=announcement');
+      router.go(_managePath);
+      await tester.pumpAndSettle();
+      await _tapKey(tester, GuKey.action('MGT-01.quick.settings'));
+      expect(_location(router), '$_managePath/settings');
+    });
+
+    testWidgets('"Duyuru yap" → FED-03 duyuru türü ön seçili (W-97)', (
+      tester,
+    ) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, GuKey.action('MGT-01.quick.announce'));
+      expect(
+        _location(router),
+        '/clubs/$kManageClubId/compose?type=announcement',
+      );
     });
 
     testWidgets('"Gönderi yaz" → FED-03; satır: duyuru → FED-02, etkinlik → '

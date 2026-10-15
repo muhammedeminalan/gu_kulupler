@@ -20,8 +20,10 @@ part 'compose_view_model.g.dart';
 /// §12.8; prototip `Compose`, `screens-clubs.js:181–215`).
 ///
 /// * **Açılış:** yeni gönderide form cihazdaki taslaktan kurulur
-///   (`compose_draft_<clubId>` — CD-45); düzenlemede gönderi okunur
-///   ([loadForEdit]). Kulüp ve günün duyuru hakkı ([loadQuota]) arka planda
+///   (`compose_draft_<clubId>` — CD-45); `initialType` verilmişse
+///   (`?type=`, MGT-01 "Duyuru yap" — W-97) tür onunla başlar, taslağın
+///   metni korunur. Düzenlemede gönderi okunur ([loadForEdit]; tür
+///   gönderininkidir). Kulüp ve günün duyuru hakkı ([loadQuota]) arka planda
 ///   gelir.
 /// * **Yayın sırası (K-18, CD-39):** gönderi kimliği önceden üretilir →
 ///   görseller `postRepository.uploadImages` ile yüklenir → `create`. Yükleme
@@ -67,12 +69,18 @@ final class ComposeViewModel extends _$ComposeViewModel
   static const String _previewEmptyText = '…';
 
   @override
-  ComposeState build({required String clubId, String? editPostId}) {
+  ComposeState build({
+    required String clubId,
+    String? editPostId,
+    PostType? initialType,
+  }) {
     // Okumalar ilk karede başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_start));
     if (editPostId != null) return const ComposeState(isLoadingEdit: true);
-    return ComposeDraft.decode(appPreferencesStore.composeDraft(clubId)) ??
+    final draft =
+        ComposeDraft.decode(appPreferencesStore.composeDraft(clubId)) ??
         const ComposeState();
+    return initialType == null ? draft : draft.copyWith(type: initialType);
   }
 
   // ───────────────────────────────── alanlar ────────────────────────────────

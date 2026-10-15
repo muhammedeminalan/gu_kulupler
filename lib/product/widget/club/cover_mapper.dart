@@ -34,6 +34,39 @@ abstract final class CoverMapper {
     for (final icon in GuIcons.values) icon.fileName: icon,
   };
 
+  /// Kulüp amblemi (CSS `.emblem`): [logo] verilirse yüklenmiş logo
+  /// (`clubs.logoPath`, T-36) amblem kutusunu kaplar; verilmezse — logo yok
+  /// ya da henüz çözülmedi — tasarımdaki ikonlu amblem ([icon]). Çağıran
+  /// logoyu `ref.clubLogoImage(club)` ile çözer (gu_ui ağ bilmez).
+  ///
+  /// [size], [iconSize] ve [background] `GuEmblem`'e aynen geçer.
+  static GuEmblem emblem({
+    required GuIcons icon,
+    ImageProvider? logo,
+    GuEmblemSize size = GuEmblemSize.sm,
+    double? iconSize,
+    Color? background,
+    Key? key,
+  }) => logo == null
+      ? GuEmblem(
+          icon: icon,
+          size: size,
+          iconSize: iconSize,
+          background: background,
+          key: key,
+        )
+      : GuEmblem(
+          size: size,
+          background: background,
+          key: key,
+          child: ClipRRect(
+            borderRadius: size.borderRadius,
+            child: SizedBox.expand(
+              child: Image(image: logo, fit: BoxFit.cover),
+            ),
+          ),
+        );
+
   /// [club] kulübünün kapağı (prototip `Cover`, `cards.js:31,34`,
   /// `screens-clubs.js:86`; CD-124, K-C).
   ///

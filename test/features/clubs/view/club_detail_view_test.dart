@@ -212,6 +212,7 @@ Future<GoRouter> _pumpRoute(
                   'members',
                   'manage',
                   'manage/events/new',
+                  'manage/settings',
                 ])
                   GoRoute(
                     path: segment,
@@ -798,8 +799,8 @@ void main() {
       );
     });
 
-    testWidgets('menü: "Kulüp ayarları" hedefi (MGT-09) henüz yazılmadı — '
-        'ekranı bozmaz; "Üyeler" → CLB-06', (tester) async {
+    testWidgets('menü: "Kulüp ayarları" → MGT-09 (T-36, W-13); "Üyeler" → '
+        'CLB-06', (tester) async {
       final router = await _pumpRoute(
         tester,
         session: sessionWith(role: ClubRole.board),
@@ -808,7 +809,9 @@ void main() {
       await _tapKey(tester, _menu);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(_location(router), '$_clubsPath/$kClubId');
+      expect(_location(router), '$_clubsPath/$kClubId/manage/settings');
+      router.go('$_clubsPath/$kClubId');
+      await tester.pumpAndSettle();
 
       _feedback().nextSheetResult = ClubMenuAction.members;
       await _tapKey(tester, _menu);

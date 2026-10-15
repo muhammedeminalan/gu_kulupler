@@ -31,7 +31,9 @@ import 'package:gu_ui/gu_ui.dart';
 /// | Özet | `summary about` (`bodyS`, ikincil, 2 satır) | — |
 /// | Alt satır | avatar grubu (24, en çok 3, "+N") + katılım türü — sağda `ClubCta(sm)` | `ClubCta(sm, full)` |
 ///
-/// Izgaradaki üyelik rozeti [gridStatusOf]'tadır. Liste kartının alt satırı
+/// Kapak ve amblem yüklenmiş görselle çizilir ([coverImage] / [logoImage] —
+/// çağıran çözer; T-36), yoksa şablon / ikon. Izgaradaki üyelik rozeti
+/// [gridStatusOf]'tadır. Liste kartının alt satırı
 /// dar genişlikte / büyük metin ölçeğinde önce katılım türü metnini sarar,
 /// yine sığmazsa düğmeyi alt satıra indirir (taşma olmaz).
 ///
@@ -70,6 +72,8 @@ class ClubCard extends StatelessWidget {
     this.memberPreview = const <GuAvatarData>[],
     this.grid = false,
     this.highlight = false,
+    this.coverImage,
+    this.logoImage,
     this.actionKey,
     this.joinKey,
     this.statusKey,
@@ -107,6 +111,14 @@ class ClubCard extends StatelessWidget {
 
   /// 1,5 sn vurgu halkası (`GuCard.highlight`).
   final bool highlight;
+
+  /// Yüklenmiş kapak (`club.coverPath`, çağıran `ref.clubCoverImage(club)`
+  /// ile çözer); `null` → şablon kapak (`CoverMapper.club`).
+  final ImageProvider? coverImage;
+
+  /// Yüklenmiş logo (`club.logoPath`, `ref.clubLogoImage(club)`); `null` →
+  /// ikonlu amblem (`CoverMapper.emblem`).
+  final ImageProvider? logoImage;
 
   /// Karta ve "Aç" düğmesine dokunma — kulübü açar (CLB-03).
   final VoidCallback onOpen;
@@ -197,13 +209,15 @@ class ClubCard extends StatelessWidget {
       children: [
         CoverMapper.club(
           club,
+          image: coverImage,
           ratio: GuCoverRatio.r3x2,
           overlays: [
             Positioned(
               left: GuSizes.clubCardEmblemOffset,
               bottom: GuSizes.clubCardEmblemOffset,
-              child: GuEmblem(
+              child: CoverMapper.emblem(
                 icon: _icon,
+                logo: logoImage,
                 size: GuEmblemSize.xs,
                 background: gu.colors.bgSurface,
               ),
@@ -276,6 +290,7 @@ class ClubCard extends StatelessWidget {
       children: [
         CoverMapper.club(
           club,
+          image: coverImage,
           overlays: [
             if (club.isSuspended)
               Positioned(
@@ -305,7 +320,11 @@ class ClubCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: GuSpacing.s12,
                 children: [
-                  GuEmblem(icon: _icon, iconSize: GuSizes.icon22),
+                  CoverMapper.emblem(
+                    icon: _icon,
+                    logo: logoImage,
+                    iconSize: GuSizes.icon22,
+                  ),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,

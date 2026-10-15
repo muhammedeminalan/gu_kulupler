@@ -40,9 +40,9 @@ import 'package:gu_ui/gu_ui.dart';
 /// * Etkinlik kartı EVT-02'ye, bilet düğmesi EVT-03'e gider; karttan katılım
 ///   rotanın verdiği akışla ([ClubDetailView.eventJoinFlow]) yapılır.
 /// * "Yönetim" girişi MGT-01'e (W-12, T-31), "Etkinlik oluştur" MGT-05'e
-///   (W-17, T-34) gider. Hedefi henüz yazılmamış girişler (MGT-09, SHT-25)
-///   anahtarlarıyla yerindedir; hedef ekranın task'ında bağlanır (bağlama
-///   borçları W-13…W-16).
+///   (W-17, T-34), SHT-06 "Kulüp ayarları" MGT-09'a (W-13, T-36) gider;
+///   yönetimden dönüşte kulüp iskeletsiz yeniden okunur (ayar / logo / kapak
+///   değişikliği başlıkta görünür).
 mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// Sayfanın kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -61,6 +61,13 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   ClubEventSegment eventSegment = ClubEventSegment.upcoming;
 
   ProviderSubscription<bool>? _notFoundSubscription;
+
+  /// Sayfa yığının tepesinde mi (son `didChangeDependencies`)?
+  bool _wasCurrent = true;
+
+  /// Yönetim paneli (MGT-01) ya da kulüp ayarları (MGT-09) açıldı: dönüşte
+  /// kulüp yeniden okunur (ad dışındaki alanlar, logo / kapak — T-36).
+  bool _managementOpened = false;
 
   /// Ekranın ViewModel'i.
   ClubDetailViewModel get viewModel =>
@@ -83,6 +90,20 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
       fireImmediately: true,
     );
     _applyRouteTab();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final isCurrent = ModalRoute.isCurrentOf(context) ?? true;
+    if (isCurrent && !_wasCurrent && _managementOpened) {
+      _managementOpened = false;
+      // Yenileme durumu hemen değiştirir; kare bitince başlatılır.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(viewModel.refresh());
+      });
+    }
+    _wasCurrent = isCurrent;
   }
 
   @override
@@ -280,14 +301,18 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   void openAllMembers() => ClubMembersRoute(clubId: widget.clubId).go(context);
 
   /// "Yönetim" / "Yönetimi görüntüle" (`CLB-03.openManage`) → MGT-01.
-  void openManage() => ManageRoute(clubId: widget.clubId).go(context);
+  void openManage() {
+    _managementOpened = true;
+    ManageRoute(clubId: widget.clubId).go(context);
+  }
 
   /// "Etkinlik oluştur" (`CLB-03.createEvent`) → MGT-05.
   void createEvent() => EventFormRoute(clubId: widget.clubId).go(context);
 
   /// "Kulüp ayarları" (SHT-06) → MGT-09.
   void openSettings() {
-    // TODO(T-36): `ClubSettingsRoute(clubId: widget.clubId)` (MGT-09; W-13).
+    _managementOpened = true;
+    ClubSettingsRoute(clubId: widget.clubId).go(context);
   }
 
   /// [instant] anının yerel ayara göre tarihi (`12 Ekim 2026`): bekleme notu

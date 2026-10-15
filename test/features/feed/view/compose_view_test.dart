@@ -158,6 +158,8 @@ Future<GoRouter> _pumpRoute(
               builder: (_, state) => ComposeView(
                 clubId: state.pathParameters['clubId']!,
                 editPostId: state.uri.queryParameters['edit'],
+                initialType: PostType.values
+                    .asNameMap()[state.uri.queryParameters['type']],
               ),
             ),
             GoRoute(
@@ -631,6 +633,27 @@ void main() {
   });
 
   group('FED-03 · Yeni gönderi · aksiyonlar', () {
+    testWidgets('T-36 (W-97) · `?type=announcement` formu duyuru türüyle '
+        'açar: başlık alanı görünür, değişiklik sayılmaz', (tester) async {
+      final router = await _pumpRoute(
+        tester,
+        path: '$_composePath?type=announcement',
+      );
+      expect(find.byKey(_title), findsOneWidget);
+      final typed = composeViewModelProvider(
+        clubId: kComposeClubId,
+        initialType: PostType.announcement,
+      );
+      final state = ProviderScope.containerOf(
+        tester.element(find.byType(ComposeView)),
+      ).read(typed);
+      expect(state.type, PostType.announcement);
+      expect(state.isDirty, isFalse);
+      // Kapat sorguyu kulüp sayfasına taşımaz.
+      await _tapKey(tester, _close);
+      expect(_location(router), '$_clubPath?tab=posts');
+    });
+
     testWidgets('kapat: değişiklik yokken doğrudan CLB-03; kaydedilmemiş '
         'değişiklik varken DLG-25 — "devam" ekranda tutar, "Kaydetmeden '
         'çık" çıkar', (tester) async {

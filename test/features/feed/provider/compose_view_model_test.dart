@@ -564,6 +564,33 @@ void main() {
       );
       expect(feedback.toasts, isEmpty);
     });
+
+    test('T-36 (W-97) · `initialType` başlangıç türüdür: boş formda ve '
+        'taslakta (metin korunur); düzenlemede yok sayılır', () async {
+      ComposeViewModelProvider typed(PostType type, {String? edit}) =>
+          composeViewModelProvider(
+            clubId: kComposeClubId,
+            editPostId: edit,
+            initialType: type,
+          );
+      final announcement = typed(PostType.announcement);
+      var state = (await loaded(of: announcement)).read(announcement);
+      expect(state.type, PostType.announcement);
+      expect(state.isDirty || state.hasDraft, isFalse);
+
+      prefs.values[AppPreferenceKeys.composeDraft(kComposeClubId)] =
+          ComposeDraft.encode(const ComposeState(text: 'taslak'));
+      final poll = typed(PostType.poll);
+      state = (await loaded(of: poll)).read(poll);
+      expect(state.type, PostType.poll);
+      expect(state.text, 'taslak');
+      expect(state.hasDraft, isTrue);
+
+      final edit = typed(PostType.poll, edit: kEditPost.id);
+      state = (await loaded(of: edit)).read(edit);
+      expect(state.type, kEditPost.type);
+      expect(state.text, kEditPost.text);
+    });
   });
 
   group('FED-03 · ComposeViewModel · düzenleme', () {

@@ -17,10 +17,24 @@
 // (danışman, başka kulübün yöneticisi, askıdaki kulüp) Rules'tadır — test
 // `failNext(FirestoreError.permissionDenied)` ile kurar. `failNext` bir
 // sonraki çağrıyı (devredilen dahil) düşürür. Silme metodu yoktur (D-10).
+//
+// Kulüp görseli (`updateClubMedia`, T-36) gerçek sırayı izler: ön denetim
+// (kimlik / iki görsel de yok → `MediaDocumentError(invalidArgument)`; tür /
+// boş / sınır → `MediaUploadError`) → kulüp ön okuması (yok / silinmiş →
+// `MediaDocumentError(notFound)`, askıda → `permissionDenied`; dosya gitmez)
+// → "yükleme"
+// ([FakeManagementRepository.mediaUploads]; `storage` verilirse dosya oraya
+// da yazılır — görsel çözücü indirme adresini bulur) → `logoPath` /
+// `coverPath`. `failNext(StorageError.x)`
+// yüklemeyi keser; `failNext(FirestoreError.x)` dosyaları yükler ama yolları
+// yazmaz (`MediaDocumentError(x)` — dosyalar yetim kalır, silinmez).
+import 'dart:typed_data';
+
 import 'package:gu_data/gu_data.dart';
 
 import 'fake_base.dart';
 import 'fake_club_repository.dart';
+import 'fake_storage_service.dart';
 
 /// Kesinleşmiş asıl yazımın ardından istenen fan-out: tür ve olayın kimliği
 /// (`event_new` / `event_cancelled` → etkinlik, `announcement` → gönderi).
@@ -33,6 +47,16 @@ typedef FakeSettingsUpdate = ({
   String actorId,
 });
 
+/// `updateClubMedia` ile "yüklenen" tek kulüp görseli: kulüp, yükleyen
+/// (`customMetadata.uploaderId`), logo mu kapak mı, içerik türü ve yol.
+typedef FakeClubMediaUpload = ({
+  String clubId,
+  String uploaderId,
+  bool isLogo,
+  String contentType,
+  String path,
+});
+
 final class FakeManagementRepository extends FakeBase
     implements ManagementRepository {
   /// Devredilen yazımlar verilen repository'lerde; ayarlar [clubs]
@@ -43,6 +67,7 @@ final class FakeManagementRepository extends FakeBase
     required this.posts,
     required this.comments,
     required this.clubs,
+    this.storage,
   });
 
   final MembershipRepository memberships;
@@ -51,11 +76,20 @@ final class FakeManagementRepository extends FakeBase
   final CommentRepository comments;
   final FakeClubRepository clubs;
 
+  /// Kulüp görsellerinin yazıldığı Storage fake'i (`registerDefaultFakes`
+  /// kayıtlı örneği verir); `null` → yalnızca [mediaUploads].
+  final FakeStorageService? storage;
+
   /// İstenen fan-out'lar, sırasıyla.
   final List<FakeFanOut> fanOuts = <FakeFanOut>[];
 
   /// Başarılı ayar güncellemeleri, sırasıyla.
   final List<FakeSettingsUpdate> settingsUpdates = <FakeSettingsUpdate>[];
+
+  /// `updateClubMedia` ile yüklenen görseller (yolu yazılamayanlar dahil).
+  final List<FakeClubMediaUpload> mediaUploads = <FakeClubMediaUpload>[];
+
+  int _mediaSerial = 0;
 
   @override
   Future<FirestoreResult<void>> approveApplication({
@@ -243,9 +277,80 @@ final class FakeManagementRepository extends FakeBase
       palette: patch.palette,
       pattern: patch.pattern,
       coverSeed: patch.coverSeed,
+      clearCoverPath: patch.clearCoverPath,
     );
     settingsUpdates.add((clubId: clubId, patch: patch, actorId: actorId));
     return const FirebaseSuccess(null);
+  }
+
+  @override
+  Future<MediaUpdateResult<ClubMediaPaths>> updateClubMedia(
+    String clubId, {
+    required String uploaderId,
+    ClubMediaUpload? logo,
+    ClubMediaUpload? cover,
+  }) async {
+    record('updateClubMedia', [clubId, uploaderId, logo, cover]);
+    final injected = takeFailure();
+    // Ön denetim dosya "gönderilmeden" (gerçek repository ile aynı sıra).
+    if (![clubId, uploaderId].every(RepositoryHelpers.isValidId) ||
+        (logo == null && cover == null)) {
+      return const FirebaseFailure(
+        MediaDocumentError(FirestoreError.invalidArgument),
+      );
+    }
+    for (final upload in [?logo, ?cover]) {
+      if (_rejectUpload(upload.bytes, upload.contentType) case final error?) {
+        return FirebaseFailure(MediaUploadError(error));
+      }
+    }
+    final club = clubs.clubs[clubId];
+    if (club == null || club.isDeleted) {
+      return const FirebaseFailure(MediaDocumentError(FirestoreError.notFound));
+    }
+    if (club.isSuspended) {
+      return const FirebaseFailure(
+        MediaDocumentError(FirestoreError.permissionDenied),
+      );
+    }
+    if (injected is StorageError) {
+      return FirebaseFailure(MediaUploadError(injected));
+    }
+    String? upload(ClubMediaUpload? media, {required bool isLogo}) {
+      if (media == null) return null;
+      final extension = StoragePaths.extensionByContentType[media.contentType]!;
+      final file = _nextMediaFileName(extension);
+      final path = isLogo
+          ? StoragePaths.clubLogo(clubId, file)
+          : StoragePaths.clubCover(clubId, file);
+      mediaUploads.add((
+        clubId: clubId,
+        uploaderId: uploaderId,
+        isLogo: isLogo,
+        contentType: media.contentType,
+        path: path,
+      ));
+      storage?.uploads[path] = media.bytes;
+      return path;
+    }
+
+    final paths = ClubMediaPaths(
+      logoPath: upload(logo, isLogo: true),
+      coverPath: upload(cover, isLogo: false),
+    );
+    // Dosyalar yüklendi; yol yazımı düşerse dosyalar yetim kalır (D-10).
+    if (injected != null) {
+      return FirebaseFailure(
+        MediaDocumentError(
+          injected is FirestoreError ? injected : FirestoreError.unknown,
+        ),
+      );
+    }
+    clubs.clubs[clubId] = club.copyWith(
+      logoPath: paths.logoPath,
+      coverPath: paths.coverPath,
+    );
+    return FirebaseSuccess(paths);
   }
 
   @override
@@ -426,6 +531,22 @@ final class FakeManagementRepository extends FakeBase
         FieldValidators.requiredId(coverSeed),
     ];
     return errors.every((error) => error == null);
+  }
+
+  /// Gerçek repository'nin yükleme ön denetimi: tür, boş bayt, boyut.
+  static StorageError? _rejectUpload(Uint8List bytes, String contentType) {
+    if (!StoragePaths.extensionByContentType.containsKey(contentType)) {
+      return StorageError.invalidType;
+    }
+    if (bytes.isEmpty) return StorageError.noFile;
+    if (bytes.length >= Limits.imageMaxBytes) return StorageError.sizeLimit;
+    return null;
+  }
+
+  /// `StoragePaths.newFileName` şemasında sıralı dosya adı.
+  String _nextMediaFileName(String extension) {
+    final serial = (++_mediaSerial).toRadixString(16).padLeft(16, '0');
+    return '20261014T090000Z_$serial.$extension';
   }
 
   /// Bekleyen hata (`failNext`) varsa başarısızlık; yoksa `null`.

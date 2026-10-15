@@ -159,6 +159,7 @@ async function countEmulator(target, bucket) {
     auth: authUsers.length,
     superAdmins: authUsers.filter((u) => /"superadmin":\s*true/.test(u.customAttributes || '')).length,
     files: target.storage ? (await rest.listFiles(target, bucket, 'posts/')).length : null,
+    clubFiles: target.storage ? (await rest.listFiles(target, bucket, 'clubs/')).length : null,
   };
 }
 
@@ -244,7 +245,7 @@ async function main(argv) {
       ),
     );
   } else {
-    console.log(`UYARI: ${rest.ENV.storage} tanımlı değil — ${images.length} gönderi görseli yüklenmedi (belgelerdeki yollar yazıldı)`);
+    console.log(`UYARI: ${rest.ENV.storage} tanımlı değil — ${images.length} görsel (gönderi + kulüp logo / kapak) yüklenmedi (belgelerdeki yollar yazıldı)`);
   }
 
   if (!args.check) {
@@ -268,7 +269,12 @@ async function main(argv) {
     ['supportTickets', found.support, Object.keys(supportTickets).length],
     ['auth', found.auth, authUsers.length],
     ['auth:superadmin', found.superAdmins, superAdmins],
-    ...(found.files === null ? [] : [['storage posts/', found.files, images.length]]),
+    ...(found.files === null
+      ? []
+      : [
+          ['storage posts/', found.files, images.filter((i) => i.path.startsWith('posts/')).length],
+          ['storage clubs/', found.clubFiles, images.filter((i) => i.path.startsWith('clubs/')).length],
+        ]),
   ];
   const mark = (actual, wanted) => (actual === wanted ? '✓' : '✗');
   printCounts(`${NAME}: sayım (emülatör / demo-data.json)`, rows.map(([name, a, e]) => [name, String(a).padStart(4), String(e).padStart(4), mark(a, e)]));

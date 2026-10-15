@@ -118,6 +118,7 @@ class GuBadge extends StatelessWidget {
     required this.label,
     this.kind = GuBadgeKind.neutral,
     this.icon,
+    this.background,
     super.key,
   });
 
@@ -130,16 +131,21 @@ class GuBadge extends StatelessWidget {
   /// Baştaki 12 px ikon; `null` → yalnız metin.
   final GuIcons? icon;
 
+  /// Zemin üst yazımı; `null` → [kind] zemini. Kapak üstündeki rozet
+  /// (MGT-09 "Kapak", `screens-manage.js:179` `background:var(--bg-surface)`).
+  final Color? background;
+
   @override
   Widget build(BuildContext context) {
     final gu = context.gu;
     final (:background, :foreground, :border) = kind.resolve(gu.colors);
+    final fill = this.background ?? background;
     final leading = icon;
     return ConstrainedBox(
       constraints: const BoxConstraints.tightFor(height: GuSizes.badgeHeight),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: background,
+          color: fill,
           borderRadius: GuRadius.borderFull,
           border: border == null
               ? null

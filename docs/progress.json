@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T00:25:04.921Z",
+  "updated": "2026-10-15T01:56:40.087Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -491,11 +491,13 @@
       "notes": ""
     },
     "T-36": {
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
-      "commits": [],
-      "gate": null,
+      "status": "done",
+      "startedAt": "2026-10-15T00:25:34.891Z",
+      "finishedAt": "2026-10-15T01:56:40.087Z",
+      "commits": [
+        "b526d25"
+      ],
+      "gate": "yeşil",
       "notes": ""
     },
     "T-37": {
@@ -701,7 +703,10 @@
       "resolveIn": [
         "T-36"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-36",
+      "closedAt": "2026-10-15T01:14:42.482Z",
+      "closeNote": "T-36: SHT-06 'Kulüp ayarları' → ClubSettingsRoute (club_detail_view_mixin.openSettings); test club_detail_view_test"
     },
     {
       "id": "W-14",
@@ -988,7 +993,10 @@
       "resolveIn": [
         "T-36"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": "T-36",
+      "closedAt": "2026-10-15T01:14:42.507Z",
+      "closeNote": "T-36: MGT-01 'Bu ay duyuru' → ManageContentRoute(tab: announcement) (?tab=), 'Kulüp ayarları' → ClubSettingsRoute; MGT-01'de ayrı 'İçerik' hızlı eylemi tasarımda yok"
     },
     {
       "id": "W-42",
@@ -1598,11 +1606,14 @@
       "resolveIn": [
         "T-36"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "MGT-10.row.*",
         "MGT-01.row.*"
-      ]
+      ],
+      "closedIn": "T-36",
+      "closedAt": "2026-10-15T01:14:42.532Z",
+      "closeNote": "T-36: MGT-10 hedef settings → ClubSettingsRoute; MGT-01 satırı openSettings üzerinden"
     },
     {
       "id": "W-97",
@@ -1611,10 +1622,13 @@
       "resolveIn": [
         "T-36"
       ],
-      "status": "open",
+      "status": "closed",
       "actions": [
         "MGT-01.quick.announce"
-      ]
+      ],
+      "closedIn": "T-36",
+      "closedAt": "2026-10-15T01:14:42.556Z",
+      "closeNote": "T-36: ComposeRoute ?type= + ComposeView.initialType; MGT-01 'Duyuru yap' → type: announcement"
     },
     {
       "id": "W-98",
@@ -1642,6 +1656,15 @@
       "actions": [
         "MGT-07.manual"
       ]
+    },
+    {
+      "id": "W-100",
+      "declaredIn": "T-36",
+      "text": "clubs/ Storage kuralı gerçek sunucuda denenmedi (T-36 güvenlik incelemesi, CD-159 (9); emülatör göstermez: customMetadata clubId + uploaderId ile sunucunun doldurduğu contentDisposition / indirme jetonu anahtarı, 2 belgelik çapraz servis sınırı — üyelik + hesap, firebaserules.firestoreServiceAgent IAM rolü). Kurallar canlıya yüklendikten HEMEN sonra Android ve iOS'ta MGT-09'dan logo + kapak yüklenir; doğrulanır: yükleme başarılı, logoPath / coverPath yazılır, CLB-01 / CLB-03 görseli çizer, SHT-31 şablona dönüşte coverPath null olur. unauthorized gelirse T-36 yeniden açılır",
+      "resolveIn": [
+        "T-46"
+      ],
+      "status": "open"
     }
   ],
   "notImplemented": [

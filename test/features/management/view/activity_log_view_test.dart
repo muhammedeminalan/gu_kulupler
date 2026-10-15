@@ -31,6 +31,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../fixtures/demo_data.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
 import '../../../helpers/fake_app_clock.dart';
@@ -112,6 +113,7 @@ Future<GoRouter> _pumpRoute(
               builder: (_, s) =>
                   ActivityLogView(clubId: s.pathParameters['clubId']!),
             ),
+            GoRoute(path: 'settings', builder: (_, s) => stub(s)),
           ],
         ),
       ],
@@ -308,6 +310,32 @@ void main() {
         expect(_location(router), target);
       });
     }
+
+    testWidgets('T-36 (W-96) · hedefsiz ayar kaydı → MGT-09', (tester) async {
+      final settings = act('a117');
+      final router = await _pumpRoute(
+        tester,
+        seed: () => actRepo.entries
+          ..clear()
+          ..add(
+            ActivityModel.fromJson(
+              {
+                ...DemoDataFixture.toFirestoreJson(
+                  FirestoreCollections.activity,
+                  settings.id,
+                ),
+                'refs': const <String, Object?>{},
+              },
+              id: settings.id,
+            ),
+          ),
+      );
+      await _tapKey(tester, _k('row.${settings.id}'));
+      expect(
+        _location(router),
+        const ClubSettingsRoute(clubId: kActClubId).location,
+      );
+    });
 
     testWidgets('kulüp değiştir (iki kulüp) → SHT-18', (tester) async {
       final base = kActSession;

@@ -166,7 +166,7 @@ test('seed · §9.12 kuralları: gönderi, oy, etkinlik, şikayet, sayaç, zaman
   assert.match(docs.posts.p02.images[0].path, /^posts\/p02\/20260930T050000Z_[0-9a-f]{16}\.png$/);
   assert.notEqual(docs.posts.p02.images[0].path, docs.posts.p02.images[1].path);
   assert.deepEqual([docs.posts.p02.images[0].w, docs.posts.p02.images[0].h], [1200, 900]);
-  assert.equal(images.length, 15);
+  assert.equal(images.filter((i) => i.path.startsWith('posts/')).length, 15);
   assert.deepEqual(images.filter((i) => i.path.startsWith('posts/p02/')).map((i) => i.clubId), ['c01', 'c01']);
 
   const pollPost = Object.entries(raw.posts).find(([, p]) => p.poll);
@@ -223,6 +223,34 @@ test('seed · §9.12 kuralları: gönderi, oy, etkinlik, şikayet, sayaç, zaman
   assert.equal(docs.events.e01.updatedAt.getTime(), docs.events.e01.createdAt.getTime());
   const leaked = COLLECTIONS.flatMap((name) => Object.entries(docs[name]).filter(([, d]) => JSON.stringify(d).includes('_rel_days')).map(([id]) => `${name}/${id}`));
   assert.deepEqual(leaked, []);
+});
+
+test('seed · T-36 kulüp logo + kapak: yalnızca c03, `clubs/{clubId}/<damga>_<16 hex>.png`, üst veri kulüp + başkan; '
+  + 'validate yabancı klasörü yakalar', () => {
+  const { docs, images } = atToday;
+  const c03 = docs.clubs.c03;
+  const file = /^clubs\/c03\/\d{8}T\d{6}Z_[0-9a-f]{16}\.png$/;
+  assert.match(c03.logoPath, file);
+  assert.match(c03.coverPath, file);
+  assert.notEqual(c03.logoPath, c03.coverPath);
+  const withMedia = Object.entries(docs.clubs).filter(([, c]) => c.logoPath !== null || c.coverPath !== null);
+  assert.deepEqual(withMedia.map(([id]) => id), ['c03']);
+  const clubFiles = images.filter((i) => i.path.startsWith('clubs/'));
+  assert.deepEqual(clubFiles.map((i) => i.path), [c03.logoPath, c03.coverPath]);
+  for (const image of clubFiles) {
+    assert.equal(image.clubId, 'c03');
+    assert.equal(image.uploaderId, raw.clubs.c03.presidentId);
+    assert.ok(placeholderPng(image.seed, image.width, image.height).length > 0);
+  }
+  assert.deepEqual(clubFiles.map((i) => [i.width, i.height]), [[512, 512], [1600, 900]]);
+
+  const broken = structuredClone(atToday.docs);
+  broken.clubs.c01.logoPath = c03.logoPath;
+  broken.clubs.c02.coverPath = 'clubs/c02/cover.jpg';
+  const problems = validate(broken, { announcementDailyLimit: 2 });
+  assert.equal(problems.length, 2, problems.join('\n'));
+  assert.match(problems.join('\n'), /clubs\/c01: logoPath kulübün klasöründe değil/);
+  assert.match(problems.join('\n'), /clubs\/c02: coverPath kulübün klasöründe değil/);
 });
 
 test('seed · validate tutarsız veriyi yakalar (betik yazmadan durur)', () => {
