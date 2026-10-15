@@ -31,7 +31,7 @@ const String _cover = 'clubs/c01/20261012T163000Z_fedcba9876543210.png';
 
 void main() {
   final requested = <String?>[];
-  ImageProvider? resolve(String? path) {
+  ImageProvider? resolve(String? path, {int? coverEdgePx}) {
     requested.add(path);
     return path == null ? null : _image;
   }
@@ -84,6 +84,33 @@ void main() {
       tester.getSize(find.byWidget(emblems.first)),
       Size.square(GuEmblemSize.sm.dimension),
     );
+  });
+
+  testWidgets('T-44 · D2-07: yüklenemeyen logo → ikonlu amblem (aynı ikon, '
+      'boyut, renk); hata yüzeye çıkmaz', (tester) async {
+    final bad = MemoryImage(Uint8List.fromList([0, 1, 2]));
+    await tester.pumpApp(
+      Center(
+        child: CoverMapper.emblem(icon: GuIcons.users, logo: bad),
+      ),
+    );
+    // Gerçek kod çözücünün hatası gerçek zamanda gelir.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    final icon = tester.widget<GuIcon>(
+      find.descendant(
+        of: find.byType(GuEmblem),
+        matching: find.byType(GuIcon),
+      ),
+    );
+    expect(icon.icon, GuIcons.users);
+    expect(icon.size, GuEmblemSize.sm.iconSize);
+    final context = tester.element(find.byType(GuEmblem));
+    expect(icon.color, context.gu.colors.brandPrimaryText);
   });
 
   testWidgets('ClubCard liste + ızgara: yüklenmiş kapak ve logo çizilir', (

@@ -136,7 +136,7 @@ mixin EventListViewMixin on ConsumerState<EventListView> {
       case EventCtaKind.join:
       case EventCtaKind.joinWaitlist:
         final changed = await runEventJoinFlow(context, event, kind);
-        if (changed && mounted) await viewModel.refresh();
+        if (changed && mounted) await viewModel.onRsvpChanged(event.id);
     }
   }
 }

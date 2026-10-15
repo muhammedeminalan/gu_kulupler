@@ -133,14 +133,26 @@ final class ClubMembersState extends Equatable {
   /// Grup sayısı çizilen satır sayısıdır; tek istisna sayfalaması süren
   /// üyelerdir: arama yokken kulübün üye sayacından türetilir ki başlık
   /// okunan sayfa kadar değil gerçek toplam kadar göstersin.
+  ///
+  /// Her çağrıda baştan hesaplanır: view bir build'de **bir kez** okur ve
+  /// sayacı [countOf] ile aynı gruplardan türetir. Ad anahtarı satır başına
+  /// bir kez küçültülür; arama ve üye sıralaması onu paylaşır (T-44 ·
+  /// P1-07).
   List<MemberGroup> get groups {
+    final keys = <String, String>{};
+    String keyOf(MembershipModel m) => keys[m.userId] ??= nameOf(m).trLower();
     final byRole = <ClubRole, List<MembershipModel>>{
       ClubRole.president: _shown(
         managers.where((m) => m.role == ClubRole.president),
+        keyOf,
       ),
-      ClubRole.board: _shown(managers.where((m) => m.role == ClubRole.board)),
-      ClubRole.advisor: _shown(advisors),
-      ClubRole.member: _shown(members)..sort(_byName),
+      ClubRole.board: _shown(
+        managers.where((m) => m.role == ClubRole.board),
+        keyOf,
+      ),
+      ClubRole.advisor: _shown(advisors, keyOf),
+      ClubRole.member: _shown(members, keyOf)
+        ..sort((a, b) => keyOf(a).compareTo(keyOf(b))),
     };
     return [
       for (final role in groupOrder)
@@ -162,7 +174,12 @@ final class ClubMembersState extends Equatable {
   ];
 
   /// "{count} kişi": grupların toplamı.
-  int get totalCount => groups.fold(0, (total, group) => total + group.count);
+  int get totalCount => countOf(groups);
+
+  /// [groups] listesinin "{count} kişi" toplamı (view, build'de hesapladığı
+  /// grupları yeniden kurdurmadan sayar).
+  static int countOf(List<MemberGroup> groups) =>
+      groups.fold(0, (total, group) => total + group.count);
 
   @override
   List<Object?> get props => [
@@ -216,20 +233,20 @@ final class ClubMembersState extends Equatable {
 
   /// [source] içinden ekranda çizilecekler: süzgece uyan, engellenmemiş,
   /// hesabı silinmemiş ve adı aranan terimi içeren üyelikler.
-  List<MembershipModel> _shown(Iterable<MembershipModel> source) {
+  List<MembershipModel> _shown(
+    Iterable<MembershipModel> source,
+    String Function(MembershipModel membership) keyOf,
+  ) {
     final term = needle;
     return [
       for (final membership in source)
         if (roleFilter.includes(membership.role) &&
             !blockedUserIds.contains(membership.userId) &&
             !(users[membership.userId]?.isAnonymized ?? false) &&
-            (term.isEmpty || nameOf(membership).trLower().contains(term)))
+            (term.isEmpty || keyOf(membership).contains(term)))
           membership,
     ];
   }
-
-  int _byName(MembershipModel a, MembershipModel b) =>
-      nameOf(a).trLower().compareTo(nameOf(b).trLower());
 
   /// Sıradan üye grubunun sayısı. Okunmamış sayfa varken ve arama yokken
   /// kulüp sayacından türetilir: `memberCount` başkan + yönetim kurulu +

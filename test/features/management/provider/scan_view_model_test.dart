@@ -18,9 +18,11 @@ import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/permission_service.dart';
 
 import '../../../fakes/fake_attendance_repository.dart';
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_permission_service.dart';
 import '../../../fakes/register_fakes.dart';
@@ -292,6 +294,29 @@ void main() {
         ..flipCamera();
       expect(c.read(provider).torchOn, isTrue);
       expect(c.read(provider).frontCamera, isTrue);
+    });
+  });
+
+  group('MGT-07 · çevrimdışı (T-44)', () {
+    test('kamera okutması ve elle kod: TST-24; scanTicket yok, işleniyor '
+        'durumuna geçilmez, kod alanı kalır', () async {
+      final c = await loaded();
+      (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+          true;
+
+      await vm(c).onCode(qr(goingRsvp));
+      expect(c.read(provider).isProcessing, isFalse);
+
+      vm(c)
+        ..openManual()
+        ..setManualCode(goingRsvp.ticketCode);
+      await vm(c).verifyManual();
+
+      expect(attendance.callsTo('scanTicket'), isEmpty);
+      expect(c.read(provider).isProcessing, isFalse);
+      expect(c.read(provider).manualCode, goingRsvp.ticketCode);
+      expect(feedback.sheets, isEmpty);
+      expect(feedback.toasts, [ToastId.tst24, ToastId.tst24]);
     });
   });
 }

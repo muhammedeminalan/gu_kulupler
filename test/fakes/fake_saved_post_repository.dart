@@ -155,6 +155,27 @@ final class FakeSavedPostRepository extends FakeBase
     return FirebaseSuccess(existing != null && !existing.isDeleted);
   }
 
+  /// Gerçek sorgu gibi (`userId ==`, `postId in`, `isDeleted == false` —
+  /// T-44 · D3-03): [postIds] içinden yürürlükteki kayıtlar.
+  @override
+  Future<FirestoreResult<Set<String>>> savedAmong({
+    required String userId,
+    required List<String> postIds,
+  }) async {
+    record('savedAmong', [userId, ...postIds]);
+    if (_rejected<Set<String>>([userId, ...postIds]) case final failure?) {
+      return failure;
+    }
+    final wanted = postIds.toSet();
+    return FirebaseSuccess({
+      for (final record in saved.values)
+        if (record.userId == userId &&
+            !record.isDeleted &&
+            wanted.contains(record.postId))
+          record.postId,
+    });
+  }
+
   /// `savedAt` azalan; zamanı olmayan kayıt sonda.
   static int _latestFirst(SavedPostModel a, SavedPostModel b) {
     final left = a.savedAt;

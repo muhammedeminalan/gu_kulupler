@@ -36,8 +36,9 @@ abstract final class CoverMapper {
 
   /// Kulüp amblemi (CSS `.emblem`): [logo] verilirse yüklenmiş logo
   /// (`clubs.logoPath`, T-36) amblem kutusunu kaplar; verilmezse — logo yok
-  /// ya da henüz çözülmedi — tasarımdaki ikonlu amblem ([icon]). Çağıran
-  /// logoyu `ref.clubLogoImage(club)` ile çözer (gu_ui ağ bilmez).
+  /// ya da henüz çözülmedi — ya da logo yüklenemezse tasarımdaki ikonlu
+  /// amblem ([icon]). Çağıran logoyu `ref.clubLogoImage(club)` ile çözer
+  /// (gu_ui ağ bilmez).
   ///
   /// [size], [iconSize] ve [background] `GuEmblem`'e aynen geçer.
   static GuEmblem emblem({
@@ -62,7 +63,22 @@ abstract final class CoverMapper {
           child: ClipRRect(
             borderRadius: size.borderRadius,
             child: SizedBox.expand(
-              child: Image(image: logo, fit: BoxFit.cover),
+              child: Image(
+                image: logo,
+                fit: BoxFit.cover,
+                excludeFromSemantics: true,
+                // Yüklenemeyen logo (çevrimdışı, süresi geçmiş adres,
+                // ImageTooLargeException) → tasarımdaki ikonlu amblem
+                // (GuEmblem'in ikon dalıyla aynı ikon / boyut / renk); hata
+                // çerçeveye / Crashlytics'e raporlanmaz (T-44 · D2-07).
+                errorBuilder: (context, _, _) => Center(
+                  child: GuIcon(
+                    icon,
+                    size: iconSize ?? size.iconSize,
+                    color: context.gu.colors.brandPrimaryText,
+                  ),
+                ),
+              ),
             ),
           ),
         );

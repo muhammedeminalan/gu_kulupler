@@ -59,15 +59,21 @@ const String _title = 'Hackathon kayıtları açıldı';
 const String _text = 'Takımını kur, cumaya kadar başvur.';
 const String _editedText = 'Takımını kur, pazartesiye kadar başvur.';
 
+/// Tembel akışta karta kaydırma adımı (dp).
+const double _scrollStep = 300;
+
 Key _k(String id) => GuKey.action(id);
 
 /// Ağ ve disk önbelleği olmadan: Storage yolunu taşıyan bellek görseli
 /// (baytlar 1 × 1 saydam PNG).
 final class _StorageImage extends MemoryImage {
-  _StorageImage(this.url, this.path) : super(_png);
+  _StorageImage(this.url, this.path, {this.coverEdgePx}) : super(_png);
 
   final String url;
   final String path;
+
+  /// Gösterim boyutu ipucu (`BoundedImage.coverEdgePx`).
+  final int? coverEdgePx;
 
   static final Uint8List _png = Uint8List.fromList(const [
     0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, //
@@ -160,10 +166,11 @@ ComposeState _compose(WidgetTester tester, {String? edit}) => _container(
 ).read(composeViewModelProvider(clubId: kFeedClubId, editPostId: edit));
 
 Future<void> _tap(WidgetTester tester, Key key) async {
-  final finder = find.byKey(key);
-  await tester.ensureVisible(finder);
+  // Akış tembel bir sliver grubudur (T-44): hedef önbellek alanında
+  // (ekranın hemen altında) kurulu ama "sahne dışı" olabilir.
+  await tester.ensureVisible(find.byKey(key, skipOffstage: false));
   await tester.pump();
-  await tester.tap(finder);
+  await tester.tap(find.byKey(key));
   await tester.pumpAndSettle();
 }
 
@@ -377,9 +384,19 @@ void main() {
       await tester.pumpAndSettle();
       await _tap(tester, _k('CLB-03.tab.posts'));
 
-      // FED-01: adres gelince kart yeniden çizilir.
+      // FED-01: adres gelince kart yeniden çizilir. Akış tembel kurulur
+      // (T-44): kart ekrana kaydırılır.
       final card = find.byKey(ValueKey<String>(kImagePost.id));
-      await tester.ensureVisible(card);
+      await tester.scrollUntilVisible(
+        card,
+        _scrollStep,
+        scrollable: find
+            .descendant(
+              of: find.byType(ClubDetailView),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
       await tester.pumpAndSettle();
       expect(_drawnPaths(tester, card), [uploaded]);
 

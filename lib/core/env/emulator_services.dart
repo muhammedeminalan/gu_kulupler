@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:gu_data/gu_data.dart';
-import 'package:gu_kulupler/core/error/app_logger.dart';
 
 /// Emülatör ortamının Remote Config'i (W-53, CD-131): **hiçbir yere bağlanmaz**.
 ///
@@ -34,10 +33,11 @@ final class EmulatorRemoteConfigService implements RemoteConfigService {
 }
 
 /// Emülatör ortamının çökme raporlayıcısı (W-53, CD-131): **hiçbir yere
-/// göndermez**. Crashlytics'in emülatörü yoktur; hatalar yalnızca konsola
-/// yazılır (`AppLogger` — emülatör ortamı release derlenemez).
+/// göndermez** ve hiçbir şey yapmaz. Crashlytics'in emülatörü yoktur; konsol
+/// çıktısını tek çağıran `AppErrorHandler` zaten yazar (aynı hata ikinci kez
+/// yazılmaz — T-44 · D2-12).
 final class EmulatorCrashService implements CrashService {
-  /// Yalnızca konsola yazan yerel servis.
+  /// Etkisiz yerel servis.
   const EmulatorCrashService();
 
   @override
@@ -46,13 +46,7 @@ final class EmulatorCrashService implements CrashService {
     StackTrace? stack, {
     bool fatal = false,
     String? reason,
-  }) async {
-    AppLogger.error(
-      reason ?? (fatal ? 'Yakalanmamış hata' : 'Hata'),
-      error: error,
-      stackTrace: stack,
-    );
-  }
+  }) async {}
 
   @override
   void log(String message) {
@@ -89,7 +83,7 @@ final class EmulatorMessagingService implements MessagingService {
   Stream<String> get onTokenRefresh => const Stream<String>.empty();
 
   @override
-  Future<void> invalidateToken() async {}
+  Future<bool> invalidateToken() async => true;
 
   @override
   Future<Map<String, String>?> initialMessageData() async => null;

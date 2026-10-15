@@ -354,6 +354,7 @@ Mod C'de bir işlem çok alıcıya yazar (duyuru → tüm üyeler). Erişim ça�
 | CLB-03 etkinlikler (T-22) | `events` | üye: `clubId==X`, `status in […]`, `isDeleted==false` · ziyaretçi (`publicOnly`): + `visibility=='public'` | `startsAt` ↓ |
 | EVT-04 etkinlik ayrıntıları (T-22) | `events/{id}` get | — (tekil okumalar; `documentId in […]` okunamayan tek kimlikte tümden reddedilir) | — |
 | EVT-04 / PRF-03 | `rsvps` | `userId==uid`, `isDeleted==false` | `createdAt` ↓ |
+| CLB-03 kulübün kayıtları · PRF-01 katıldı sayısı · hatırlatıcı eşitleme · SHT-12 çakışma (T-44 `listMine` süzgeçli kip, D3-02) | `rsvps` | `userId==uid`, `isDeleted==false` + `clubId==X` **ya da** `status in […]` | sırasız (etkinlik başına tek kayıt) |
 | MGT-06 katılımcılar | `rsvps` | `eventId==E`, `clubId==X` | `status`, `waitlistAt` |
 | Bekleme sırası / bilet kodu (T-22) | `rsvps` | `eventId==E`, `clubId==X` + `status=='waitlist'`, `waitlistAt < t` (`count()`) · + `ticketCode==K` (`limit 2`; iki eşleşme = kopyalanmış kod, repository `failedPrecondition` — CD-144 (10)) — yalnızca `seesMgmt` / süper | — |
 | NTF-01 bildirimler (T-25 `watchInbox`) | `notifications` | `userId==uid`, `isDeleted==false` | `createdAt` ↓, `limit` (`Limits.notificationInboxLimit`), canlı; okunmamış sayısı aynı akıştan |
@@ -365,6 +366,7 @@ Mod C'de bir işlem çok alıcıya yazar (duyuru → tüm üyeler). Erişim ça�
 | ADM-01 KPI (T-37 `AdminRepository.stats`) | `clubs` · `users` · `reports` · `events` (`count()`) | `isDeleted==false ∧ status=='active'` · `isDeleted==false` · `status=='open'` · `status=='published' ∧ isDeleted==false ∧ startsAt >= şimdi` | belge okunmaz; etkinlik sayımı indeksli (§8) |
 | ADM-05 yönetici süzgeci (T-37 `listManagerUserIds`) | `memberships` | `status=='active'`, `role in ['board','president']` (kulüp süzgeci yok — süper admin) | yalnızca eşitlik (tek alan indeksleri) |
 | PRF-04 kaydedilenler | `savedPosts` | `userId==uid`, `isDeleted==false` | `savedAt` ↓ |
+| FED-01 kayıt durumu (T-44 `savedAmong`, D3-03) | `savedPosts` | `userId==uid`, `postId in [sayfa ≤ 30]`, `isDeleted==false` | — |
 | SET-02 engelliler | `blocks` | `blockerId==uid`, `isDeleted==false` | — |
 | Kendi destek talepleri (T-28 `SupportRepository.listMine`; ekranı yok) | `supportTickets` | `userId==uid` (talepler soft delete edilmez; `isDeleted` süzgeci istemcide) | `createdAt` ↓ (indeks §8) |
 | Süper admin destek talepleri (konsol; ADM'de destek ekranı yok) | `supportTickets` | — (süzgeçsiz, yalnızca `isSuper()`) | `createdAt` ↓ + `limit` zorunlu (kota yok — §9.13) |
@@ -417,11 +419,11 @@ Bileşik indeksler (alan sırası sorgu sırasıdır; Claude Code gerçek sorgul
 | `posts` | (`clubId` ↑, `isDeleted` ↑, `isHidden` ↑, `createdAt` ↓) · (`clubId` ↑, `isDeleted` ↑, `createdAt` ↓) |
 | `comments` | (`postId` ↑, `clubId` ↑, `isDeleted` ↑, `isHidden` ↑, `createdAt` ↑) |
 | `events` | T-37: (`status` ↑, `isDeleted` ↑, `startsAt` ↑) (ADM-01 yaklaşan etkinlik `count()`) · (`visibility` ↑, `status` ↑, `isDeleted` ↑, `startsAt` ↑) · (`clubId` ↑, `visibility` ↑, `status` ↑, `isDeleted` ↑, `startsAt` ↑) · (`clubId` ↑, `isDeleted` ↑, `startsAt` ↓) · T-22: (`clubId` ↑, `status` ↑, `isDeleted` ↑, `startsAt` ↓) (üye `listClubEvents`) · (`clubId` ↑, `visibility` ↑, `status` ↑, `isDeleted` ↑, `startsAt` ↓) (ziyaretçi `listClubEvents(publicOnly)`) |
-| `rsvps` | (`userId` ↑, `isDeleted` ↑, `createdAt` ↓) · (`eventId` ↑, `clubId` ↑, `status` ↑, `waitlistAt` ↑) |
+| `rsvps` | (`userId` ↑, `isDeleted` ↑, `createdAt` ↓) · (`eventId` ↑, `clubId` ↑, `status` ↑, `waitlistAt` ↑) · T-44: (`userId` ↑, `isDeleted` ↑, `clubId` ↑) · (`userId` ↑, `isDeleted` ↑, `status` ↑) (`listMine` süzgeçli kip) |
 | `notifications` | (`userId` ↑, `isDeleted` ↑, `createdAt` ↓) |
 | `activity` | (`clubId` ↑, `createdAt` ↓) · (`clubId` ↑, `kind` ↑, `createdAt` ↓) |
 | `reports` | (`status` ↑, `createdAt` ↓) · (`targetType` ↑, `targetId` ↑, `status` ↑) |
-| `savedPosts` | (`userId` ↑, `isDeleted` ↑, `savedAt` ↓) |
+| `savedPosts` | (`userId` ↑, `isDeleted` ↑, `savedAt` ↓) · T-44: (`userId` ↑, `isDeleted` ↑, `postId` ↑) (`savedAmong`) |
 | `blocks` | (`blockerId` ↑, `isDeleted` ↑) |
 | `supportTickets` | (`userId` ↑, `createdAt` ↓) |
 | `users` | (`isDeleted` ↑, `nameLower` ↑) · T-25: (`interests` CONTAINS, `isDeleted` ↑) · T-42: (`status` ↑, `deletedAt` ↑) (`finishAccountDeletions`: `status == 'deleted'` + `deletedAt` 1–72 sa aralığı) |

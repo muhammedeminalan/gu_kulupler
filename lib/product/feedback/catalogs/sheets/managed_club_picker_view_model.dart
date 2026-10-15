@@ -92,7 +92,7 @@ final class ManagedClubPickerViewModel extends _$ManagedClubPickerViewModel
       return;
     }
     _isLoading = true;
-    final result = await clubRepository.getClubs(clubIds);
+    final result = await clubRepository.getClubs(clubIds, forceRefresh: true);
     _isLoading = false;
     if (!ref.mounted) return;
     if (_reloadPending) {

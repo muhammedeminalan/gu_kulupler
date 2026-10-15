@@ -87,7 +87,12 @@ void main() {
       expect(clubs.callsTo('getClubs').single.args, [
         ['c01', 'c07'],
       ]);
-      expect(rsvps.callsTo('listMine').single.args, [kProfileUid]);
+      // Yalnızca "katıldı" kayıtları okunur (T-44 · D3-02).
+      expect(rsvps.callsTo('listMine').single.args, [
+        kProfileUid,
+        {RsvpStatus.attended},
+        null,
+      ]);
     });
 
     test(

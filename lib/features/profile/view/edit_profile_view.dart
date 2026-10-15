@@ -111,7 +111,10 @@ class _EditProfileViewState extends ConsumerState<EditProfileView>
                 seed: original.avatarSeed,
                 image: avatar != null
                     ? MemoryImage(avatar.bytes)
-                    : ref.userAvatarImage(original),
+                    : ref.userAvatarImage(
+                        original,
+                        displaySize: ProfileAvatarButton.avatarSize,
+                      ),
                 semanticLabel: l10n.profileChangePhoto,
                 onTap: () => unawaited(openPhotoSource()),
               ),

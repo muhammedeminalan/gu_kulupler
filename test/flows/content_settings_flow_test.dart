@@ -72,10 +72,13 @@ final Uint8List _png = Uint8List.fromList(const [
 
 /// Ağ ve disk önbelleği olmadan: Storage yolunu taşıyan bellek görseli.
 final class _StorageImage extends MemoryImage {
-  _StorageImage(this.url, this.path) : super(_png);
+  _StorageImage(this.url, this.path, {this.coverEdgePx}) : super(_png);
 
   final String url;
   final String path;
+
+  /// Gösterim boyutu ipucu (`BoundedImage.coverEdgePx`).
+  final int? coverEdgePx;
 }
 
 /// [within] içinde çizilen Storage görsellerinin yolları.

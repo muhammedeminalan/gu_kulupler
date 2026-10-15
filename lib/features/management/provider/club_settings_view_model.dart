@@ -77,7 +77,7 @@ final class ClubSettingsViewModel extends _$ClubSettingsViewModel
   Future<void> load() async {
     if (!ref.mounted) return;
     state = state.copyWith(isLoading: true, isError: false);
-    final result = await clubRepository.getClub(clubId);
+    final result = await clubRepository.getClub(clubId, forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data) when !data.isDeleted:

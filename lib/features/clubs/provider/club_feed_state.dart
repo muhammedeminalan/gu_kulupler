@@ -74,9 +74,9 @@ final class ClubFeedState extends Equatable {
   /// Anahtarı olmayan yazar "Silinmiş kullanıcı" çizilir.
   final Map<String, UserModel> users;
 
-  /// Kimlik → yazarın kulüpteki rolü (başkan / yönetim kurulu —
-  /// `membershipRepository.listManagers`); anahtarı olmayan yazarda rozet
-  /// çizilmez.
+  /// Kimlik → yazarın kulüpteki rolü (başkan / yönetim kurulu — CLB-03'ün
+  /// `ClubDetailState.managers` listesinden, T-44 · D3-08); anahtarı olmayan
+  /// yazarda rozet çizilmez.
   final Map<String, ClubRole> roles;
 
   /// Kullanıcının kaydettiği gönderiler (yalnızca okunan gönderiler arasında).

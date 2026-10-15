@@ -2,6 +2,7 @@ import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/page_result.dart';
+import 'package:gu_data/src/core/unexpected_error_listener.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
 import 'package:gu_data/src/utils/field_validators.dart';
 
@@ -85,22 +86,47 @@ abstract final class RepositoryHelpers {
   static bool isSoftDeleted(FirestoreDoc doc) =>
       doc.data[FirestoreFields.isDeleted] == true;
 
+  /// Ayrıştırma hatası dinleyicisi (T-44 · D2-03): [parse] başarısız olunca
+  /// orijinal hata ve yığınla çağrılır; `reason` maskelenmiş koleksiyon
+  /// kalıbıdır (`firestore:parse:clubs/*/events/*` — belge kimliği yazılmaz).
+  /// Kompozisyon kökü (`ProjectDependency`) Crashlytics'e bağlar, `reset`
+  /// temizler; testte doğrudan atanır / sıfırlanır. Kimlik / alan doğrulaması
+  /// ([rejectInvalidIds], [rejectInvalidFields], [invalidArgument]) bunu
+  /// **çağırmaz** — kullanıcı girdisidir.
+  static UnexpectedErrorListener? onParseError;
+
   /// [doc] belgesini [fromDoc] ile modele çevirir; çeviri herhangi bir hata
   /// fırlatırsa [FirestoreError.parse] döner (PLAN §10.1). Ham hata yalnızca
-  /// `message` alanında (günlük için) taşınır.
+  /// `message` alanında (günlük için) taşınır; [onParseError] bilgilendirilir.
   static FirestoreResult<T> parse<T>(
     FirestoreDoc doc,
     T Function(FirestoreDoc doc) fromDoc,
   ) {
     try {
       return FirebaseSuccess(fromDoc(doc));
-    } on Object catch (error) {
+    } on Object catch (error, stack) {
+      try {
+        onParseError?.call(
+          error,
+          stack,
+          'firestore:parse:${collectionPattern(doc.path)}',
+        );
+      } on Object catch (_) {
+        // Raporlama başarısız: sonucu etkilemez.
+      }
       return FirebaseFailure(
         FirestoreError.parse,
         message: '${doc.path}: $error',
       );
     }
   }
+
+  /// Belge yolunun kimliksiz kalıbı: kimlik parçaları (koleksiyon adlarının
+  /// arasındakiler) `*` olur (`clubs/abc/events/x` → `clubs/*/events/*`).
+  static String collectionPattern(String path) => [
+    for (final (index, segment) in path.split(_pathSeparator).indexed)
+      index.isOdd ? '*' : segment,
+  ].join(_pathSeparator);
 
   /// Tekil okuma sonucunu modele çevirir: belge yoksa başarı `null`.
   ///

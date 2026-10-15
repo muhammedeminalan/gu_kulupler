@@ -224,7 +224,7 @@ class AttendeeRow extends StatelessWidget {
           GuAvatar(
             initials: name.initials,
             seed: _seed,
-            size: _waitlistAvatar,
+            size: waitlistAvatarSize,
             image: avatarImage,
           ),
         ],
@@ -242,6 +242,7 @@ class AttendeeRow extends StatelessWidget {
     );
   }
 
-  /// `Avatar size=${36}` (`screens-manage.js:135`).
-  static final double _waitlistAvatar = GuSizes.avatarSizes[2];
+  /// Bekleme listesi satırının avatarı: `Avatar size=${36}`
+  /// (`screens-manage.js:135`). Çağıran fotoğrafı bu boyutta çözer.
+  static final double waitlistAvatarSize = GuSizes.avatarSizes[2];
 }

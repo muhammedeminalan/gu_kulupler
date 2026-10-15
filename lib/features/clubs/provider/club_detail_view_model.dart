@@ -118,7 +118,7 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
   Future<void> refresh() async {
     if (!ref.mounted || _isLoading || state.isRefreshing) return;
     state = state.copyWith(isRefreshing: true);
-    final result = await clubRepository.getClub(clubId);
+    final result = await clubRepository.getClub(clubId, forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data):
@@ -453,7 +453,9 @@ final class ClubDetailViewModel extends _$ClubDetailViewModel
       ),
       uid == null
           ? Future<FirestoreResult<List<RsvpModel>>?>.value()
-          : rsvpRepository.listMine(uid),
+          // Yalnızca bu kulübün kayıtları (T-44 · D3-02): geçmiş büyüdükçe
+          // okuma büyümez.
+          : rsvpRepository.listMine(uid, clubId: clubId),
     ).wait;
     if (!ref.mounted || generation != _eventsGeneration) return;
     if (rsvps case FirebaseFailure(:final error, :final message)) {

@@ -32,4 +32,13 @@ abstract final class AppDurations {
   /// (`SessionPushSync.unregister`; T-42, CD-165): en iyi çabadır, çevrimdışı
   /// çıkışı uzatmaz.
   static const Duration pushTokenCleanupTimeout = Duration(seconds: 3);
+
+  /// Açılışta `superadmin` claim yenilemesinin (ve ağ hatasından sonraki
+  /// önbellekli okumanın) her birinin en çok bekleyeceği süre
+  /// (`SessionViewModel._readSuperAdmin`; T-44 · D2-02). En iyi çabadır:
+  /// süre dolarsa oturum önbellekteki claim'le (yoksa claim'siz) çözülür,
+  /// yetkiyi Rules uygular. Splash bütçesi: 3 + 3 + 10 sn
+  /// (`Limits.firestoreTimeout`) < 20 sn — ağa bağlı görünüp sunucuya
+  /// erişemeyen cihaz SYS-02 döngüsüne düşmez.
+  static const Duration sessionClaimTimeout = Duration(seconds: 3);
 }

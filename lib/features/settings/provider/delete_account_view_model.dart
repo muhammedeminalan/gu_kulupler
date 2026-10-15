@@ -77,7 +77,7 @@ final class DeleteAccountViewModel extends _$DeleteAccountViewModel
   }
 
   Future<void> _applyPresidency(List<String> clubIds) async {
-    final clubs = await clubRepository.getClubs(clubIds);
+    final clubs = await clubRepository.getClubs(clubIds, forceRefresh: true);
     if (!ref.mounted) return;
     if (clubs case FirebaseFailure(:final error)) {
       AppLogger.warn('SET-03 kulüp adları okunamadı: ${error.name}');

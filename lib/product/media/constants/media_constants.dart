@@ -15,6 +15,16 @@ abstract final class MediaConstants {
   /// Bellekte tutulan en çok indirme adresi (en eski kayıt atılır).
   static const int imageUrlCacheMaxEntries = 512;
 
+  /// Cihazda saklanan en çok indirme adresi (en yenileri tutulur — T-44 ·
+  /// D2-05): `flutter_cache_manager` disk önbelleğinin varsayılan nesne
+  /// sınırıyla aynı; diskte olmayan görselin adresini saklamak çevrimdışında
+  /// işe yaramaz.
+  static const int imageUrlPersistMaxEntries = 200;
+
+  /// Yeni / yenilenen adreslerin cihaza yazılmadan önce birleştirildiği süre:
+  /// bir sayfadaki görseller tek yazımla saklanır.
+  static const Duration imageUrlPersistDebounce = Duration(seconds: 2);
+
   /// Uzaktan gelen görselin çözüldüğü en uzun kenar (piksel). Uygulamanın
   /// yüklediği görsellerin üst sınırıdır (`DeviceImagePickerService.maxEdgePx`):
   /// kendi yüklememiz küçültülmez, daha büyük gelen görsel bu kutuya sığdırılır.

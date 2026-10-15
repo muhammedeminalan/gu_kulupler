@@ -442,7 +442,7 @@ final class ManageMembersViewModel extends _$ManageMembersViewModel
   /// yine gösterilir.
   Future<_Loaded?> _read() async {
     final (club, managers, advisors, members) = await (
-      clubRepository.getClub(clubId),
+      clubRepository.getClub(clubId, forceRefresh: true),
       membershipRepository.listManagers(clubId),
       membershipRepository.listActiveMembers(
         clubId,
@@ -519,7 +519,7 @@ final class ManageMembersViewModel extends _$ManageMembersViewModel
         if (reread || !state.users.containsKey(m.userId)) m.userId,
     ];
     if (missing.isEmpty) return;
-    final result = await userRepository.getUsers(missing);
+    final result = await userRepository.getUsers(missing, forceRefresh: true);
     if (!ref.mounted || generation != _generation) return;
     switch (result) {
       case FirebaseSuccess(:final data):

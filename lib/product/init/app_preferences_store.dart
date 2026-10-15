@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' show Locale, ThemeMode;
 import 'package:gu_data/gu_data.dart' show Limits;
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
+import 'package:gu_kulupler/product/media/constants/media_constants.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -83,6 +86,23 @@ abstract interface class AppPreferencesStore {
   /// [clubId] kulübünün yazı taslağını [json] ile değiştirir; `null` taslağı
   /// kaldırır (yayın ya da "Kaydetmeden çık" sonrası).
   Future<bool> setComposeDraft(String clubId, String? json);
+
+  /// [uid] hesabının hatırlatıcı eşitlemesinde bir daha okunması gerekmeyen
+  /// `going` etkinlikleri (bitmiş ya da iptal — T-44 · D2-06). Hesap
+  /// başınadır; yoksa boş küme.
+  Set<String> reminderDoneEvents(String uid);
+
+  /// [uid] hesabının bitmiş etkinlik kümesini [eventIds] ile değiştirir.
+  Future<bool> setReminderDoneEvents(String uid, Set<String> eventIds);
+
+  /// Storage görsel yolu → indirme adresi ve alındığı an (UTC; T-44 · D2-05).
+  /// Soğuk açılışta görsel yer tutucuya düşmeden, çevrimdışında diskteki
+  /// kopyadan çizilir. Bozuk ya da okunamayan kayıt boş haritadır.
+  Map<String, ({String url, DateTime at})> get imageUrls;
+
+  /// Görsel adreslerini [entries] ile değiştirir; en yeni
+  /// `MediaConstants.imageUrlPersistMaxEntries` kayıt tutulur.
+  Future<bool> setImageUrls(Map<String, ({String url, DateTime at})> entries);
 }
 
 /// `shared_preferences` anahtarları — tek liste (PLAN §4.4, §12.2).
@@ -115,6 +135,51 @@ abstract final class AppPreferenceKeys {
   /// [clubId] kulübünün yazı taslağı (FED-03): JSON metni —
   /// `compose_draft_<clubId>` (CD-45).
   static String composeDraft(String clubId) => 'compose_draft_$clubId';
+
+  /// [uid] hesabının hatırlatıcıda bitmiş etkinlikleri (T-44 · D2-06): metin
+  /// listesi.
+  static String reminderDone(String uid) => 'pref.reminderDone.$uid';
+
+  /// Görsel yolu → indirme adresi (T-44 · D2-05): JSON
+  /// `{yol: [adres, alındığıAnMsUtc]}`.
+  static const String imageUrls = 'media.imageUrls';
+}
+
+/// [AppPreferencesStore.imageUrls] JSON kodlaması (`{yol: [adres, msUtc]}`);
+/// gerçek depo ve test çifti aynı kodu kullanır.
+abstract final class ImageUrlsCodec {
+  /// [json] metnini çözer; bozuk metin ya da tanınmayan kayıt atlanır
+  /// (fırlatmaz).
+  static Map<String, ({String url, DateTime at})> decode(String? json) {
+    if (json == null || json.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is! Map<String, Object?>) return const {};
+      return {
+        for (final MapEntry(:key, :value) in decoded.entries)
+          if (value case [final String url, final int ms])
+            key: (
+              url: url,
+              at: DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true),
+            ),
+      };
+    } on FormatException {
+      return const {};
+    }
+  }
+
+  /// [entries] içinden en yeni [max] kaydı JSON'a çevirir.
+  static String encode(
+    Map<String, ({String url, DateTime at})> entries, {
+    int max = MediaConstants.imageUrlPersistMaxEntries,
+  }) {
+    final newest = entries.entries.toList()
+      ..sort((a, b) => b.value.at.compareTo(a.value.at));
+    return jsonEncode({
+      for (final MapEntry(:key, :value) in newest.take(max))
+        key: [value.url, value.at.toUtc().millisecondsSinceEpoch],
+    });
+  }
 }
 
 /// [AppPreferencesStore] uygulaması: `shared_preferences`.
@@ -143,6 +208,13 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
   /// kaldırıldı). Diskteki değerin önüne geçer: yazım başarısız olsa da
   /// oturum boyunca geçerlidir.
   final Map<String, String?> _composeDrafts = <String, String?>{};
+
+  /// Bu oturumda yazılan bitmiş etkinlik kümeleri (uid → küme); diskteki
+  /// değerin önüne geçer.
+  final Map<String, Set<String>> _reminderDone = <String, Set<String>>{};
+
+  /// Görsel adresleri: ilk okumada diskten çözülür, yazımda güncellenir.
+  Map<String, ({String url, DateTime at})>? _imageUrls;
 
   @override
   bool get isLoaded => _prefs != null;
@@ -290,6 +362,46 @@ final class SharedAppPreferencesStore implements AppPreferencesStore {
     final key = AppPreferenceKeys.composeDraft(clubId);
     return _write(
       (prefs) => json == null ? prefs.remove(key) : prefs.setString(key, json),
+    );
+  }
+
+  @override
+  Set<String> reminderDoneEvents(String uid) {
+    if (_reminderDone[uid] case final known?) return Set.unmodifiable(known);
+    final prefs = _prefs;
+    if (prefs == null) return const {};
+    return Set.unmodifiable(
+      _stringList(prefs, AppPreferenceKeys.reminderDone(uid)),
+    );
+  }
+
+  @override
+  Future<bool> setReminderDoneEvents(String uid, Set<String> eventIds) {
+    final ids = _reminderDone[uid] = Set.of(eventIds);
+    return _write(
+      (prefs) => prefs.setStringList(
+        AppPreferenceKeys.reminderDone(uid),
+        ids.toList(),
+      ),
+    );
+  }
+
+  @override
+  Map<String, ({String url, DateTime at})> get imageUrls {
+    if (_imageUrls case final known?) return known;
+    final prefs = _prefs;
+    if (prefs == null) return const {};
+    return _imageUrls = Map.unmodifiable(
+      ImageUrlsCodec.decode(_string(prefs, AppPreferenceKeys.imageUrls)),
+    );
+  }
+
+  @override
+  Future<bool> setImageUrls(Map<String, ({String url, DateTime at})> entries) {
+    final json = ImageUrlsCodec.encode(entries);
+    _imageUrls = Map.unmodifiable(ImageUrlsCodec.decode(json));
+    return _write(
+      (prefs) => prefs.setString(AppPreferenceKeys.imageUrls, json),
     );
   }
 

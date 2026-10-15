@@ -786,6 +786,102 @@ void main() {
     });
   });
 
+  group('T-44 · FirestoreService · watchDoc çevrimdışı (A4-02)', () {
+    test('önbellekte olmayan belge (exists: false, fromCache: true) '
+        'unavailable olur, "yok" sayılmaz; akış kapanmaz ve sonraki sunucu '
+        'olayı belgeyi getirir', () async {
+      await post.set({'text': 'bir'});
+      final live = await post.get();
+      final ref = StubDocumentReference();
+      final events = <FirestoreResult<FirestoreDoc?>>[];
+      var closed = false;
+      final subscription = service
+          .watchDoc(ref)
+          .listen(events.add, onDone: () => closed = true);
+
+      ref.snapshotEvents
+        ..add(StubMissingSnapshot(fromCache: true))
+        ..add(live)
+        ..add(StubMissingSnapshot(fromCache: false));
+      await pumpEventQueue();
+
+      expect(events, hasLength(3));
+      expect(events[0].errorOrNull, FirestoreError.unavailable);
+      expect(events[1].dataOrNull!.data, {'text': 'bir'});
+      // Sunucudan gelen "yok" gerçekten yoktur: başarı + null.
+      expect(events[2].isSuccess, isTrue);
+      expect(events[2].dataOrNull, isNull);
+      expect(closed, isFalse);
+      await subscription.cancel();
+    });
+  });
+
+  group('T-44 · FirestoreService · yazım duyurusu (D3-01)', () {
+    late List<String> announced;
+
+    setUp(() {
+      announced = [];
+      (service as FirestoreWriteSource).addWriteListener(announced.add);
+    });
+
+    test("set / update / add / batch'siz softDelete ve restore yolu "
+        'duyurur (başlarken ve onayda); okuma duyurmaz', () async {
+      await service.set(post, _post('bir'));
+      expect(announced.toSet(), {'posts/p01'});
+      announced.clear();
+
+      await service.update(post, {'text': 'iki'});
+      await service.softDelete(post, actorId: 'u_ayse');
+      await service.restore(post);
+      await service.getDoc(post);
+      expect(announced, isNotEmpty);
+      expect(announced.toSet(), {'posts/p01'});
+      announced.clear();
+
+      final added = await service.add(FirestoreCollections.posts, _post('x'));
+      expect(announced.toSet(), {'posts/${added.dataOrNull}'});
+    });
+
+    test("commitBatch commit sonrası batch'in tüm yollarını, runTransaction "
+        'yalnızca başarıda yazdığı yolları duyurur', () async {
+      await seed(['a']);
+      final a = service.doc(FirestoreCollections.posts, 'a');
+      final b = service.doc(FirestoreCollections.posts, 'b');
+
+      await service.commitBatch((batch) {
+        batch.set(b, _post('b'));
+        unawaited(service.softDelete(a, actorId: 'u_ayse', batch: batch));
+      });
+      expect(announced.toSet(), {'posts/a', 'posts/b'});
+      announced.clear();
+
+      await service.runTransaction((tx) async {
+        await tx.get(a);
+        tx.update(a, {'text': 'tx'});
+      });
+      expect(announced.toSet(), {'posts/a'});
+      announced.clear();
+
+      final failed = await service.runTransaction<void>((tx) async {
+        tx.update(b, {'text': 'olmayacak'});
+        throw const ConflictException.conflict();
+      });
+      expect(failed.isSuccess, isFalse);
+      expect(announced, isEmpty);
+    });
+
+    test('dinleyici hatası yazımın sonucunu etkilemez', () async {
+      (service as FirestoreWriteSource).addWriteListener(
+        (_) => throw StateError('kanca'),
+      );
+
+      final result = await service.set(post, _post('bir'));
+
+      expect(result.isSuccess, isTrue);
+      expect(announced, contains('posts/p01'));
+    });
+  });
+
   group('T-10 · FirestoreService · hata eşlemesi', () {
     const codes = {
       'permission-denied': FirestoreError.permissionDenied,
@@ -891,7 +987,8 @@ void main() {
 
   group('T-10 · FirestoreService · zaman aşımı', () {
     testWidgets('varsayılan süre Limits.firestoreTimeout: süre dolmadan sonuç '
-        'yok, dolunca timeout', (tester) async {
+        'yok; dolunca okuma timeout, transaction dışı yazım başarı (yazım '
+        'kuyrukta — T-44 · D2-01)', (tester) async {
       final stubbed = FirebaseFirestoreService(StubFirestore());
       FirestoreResult<FirestoreDoc?>? read;
       FirestoreResult<void>? write;
@@ -912,7 +1009,127 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
 
       expect(read!.errorOrNull, FirestoreError.timeout);
-      expect(write!.errorOrNull, FirestoreError.timeout);
+      expect(write!.isSuccess, isTrue);
+    });
+
+    testWidgets("T-44 · D2-01 · askıda kalan update / batch'siz softDelete / "
+        'restore süre dolunca başarı', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      final ref = StubDocumentReference();
+      final results = <String, FirestoreResult<void>>{};
+      unawaited(
+        stubbed.update(ref, {'text': 'x'}).then((r) => results['update'] = r),
+      );
+      unawaited(
+        stubbed
+            .softDelete(ref, actorId: 'u_ayse')
+            .then((r) => results['softDelete'] = r),
+      );
+      unawaited(stubbed.restore(ref).then((r) => results['restore'] = r));
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(
+        results.keys,
+        unorderedEquals(['update', 'softDelete', 'restore']),
+      );
+      expect(results.values.every((r) => r.isSuccess), isTrue);
+    });
+
+    testWidgets('T-44 · D2-01 · add: askıda kalan yazım süre dolunca başarı ve '
+        'boş olmayan kimlik', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      FirestoreResult<String>? added;
+      unawaited(
+        stubbed
+            .add(FirestoreCollections.posts, {'text': 'x'})
+            .then((r) => added = r),
+      );
+
+      await tester.pump(
+        Limits.firestoreTimeout - const Duration(milliseconds: 1),
+      );
+      expect(added, isNull);
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(added!.dataOrNull, isNotEmpty);
+    });
+
+    testWidgets('T-44 · D2-01 · commitBatch: askıda kalan commit süre dolunca '
+        'başarı (tek zamanlayıcı — dış timeout kazanmaz)', (tester) async {
+      final firestore = StubFirestore();
+      final stubbed = FirebaseFirestoreService(firestore);
+      FirestoreResult<void>? committed;
+      unawaited(
+        stubbed
+            .commitBatch(
+              (batch) => batch.set(StubDocumentReference(), {'text': 'x'}),
+            )
+            .then((r) => committed = r),
+      );
+
+      await tester.pump(
+        Limits.firestoreTimeout - const Duration(milliseconds: 1),
+      );
+      expect(committed, isNull);
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(committed!.isSuccess, isTrue);
+      expect(firestore.batches.single.commits, 1);
+    });
+
+    test('T-44 · D2-01 · commitBatch doğrulaması zamanlayıcı beklemeden hata '
+        'döner: async gövde, zehirli batch, sınır aşımı', () async {
+      final firestore = StubFirestore();
+      final stubbed = FirebaseFirestoreService(firestore);
+      final ref = StubDocumentReference();
+
+      final asyncBody = await stubbed.commitBatch((batch) async {
+        batch.set(ref, {'text': 'x'});
+      });
+      final poisoned = await stubbed.commitBatch(
+        (batch) => unawaited(
+          stubbed.softDelete(ref, actorId: '', batch: batch),
+        ),
+      );
+      final tooMany = await stubbed.commitBatch((batch) {
+        for (var i = 0; i <= Limits.batchMaxWrites; i++) {
+          batch.set(ref, {'i': i});
+        }
+      });
+
+      expect(asyncBody.errorOrNull, FirestoreError.invalidArgument);
+      expect(poisoned.errorOrNull, FirestoreError.invalidArgument);
+      expect(tooMany.errorOrNull, FirestoreError.invalidArgument);
+      expect(firestore.batches.map((b) => b.commits), [0, 0, 0]);
+    });
+
+    testWidgets('T-44 · D2-01 · runTransaction askıda kalırsa yine timeout', (
+      tester,
+    ) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      FirestoreResult<void>? result;
+      unawaited(
+        stubbed.runTransaction<void>((_) async {}).then((r) => result = r),
+      );
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(result!.errorOrNull, FirestoreError.timeout);
+    });
+
+    testWidgets('T-44 · D2-01 · süre dolmadan gelen SDK hatası yine '
+        'başarısızlıktır', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      final ref = StubDocumentReference(
+        error: firestoreException('permission-denied'),
+      );
+      FirestoreResult<void>? result;
+      unawaited(stubbed.set(ref, {'text': 'x'}).then((r) => result = r));
+
+      await tester.pump();
+
+      expect(result!.errorOrNull, FirestoreError.permissionDenied);
     });
 
     testWidgets('süre kurucudan değiştirilebilir', (tester) async {
@@ -926,6 +1143,272 @@ void main() {
       await tester.pump(const Duration(seconds: 2));
 
       expect(result!.errorOrNull, FirestoreError.timeout);
+    });
+  });
+
+  group('T-44 · FirestoreService · önbellekten okuma (D2-02)', () {
+    test('getDocFromCache yalnızca önbellek kaynağıyla okur; önbellekte yoksa '
+        'unavailable', () async {
+      final ref = StubDocumentReference(
+        error: firestoreException('unavailable'),
+      );
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+
+      final result = await stubbed.getDocFromCache(ref);
+
+      expect(result.errorOrNull, FirestoreError.unavailable);
+      expect(ref.getOptions.single?.source, Source.cache);
+    });
+
+    test(
+      'getDoc varsayılan kaynakla okur (önbelleğe kendiliğinden düşmez)',
+      () async {
+        final ref = StubDocumentReference(
+          error: firestoreException('unavailable'),
+        );
+        await FirebaseFirestoreService(StubFirestore()).getDoc(ref);
+        expect(ref.getOptions.single, isNull);
+      },
+    );
+
+    test('önbellekteki belge okunur', () async {
+      await post.set(_post('Merhaba'));
+      final result = await service.getDocFromCache(post);
+      expect(result.dataOrNull?.data['text'], 'Merhaba');
+    });
+  });
+
+  group('T-44 · FirestoreService · beklenmeyen hata raporu (D2-03)', () {
+    late List<(Object, StackTrace, String)> reported;
+
+    FirebaseFirestoreService reporting(FirebaseFirestore firestore) =>
+        FirebaseFirestoreService(
+          firestore,
+          onUnexpected: (error, stack, reason) =>
+              reported.add((error, stack, reason)),
+        );
+
+    setUp(() => reported = []);
+
+    test('failed-precondition / unknown / invalid-argument (SDK) → dinleyici '
+        'bir kez, kod adıyla ve orijinal hatayla', () async {
+      for (final (code, name) in [
+        ('failed-precondition', 'failedPrecondition'),
+        ('internal', 'unknown'),
+        ('invalid-argument', 'invalidArgument'),
+        ('resource-exhausted', 'resourceExhausted'),
+      ]) {
+        reported.clear();
+        final error = firestoreException(code);
+        final stubbed = reporting(StubFirestore(error: error));
+
+        await stubbed.getDoc(StubDocumentReference(error: error));
+
+        expect(reported, hasLength(1), reason: code);
+        expect(reported.single.$1, same(error), reason: code);
+        expect(reported.single.$3, 'firestore:$name', reason: code);
+      }
+    });
+
+    test(
+      'yığın SDK hatasının kendi yığınıdır (yeni yığın üretilmez)',
+      () async {
+        final error = firestoreException('failed-precondition');
+        final origin = StackTrace.current;
+        final stubbed = reporting(StubFirestore());
+        final query = _ErrorQuery(error, origin);
+
+        await stubbed.getList(query);
+
+        expect(reported.single.$2.toString(), origin.toString());
+      },
+    );
+
+    test('beklenen hatalar raporlanmaz: permission-denied, not-found, '
+        'unavailable, zaman aşımı, çevrimdışı akış hatası', () async {
+      for (final code in ['permission-denied', 'not-found', 'unavailable']) {
+        final error = firestoreException(code);
+        final stubbed = reporting(StubFirestore(error: error));
+        await stubbed.getDoc(StubDocumentReference(error: error));
+        await stubbed.set(StubDocumentReference(error: error), {'a': 1});
+      }
+      final timeout = reporting(StubFirestore());
+      await timeout.getDoc(
+        StubDocumentReference(error: TimeoutException('süre')),
+      );
+
+      expect(reported, isEmpty);
+    });
+
+    test('canlı akış hatası ve batch reddi de aynı kuraldan geçer', () async {
+      final ref = StubDocumentReference();
+      final stubbed = reporting(StubFirestore());
+      final events = <FirestoreResult<FirestoreDoc?>>[];
+      final subscription = stubbed.watchDoc(ref).listen(events.add);
+      ref.snapshotEvents
+        ..addError(firestoreException('permission-denied'))
+        ..addError(firestoreException('failed-precondition'));
+      await pumpEventQueue();
+
+      await stubbed.softDelete(ref, actorId: '');
+
+      expect(events.map((e) => e.errorOrNull), [
+        FirestoreError.permissionDenied,
+        FirestoreError.failedPrecondition,
+      ]);
+      expect(reported.map((r) => r.$3), [
+        'firestore:failedPrecondition',
+        'firestore:invalidArgument',
+      ]);
+      await subscription.cancel();
+    });
+
+    test('dinleyici fırlatsa da sonuç döner', () async {
+      final error = firestoreException('internal');
+      final stubbed = FirebaseFirestoreService(
+        StubFirestore(),
+        onUnexpected: (_, _, _) => throw StateError('rapor patladı'),
+      );
+      final result = await stubbed.getDoc(StubDocumentReference(error: error));
+      expect(result.errorOrNull, FirestoreError.unknown);
+    });
+
+    test('FirestoreError.isUnexpected kapsamı', () {
+      expect(
+        FirestoreError.values.where((e) => e.isUnexpected).toSet(),
+        {
+          FirestoreError.parse,
+          FirestoreError.invalidArgument,
+          FirestoreError.failedPrecondition,
+          FirestoreError.resourceExhausted,
+          FirestoreError.unknown,
+        },
+      );
+    });
+  });
+
+  group('T-44 · FirestoreService · ağ anahtarı (A4-08)', () {
+    test(
+      'setNetworkEnabled SDK ağ anahtarını çağırır; hata FirebaseFailure',
+      () async {
+        final firestore = StubFirestore();
+        final stubbed = FirebaseFirestoreService(firestore);
+
+        expect(
+          (await stubbed.setNetworkEnabled(enabled: false)).isSuccess,
+          isTrue,
+        );
+        expect(
+          (await stubbed.setNetworkEnabled(enabled: true)).isSuccess,
+          isTrue,
+        );
+        expect(firestore.networkCalls, [false, true]);
+
+        final failing = FirebaseFirestoreService(
+          StubFirestore(error: firestoreException('unavailable')),
+        );
+        expect(
+          (await failing.setNetworkEnabled(enabled: false)).errorOrNull,
+          FirestoreError.unavailable,
+        );
+      },
+    );
+  });
+
+  group('T-44 · FirestoreService · zaman aşımında önbellek (A4-05)', () {
+    testWidgets('getDoc: süre dolunca önbellekteki belge başarıdır; '
+        'önbellekte yoksa timeout', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      final cached = await tester.runAsync(() async {
+        await post.set({'text': 'önbellek'});
+        return post.get();
+      });
+      FirestoreResult<FirestoreDoc?>? hit;
+      FirestoreResult<FirestoreDoc?>? miss;
+      unawaited(
+        stubbed.getDoc(StubDocumentReference(cached: cached)).then((r) {
+          hit = r;
+        }),
+      );
+      unawaited(stubbed.getDoc(StubDocumentReference()).then((r) => miss = r));
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(hit!.dataOrNull!.data, {'text': 'önbellek'});
+      expect(miss!.errorOrNull, FirestoreError.timeout);
+    });
+
+    testWidgets('getList: önbellek boşsa timeout (boş durum sayılmaz), '
+        'doluysa başarı', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      final snapshots = await tester.runAsync(() async {
+        final empty = await db.collection('bos').get();
+        await seed(['a', 'b']);
+        return (empty, await db.collection(FirestoreCollections.posts).get());
+      });
+      final (empty, full) = snapshots!;
+      FirestoreResult<List<FirestoreDoc>>? none;
+      FirestoreResult<List<FirestoreDoc>>? some;
+      unawaited(
+        stubbed.getList(StubQuery(cached: empty)).then((r) => none = r),
+      );
+      unawaited(stubbed.getList(StubQuery(cached: full)).then((r) => some = r));
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(none!.errorOrNull, FirestoreError.timeout);
+      expect([for (final doc in some!.dataOrNull!) doc.id], ['a', 'b']);
+    });
+
+    testWidgets('getPage: ilk sayfa önbellekten gelir; sonraki sayfada '
+        'önbellek denenmez → timeout', (tester) async {
+      final stubbed = FirebaseFirestoreService(StubFirestore());
+      final full = await tester.runAsync(() async {
+        await seed(['a', 'b']);
+        return db.collection(FirestoreCollections.posts).get();
+      });
+      final first = StubQuery(cached: full);
+      final next = StubQuery(cached: full);
+      FirestoreResult<PageResult<FirestoreDoc>>? firstPage;
+      FirestoreResult<PageResult<FirestoreDoc>>? nextPage;
+      unawaited(
+        stubbed
+            .getPage(first, const PageRequest(limit: 5))
+            .then((r) => firstPage = r),
+      );
+      unawaited(
+        stubbed
+            .getPage(
+              next,
+              PageRequest(limit: 5, after: PageCursor(full!.docs.first)),
+            )
+            .then((r) => nextPage = r),
+      );
+
+      await tester.pump(Limits.firestoreTimeout);
+
+      expect(
+        [for (final doc in firstPage!.dataOrNull!.items) doc.id],
+        [
+          'a',
+          'b',
+        ],
+      );
+      expect(firstPage!.dataOrNull!.hasMore, isFalse);
+      expect(nextPage!.errorOrNull, FirestoreError.timeout);
+      expect(next.cacheReads, 0);
+    });
+
+    test('zaman aşımı dışındaki hatada önbellek denenmez', () async {
+      final query = StubQuery(error: firestoreException('permission-denied'));
+      final stubbed = FirebaseFirestoreService(
+        StubFirestore(error: firestoreException('permission-denied')),
+      );
+
+      final result = await stubbed.getList(query);
+
+      expect(result.errorOrNull, FirestoreError.permissionDenied);
+      expect(query.cacheReads, 0);
     });
   });
 
@@ -978,6 +1461,24 @@ final class _RejectingBatch implements WriteBatch {
 
   @override
   Future<void> commit() async => commits++;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+// SDK sınıfı `@sealed`; test çifti bilerek uygular.
+// ignore: subtype_of_sealed_class
+/// `get()` çağrısı verilen hata ve yığınla biten sorgu (yığının korunduğunu
+/// sınamak için — T-44 · D2-03).
+final class _ErrorQuery implements Query<Json> {
+  _ErrorQuery(this._error, this._stack);
+
+  final Object _error;
+  final StackTrace _stack;
+
+  @override
+  Future<QuerySnapshot<Json>> get([GetOptions? options]) =>
+      Future.error(_error, _stack);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

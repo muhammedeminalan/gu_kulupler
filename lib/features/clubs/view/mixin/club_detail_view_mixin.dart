@@ -9,6 +9,8 @@ import 'package:gu_kulupler/core/format/app_date_formats.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_detail_state.dart';
 import 'package:gu_kulupler/features/clubs/provider/club_detail_view_model.dart';
+import 'package:gu_kulupler/features/clubs/provider/club_feed_state.dart';
+import 'package:gu_kulupler/features/clubs/provider/club_feed_view_model.dart';
 import 'package:gu_kulupler/features/clubs/provider/join_application_state.dart';
 import 'package:gu_kulupler/features/clubs/view/club_detail_view.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/club_events_tab.dart';
@@ -43,6 +45,11 @@ import 'package:gu_ui/gu_ui.dart';
 ///   (W-17, T-34), SHT-06 "Kulüp ayarları" MGT-09'a (W-13, T-36) gider;
 ///   yönetimden dönüşte kulüp iskeletsiz yeniden okunur (ayar / logo / kapak
 ///   değişikliği başlıkta görünür).
+/// * "Gönderiler" akışı (FED-01) ilk girişten sonra CLB-03 açık kaldıkça
+///   canlı tutulur (T-44 · D3-05): sekmeler arasında gidip gelmek akışı
+///   yeniden okumaz (Etkinlikler / Üyeler gibi ziyaret başına bir okuma);
+///   sekmeden çıkınca süzgeç "Tümü"ne döner (prototip `Feed` `useState`).
+///   Erişim kaybında ve sayfa kapanınca akış ViewModel'i atılır.
 mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// Sayfanın kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
@@ -61,6 +68,13 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   ClubEventSegment eventSegment = ClubEventSegment.upcoming;
 
   ProviderSubscription<bool>? _notFoundSubscription;
+
+  /// "Gönderiler" sekmesi seçili mi / kulübün içi görülüyor mu?
+  ProviderSubscription<({bool onPosts, bool inside})>? _feedTabSubscription;
+
+  /// Akış ViewModel'ini CLB-03 açıkken canlı tutan abonelik (ilk "Gönderiler"
+  /// girişinden sonra).
+  ProviderSubscription<ClubFeedState>? _feedKeepAlive;
 
   /// Sayfa yığının tepesinde mi (son `didChangeDependencies`)?
   bool _wasCurrent = true;
@@ -89,6 +103,13 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
       },
       fireImmediately: true,
     );
+    _feedTabSubscription = ref.listenManual(
+      clubDetailViewModelProvider(widget.clubId).select(
+        (s) => (onPosts: s.tab == ClubDetailTab.posts, inside: s.seesInside),
+      ),
+      _onFeedTab,
+      fireImmediately: true,
+    );
     _applyRouteTab();
   }
 
@@ -115,6 +136,8 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   @override
   void dispose() {
     _notFoundSubscription?.close();
+    _feedKeepAlive?.close();
+    _feedTabSubscription?.close();
     scrollController
       ..removeListener(_onScroll)
       ..dispose();
@@ -351,6 +374,37 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
     final topInset = MediaQuery.viewPaddingOf(context).top;
     coverUnderStatusBar.value =
         scrollOffset.value < GuSizes.parallaxHeight - topInset;
+  }
+
+  /// Akışın ömrü: "Gönderiler"e ilk girişte abone olunur (sekme gövdesi
+  /// atılsa da ViewModel yaşar), erişim kaybında bırakılır. Sekmeden çıkınca
+  /// süzgeç sıfırlanır — yalnızca akış canlıysa (atılmış ViewModel yeniden
+  /// kurulup okunmaz).
+  void _onFeedTab(
+    ({bool onPosts, bool inside})? previous,
+    ({bool onPosts, bool inside}) next,
+  ) {
+    if (!next.inside) {
+      _feedKeepAlive?.close();
+      _feedKeepAlive = null;
+      return;
+    }
+    if (next.onPosts) {
+      _feedKeepAlive ??= ref.listenManual(
+        clubFeedViewModelProvider(widget.clubId),
+        (_, _) {},
+      );
+    } else if (previous?.onPosts ?? false) {
+      // Kare sonrası: `_applyRouteTab` sekmeyi `didUpdateWidget`'ta, yani
+      // yapım sırasında değiştirebilir (sağlayıcı yapımda değiştirilmez).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _feedKeepAlive != null) {
+          ref
+              .read(clubFeedViewModelProvider(widget.clubId).notifier)
+              .setFilter(FeedFilter.all);
+        }
+      });
+    }
   }
 
   /// Rotadaki `?tab=` sekmesini ilk kareden sonra uygular (yapım sırasında

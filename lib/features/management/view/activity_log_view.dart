@@ -14,6 +14,7 @@ import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/manage/activity_row.dart';
 import 'package:gu_kulupler/product/widget/manage/activity_texts.dart';
 import 'package:gu_kulupler/product/widget/manage/manage_header.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Faaliyet geçmişi — `ActivityLogRoute` (`/clubs/:clubId/manage/activity`);
@@ -107,7 +108,10 @@ class _ActivityLogViewState extends ConsumerState<ActivityLogView>
             text: texts.text(entry, state.lookups),
             timeLabel: relative.format(entry.createdAt ?? nowUtc),
             actor: actor,
-            actorImage: ref.userAvatarImage(actor),
+            actorImage: ref.userAvatarImage(
+              actor,
+              displaySize: GuSizes.activityRowAvatar,
+            ),
             actionKey: GuKey.action('MGT-10.row.${entry.id}'),
             onTap: () => openEntry(entry),
           );
@@ -171,6 +175,9 @@ class _ActivityLogViewState extends ConsumerState<ActivityLogView>
                 controller: scrollController,
                 slivers: [
                   ...switch (status) {
+                    _ when OfflineListFallback.applies(ref, status) => [
+                      OfflineListFallback.sliver(onReload: retry),
+                    ],
                     GuListStatus.error => [
                       SliverToBoxAdapter(
                         child: GuErrorState(

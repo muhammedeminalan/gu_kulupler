@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:collection/collection.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
 import 'package:gu_data/src/constants/firestore_ids.dart';
@@ -133,6 +134,45 @@ final class FirebaseSavedPostRepository implements SavedPostRepository {
     return read.map(
       (doc) => doc != null && !RepositoryHelpers.isSoftDeleted(doc),
     );
+  }
+
+  @override
+  Future<FirestoreResult<Set<String>>> savedAmong({
+    required String userId,
+    required List<String> postIds,
+  }) async {
+    if (RepositoryHelpers.rejectInvalidIds<Set<String>>({'userId': userId})
+        case final rejected?) {
+      return rejected;
+    }
+    final unique = postIds.toSet().toList();
+    if (!unique.every(RepositoryHelpers.isValidId)) {
+      return RepositoryHelpers.invalidArgument('geçersiz kimlik: postIds');
+    }
+    final saved = <String>{};
+    // Boş `whereIn` geçersiz bir sorgudur: boş liste = parça yok.
+    for (final chunk in unique.slices(RepositoryHelpers.whereInMax)) {
+      // Sahip + silinmemiş süzgeci Rules'un kanıtıdır (rules-spec §6); indeks
+      // `userId, isDeleted, postId` (§8).
+      final read = await _firestore.getList(
+        _firestore
+            .collection(FirestoreCollections.savedPosts)
+            .where(FirestoreFields.userId, isEqualTo: userId)
+            .where(FirestoreFields.postId, whereIn: chunk)
+            .notDeleted(),
+      );
+      switch (read) {
+        case FirebaseFailure(:final error, :final message, :final detail):
+          return FirebaseFailure(error, message: message, detail: detail);
+        case FirebaseSuccess(data: final docs):
+          for (final doc in docs) {
+            if (doc.data[FirestoreFields.postId] case final String postId) {
+              saved.add(postId);
+            }
+          }
+      }
+    }
+    return FirebaseSuccess(saved);
   }
 
   /// Kayıt çiftinin kimliklerini doğrular; geçerliyse `null`.

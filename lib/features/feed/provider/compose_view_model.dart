@@ -461,7 +461,7 @@ final class ComposeViewModel extends _$ComposeViewModel
   }
 
   Future<void> _loadClub() async {
-    final result = await clubRepository.getClub(clubId);
+    final result = await clubRepository.getClub(clubId, forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data):

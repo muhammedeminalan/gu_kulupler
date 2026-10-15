@@ -11,6 +11,7 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/managed_club_picker_sheet.dart';
 import 'package:gu_kulupler/product/navigation/manage_events_tab.dart';
 import 'package:gu_kulupler/product/widget/manage/manage_header.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Etkinlik yönetimi — `ManageEventsRoute`
@@ -91,6 +92,8 @@ class _ManageEventsViewState extends ConsumerState<ManageEventsView>
       isEmpty: rows.isEmpty,
     );
     switch (status) {
+      case _ when OfflineListFallback.applies(ref, status):
+        return [OfflineListFallback.sliver(onReload: retry)];
       case GuListStatus.error:
         return [
           SliverToBoxAdapter(

@@ -20,10 +20,11 @@ part 'debug_menu_view_model.g.dart';
 ///   yansıtılır ve ona yazılır.
 /// * Demo hesap geçişi (CD-132 (23)): [signInDemo] seed'deki hesapla
 ///   emülatörde oturum açar, [signOut] oturumu kapatır.
-/// * Çevrimdışı simülasyonu (T-43): [setSimulatedOffline] kök
-///   `ConnectivityViewModel`'in simülasyon bayrağını açar / kapar (bant +
-///   yazma engeli; yalnızca `AppEnvironment.debugMenuEnabled` derlemesinde
-///   etkili). Boş / hata zorlama kapsam dışıdır — durum testleri karşılar.
+/// * Çevrimdışı simülasyonu (T-43, T-44 · A4-08): [setSimulatedOffline] kök
+///   `ConnectivityViewModel`'in simülasyon bayrağını açar / kapar: bant +
+///   yazma engeli + Firestore ağı kapalı (okumalar önbellekten; Auth /
+///   Storage açık). Yalnızca `AppEnvironment.debugMenuEnabled` derlemesinde
+///   etkili. Boş / hata zorlama kapsam dışıdır — durum testleri karşılar.
 @riverpod
 final class DebugMenuViewModel extends _$DebugMenuViewModel
     with ProjectDependencyMixin {

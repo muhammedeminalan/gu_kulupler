@@ -16,11 +16,13 @@ import 'package:gu_kulupler/features/admin/provider/admin_club_form_view_model.d
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/form/form_field_error.dart';
+import 'package:gu_kulupler/product/service/connectivity_service.dart';
 import 'package:gu_kulupler/product/service/image_picker_service.dart';
 
 import '../../../fakes/fake_admin_repository.dart';
 import '../../../fakes/fake_auth_repository.dart';
 import '../../../fakes/fake_club_repository.dart';
+import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_image_picker_service.dart';
 import '../../../fakes/fake_membership_repository.dart';
@@ -414,6 +416,55 @@ void main() {
       await c.read(p.notifier).load();
       expect(c.read(p).isError, isFalse);
       expect(c.read(p).original?.id, club.id);
+    });
+  });
+
+  group('ADM-03 · AdminClubFormViewModel · çevrimdışı (T-44)', () {
+    void goOffline() =>
+        (GetIt.I<ConnectivityService>() as FakeConnectivityService).isOffline =
+            true;
+
+    /// Yönetim yazımları (okumalar hariç).
+    List<String> writes() => [
+      for (final call in admin.calls)
+        if (const {
+          'createClub',
+          'updateClubIdentity',
+          'updateClubMedia',
+          'assignPresident',
+          'setAdvisor',
+        }.contains(call.method))
+          call.method,
+    ];
+
+    test('yeni kulüp: geçerli form → blocked + TST-24; createClub yok, form '
+        'gönderiliyor durumuna geçmez', () async {
+      final (c, p) = await opened();
+      final vm = c.read(p.notifier);
+      fill(vm);
+      final before = c.read(p);
+      goOffline();
+
+      expect(await vm.save(), AdminClubFormOutcome.blocked);
+
+      expect(writes(), isEmpty);
+      expect(c.read(p), before);
+      expect(c.read(p).isSubmitting, isFalse);
+      expect(feedback.toasts, [ToastId.tst24]);
+    });
+
+    test('düzenleme: değişiklik varken blocked + TST-24; hiçbir alan '
+        'yazılmaz', () async {
+      final club = await seedFormClub();
+      final (c, p) = await opened(club.id);
+      final vm = c.read(p.notifier)..setSummary('Yeni özet');
+      goOffline();
+
+      expect(await vm.save(), AdminClubFormOutcome.blocked);
+
+      expect(writes(), isEmpty);
+      expect(clubs.clubs[club.id]!.summary, isNot('Yeni özet'));
+      expect(feedback.toasts, [ToastId.tst24]);
     });
   });
 }

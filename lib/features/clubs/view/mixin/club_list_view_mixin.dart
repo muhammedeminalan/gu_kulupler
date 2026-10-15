@@ -205,7 +205,7 @@ mixin ClubListViewMixin on ConsumerState<ClubListView> {
     if (outcome == JoinApplicationOutcome.applied) {
       ClubAppliedRoute(clubId: clubId).go(context);
     } else if (outcome == JoinApplicationOutcome.joined) {
-      viewModel.showJoined(onOpenClub: () => openClub(clubId));
+      viewModel.showJoined(clubId, onOpenClub: () => openClub(clubId));
     }
   }
 }

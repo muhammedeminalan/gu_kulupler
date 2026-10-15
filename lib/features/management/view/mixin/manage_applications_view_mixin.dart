@@ -181,7 +181,10 @@ mixin ManageApplicationsViewMixin on ConsumerState<ManageApplicationsView> {
     if (!mounted) return;
     final state = _state;
     final user = state.users[userId];
-    final avatar = ref.userAvatarImage(user);
+    final avatar = ref.userAvatarImage(
+      user,
+      displaySize: ApplicationDetailSheet.avatarSize,
+    );
     final canUndo =
         application != null &&
         state.canUndo(

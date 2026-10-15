@@ -114,7 +114,8 @@ final class FirebaseUserSearch {
       page = PageRequest(limit: Limits.adminSearchMax, after: next);
     }
     if (uids.isEmpty) return const FirebaseSuccess([]);
-    return _users.getUsers(uids.toList());
+    // Arama sonucu `status` (askı) taşır: bellek önbelleği atlanır.
+    return _users.getUsers(uids.toList(), forceRefresh: true);
   }
 
   /// `AdminRepository.listManagerUserIds`: herhangi bir kulüpte etkin

@@ -46,14 +46,12 @@ void main() {
       addTearDown(() => debugPrint = original);
     });
 
-    test('recordError yalnızca konsola yazar; fırlatmaz', () async {
+    test('recordError konsola yazmaz ve fırlatmaz (dökümü AppErrorHandler '
+        'yazar — T-44 · D2-12)', () async {
       await service.recordError(StateError('x'), StackTrace.empty);
       await service.recordError('y', null, fatal: true);
       await service.recordError('z', null, reason: 'neden');
-      expect(console, hasLength(3));
-      expect(console[0], startsWith('[E] Hata'));
-      expect(console[1], startsWith('[E] Yakalanmamış hata'));
-      expect(console[2], startsWith('[E] neden'));
+      expect(console, isEmpty);
     });
 
     test('log / setUserId / setCollectionEnabled etkisizdir', () async {

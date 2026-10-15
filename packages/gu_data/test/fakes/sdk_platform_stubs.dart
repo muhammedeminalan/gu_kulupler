@@ -113,6 +113,9 @@ final class StubCrashlytics implements FirebaseCrashlytics {
   /// `setCrashlyticsCollectionEnabled` değerleri.
   final List<bool> collectionFlags = [];
 
+  /// `recordError` çağrılarının `printDetails` değerleri (T-44 · D2-12).
+  final List<bool?> printDetailsFlags = [];
+
   Future<void> _call(void Function() record) {
     final failure = error;
     if (failure != null) return Future.error(failure);
@@ -128,14 +131,15 @@ final class StubCrashlytics implements FirebaseCrashlytics {
     Iterable<Object> information = const [],
     bool? printDetails,
     bool fatal = false,
-  }) => _call(
-    () => crashes.add((
+  }) => _call(() {
+    printDetailsFlags.add(printDetails);
+    crashes.add((
       error: exception as Object?,
       stack: stack,
       reason: reason as Object?,
       fatal: fatal,
-    )),
-  );
+    ));
+  });
 
   @override
   Future<void> log(String message) => _call(() => logs.add(message));

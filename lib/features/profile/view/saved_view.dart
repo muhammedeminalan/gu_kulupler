@@ -7,6 +7,7 @@ import 'package:gu_kulupler/features/profile/provider/saved_view_model.dart';
 import 'package:gu_kulupler/features/profile/view/mixin/saved_view_mixin.dart';
 import 'package:gu_kulupler/features/profile/view/widget/saved_post_card.dart';
 import 'package:gu_kulupler/product/format/relative_time_formatter.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// "Kaydedilenler" ekranı — `SavedRoute` (`/profile/saved`); prototip
@@ -98,6 +99,9 @@ class _SavedViewState extends ConsumerState<SavedView> with SavedViewMixin {
           controller: scrollController,
           slivers: [
             ...switch (status) {
+              _ when OfflineListFallback.applies(ref, status) => [
+                OfflineListFallback.sliver(onReload: retry),
+              ],
               GuListStatus.error => [
                 SliverToBoxAdapter(
                   child: GuErrorState(

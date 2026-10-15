@@ -79,5 +79,34 @@ void main() {
         ),
       );
     });
+
+    test('T-44 · setNetworkEnabled çağrıları kaydedilir; failNext hatası '
+        'döner', () async {
+      final fake = FakeFirestoreService();
+      expect((await fake.setNetworkEnabled(enabled: false)).isSuccess, isTrue);
+      expect((await fake.setNetworkEnabled(enabled: true)).isSuccess, isTrue);
+      fake.failNext(FirestoreError.unavailable);
+      expect(
+        (await fake.setNetworkEnabled(enabled: false)).errorOrNull,
+        FirestoreError.unavailable,
+      );
+      expect(fake.networkEnabledCalls, [false, true]);
+      expect(fake.callsTo('setNetworkEnabled'), hasLength(3));
+    });
+
+    test(
+      'T-44 · getDocFromCache bellekteki belgeyi okur (ayrı kayıt)',
+      () async {
+        final fake = FakeFirestoreService();
+        final ref = fake.doc(FirestoreCollections.users, 'u1');
+        await fake.db.doc(ref.path).set({'name': 'A'});
+
+        final result = await fake.getDocFromCache(ref);
+
+        expect(result.dataOrNull?.id, 'u1');
+        expect(fake.callsTo('getDocFromCache').single.args, ['users/u1']);
+        expect(fake.callsTo('getDoc'), isEmpty);
+      },
+    );
   });
 }

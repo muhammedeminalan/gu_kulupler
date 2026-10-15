@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
+import 'package:gu_kulupler/core/constants/app_durations.dart';
 import 'package:gu_kulupler/core/session/auth_status.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
@@ -32,6 +33,7 @@ import '../../fakes/fake_account_deletion_repository.dart';
 import '../../fakes/fake_app_preferences_store.dart';
 import '../../fakes/fake_auth_repository.dart';
 import '../../fakes/fake_block_repository.dart';
+import '../../fakes/fake_crash_service.dart';
 import '../../fakes/fake_event_repository.dart';
 import '../../fakes/fake_feedback_service.dart';
 import '../../fakes/fake_local_reminder_service.dart';
@@ -1581,6 +1583,45 @@ void main() {
       expect(reminders.rescheduleCalls, 1);
     });
 
+    test('T-44 · D3-02 · D2-06: yalnızca going kayıtları okunur; ikinci '
+        'kurulumda bitmiş ya da iptal edilmiş etkinlik yeniden okunmaz, '
+        'gelecektekiler okunur; planlar aynı', () async {
+      join(eventIn('e_future', const Duration(days: 2)));
+      join(eventIn('e_past', const Duration(days: -1)));
+      join(
+        eventIn(
+          'e_cancel',
+          const Duration(days: 1),
+        ).copyWith(status: EventStatus.cancelled),
+      );
+
+      final container = await resolvedActive();
+      await pumpEventQueue();
+      expect(rsvps.callsTo('listMine').single.args, [
+        'u1',
+        {RsvpStatus.going},
+        null,
+      ]);
+      expect(
+        events.callsTo('getEvents').single.args.single,
+        unorderedEquals(['e_future', 'e_past', 'e_cancel']),
+      );
+      final firstPlan = reminders.callsTo('rescheduleAll').single.args;
+      final firstEvents = Map.of(reminders.lastEvents);
+      events.calls.clear();
+
+      await container
+          .read(appPreferencesViewModelProvider.notifier)
+          .setLocale(const Locale('en'));
+      await pumpEventQueue();
+
+      expect(reminders.rescheduleCalls, 2);
+      expect(events.callsTo('getEvents').single.args.single, ['e_future']);
+      expect(reminders.callsTo('rescheduleAll').last.args, firstPlan);
+      expect(reminders.lastEvents.keys, ['e_future']);
+      expect(firstEvents.keys.toSet(), {'e_future', 'e_past', 'e_cancel'});
+    });
+
     test('dil değişince yeni dille yeniden kurulur; çıkışta planlar iptal '
         'edilir', () async {
       final container = await resolvedActive();
@@ -1667,6 +1708,152 @@ void main() {
       expect(stateOf(container).status, AuthStatus.active);
       expect(await notifierOf(container).takeLaunchReminder(), isNull);
       expect(reminders.callsTo('initialLaunchPayload'), isEmpty);
+    });
+  });
+
+  group('T-44 · SessionViewModel · açılış bütçesi ve önbellek (D2-02)', () {
+    testWidgets("claim okuması hiç dönmezse oturum 3 + 3 sn sonra claim'siz "
+        'çözülür ve belge okumasına geçer', (tester) async {
+      final profile = users.putActive('u1');
+      auth
+        ..currentUser = _user()
+        ..superAdminGate = Completer<void>();
+      final container = createContainer()..read(sessionViewModelProvider);
+      await tester.pump();
+      expect(stateOf(container).isResolving, isTrue);
+
+      await tester.pump(AppDurations.sessionClaimTimeout);
+      expect(users.callsTo('getUser'), isEmpty);
+      await tester.pump(AppDurations.sessionClaimTimeout);
+      await tester.pump();
+
+      expect(
+        auth.callsTo('isSuperAdmin').map((call) => call.args.single),
+        [true, false],
+      );
+      expect(users.callsTo('getUser'), hasLength(1));
+      expect(stateOf(container).status, AuthStatus.active);
+      expect(stateOf(container).user, profile);
+      expect(stateOf(container).isSuperAdmin, isFalse);
+      // testWidgets değişmezi: grup setUp'ının susturucusu gövde sonunda
+      // bağlamanın yazıcısına döner (özgün değeri tearDown geri kurar).
+      debugPrint = debugPrintSynchronously;
+    });
+
+    test(
+      'belge okuması zaman aşımına uğrarsa önbellekteki belgeyle active',
+      () async {
+        final profile = users.putActive('u1');
+        users
+          ..cachedUsers['u1'] = profile
+          ..failNext(FirestoreError.timeout);
+        auth.currentUser = _user();
+        final container = await resolved();
+
+        expect(
+          stateOf(container),
+          SessionState(status: AuthStatus.active, uid: 'u1', user: profile),
+        );
+        expect(users.callsTo('getUserFromCache').single.args, ['u1']);
+      },
+    );
+
+    test('sunucu erişilemez (unavailable) ve önbellek boşsa isError '
+        '(SYS-02)', () async {
+      users
+        ..putActive('u1')
+        ..failNext(FirestoreError.unavailable);
+      auth.currentUser = _user();
+      final container = await resolved();
+
+      expect(
+        stateOf(container),
+        const SessionState(uid: 'u1', isError: true),
+      );
+      expect(users.callsTo('getUserFromCache'), hasLength(1));
+    });
+
+    test('başka hatalarda (yetki) önbelleğe düşülmez', () async {
+      users
+        ..putActive('u1')
+        ..cachedUsers['u1'] = users.users['u1']!
+        ..failNext(FirestoreError.permissionDenied);
+      auth.currentUser = _user();
+      final container = await resolved();
+
+      expect(stateOf(container).isError, isTrue);
+      expect(users.callsTo('getUserFromCache'), isEmpty);
+    });
+
+    testWidgets('SYS-02 "Yeniden dene" ile yeniden çözüm splash sınırının '
+        '(Limits.splashTimeout) altında biter', (tester) async {
+      users.putActive('u1');
+      auth
+        ..currentUser = _user()
+        ..superAdminGate = Completer<void>();
+      final container = createContainer();
+
+      /// Sunucuya ulaşamayan cihaz: claim okumaları askıda, belge okuması
+      /// `Limits.firestoreTimeout` sonra zaman aşımı, önbellek boş. Çözümün
+      /// bittiği ana kadar geçen (sahte) süreyi döndürür.
+      Future<Duration> resolveOnce(void Function() start) async {
+        final gate = Completer<void>();
+        final before = users.callsTo('getUser').length;
+        users
+          ..getUserGate = gate
+          ..failNext(FirestoreError.timeout);
+        start();
+        await tester.pump();
+        await tester.pump(AppDurations.sessionClaimTimeout);
+        await tester.pump(AppDurations.sessionClaimTimeout);
+        await tester.pump();
+        expect(users.callsTo('getUser'), hasLength(before + 1));
+        await tester.pump(Limits.firestoreTimeout);
+        gate.complete();
+        await tester.pump();
+        expect(stateOf(container).isResolving, isFalse);
+        return AppDurations.sessionClaimTimeout * 2 + Limits.firestoreTimeout;
+      }
+
+      final first = await resolveOnce(
+        () => container.read(sessionViewModelProvider),
+      );
+      expect(stateOf(container).isError, isTrue);
+      expect(first, lessThan(Limits.splashTimeout));
+
+      final retry = await resolveOnce(
+        () => unawaited(notifierOf(container).resolve()),
+      );
+      expect(stateOf(container).isError, isTrue);
+      expect(retry, lessThan(Limits.splashTimeout));
+      debugPrint = debugPrintSynchronously;
+    });
+  });
+
+  group('T-44 · SessionViewModel · Crashlytics kullanıcı kimliği (D2-11)', () {
+    test('oturum açılınca uid bağlanır, kapanınca temizlenir; aynı uid '
+        'yeniden yazılmaz', () async {
+      final crash = GetIt.I<CrashService>() as FakeCrashService;
+      final container = await resolvedActive();
+      await notifierOf(container).refreshUser();
+      await notifierOf(container).resolve();
+
+      auth
+        ..currentUser = null
+        ..watchAuthStateController.add(null);
+      await pumpEventQueue();
+
+      expect(stateOf(container).status, AuthStatus.signedOut);
+      expect(
+        crash.callsTo('setUserId').map((call) => call.args.single),
+        ['u1', null],
+      );
+    });
+
+    test('oturumsuz açılışta kimlik yazılmaz', () async {
+      final crash = GetIt.I<CrashService>() as FakeCrashService;
+      await resolved();
+      expect(crash.callsTo('setUserId'), isEmpty);
     });
   });
 }

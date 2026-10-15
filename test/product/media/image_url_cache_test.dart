@@ -172,4 +172,121 @@ void main() {
     expect(cache.request(_other), isNull);
     expect(notified, 0);
   });
+
+  group('T-44 · kalıcı tohum (D2-05) ve yeniden bağlanma (A4-04)', () {
+    ImageUrlCache seeded(
+      Map<String, ImageUrlEntry> initial, {
+      List<Map<String, ImageUrlEntry>>? stored,
+      int? maxEntries,
+      ImageUrlFetch? fetch,
+    }) {
+      final cache = ImageUrlCache(
+        fetch:
+            fetch ??
+            (path) async {
+              fetched.add(path);
+              return answers[path] ??
+                  const FirebaseFailure(StorageError.notFound);
+            },
+        clock: clock,
+        maxEntries: maxEntries ?? MediaConstants.imageUrlCacheMaxEntries,
+        initial: initial,
+        onStored: stored?.add,
+      )..addListener(() => notified++);
+      addTearDown(cache.dispose);
+      return cache;
+    }
+
+    test("tohumlu yol ilk peek'te adres döner; taze tohum yeniden "
+        'istenmez', () {
+      final cache = seeded({
+        _path: (url: 'https://storage.test/a?token=0', at: clock.nowUtc()),
+      });
+
+      expect(cache.peek(_path), 'https://storage.test/a?token=0');
+      expect(cache.request(_path), isNull);
+      expect(fetched, isEmpty);
+    });
+
+    test('süresi dolmuş tohum arka planda yenilenir; çevrimdışında (hata) '
+        'eski adres kalır', () async {
+      final old = clock.nowUtc().subtract(
+        MediaConstants.imageUrlTtl + const Duration(minutes: 1),
+      );
+      answers.remove(_path);
+      final cache = seeded({
+        _path: (url: 'https://storage.test/a?token=0', at: old),
+      });
+
+      expect(await cache.request(_path), isNull);
+      expect(fetched, [_path]);
+      expect(cache.peek(_path), 'https://storage.test/a?token=0');
+      expect(notified, 0);
+    });
+
+    testWidgets('yeni adresler birleştirilip tek onStored çağrısıyla '
+        'verilir; kapanışta bekleyen yazım hemen verilir', (tester) async {
+      final stored = <Map<String, ImageUrlEntry>>[];
+      final cache = ImageUrlCache(
+        fetch: (path) async =>
+            answers[path] ?? const FirebaseFailure(StorageError.notFound),
+        clock: clock,
+        onStored: stored.add,
+      );
+
+      unawaited(cache.request(_path));
+      unawaited(cache.request(_other));
+      await tester.pump();
+      expect(stored, isEmpty);
+
+      await tester.pump(MediaConstants.imageUrlPersistDebounce);
+      expect(stored, hasLength(1));
+      expect(stored.single.keys, unorderedEquals([_path, _other]));
+      expect(stored.single[_path]!.url, 'https://storage.test/a?token=1');
+
+      // Adres aynı kalsa da alındığı an yenilenir: yine saklanır.
+      clock.advance(MediaConstants.imageUrlTtl);
+      unawaited(cache.request(_path));
+      await tester.pump();
+      cache.dispose();
+      expect(stored, hasLength(2));
+      expect(stored.last[_path]!.at, clock.nowUtc());
+    });
+
+    test('tohum üst sınırla kesilir: en eski alınan atılır', () {
+      final now = clock.nowUtc();
+      final cache = seeded({
+        _path: (url: 'https://storage.test/a', at: now),
+        _other: (
+          url: 'https://storage.test/b',
+          at: now.subtract(const Duration(minutes: 5)),
+        ),
+      }, maxEntries: 1);
+
+      expect(cache.peek(_path), 'https://storage.test/a');
+      expect(cache.peek(_other), isNull);
+    });
+
+    test('retryFailed: başarısız yolun beklemesi kalkar ve yeniden istenir; '
+        'gelen adres dinleyiciyi uyarır; başarısız yol yoksa hiçbir şey '
+        'yapmaz', () async {
+      final cache = cacheWith();
+      answers.remove(_path);
+      expect(await cache.request(_path), isNull);
+      // Bekleme süresi içinde yeniden istenmez.
+      expect(cache.request(_path), isNull);
+      expect(fetched, [_path]);
+
+      answers[_path] = const FirebaseSuccess('https://storage.test/a?token=2');
+      cache.retryFailed();
+      await pumpEventQueue();
+      expect(fetched, [_path, _path]);
+      expect(cache.peek(_path), 'https://storage.test/a?token=2');
+      expect(notified, 1);
+
+      // Başarısız yol kalmadı: hiçbir şey istenmez.
+      cache.retryFailed();
+      expect(fetched, [_path, _path]);
+    });
+  });
 }

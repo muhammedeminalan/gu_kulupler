@@ -340,7 +340,10 @@ class _ManageViewState extends ConsumerState<ManageView> with ManageViewMixin {
       text: texts.text(activity, state.lookups),
       timeLabel: relative.format(activity.createdAt ?? now),
       actor: actor,
-      actorImage: ref.userAvatarImage(actor),
+      actorImage: ref.userAvatarImage(
+        actor,
+        displaySize: GuSizes.activityRowAvatar,
+      ),
       actionKey: GuKey.action('MGT-01.row.${activity.id}'),
       onTap: () => openActivity(activity),
     );

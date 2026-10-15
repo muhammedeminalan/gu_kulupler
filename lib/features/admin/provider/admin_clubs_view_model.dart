@@ -236,7 +236,9 @@ final class AdminClubsViewModel extends _$AdminClubsViewModel
 
   Future<void> _load() async {
     final epoch = ++_epoch;
-    final clubs = await _withClaims(clubRepository.fetchActiveClubs);
+    final clubs = await _withClaims(
+      () => clubRepository.fetchActiveClubs(forceRefresh: true),
+    );
     if (!_live(epoch)) return;
     switch (clubs) {
       case FirebaseSuccess(:final data):
@@ -275,7 +277,7 @@ final class AdminClubsViewModel extends _$AdminClubsViewModel
   Future<Map<String, UserModel>> _readPresidents(List<ClubModel> clubs) async {
     final ids = {for (final club in clubs) club.presidentId}.toList();
     if (ids.isEmpty) return const {};
-    switch (await userRepository.getUsers(ids)) {
+    switch (await userRepository.getUsers(ids, forceRefresh: true)) {
       case FirebaseSuccess(:final data):
         return {for (final user in data) user.uid: user};
       case FirebaseFailure(:final error, :final message):

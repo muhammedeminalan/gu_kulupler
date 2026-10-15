@@ -125,6 +125,35 @@ void main() {
       expect(GetIt.I<QrScannerService>(), isA<MobileQrScannerService>());
     });
 
+    test("T-44 · D3-01: okuma önbelleği tek örnek kaydedilir; oturum uid'si "
+        'değişince ve çıkışta tümü temizlenir', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      final caches = GetIt.I<RepositoryReadCaches>();
+      void fill() => caches.users.put(
+        'u1',
+        const UserModel(name: 'Ayşe', nameLower: 'ayşe', avatarSeed: 's'),
+        since: caches.users.stamp,
+      );
+      await pumpEventQueue();
+
+      fill();
+      auth.authStateController.add(
+        const AuthUserInfo(uid: 'u1', email: 'a@b.c', emailVerified: true),
+      );
+      await pumpEventQueue();
+      expect(caches.users.get('u1'), isNull);
+
+      fill();
+      auth.authStateController.add(null);
+      await pumpEventQueue();
+      expect(caches.users.get('u1'), isNull);
+    });
+
     test('PermissionService, ImagePickerService (T-14) ve QrScannerService '
         '(T-35) verilen örneklerle kaydedilir; mixin onları görür', () async {
       final permissions = FakePermissionService();
@@ -952,9 +981,13 @@ void main() {
       () async {
         final source = readText('lib/core/di/project_dependency.dart');
         expect(source, contains('FirebaseAuthService(AppEnvironment.auth)'));
+        // T-44 · D2-03: beklenmeyen hata dinleyicisiyle kurulur.
         expect(
-          source,
-          contains('FirebaseFirestoreService(AppEnvironment.firestore)'),
+          source.replaceAll(RegExp(r'\s+'), ' '),
+          contains(
+            'FirebaseFirestoreService( AppEnvironment.firestore, '
+            'onUnexpected: reportUnexpected, )',
+          ),
         );
         expect(
           source,
@@ -1006,5 +1039,99 @@ void main() {
       );
       expect(GetIt.I<AuthService>(), same(auth));
     });
+
+    test('T-44 · reset ayrıştırma kancasını da temizler', () async {
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(),
+      );
+      expect(RepositoryHelpers.onParseError, isNotNull);
+      await ProjectDependency.reset();
+      expect(RepositoryHelpers.onParseError, isNull);
+    });
+  });
+
+  group('T-44 · ProjectDependency · beklenmeyen hata raporu (D2-03)', () {
+    late FakeCrashService crash;
+
+    setUp(() async {
+      crash = FakeCrashService();
+      await ProjectDependency.setup(
+        navigatorKey: navigatorKey,
+        toastController: toastController,
+        isEmulator: true,
+        overrides: platformFakes(crashService: crash),
+      );
+      addTearDown(() => RepositoryHelpers.onParseError = null);
+    });
+
+    test("ayrıştırma hatası CrashService'e nonFatal, maskelenmiş yolla "
+        'gider', () async {
+      await firestore.db.doc('clubs/c01').set({'name': 'x'});
+      final doc = (await firestore.getDoc(
+        firestore.doc(FirestoreCollections.clubs, 'c01'),
+      )).dataOrNull!;
+      final boom = StateError('bozuk');
+
+      RepositoryHelpers.parse<int>(doc, (_) => throw boom);
+      await pumpEventQueue();
+
+      expect(crash.recorded.single.$1, same(boom));
+      expect(crash.fatals, [false]);
+      expect(crash.reasons, ['firestore:parse:clubs/*']);
+    });
+
+    test(
+      'bildirim dağıtımında başarısız parça ve beklenmeyen hata '
+      'raporlanır; geçici ağ hatası ve yalnızca eksik yazım raporlanmaz',
+      () async {
+        final original = debugPrint;
+        debugPrint = (message, {wrapWidth}) {};
+        addTearDown(() => debugPrint = original);
+        const type = NotificationType.applicationReceived;
+
+        ProjectDependency.reportDispatchIssue(
+          type,
+          const FirebaseSuccess(
+            DispatchReport(requested: 3, written: 1, failedChunks: 1),
+          ),
+          crashService: crash,
+        );
+        ProjectDependency.reportDispatchIssue(
+          type,
+          const FirebaseFailure(FirestoreError.permissionDenied),
+          crashService: crash,
+        );
+        for (final result in <FirestoreResult<DispatchReport>>[
+          const FirebaseFailure(FirestoreError.unavailable),
+          const FirebaseFailure(FirestoreError.timeout),
+          const FirebaseFailure(FirestoreError.offline),
+          const FirebaseSuccess(
+            DispatchReport(requested: 3, written: 2, failedChunks: 0),
+          ),
+        ]) {
+          ProjectDependency.reportDispatchIssue(
+            type,
+            result,
+            crashService: crash,
+          );
+        }
+        await pumpEventQueue();
+
+        expect(crash.fatals, [false, false]);
+        expect(crash.reasons, [
+          'dispatch:${type.json} 1/3 failed=1',
+          'dispatch:${type.json} permissionDenied',
+        ]);
+        expect(
+          crash.recorded.map((r) => r.$1),
+          everyElement(isA<StateError>()),
+        );
+        // Alıcı kimliği yazılmaz.
+        expect(crash.reasons.join(), isNot(contains('u_')));
+      },
+    );
   });
 }

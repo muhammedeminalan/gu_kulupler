@@ -57,14 +57,31 @@ final class FcmTokenModel extends Equatable {
   /// Firestore'a yazılacak map.
   Map<String, Object?> toJson() => _$FcmTokenModelToJson(this);
 
+  /// Aynı jeton, platform ve dilin yeniden yazılmadığı süre (T-44 · D2-06):
+  /// her açılışta değil, en çok bu aralıkla bir kez `updatedAt` tazelenir.
+  static const Duration refreshInterval = Duration(days: 7);
+
   /// [current] listesine [token]'ın eklenmiş hâli (T-42, CD-165): aynı
   /// jetonlu eski eleman çıkarılır, [token] sona eklenir; liste
   /// `Limits.fcmTokensMax`'ı aşarsa en eski `updatedAt`'li elemanlar atılır
   /// ([token] hiçbir zaman atılmaz). [current] değişmez.
+  ///
+  /// [current] aynı jetonu aynı platform ve dille [refreshInterval]'dan daha
+  /// yeni bir `updatedAt` ile zaten taşıyorsa [current] **aynen** döner:
+  /// liste değişmediği için çağıran yazımı atlar (T-44 · D2-06 — açılış
+  /// başına yazım haftada bire iner).
   static List<FcmTokenModel> upserted(
     List<FcmTokenModel> current,
     FcmTokenModel token,
   ) {
+    for (final item in current) {
+      if (item.token == token.token &&
+          item.platform == token.platform &&
+          item.locale == token.locale &&
+          token.updatedAt.difference(item.updatedAt) < refreshInterval) {
+        return current;
+      }
+    }
     final others = [
       for (final item in current)
         if (item.token != token.token) item,

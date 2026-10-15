@@ -123,7 +123,8 @@ void main() {
       sdk.error = Exception('apns-token-not-set');
       expect(await service.token(), isNull);
       expect(await service.initialMessageData(), isNull);
-      await service.invalidateToken();
+      // T-44 · A4-06: deleteToken başarısız → false (temizlik bekler).
+      expect(await service.invalidateToken(), isFalse);
       expect(sdk.invalidations, 1);
       // Jeton istenince otomatik başlatma açılır (iOS APNs kaydı); geçersiz
       // kılınca jeton silinir, sonra kapanır (yeniden üretilmez).
@@ -134,6 +135,12 @@ void main() {
         'deleteToken',
         'autoInit:false',
       ]);
+    });
+
+    test('T-44 · A4-06 · invalidateToken: jeton silinince true; yalnızca '
+        'otomatik başlatma hatası sonucu değiştirmez', () async {
+      expect(await service.invalidateToken(), isTrue);
+      expect(sdk.invalidations, 1);
     });
 
     test('configureForeground: iOS bandı, ses ve rozet kapalı; dokunma ve '

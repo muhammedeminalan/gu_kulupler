@@ -278,8 +278,10 @@ final class _Clubs extends Fake implements ClubRepository {
   final _Script _s;
 
   @override
-  Future<FirestoreResult<ClubModel>> getClub(String clubId) async =>
-      _s.answer('getClub', [clubId], const FirebaseSuccess(_club));
+  Future<FirestoreResult<ClubModel>> getClub(
+    String clubId, {
+    bool forceRefresh = false,
+  }) async => _s.answer('getClub', [clubId], const FirebaseSuccess(_club));
 }
 
 final class _Recipients extends Fake implements RecipientResolver {

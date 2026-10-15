@@ -39,6 +39,8 @@ const QUERIES = Object.freeze({
   listForManagement: { collection: 'posts', equals: ['clubId', 'isDeleted'], order: ['createdAt', 'desc'] },
   watchComments: { collection: 'comments', equals: ['postId', 'clubId', 'isDeleted', 'isHidden'], order: ['createdAt', 'asc'] },
   listSaved: { collection: 'savedPosts', equals: ['userId', 'isDeleted'], order: ['savedAt', 'desc'] },
+  // T-44 (D3-03): FED-01 sayfasının kayıt durumu — `postId in [sayfa ≤ 30]`.
+  savedAmong: { collection: 'savedPosts', equals: ['userId', 'isDeleted'], inField: 'postId' },
   // T-22 (sözleşme docs/plans/T-22.md §6.8) — `startsAt >= from` aralığı sıralama alanıyla aynıdır.
   listPublicUpcoming: { collection: 'events', equals: ['visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'asc'] },
   listMembersUpcoming: { collection: 'events', equals: ['clubId', 'visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'asc'] },
@@ -46,6 +48,9 @@ const QUERIES = Object.freeze({
   listClubEventsMember: { collection: 'events', equals: ['clubId', 'isDeleted'], inField: 'status', order: ['startsAt', 'desc'] },
   listClubEventsPublic: { collection: 'events', equals: ['clubId', 'visibility', 'isDeleted'], inField: 'status', order: ['startsAt', 'desc'] },
   listMyRsvps: { collection: 'rsvps', equals: ['userId', 'isDeleted'], order: ['createdAt', 'desc'] },
+  // T-44 (D3-02): `listMine` süzgeçli kip — kulübün kayıtları (CLB-03) · durum kümesi (PRF-01, hatırlatıcı, SHT-12); sırasız.
+  listMyRsvpsByClub: { collection: 'rsvps', equals: ['userId', 'isDeleted', 'clubId'] },
+  listMyRsvpsByStatus: { collection: 'rsvps', equals: ['userId', 'isDeleted'], inField: 'status' },
   // `waitlistPosition` (`waitlistAt < t` aralığı) ve T-30 `watchParticipants` (`orderBy status, waitlistAt`) aynı indeksi kullanır.
   waitlistPosition: { collection: 'rsvps', equals: ['eventId', 'clubId', 'status'], order: ['waitlistAt', 'asc'] },
   // T-25 (sözleşme docs/plans/T-25.md §6.g)
@@ -356,6 +361,14 @@ describe('comments, votes ve savedPosts · sorgu biçimleri (rules-spec §6 FED-
       await assertFails(getDocs(query(collection(dbOf(role), 'savedPosts'), where('postId', '==', 'p01'), where('isDeleted', '==', false))));
     }
   });
+
+  test('savedAmong (T-44 · D3-03, FED-01): userId == uid, postId in [sayfa], isDeleted == false — kaldırılmış kayıt dönmez; başkasının uid\'siyle reddedilir', async () => {
+    const among = (role, uid) => query(collection(dbOf(role), 'savedPosts'), where('userId', '==', uid), where('postId', 'in', ['p01', 'p02']), where('isDeleted', '==', false));
+    await seedFixture('base', undefined, { patch: { 'savedPosts/u_member_p01': { isDeleted: true, deletedBy: 'u_member' } } });
+    expect(ids(await assertSucceeds(getDocs(among('member', 'u_member'))))).toEqual([]);
+    expect(ids(await assertSucceeds(getDocs(among('former', 'u_former'))))).toEqual(['u_former_p01']);
+    await assertFails(getDocs(among('member', 'u_former')));
+  });
 });
 
 describe('events · sorgu biçimleri (rules-spec §6 EVT-01, MGT-04; PLAN §10.4 EventRepository)', () => {
@@ -442,6 +455,19 @@ describe('rsvps · sorgu biçimleri (rules-spec §6 EVT-04, MGT-06; PLAN §10.4 
     // Etkinliğe göre "kim katıldı" sorgusu katılımcıya kapalıdır (bilet kodu ve kimlik sızmaz).
     await assertFails(getDocs(query(rsvps('member'), where('eventId', '==', 'e_public'))));
     await assertFails(getDocs(query(rsvps('member'), where('eventId', '==', 'e_public'), where('clubId', '==', CLUB))));
+  });
+
+  test('listMine süzgeçli kip (T-44 · D3-02): sahibi + clubId ya da status in [...] süzgeçleriyle geçer; başkasının uid\'siyle reddedilir', async () => {
+    await seedFixture('base', undefined, { patch: { 'rsvps/e_public_u_member': { status: 'cancelled' } } });
+    const mine = (role, uid, ...extra) => query(rsvps(role), where('userId', '==', uid), where('isDeleted', '==', false), ...extra);
+    const byClub = (club) => where('clubId', '==', club);
+    const byStatus = where('status', 'in', ['going', 'attended']);
+    expect(ids(await assertSucceeds(getDocs(mine('member', 'u_member', byClub(CLUB)))))).toEqual(['e_live_u_member', 'e_public_u_member']);
+    expect(ids(await assertSucceeds(getDocs(mine('member', 'u_member', byClub(OTHER_CLUB)))))).toEqual([]);
+    expect(ids(await assertSucceeds(getDocs(mine('member', 'u_member', byStatus))))).toEqual(['e_live_u_member']);
+    expect(ids(await assertSucceeds(getDocs(mine('board', 'u_board', where('status', 'in', ['attended'])))))).toEqual(['e_live_u_board']);
+    await assertFails(getDocs(mine('member', 'u_susp', byClub(CLUB))));
+    await assertFails(getDocs(mine('member', 'u_board', byStatus)));
   });
 
   test('katılımcılar (MGT-06): eventId + clubId, status / waitlistAt sıralı — yalnızca yönetim, danışman ve süper admin', async () => {

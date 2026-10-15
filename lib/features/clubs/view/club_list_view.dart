@@ -17,6 +17,7 @@ import 'package:gu_kulupler/product/notification/unread_notification_clubs.dart'
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/club/my_club_chip.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// "Kulüpler" ekranı — Kulüpler sekmesinin kökü, `ClubsRoute` (`/clubs`);
@@ -106,7 +107,10 @@ class _ClubListViewState extends ConsumerState<ClubListView>
         ],
         grid: grid,
         coverImage: ref.clubCoverImage(club),
-        logoImage: ref.clubLogoImage(club),
+        logoImage: ref.clubLogoImage(
+          club,
+          displaySize: (grid ? GuEmblemSize.xs : GuEmblemSize.sm).dimension,
+        ),
         actionKey: GuKey.action('CLB-01.card.${club.id}'),
         joinKey: GuKey.action('CLB-01.join.${club.id}'),
         statusKey: GuKey.action('CLB-01.status.${club.id}'),
@@ -251,6 +255,9 @@ class _ClubListViewState extends ConsumerState<ClubListView>
               ),
             ),
             ...switch (status) {
+              _ when OfflineListFallback.applies(ref, status) => [
+                OfflineListFallback.sliver(onReload: retry),
+              ],
               GuListStatus.error => [
                 SliverToBoxAdapter(
                   child: GuErrorState(

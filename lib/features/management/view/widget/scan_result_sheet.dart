@@ -233,7 +233,11 @@ class _ScanResultSheetState extends ConsumerState<ScanResultSheet> {
                 size: GuSizes.avatarSizes[5],
                 image: live == null
                     ? null
-                    : widget.avatarImage ?? ref.userAvatarImage(live),
+                    : widget.avatarImage ??
+                          ref.userAvatarImage(
+                            live,
+                            displaySize: GuSizes.avatarSizes[5],
+                          ),
               ),
               Text(
                 name,

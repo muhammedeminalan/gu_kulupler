@@ -163,7 +163,7 @@ final class BlockedUsersViewModel extends _$BlockedUsersViewModel
     if (blocks.isEmpty) return const [];
     switch (await userRepository.getUsers([
       for (final block in blocks) block.blockedId,
-    ])) {
+    ], forceRefresh: state.isRefreshing)) {
       case FirebaseSuccess(:final data):
         final users = {for (final user in data) user.uid: user};
         return [for (final block in blocks) (block, users[block.blockedId])];

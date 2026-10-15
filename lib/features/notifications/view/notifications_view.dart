@@ -12,6 +12,7 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/format/relative_time_formatter.dart';
 import 'package:gu_kulupler/product/widget/notification/notification_row.dart';
 import 'package:gu_kulupler/product/widget/notification/notification_texts.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// "Bildirimler" sekme kökü — `NotificationsRoute` (`/notifications`);
@@ -184,6 +185,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView>
                 controller: scrollController,
                 slivers: [
                   ...switch (status) {
+                    _ when OfflineListFallback.applies(ref, status) => [
+                      OfflineListFallback.sliver(onReload: refresh),
+                    ],
                     GuListStatus.error => [
                       SliverToBoxAdapter(
                         child: GuErrorState(

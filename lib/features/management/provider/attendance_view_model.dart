@@ -481,7 +481,7 @@ final class AttendanceViewModel extends _$AttendanceViewModel
   Future<void> _load() async {
     _cancel();
     final (club, event) = await (
-      clubRepository.getClub(clubId),
+      clubRepository.getClub(clubId, forceRefresh: true),
       eventRepository.getEvent(eventId),
     ).wait;
     if (!ref.mounted) return;
@@ -553,7 +553,7 @@ final class AttendanceViewModel extends _$AttendanceViewModel
         if (!state.users.containsKey(id)) id,
     ];
     if (missing.isEmpty) return;
-    final result = await userRepository.getUsers(missing);
+    final result = await userRepository.getUsers(missing, forceRefresh: true);
     if (!ref.mounted) return;
     switch (result) {
       case FirebaseSuccess(:final data):

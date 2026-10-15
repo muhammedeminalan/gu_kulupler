@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -144,18 +145,32 @@ abstract final class ProjectDependency {
         (isEmulator
             ? const EmulatorRemoteConfigService()
             : FirebaseRemoteConfigService(FirebaseRemoteConfig.instance));
+    // Beklenmeyen veri / altyapı hataları (ayrıştırma, eksik indeks, kota,
+    // program hatası) Crashlytics'e `nonFatal` gider (T-44 · D2-03); beklenen
+    // hatalar (yetki, yok, çevrimdışı, zaman aşımı) yalnızca günlüktedir.
+    void reportUnexpected(Object error, StackTrace stack, String reason) =>
+        unawaited(
+          crashService.recordError(error, stack, reason: reason),
+        );
     // Firebase servisleri: örnekler yalnızca AppEnvironment üzerinden.
     final authService =
         overrides.authService ?? FirebaseAuthService(AppEnvironment.auth);
     final firestoreService =
         overrides.firestoreService ??
-        FirebaseFirestoreService(AppEnvironment.firestore);
+        FirebaseFirestoreService(
+          AppEnvironment.firestore,
+          onUnexpected: reportUnexpected,
+        );
     final storageService =
         overrides.storageService ??
         FirebaseStorageService(AppEnvironment.storage);
     // Repository'ler (T-12): servislerin üstünde alan kuralları. Giriş kilidi
     // ve yeniden gönderme beklemesi bu tek örnekte (bellekte) yaşar.
     final appClock = overrides.appClock ?? const SystemAppClock();
+    // T-44 · D3-01 · nadir değişen okumaların bellek içi önbelleği (kulüp
+    // listesi / belgesi, herkese açık profil): tek örnek iki repository'de;
+    // kendi yazımı (servis yazım kancası) ve oturum değişimi girdiyi atar.
+    final readCaches = RepositoryReadCaches(appClock);
     final authRepository = FirebaseAuthRepository(authService, appClock);
     // Profil fotoğrafı yüklemesi repository metodudur (T-14): Storage servisi
     // ViewModel'lere açılmaz (PLAN §6.1). Dosya adının rastgele kısmı
@@ -165,6 +180,7 @@ abstract final class ProjectDependency {
       storageService,
       appClock,
       Random.secure(),
+      cache: readCaches,
     );
     final settingsRepository = FirebaseSettingsRepository(firestoreService);
     // T-25 · bildirimler (W-62): istemci kendi yazar
@@ -184,12 +200,16 @@ abstract final class ProjectDependency {
     final notificationDispatcher = ClientFanOutDispatcher(
       writer: notificationRepository,
       recipients: recipientResolver,
-      onIssue: _logDispatchIssue,
+      onIssue: (type, result) =>
+          reportDispatchIssue(type, result, crashService: crashService),
     );
     // T-15 · kulüp, üyelik, şikayet, engel, günlük. Günlük repository'si
     // üyelik geçişleriyle paylaşılır (kayıt asıl yazımla aynı işlemde
     // eklenir).
-    final clubRepository = FirebaseClubRepository(firestoreService);
+    final clubRepository = FirebaseClubRepository(
+      firestoreService,
+      cache: readCaches,
+    );
     final activityRepository = FirebaseActivityRepository(firestoreService);
     final membershipRepository = FirebaseMembershipRepository(
       firestoreService,
@@ -315,6 +335,16 @@ abstract final class ProjectDependency {
     final appInfoService =
         overrides.appInfoService ?? await PackageAppInfoService.load();
 
+    RepositoryHelpers.onParseError = reportUnexpected;
+    // Önbellek kancaları kayıttan hemen önce bağlanır (kurulum yarıda
+    // kesilirse abonelik açık kalmaz): yazım → girdi atılır; uid değişimi /
+    // çıkış → tüm önbellek temizlenir (hesaplar arası sızıntı yok).
+    if (firestoreService case final FirestoreWriteSource writes) {
+      writes.addWriteListener(readCaches.onWrite);
+    }
+    readCaches.bindSession(
+      authService.authStateChanges().map((user) => user?.uid),
+    );
     GetIt.I
       // Çökme raporlama ilk kayıttır: sonraki adımların günlüğü ona düşer.
       ..registerSingleton<CrashService>(crashService)
@@ -324,6 +354,10 @@ abstract final class ProjectDependency {
       ..registerSingleton<FirestoreService>(firestoreService)
       ..registerSingleton<StorageService>(storageService)
       // T-12 · kimlik ve profil repository'leri
+      ..registerSingleton<RepositoryReadCaches>(
+        readCaches,
+        dispose: (caches) => caches.dispose(),
+      )
       ..registerSingleton<AuthRepository>(authRepository)
       ..registerSingleton<UserRepository>(userRepository)
       ..registerSingleton<SettingsRepository>(settingsRepository)
@@ -367,8 +401,15 @@ abstract final class ProjectDependency {
         ),
       )
       ..registerSingleton<ConnectivityService>(connectivityService)
+      // DebugMenu çevrimdışı simülasyonu Firestore ağını da kapatır
+      // (T-44 · A4-08); koşul derleme sabiti — release'te dal düşer.
       ..registerSingleton<ConnectivityGate>(
-        ConnectivityGate(connectivityService),
+        ConnectivityGate(
+          connectivityService,
+          setFirestoreNetwork: AppEnvironment.debugMenuEnabled
+              ? firestoreService.setNetworkEnabled
+              : null,
+        ),
       )
       ..registerSingleton<AppInfoService>(appInfoService)
       ..registerSingleton<UrlLauncherService>(
@@ -412,20 +453,55 @@ abstract final class ProjectDependency {
   }
 
   /// Tüm kayıtları siler (test ve yeniden kurulum).
-  static Future<void> reset() => GetIt.I.reset();
+  static Future<void> reset() {
+    RepositoryHelpers.onParseError = null;
+    return GetIt.I.reset();
+  }
 
   /// Eksik kalan bildirim dağıtımını günlüğe yazar (PLAN §10.5: uyarı;
-  /// kullanıcıya hata gösterilmez). Alıcı kimliği yazılmaz.
-  static void _logDispatchIssue(
+  /// kullanıcıya hata gösterilmez). Dağıtım başarısızsa ya da parça
+  /// yazılamadıysa [crashService]'e `nonFatal` da raporlanır (T-44 · D2-03);
+  /// geçici ağ hatası (çevrimdışı, erişilemez, süre) yalnızca günlüktedir.
+  /// Alıcı kimliği yazılmaz. Yalnızca dağıtıcının `onIssue` dinleyicisi
+  /// çağırır (testte doğrudan).
+  @visibleForTesting
+  static void reportDispatchIssue(
     NotificationType type,
-    FirestoreResult<DispatchReport> result,
-  ) => AppLogger.warn(switch (result) {
-    FirebaseSuccess(data: final report) =>
-      'Bildirim dağıtımı eksik (${type.json}): ${report.written}/'
-          '${report.requested}, başarısız parça ${report.failedChunks}',
-    FirebaseFailure(:final error) =>
-      'Bildirim dağıtılamadı (${type.json}): ${error.name}',
-  });
+    FirestoreResult<DispatchReport> result, {
+    required CrashService crashService,
+  }) {
+    AppLogger.warn(switch (result) {
+      FirebaseSuccess(data: final report) =>
+        'Bildirim dağıtımı eksik (${type.json}): ${report.written}/'
+            '${report.requested}, başarısız parça ${report.failedChunks}',
+      FirebaseFailure(:final error) =>
+        'Bildirim dağıtılamadı (${type.json}): ${error.name}',
+    });
+    final reason = switch (result) {
+      FirebaseSuccess(data: final report) when report.failedChunks > 0 =>
+        'dispatch:${type.json} ${report.written}/${report.requested} '
+            'failed=${report.failedChunks}',
+      FirebaseFailure(:final error) when !_transientErrors.contains(error) =>
+        'dispatch:${type.json} ${error.name}',
+      _ => null,
+    };
+    if (reason == null) return;
+    unawaited(
+      crashService.recordError(
+        StateError('notification dispatch incomplete'),
+        StackTrace.current,
+        reason: reason,
+      ),
+    );
+  }
+
+  /// Raporlanmayan (beklenen, geçici) dağıtım hataları.
+  static const Set<FirestoreError> _transientErrors = {
+    FirestoreError.unavailable,
+    FirestoreError.timeout,
+    FirestoreError.offline,
+    FirestoreError.cancelled,
+  };
 
   static Future<ConnectivityService> _startConnectivity() async {
     final service = DeviceConnectivityService();

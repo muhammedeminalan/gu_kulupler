@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:ui' show Locale, PlatformDispatcher;
+
+import 'package:flutter/foundation.dart' show setEquals;
 
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
@@ -11,12 +14,18 @@ import 'package:gu_kulupler/product/service/local_reminder_service.dart';
 /// geçerli mi) o verir, bu sınıf yalnızca okur ve planlar.
 ///
 /// * [reschedule] — oturum etkinleşince (açılış + giriş) ve dil değişince:
-///   kanal yeni dille kurulur, `settings/{uid}` + kendi `going` kayıtları +
-///   etkinlikleri okunur, planlar baştan kurulur
+///   kanal yeni dille kurulur, `settings/{uid}` + kendi `going` kayıtları
+///   (yalnızca `going` — T-44 · D3-02) birlikte, ardından etkinlikleri okunur,
+///   planlar baştan kurulur
 ///   (`LocalReminderService.rescheduleAll`). Tetik anı geçmiş ama etkinliği
 ///   henüz bitmemiş hatırlatıcının liste belgesi yazılır (`createSelf` —
 ///   PLAN §15.6 `event_reminder` satırı; belgesi olan yeniden yazılmaz).
-///   Okuma hatasında mevcut planlar korunur.
+///   Okuma hatasında mevcut planlar korunur. **Bitmiş etkinlik bir daha
+///   okunmaz (T-44 · D2-06):** iptal edilmiş ya da bitmiş (yayında,
+///   `endsAt ≤ şimdi`) etkinliğin kimliği hesap başına cihazda tutulur
+///   (`AppPreferencesStore.reminderDoneEvents`); Rules bu durumları kalıcı
+///   kılar (bitmiş etkinlik düzenlenemez, iptal geri alınamaz). Küme `going`
+///   kayıtlarıyla kesişir, sınırsız büyümez.
 /// * [takeLaunchPayload] — soğuk açılış (CD-72): hatırlatıcıya dokunarak
 ///   başlatılan uygulamanın yükü (`event_reminder:<eventId>`) döner; biçimi
 ///   tanınmayan yük atılır. Liste belgesi (`createSelf`), bilet ayrımı ve
@@ -33,8 +42,10 @@ final class SessionReminderSync with ProjectDependencyMixin {
     required bool Function() isCurrent,
   }) async {
     await localReminderService.ensureChannel(_l10n());
-    final settings = await settingsRepository.getSettings(uid);
-    final mine = await rsvpRepository.listMine(uid);
+    final (settings, mine) = await (
+      settingsRepository.getSettings(uid),
+      rsvpRepository.listMine(uid, statuses: {RsvpStatus.going}),
+    ).wait;
     if (!isCurrent()) return;
     final UserSettingsModel prefs;
     final List<RsvpModel> rsvps;
@@ -53,11 +64,16 @@ final class SessionReminderSync with ProjectDependencyMixin {
       for (final rsvp in rsvps)
         if (rsvp.status == RsvpStatus.going && !rsvp.isDeleted) rsvp,
     ];
+    // Bitmiş / iptal etkinlik okunmaz: planı da hatırlatıcı belgesi de yoktur
+    // (`rescheduleAll` ve `_hasFired` haritada olmayanı atlar).
+    final done = appPreferencesStore.reminderDoneEvents(uid);
+    final toRead = [
+      for (final rsvp in going)
+        if (!done.contains(rsvp.eventId)) rsvp.eventId,
+    ];
     final events = <String, EventModel>{};
-    if (going.isNotEmpty) {
-      final read = await eventRepository.getEvents([
-        for (final rsvp in going) rsvp.eventId,
-      ]);
+    if (toRead.isNotEmpty) {
+      final read = await eventRepository.getEvents(toRead);
       if (!isCurrent()) return;
       switch (read) {
         case FirebaseSuccess(:final data):
@@ -69,13 +85,14 @@ final class SessionReminderSync with ProjectDependencyMixin {
           return;
       }
     }
+    final nowUtc = appClock.nowUtc();
+    _rememberFinished(uid, done, going, events.values, nowUtc);
     await localReminderService.rescheduleAll(
       myGoing: going,
       events: events,
       settings: prefs,
     );
     if (!prefs.eventReminders) return;
-    final nowUtc = appClock.nowUtc();
     for (final rsvp in going) {
       final event = events[rsvp.eventId];
       if (event == null || !_hasFired(rsvp, event, prefs, nowUtc)) continue;
@@ -98,6 +115,28 @@ final class SessionReminderSync with ProjectDependencyMixin {
 
   /// Tüm planları iptal eder (oturum kapandı).
   Future<void> cancelAll() => localReminderService.cancelAll();
+
+  /// Okunan etkinliklerden bitmiş / iptal olanları [done] kümesine ekler ve
+  /// kümeyi yalnızca [going] kayıtlarıyla kesişen hâliyle saklar (değiştiyse).
+  void _rememberFinished(
+    String uid,
+    Set<String> done,
+    List<RsvpModel> going,
+    Iterable<EventModel> read,
+    DateTime nowUtc,
+  ) {
+    final goingIds = {for (final rsvp in going) rsvp.eventId};
+    final finished = {
+      ...done,
+      for (final event in read)
+        if (event.status == EventStatus.cancelled ||
+            (event.status == EventStatus.published &&
+                !event.endsAt.toUtc().isAfter(nowUtc)))
+          event.id,
+    }.intersection(goingIds);
+    if (setEquals(finished, done)) return;
+    unawaited(appPreferencesStore.setReminderDoneEvents(uid, finished));
+  }
 
   /// Tetik anı geçmiş ama etkinliği bitmemiş hatırlatıcı mı (yayındaki,
   /// silinmemiş etkinlikte, seçenek `none` değil)?

@@ -680,7 +680,7 @@ final class ManageApplicationsViewModel extends _$ManageApplicationsViewModel
     _epochs[tab] = epoch;
     final (clubResult, page) = await (
       club
-          ? clubRepository.getClub(clubId)
+          ? clubRepository.getClub(clubId, forceRefresh: true)
           : Future<FirestoreResult<ClubModel>?>.value(),
       _readPage(tab, const PageRequest()),
     ).wait;
@@ -749,7 +749,7 @@ final class ManageApplicationsViewModel extends _$ManageApplicationsViewModel
           ? Future<FirestoreResult<List<UserModel>>>.value(
               const FirebaseSuccess(<UserModel>[]),
             )
-          : userRepository.getUsers(userIds),
+          : userRepository.getUsers(userIds, forceRefresh: true),
       Future.wait([
         for (final id in contactIds)
           membershipRepository.readContact(clubId, id),

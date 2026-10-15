@@ -1,6 +1,7 @@
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/models/enums/reminder_option.dart';
+import 'package:gu_data/src/models/enums/rsvp_status.dart';
 import 'package:gu_data/src/models/rsvp_model.dart';
 
 /// Etkinlik katılım kayıtları — `rsvps/{eventId}_{userId}`
@@ -123,7 +124,19 @@ abstract interface class RsvpRepository {
   /// PRF-03) — vazgeçilmişler dahil.
   ///
   /// Sorgu: `userId == userId`, `isDeleted == false`, `orderBy createdAt ↓`.
-  Future<FirestoreResult<List<RsvpModel>>> listMine(String userId);
+  ///
+  /// **Süzgeçli kip (T-44 · D3-02):** [statuses] verilirse yalnızca o
+  /// durumlar (`status in […]`), [clubId] verilirse yalnızca o kulübün
+  /// kayıtları okunur — geçmiş büyüdükçe okuma büyümez. Süzgeçli kipte sıra
+  /// **yoktur** (yalnızca eşitlik / `in` süzgeçleri; indeksler
+  /// `userId, isDeleted, clubId` ve `userId, isDeleted, status`); çağıranlar
+  /// etkinlik başına tek kaydı kimliğiyle eşler. Boş [statuses] sorgu yapmadan boş döner;
+  /// geçersiz [clubId] [FirestoreError.invalidArgument].
+  Future<FirestoreResult<List<RsvpModel>>> listMine(
+    String userId, {
+    Set<RsvpStatus>? statuses,
+    String? clubId,
+  });
 
   /// [clubId] kulübünün [eventId] etkinliğinde, bekleme listesine
   /// [waitlistAtUtc] anında girmiş kaydın sırası ("{n}. sıra"): ondan önce

@@ -113,7 +113,7 @@ class ApplicationDetailSheet extends ConsumerWidget {
 
   /// Avatar çapı (`sheets.js:92` `size=${56}`) — `GuSizes.avatarSizes`
   /// içindeki 56.
-  static final double _avatarSize = GuSizes.avatarSizes[6];
+  static final double avatarSize = GuSizes.avatarSizes[6];
 
   /// Durum bandı ayracı (`sheets.js:93` `' · '`).
   static const String _separator = ' · ';
@@ -212,7 +212,7 @@ class ApplicationDetailSheet extends ConsumerWidget {
               GuAvatar(
                 initials: name.initials,
                 seed: seed.isEmpty ? application.userId : seed,
-                size: _avatarSize,
+                size: avatarSize,
                 image: avatarImage,
               ),
               Expanded(

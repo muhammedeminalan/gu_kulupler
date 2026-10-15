@@ -36,12 +36,25 @@ import 'package:gu_kulupler/core/error/app_logger.dart';
 ///   geçersiz kılınır (hesaba yazılamaz — oturum yok; sunucu eski jetonu
 ///   ilk gönderimde temizler).
 /// * [detach] — dinleyiciyi bırakır, yazım yok.
+/// * [retryPendingCleanup] — oturum kapalıyken (açılış, çıkış olayı, öne
+///   gelme): önceki çıkışta geçersiz kılınamayan jeton (çevrimdışı) yeniden
+///   geçersiz kılınır (T-44 · A4-06).
+///
+/// **Bekleyen temizlik:** `AppPreferencesStore.pushTokenUid` jetonun yazıldığı
+/// hesabı tutar ve yalnızca jeton FCM'de **gerçekten** geçersiz kılınınca
+/// (`invalidateToken` → `true`) temizlenir; dolu kalan değer "temizlik
+/// bekliyor" demektir. Geçersiz kılma tek uçuşludur (aynı anda tek çağrı);
+/// [register] bekleyen çağrının bitmesini bekler — temizliğin `deleteToken`'ı
+/// yeni yazılan jetonu öldürmez.
 ///
 /// İzin **istenmez** (`PermissionService` — tek pencere). Hiçbir metot
 /// fırlatmaz: hata günlüğe düşer (jeton değeri yazılmaz).
 final class SessionPushSync with ProjectDependencyMixin {
   /// Bu oturumda başarıyla yazılan son kayıt.
   ({String uid, String token, String locale})? _registered;
+
+  /// Süren geçersiz kılma (tek uçuş — [_invalidate]).
+  Future<bool>? _inflight;
 
   /// `onTokenRefresh` aboneliği ve dinlenen kullanıcı.
   StreamSubscription<String>? _refresh;
@@ -65,6 +78,9 @@ final class SessionPushSync with ProjectDependencyMixin {
     }
     _listenRefresh(uid, platform, isCurrent);
     if (!await messagingService.isAuthorized() || !isCurrent()) return;
+    // Süren temizlik (önceki hesabın jetonu) bitmeden okunmaz / yazılmaz.
+    if (_inflight case final running?) await running;
+    if (!isCurrent()) return;
     final owner = appPreferencesStore.pushTokenUid;
     if (owner != null && owner != uid) {
       // Jeton başka hesaba yazılmıştı: önce geçersiz kıl (yeni jeton üretilir).
@@ -80,10 +96,19 @@ final class SessionPushSync with ProjectDependencyMixin {
   /// [uid] hesabından bu cihazın jetonunu çıkarır ve jetonu geçersiz kılar
   /// (en iyi çaba, süre sınırlı). Yazılmış jeton yoksa ve izin de yoksa
   /// hiçbir şey yapılmaz (jeton üretilmez).
+  ///
+  /// Cihaz çevrimdışı biliniyorsa ağ adımları atlanır ve çıkış beklemez
+  /// (3 + 3 sn yerine anında — T-44 · A4-06): `pushTokenUid` dolu kalır,
+  /// geçersiz kılma [retryPendingCleanup] ile sonra yapılır; hesaptaki jeton
+  /// sunucuda `UNREGISTERED` ile temizlenir.
   Future<void> unregister(String uid) async {
     detach();
     final registered = _registered;
     _registered = null;
+    if (connectivityGate.isOffline) {
+      AppLogger.info('Çevrimdışı çıkış: push jetonu temizliği ertelendi');
+      return;
+    }
     final token = registered != null && registered.uid == uid
         ? registered.token
         : await _currentTokenIfAuthorized();
@@ -115,6 +140,20 @@ final class SessionPushSync with ProjectDependencyMixin {
     detach();
     if (_registered == null) return;
     _registered = null;
+    await _invalidate();
+  }
+
+  /// Oturum kapalıyken çağrılır (açılış, çıkış olayı, öne gelme — T-44 ·
+  /// A4-06): önceki çıkışta geçersiz kılınamayan jeton (`pushTokenUid` dolu)
+  /// yeniden geçersiz kılınır; başarıda `pushTokenUid` temizlenir. Süren bir
+  /// geçersiz kılma varsa yalnızca o beklenir (az önce denendi; aynı anda
+  /// ikinci çağrı yapılmaz).
+  Future<void> retryPendingCleanup() async {
+    if (_inflight case final running?) {
+      await running;
+      return;
+    }
+    if (appPreferencesStore.pushTokenUid == null) return;
     await _invalidate();
   }
 
@@ -191,8 +230,26 @@ final class SessionPushSync with ProjectDependencyMixin {
       ? await messagingService.token()
       : null;
 
-  Future<void> _invalidate() => messagingService.invalidateToken().timeout(
-    AppDurations.pushTokenCleanupTimeout,
-    onTimeout: () => AppLogger.warn('Push jetonu geçersiz kılınamadı (süre)'),
-  );
+  /// Bu cihazın jetonunu geçersiz kılar (tek uçuş, süre sınırlı). Başarıda
+  /// `pushTokenUid` temizlenir (bekleyen temizlik yok); başarısızsa dolu
+  /// kalır ve [retryPendingCleanup] sonra yeniden dener.
+  Future<bool> _invalidate() =>
+      _inflight ??= _runInvalidate().whenComplete(() => _inflight = null);
+
+  Future<bool> _runInvalidate() async {
+    final invalidated = await messagingService.invalidateToken().timeout(
+      AppDurations.pushTokenCleanupTimeout,
+      onTimeout: () => false,
+    );
+    if (!invalidated) {
+      AppLogger.warn(
+        'Push jetonu geçersiz kılınamadı; sonra yeniden denenecek',
+      );
+      return false;
+    }
+    if (appPreferencesStore.pushTokenUid != null) {
+      await appPreferencesStore.setPushTokenUid(null);
+    }
+    return true;
+  }
 }

@@ -74,6 +74,29 @@ enum FirestoreError {
     'cancelled' => cancelled,
     _ => unknown,
   };
+
+  /// Beklenmeyen (veri / altyapı / program) hatası mı: Crashlytics'e
+  /// `nonFatal` raporlanır (T-44 · D2-03; PLAN §10.1 tablosu). Beklenen
+  /// hatalar (yetki, oturum, yok, çevrimdışı, zaman aşımı, çakışma, iş kuralı)
+  /// raporlanmaz — kullanıcı akışıdır, yalnızca günlüğe düşer.
+  bool get isUnexpected => switch (this) {
+    parse ||
+    invalidArgument ||
+    failedPrecondition ||
+    resourceExhausted ||
+    unknown => true,
+    permissionDenied ||
+    unauthenticated ||
+    notFound ||
+    alreadyExists ||
+    aborted ||
+    unavailable ||
+    timeout ||
+    cancelled ||
+    offline ||
+    conflict ||
+    ruleViolation => false,
+  };
 }
 
 /// [FirestoreError.ruleViolation] ile dönen iş kuralı reddinin türü

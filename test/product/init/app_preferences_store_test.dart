@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
+import 'package:gu_kulupler/product/media/constants/media_constants.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -345,5 +346,78 @@ void main() {
       await broken.load();
       expect(broken.pushTokenUid, isNull);
     });
+  });
+
+  group('T-44 · SharedAppPreferencesStore · görsel adresleri ve bitmiş '
+      'etkinlikler (D2-05, D2-06)', () {
+    test('anahtar adları', () {
+      expect(AppPreferenceKeys.imageUrls, 'media.imageUrls');
+      expect(AppPreferenceKeys.reminderDone('u1'), 'pref.reminderDone.u1');
+    });
+
+    test('görsel adresleri JSON gidiş-dönüşü: yeni depo aynı adres ve anı '
+        'okur; en yeni imageUrlPersistMaxEntries kayıt tutulur', () async {
+      final store = SharedAppPreferencesStore();
+      await store.load();
+      final at = DateTime.utc(2026, 10, 15, 9);
+      final entries = {
+        for (var i = 0; i < MediaConstants.imageUrlPersistMaxEntries + 5; i++)
+          'posts/p$i/a.jpg': (
+            url: 'https://storage.test/$i',
+            at: at.add(Duration(minutes: i)),
+          ),
+      };
+
+      expect(await store.setImageUrls(entries), isTrue);
+      final reopened = SharedAppPreferencesStore();
+      await reopened.load();
+      final read = reopened.imageUrls;
+
+      expect(read, hasLength(MediaConstants.imageUrlPersistMaxEntries));
+      // En eski beş kayıt atıldı.
+      expect(read.containsKey('posts/p0/a.jpg'), isFalse);
+      const last =
+          'posts/p${MediaConstants.imageUrlPersistMaxEntries + 4}/a.jpg';
+      expect(read[last]?.url, entries[last]!.url);
+      expect(read[last]?.at, entries[last]!.at);
+      expect(read[last]!.at.isUtc, isTrue);
+    });
+
+    test('bozuk ya da yanlış biçimli görsel kaydı boş haritaya düşer, '
+        'fırlatmaz; geçerli kayıtlar kalır', () async {
+      for (final raw in ['{bozuk', '[1,2]', '']) {
+        SharedPreferences.setMockInitialValues(<String, Object>{
+          AppPreferenceKeys.imageUrls: raw,
+        });
+        final store = SharedAppPreferencesStore();
+        await store.load();
+        expect(store.imageUrls, isEmpty, reason: raw);
+      }
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        AppPreferenceKeys.imageUrls:
+            '{"a": ["https://x", 1760000000000], "b": [1, 2], "c": "x"}',
+      });
+      final mixed = SharedAppPreferencesStore();
+      await mixed.load();
+      expect(mixed.imageUrls.keys, ['a']);
+      // Load öncesi boş.
+      expect(SharedAppPreferencesStore().imageUrls, isEmpty);
+    });
+
+    test(
+      'bitmiş etkinlik kümesi hesap başına yazılır ve yeni depo okur',
+      () async {
+        final store = SharedAppPreferencesStore();
+        await store.load();
+        expect(store.reminderDoneEvents('u1'), isEmpty);
+
+        expect(await store.setReminderDoneEvents('u1', {'e01', 'e02'}), isTrue);
+        expect(store.reminderDoneEvents('u1'), {'e01', 'e02'});
+        final reopened = SharedAppPreferencesStore();
+        await reopened.load();
+        expect(reopened.reminderDoneEvents('u1'), {'e01', 'e02'});
+        expect(reopened.reminderDoneEvents('u2'), isEmpty);
+      },
+    );
   });
 }

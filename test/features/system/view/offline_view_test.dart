@@ -112,9 +112,12 @@ void main() {
       tester,
     ) async {
       final app = await TestRouter.pump(tester, location: '/offline');
-      _connectivity()
-        ..isOffline = true
-        ..nextRefresh = false;
+      // Çevrimdışına düşüş akıştan gelir: bağlantı ViewModel'i uygulamada
+      // açılıştan beri yaşar (kök bant; T-44'ten beri görsel adres önbelleği
+      // de dinler), durumu doğrudan yazmak onun görmediği bir geçiş olur.
+      _connectivity().emit(true);
+      await tester.pump();
+      _connectivity().nextRefresh = false;
 
       await tester.tap(find.byKey(_retry));
       await tester.pumpAndSettle();

@@ -92,7 +92,10 @@ class _SearchViewState extends ConsumerState<SearchView>
         ),
     ],
     coverImage: ref.clubCoverImage(club),
-    logoImage: ref.clubLogoImage(club),
+    logoImage: ref.clubLogoImage(
+      club,
+      displaySize: GuEmblemSize.sm.dimension,
+    ),
     actionKey: GuKey.action('CLB-02.card.${club.id}'),
     joinKey: GuKey.action('CLB-02.join.${club.id}'),
     statusKey: GuKey.action('CLB-02.status.${club.id}'),

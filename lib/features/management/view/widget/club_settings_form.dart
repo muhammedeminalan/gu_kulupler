@@ -219,7 +219,10 @@ class _ClubSettingsFormState extends ConsumerState<ClubSettingsForm> {
       pattern: _state.coverPattern,
       logo: pendingLogo != null
           ? MemoryImage(pendingLogo.bytes)
-          : ref.clubLogoImage(_state.original),
+          : ref.clubLogoImage(
+              _state.original,
+              displaySize: GuEmblemSize.lg.dimension,
+            ),
       cover: pendingCover != null
           ? MemoryImage(pendingCover.bytes)
           : ref.watch(storageImageResolverProvider)(_state.coverPath),

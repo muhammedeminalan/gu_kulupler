@@ -410,6 +410,8 @@ void main() {
       expect(state.rsvps, {'e03': waitlisted});
       expect(state.isEventsFetching, isFalse);
       expect(state.isEventsError, isFalse);
+      // Yalnızca bu kulübün kayıtları okunur (T-44 · D3-02).
+      expect(rsvps.callsTo('listMine').single.args, [kUid, null, kClubId]);
     });
 
     test(

@@ -61,4 +61,14 @@ abstract interface class SavedPostRepository {
     required String userId,
     required String postId,
   });
+
+  /// [postIds] içinden [userId]'nin yürürlükteki kayıtları (FED-01 sayfası —
+  /// T-44 · D3-03); kaldırılmış kayıt dönmez. Gönderi başına tekil okuma
+  /// yerine en çok 30'luk parçalarla `postId in […]` sorgusu; tekrarlar
+  /// tekilleştirilir, boş liste sorgu yapmadan boş döner. Parçalardan biri
+  /// başarısız olursa ilk hata döner.
+  Future<FirestoreResult<Set<String>>> savedAmong({
+    required String userId,
+    required List<String> postIds,
+  });
 }

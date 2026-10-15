@@ -62,7 +62,7 @@ class AdminUserRow extends ConsumerWidget {
     return UserRow(
       user: user,
       sub: sub,
-      avatarImage: ref.userAvatarImage(user),
+      avatarImage: ref.userAvatarImage(user, displaySize: GuSizes.avatar),
       badge: user.status == UserStatus.suspended
           ? GuStatusBadge(
               kind: GuStatusBadgeKind.suspended,

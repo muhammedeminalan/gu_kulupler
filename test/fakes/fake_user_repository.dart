@@ -53,6 +53,15 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
   /// `users/{uid}/private/account` belgeleri.
   final Map<String, UserAccountModel> accounts = <String, UserAccountModel>{};
 
+  /// Cihazın yerel önbelleğindeki `users/{uid}` belgeleri
+  /// ([getUserFromCache]; T-44 · D2-02). Varsayılan boştur: önbellekte
+  /// olmayan belge `unavailable` döner (gerçek SDK gibi).
+  final Map<String, UserModel> cachedUsers = <String, UserModel>{};
+
+  /// `forceRefresh: true` ile yapılan okumaların metot adları, sırasıyla
+  /// (T-44 · D3-01; çağrı günlüğü `calls` değişmez).
+  final List<String> forcedReads = <String>[];
+
   /// Başarılı `createProfile` çağrıları, sırasıyla.
   final List<FakeCreatedProfile> createdProfiles = <FakeCreatedProfile>[];
 
@@ -110,8 +119,22 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
   }
 
   @override
-  Future<FirestoreResult<List<UserModel>>> getUsers(List<String> uids) async {
+  Future<FirestoreResult<UserModel?>> getUserFromCache(String uid) async {
+    record('getUserFromCache', [uid]);
+    if (_rejected<UserModel?>(uid) case final failure?) return failure;
+    final cached = cachedUsers[uid];
+    return cached == null
+        ? const FirebaseFailure(FirestoreError.unavailable)
+        : FirebaseSuccess(cached);
+  }
+
+  @override
+  Future<FirestoreResult<List<UserModel>>> getUsers(
+    List<String> uids, {
+    bool forceRefresh = false,
+  }) async {
     record('getUsers', [uids]);
+    if (forceRefresh) forcedReads.add('getUsers');
     if (_failure() case final error?) return FirebaseFailure(error);
     if (!uids.every(RepositoryHelpers.isValidId)) {
       return const FirebaseFailure(FirestoreError.invalidArgument);

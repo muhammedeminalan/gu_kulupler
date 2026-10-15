@@ -20,6 +20,7 @@ import 'package:gu_data/src/models/user_profile_patch.dart';
 import 'package:gu_data/src/repositories/firebase_settings_repository.dart';
 import 'package:gu_data/src/repositories/query_x.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
+import 'package:gu_data/src/repositories/repository_read_caches.dart';
 import 'package:gu_data/src/repositories/user_repository.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
@@ -35,17 +36,22 @@ final class FirebaseUserRepository implements UserRepository {
   /// kaynağından gelir: kompozisyon kökü kriptografik kaynak verir
   /// (`Random.secure()` — ad tahmin edilemez); `gu_data` rastgele kaynağı
   /// kendisi kurmaz.
+  ///
+  /// `cache` verilirse [getUsers] herkese açık profilleri bellekte
+  /// `CachePolicy.userTtl` süre tutar (T-44 · D3-01); `null` önbelleksizdir.
   FirebaseUserRepository(
     this._firestore,
     this._storage,
     this._clock,
-    this._random,
-  );
+    this._random, {
+    this._cache,
+  });
 
   final FirestoreService _firestore;
   final StorageService _storage;
   final AppClock _clock;
   final Random _random;
+  final RepositoryReadCaches? _cache;
 
   @override
   Future<FirestoreResult<UserModel?>> getUser(String uid) async {
@@ -62,27 +68,56 @@ final class FirebaseUserRepository implements UserRepository {
   }
 
   @override
-  Future<FirestoreResult<List<UserModel>>> getUsers(List<String> uids) async {
+  Future<FirestoreResult<UserModel?>> getUserFromCache(String uid) async {
+    if (RepositoryHelpers.rejectInvalidIds<UserModel?>({'uid': uid})
+        case final rejected?) {
+      return rejected;
+    }
+    return RepositoryHelpers.parseOrNull(
+      await _firestore.getDocFromCache(_userRef(uid)),
+      _userOf,
+      includeDeleted: true,
+    );
+  }
+
+  @override
+  Future<FirestoreResult<List<UserModel>>> getUsers(
+    List<String> uids, {
+    bool forceRefresh = false,
+  }) async {
     final unique = uids.toSet().toList();
     if (!unique.every(RepositoryHelpers.isValidId)) {
       return RepositoryHelpers.invalidArgument('geçersiz kimlik: uids');
     }
+    final cache = _cache?.users;
+    final since = cache?.stamp ?? 0;
     final found = <String, UserModel>{};
-    for (final chunk in unique.slices(RepositoryHelpers.whereInMax)) {
-      final result = RepositoryHelpers.parseAll(
-        await _firestore.getList(
-          _firestore
-              .collection(FirestoreCollections.users)
-              .where(FieldPath.documentId, whereIn: chunk),
-        ),
-        _userOf,
+    final missing = <String>[];
+    for (final uid in unique) {
+      final hit = forceRefresh ? null : cache?.get(uid);
+      if (hit != null) {
+        found[uid] = hit;
+      } else {
+        missing.add(uid);
+      }
+    }
+    for (final chunk in missing.slices(RepositoryHelpers.whereInMax)) {
+      final read = await _firestore.getList(
+        _firestore
+            .collection(FirestoreCollections.users)
+            .where(FieldPath.documentId, whereIn: chunk),
       );
+      final result = RepositoryHelpers.parseAll(read, _userOf);
       switch (result) {
         case FirebaseFailure():
           return result;
         case FirebaseSuccess(data: final users):
+          final docs = read.dataOrNull ?? const <FirestoreDoc>[];
+          // Çevrimdışı önbellekten gelen parça bellekte saklanmaz.
+          final storable = docs.every((doc) => !doc.isFromCache);
           for (final user in users) {
             found[user.uid] = user;
+            if (storable) cache?.put(user.uid, user, since: since);
           }
       }
     }

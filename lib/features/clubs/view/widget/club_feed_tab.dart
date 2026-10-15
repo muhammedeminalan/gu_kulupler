@@ -10,8 +10,8 @@ import 'package:gu_kulupler/features/clubs/view/widget/feed_compose_entry.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
 import 'package:gu_kulupler/product/media/user_avatar_image.dart';
-import 'package:gu_kulupler/product/widget/post/image_grid.dart';
 import 'package:gu_kulupler/product/widget/post/post_card.dart';
+import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Akış — CLB-03 "Gönderiler" sekmesinin gövdesi (kulübün içini görenler;
@@ -23,7 +23,8 @@ import 'package:gu_ui/gu_ui.dart';
 /// liste: sabit gönderi en üstte, ardından en yeniden eskiye `PostCard`'lar
 /// (yatay 16, aralık 12) ve liste sonu "— Hepsi bu kadar —".
 ///
-/// * Kaydırma CLB-03'ündür (sekme onun kaydırma alanında çizilir); sonuna
+/// * Kaydırma CLB-03'ündür: sekme onun `CustomScrollView`'ünde bir sliver
+///   grubudur (`SliverMainAxisGroup`), kartlar tembel kurulur (T-44). Sonuna
 ///   yaklaşınca sonraki 20 gönderi okunur, okunurken liste sonunda bir kart
 ///   iskeleti çizilir.
 /// * Durumlar yalnızca listeyi değiştirir (sıra: hata → yükleniyor → boş →
@@ -34,8 +35,9 @@ import 'package:gu_ui/gu_ui.dart';
 ///   kalır, yazan eylemler TST-24 verir.
 /// * Danışman akışı okur; beğeni, oy ve yönetim eylemleri TST-26 verir.
 /// * Engellenen kullanıcıların gönderileri çizilmez.
-/// * Gönderi görselleri `postImageResolverProvider` ile Storage'dan çözülür;
-///   adres gelene (ya da alınamazsa) dek hücre yer tutucu desendir (K-18).
+/// * Gönderi görselleri Storage'dan yol başına çözülür (`ref.storageImage`;
+///   adres gelince yalnızca o kart yeniden çizilir); adres gelene (ya da
+///   alınamazsa) dek hücre yer tutucu desendir (K-18).
 ///
 /// Davranış `ClubFeedTabMixin`'dedir.
 ///
@@ -84,46 +86,52 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
     FeedFilter.images => GuKey.action('FED-01.filter.images'),
   };
 
-  Widget _card(
-    ClubFeedState state,
-    PostModel post,
-    String? uid,
-    PostImageResolver imageOf,
-  ) {
+  /// Gönderi kartı. Kendi `Consumer`'ında yalnızca kendi görsellerinin ve
+  /// yazar fotoğrafının yolunu izler (T-44 · P1-03): bir görselin adresi
+  /// gelince yalnızca o kart yeniden çizilir (sekme ve öteki kartlar değil).
+  Widget _card(ClubFeedState state, PostModel post, String? uid) {
     final author = state.users[post.authorId];
-    return PostCard(
+    return Consumer(
       key: ValueKey<String>(post.id),
-      post: post,
-      author: author == null || author.isAnonymized ? null : author,
-      authorAvatar: ref.userAvatarImage(author),
-      role: state.roles[post.authorId],
-      club: state.club,
-      liked: uid != null && post.likedBy(uid),
-      saved: state.savedPostIds.contains(post.id),
-      myOptionId: state.myVotes[post.id],
-      pollResults: state.pollResults[post.id] ?? const <String, int>{},
-      keys: PostCardKeys(
-        author: GuKey.action('FED-01.author.${post.id}'),
-        menu: GuKey.action('FED-01.menu.${post.id}'),
-        post: GuKey.action('FED-01.post.${post.id}'),
-        more: GuKey.action('FED-01.more.${post.id}'),
-        like: GuKey.action('FED-01.like.${post.id}'),
-        comment: GuKey.action('FED-01.comment.${post.id}'),
-        share: GuKey.action('FED-01.share.${post.id}'),
-        save: GuKey.action('FED-01.save.${post.id}'),
-        image: (index) => GuKey.action('FED-01.image.${post.id}.$index'),
-        vote: (optionId) => GuKey.action('FED-01.vote.${post.id}.$optionId'),
-      ),
-      onOpen: () => openPost(post),
-      onAuthor: () => openAuthor(post),
-      onMenu: () => openMenu(post),
-      onLike: () => like(post),
-      onComment: () => openComments(post),
-      onShare: () => share(post),
-      onSave: () => save(post),
-      onVote: (optionId) => vote(post, optionId),
-      onImage: (index) => openImage(post, index),
-      imageOf: imageOf,
+      builder: (context, ref, _) {
+        return PostCard(
+          post: post,
+          author: author == null || author.isAnonymized ? null : author,
+          authorAvatar: ref.userAvatarImage(
+            author,
+            displaySize: GuSizes.postAvatar,
+          ),
+          role: state.roles[post.authorId],
+          club: state.club,
+          liked: uid != null && post.likedBy(uid),
+          saved: state.savedPostIds.contains(post.id),
+          myOptionId: state.myVotes[post.id],
+          pollResults: state.pollResults[post.id] ?? const <String, int>{},
+          keys: PostCardKeys(
+            author: GuKey.action('FED-01.author.${post.id}'),
+            menu: GuKey.action('FED-01.menu.${post.id}'),
+            post: GuKey.action('FED-01.post.${post.id}'),
+            more: GuKey.action('FED-01.more.${post.id}'),
+            like: GuKey.action('FED-01.like.${post.id}'),
+            comment: GuKey.action('FED-01.comment.${post.id}'),
+            share: GuKey.action('FED-01.share.${post.id}'),
+            save: GuKey.action('FED-01.save.${post.id}'),
+            image: (index) => GuKey.action('FED-01.image.${post.id}.$index'),
+            vote: (optionId) =>
+                GuKey.action('FED-01.vote.${post.id}.$optionId'),
+          ),
+          onOpen: () => openPost(post),
+          onAuthor: () => openAuthor(post),
+          onMenu: () => openMenu(post),
+          onLike: () => like(post),
+          onComment: () => openComments(post),
+          onShare: () => share(post),
+          onSave: () => save(post),
+          onVote: (optionId) => vote(post, optionId),
+          onImage: (index) => openImage(post, index),
+          imageOf: ref.postImagesOf(post.images),
+        );
+      },
     );
   }
 
@@ -145,9 +153,6 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
       ),
     );
     final posts = state.visible;
-    // Gönderi görselleri Storage'dan çözülür; adres gelene dek yer tutucu
-    // (K-18).
-    final imageOf = ref.watch(postImageResolverProvider);
     final status = GuListStatus.resolve(
       isError: state.isError,
       // Süzgece uyan gönderi yok ama okunmamış sayfa var: sıradaki sayfalar
@@ -156,86 +161,122 @@ class _ClubFeedTabState extends ConsumerState<ClubFeedTab>
       isEmpty: posts.isEmpty,
     );
 
-    return Padding(
-      padding: GuInsets.only(top: GuSpacing.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: GuSpacing.s12,
-        children: [
-          if (canCompose)
-            Padding(
-              padding: GuInsets.h16,
-              child: FeedComposeEntry(
-                key: GuKey.action('FED-01.compose'),
-                user: me,
-                avatarImage: ref.userAvatarImage(me),
-                onTap: compose,
-              ),
-            ),
-          GuHorizontalList(
-            children: [
-              for (final filter in FeedFilter.values)
-                GuChip(
-                  key: _filterKey(filter),
-                  label: _filterLabel(l10n, filter),
-                  selected: state.filter == filter,
-                  onTap: () => selectFilter(filter),
-                ),
-            ],
-          ),
-          switch (status) {
-            GuListStatus.error => GuErrorState(
-              title: l10n.sysErrorTitle,
-              description: l10n.sysErrorDesc,
-              retryLabel: l10n.commonRetry,
-              retryActionKey: GuKey.action('FED-01.retry'),
-              inline: true,
-              onRetry: retry,
-            ),
-            GuListStatus.loading => GuSkeletonList(
-              semanticLabel: l10n.commonLoading,
-              count: _skeletonCards,
-              variant: GuSkeletonVariant.card,
-            ),
-            GuListStatus.empty => GuEmptyState(
-              illustration: GuIllustrations.emptyPosts,
-              title: l10n.feedEmptyTitle,
-              description: canCompose
-                  ? l10n.feedEmptyDescManager
-                  : l10n.feedEmptyDesc,
-              ctaLabel: canCompose ? l10n.feedEmptyCta : null,
-              onCta: canCompose ? compose : null,
-              ctaActionKey: canCompose ? GuKey.action('FED-01.compose') : null,
-            ),
-            GuListStatus.data => Column(
+    // Sekme CLB-03'ün kaydırma alanında bir sliver grubudur (T-44 · P1-01):
+    // kartlar tembel kurulur — yalnızca görünen ve önbellek alanındaki
+    // kartlar yerleşir, boyanır ve görsellerini indirir. Dolgu / aralık
+    // eski sütunla birebir: üst 16, giriş · çipler · gövde arası 12, kartlar
+    // yatay 16 + arası 12.
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverPadding(
+          padding: GuInsets.only(top: GuSpacing.s16),
+          sliver: SliverToBoxAdapter(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: GuSpacing.s12,
               children: [
-                Padding(
-                  padding: GuInsets.h16,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: GuSpacing.s12,
-                    children: [
-                      for (final post in posts)
-                        _card(state, post, uid, imageOf),
-                    ],
-                  ),
-                ),
-                if (state.isLoadingMore)
+                if (canCompose)
                   Padding(
-                    padding: GuInsets.only(top: GuSpacing.s12),
-                    child: GuSkeletonList(
-                      semanticLabel: l10n.commonLoading,
-                      count: _nextPageCards,
-                      variant: GuSkeletonVariant.card,
+                    padding: GuInsets.h16,
+                    child: FeedComposeEntry(
+                      key: GuKey.action('FED-01.compose'),
+                      user: me,
+                      avatarImage: ref.userAvatarImage(
+                        me,
+                        displaySize: FeedComposeEntry.avatarSize,
+                      ),
+                      onTap: compose,
                     ),
                   ),
-                if (!state.hasMore) GuListEnd(label: l10n.commonAllDone),
+                GuHorizontalList(
+                  children: [
+                    for (final filter in FeedFilter.values)
+                      GuChip(
+                        key: _filterKey(filter),
+                        label: _filterLabel(l10n, filter),
+                        selected: state.filter == filter,
+                        onTap: () => selectFilter(filter),
+                      ),
+                  ],
+                ),
               ],
             ),
-          },
-        ],
-      ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: GuGap.v12),
+        ...switch (status) {
+          _ when OfflineListFallback.applies(ref, status) => [
+            OfflineListFallback.sliver(onReload: retry),
+          ],
+          GuListStatus.error => [
+            SliverToBoxAdapter(
+              child: GuErrorState(
+                title: l10n.sysErrorTitle,
+                description: l10n.sysErrorDesc,
+                retryLabel: l10n.commonRetry,
+                retryActionKey: GuKey.action('FED-01.retry'),
+                inline: true,
+                onRetry: retry,
+              ),
+            ),
+          ],
+          GuListStatus.loading => [
+            SliverToBoxAdapter(
+              child: GuSkeletonList(
+                semanticLabel: l10n.commonLoading,
+                count: _skeletonCards,
+                variant: GuSkeletonVariant.card,
+              ),
+            ),
+          ],
+          GuListStatus.empty => [
+            SliverToBoxAdapter(
+              child: GuEmptyState(
+                illustration: GuIllustrations.emptyPosts,
+                title: l10n.feedEmptyTitle,
+                description: canCompose
+                    ? l10n.feedEmptyDescManager
+                    : l10n.feedEmptyDesc,
+                ctaLabel: canCompose ? l10n.feedEmptyCta : null,
+                onCta: canCompose ? compose : null,
+                ctaActionKey: canCompose
+                    ? GuKey.action('FED-01.compose')
+                    : null,
+              ),
+            ),
+          ],
+          GuListStatus.data => [
+            SliverPadding(
+              padding: GuInsets.h16,
+              sliver: SliverList.separated(
+                itemCount: posts.length,
+                itemBuilder: (_, index) => _card(state, posts[index], uid),
+                separatorBuilder: (_, _) => GuGap.v12,
+                // Yenileme / başa eklenen gönderide kartın durumu (açılmış
+                // metin, beğeni animasyonu) kimliğiyle korunur.
+                findItemIndexCallback: (key) {
+                  if (key is! ValueKey<String>) return null;
+                  final index = posts.indexWhere((p) => p.id == key.value);
+                  return index < 0 ? null : index;
+                },
+              ),
+            ),
+            if (state.isLoadingMore)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: GuInsets.only(top: GuSpacing.s12),
+                  child: GuSkeletonList(
+                    semanticLabel: l10n.commonLoading,
+                    count: _nextPageCards,
+                    variant: GuSkeletonVariant.card,
+                  ),
+                ),
+              ),
+            if (!state.hasMore)
+              SliverToBoxAdapter(child: GuListEnd(label: l10n.commonAllDone)),
+          ],
+        },
+      ],
     );
   }
 }

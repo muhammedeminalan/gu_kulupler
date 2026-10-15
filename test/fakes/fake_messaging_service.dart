@@ -35,6 +35,10 @@ final class FakeMessagingService extends FakeBase implements MessagingService {
   /// Verilirse `invalidateToken` bunu bekler (süre sınırı testleri).
   Completer<void>? invalidateGate;
 
+  /// `invalidateToken` sonucu (T-44 · A4-06): `false` → `deleteToken`
+  /// başarısız (çevrimdışı); jeton değişmez.
+  bool invalidateResult = true;
+
   final StreamController<Map<String, String>> _taps =
       StreamController<Map<String, String>>.broadcast(sync: true);
   final StreamController<String> _refresh = StreamController<String>.broadcast(
@@ -72,10 +76,12 @@ final class FakeMessagingService extends FakeBase implements MessagingService {
   Stream<String> get onTokenRefresh => _refresh.stream;
 
   @override
-  Future<void> invalidateToken() async {
+  Future<bool> invalidateToken() async {
     record('invalidateToken');
     await invalidateGate?.future;
+    if (!invalidateResult) return false;
     currentToken = nextToken;
+    return true;
   }
 
   @override

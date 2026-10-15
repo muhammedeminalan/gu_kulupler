@@ -10,6 +10,9 @@ import 'package:gu_kulupler/product/media/constants/media_constants.dart';
 /// döner.
 typedef ImageUrlFetch = Future<StorageResult<String>> Function(String path);
 
+/// Bir yolun bilinen indirme adresi ve alındığı an (UTC).
+typedef ImageUrlEntry = ({String url, DateTime at});
+
 /// Storage yolu → indirme adresi önbelleği (PLAN §10.2 `downloadUrl`:
 /// "sonuç `ImageUrlCache` içinde 1 saat önbellek").
 ///
@@ -29,15 +32,43 @@ typedef ImageUrlFetch = Future<StorageResult<String>> Function(String path);
 ///   kalıcı kimliğidir; adres yalnızca erişim jetonunu taşır.
 ///
 /// Bellekte en çok [maxEntries] adres tutulur (en eski kayıt atılır).
+///
+/// * **Kalıcı tohum (T-44 · D2-05):** `initial` cihazda saklanan adreslerdir;
+///   her kayıt kendi alındığı anı korur — [peek] ilk karede adresi verir
+///   (görsel yer tutucuya düşmeden, çevrimdışında disk önbelleğinden
+///   çizilir), süresi dolmuşsa [request] arka planda yeniler; yenileme
+///   başarısızsa eski adres kalır. Yeni / yenilenen adresler [persistDebounce]
+///   içinde birleştirilip `onStored` ile tek yazımda verilir (kapanışta
+///   bekleyen yazım hemen verilir).
+/// * **Yeniden bağlanma (A4-04):** [retryFailed] başarısız yolların beklemesini
+///   kaldırır ve onları yeniden ister (TST-25 sonrası yer tutucular dolar).
 final class ImageUrlCache extends ChangeNotifier {
-  /// `fetch` ile adres isteyen, zamanı `clock` saatinden okuyan önbellek.
+  /// `fetch` ile adres isteyen, zamanı `clock` saatinden okuyan önbellek;
+  /// `initial` kayıtlarıyla tohumlanır, değişiklikleri `onStored`'a verir.
   ImageUrlCache({
     required this._fetch,
     required this._clock,
     this.ttl = MediaConstants.imageUrlTtl,
     this.retryAfter = MediaConstants.imageUrlRetryAfter,
     this.maxEntries = MediaConstants.imageUrlCacheMaxEntries,
-  });
+    this.persistDebounce = MediaConstants.imageUrlPersistDebounce,
+    Map<String, ImageUrlEntry> initial = const {},
+    this._onStored,
+  }) {
+    // En eski önce: taşan kayıt en eski alınan olur.
+    final seeded = initial.entries.toList()
+      ..sort((a, b) => a.value.at.compareTo(b.value.at));
+    for (final MapEntry(:key, :value) in seeded) {
+      _urls[key] = value;
+    }
+    _trim();
+  }
+
+  /// Değişikliklerin `onStored` öncesi birleştirildiği süre.
+  final Duration persistDebounce;
+
+  final void Function(Map<String, ImageUrlEntry> entries)? _onStored;
+  Timer? _storeTimer;
 
   /// Adresin taze sayıldığı süre.
   final Duration ttl;
@@ -52,8 +83,7 @@ final class ImageUrlCache extends ChangeNotifier {
   final AppClock _clock;
 
   /// Yol → (adres, alındığı an); ekleme sırasıyla (en eski başta).
-  final LinkedHashMap<String, ({String url, DateTime at})> _urls =
-      LinkedHashMap();
+  final LinkedHashMap<String, ImageUrlEntry> _urls = LinkedHashMap();
 
   /// Yol → son başarısız isteğin anı.
   final Map<String, DateTime> _failedAt = {};
@@ -78,6 +108,19 @@ final class ImageUrlCache extends ChangeNotifier {
     final failed = _failedAt[path];
     if (failed != null && now.difference(failed) < retryAfter) return null;
     return _pending[path] = _load(path);
+  }
+
+  /// Başarısız yolların beklemesini ([retryAfter]) kaldırır ve onları
+  /// yeniden ister — bağlantı geri gelince (T-44 · A4-04). Gelen adres
+  /// dinleyicileri olağan yoldan uyarır; başarısız yol yoksa hiçbir şey
+  /// yapmaz.
+  void retryFailed() {
+    if (_disposed || _failedAt.isEmpty) return;
+    final paths = _failedAt.keys.toList(growable: false);
+    _failedAt.clear();
+    for (final path in paths) {
+      unawaited(request(path));
+    }
   }
 
   /// [path] adresini döner: tazeyse önbellekten, değilse isteyerek (süren
@@ -112,16 +155,38 @@ final class ImageUrlCache extends ChangeNotifier {
         _urls
           ..remove(path)
           ..[path] = (url: url, at: now);
-        while (_urls.length > maxEntries) {
-          _urls.remove(_urls.keys.first);
-        }
+        _trim();
+        // Adres aynı olsa da alındığı an yenilendi: saklanır (birleşik).
+        _scheduleStore();
         if (changed) notifyListeners();
         return url;
     }
   }
 
+  void _trim() {
+    while (_urls.length > maxEntries) {
+      _urls.remove(_urls.keys.first);
+    }
+  }
+
+  /// Bekleyen yazım yoksa [persistDebounce] sonra tek yazım kurar.
+  void _scheduleStore() {
+    if (_onStored == null) return;
+    _storeTimer ??= Timer(persistDebounce, _store);
+  }
+
+  void _store() {
+    _storeTimer = null;
+    _onStored?.call(Map.unmodifiable(_urls));
+  }
+
   @override
   void dispose() {
+    // Bekleyen yazım kaybolmaz (zamanlayıcı da test sonunda askıda kalmaz).
+    if (_storeTimer case final timer?) {
+      timer.cancel();
+      _store();
+    }
     _disposed = true;
     super.dispose();
   }

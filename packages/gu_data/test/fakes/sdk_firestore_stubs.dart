@@ -17,14 +17,29 @@ Future<T> _outcome<T>(Object? error) =>
 FirebaseException firestoreException(String code, {String? message}) =>
     FirebaseException(plugin: 'cloud_firestore', code: code, message: message);
 
+/// Önbellek okuması (`GetOptions(source: Source.cache)`): [cached] varsa
+/// o döner; yoksa [error] doluysa onunla biter, boşsa (askıda kalan stub)
+/// "önbellekte yok" (`unavailable`) — zaman aşımı testleri önbellek
+/// yedeğiyle aynı zamanlamada biter (T-44 · A4-05).
+Future<T> _cacheOutcome<T>(T? cached, Object? error) {
+  if (cached != null) return Future.value(cached);
+  if (error != null) return Future<T>.error(error);
+  return Future<T>.error(
+    firestoreException('unavailable', message: 'önbellekte yok'),
+  );
+}
+
 /// Her ağ çağrısı [error] ile biten (ya da askıda kalan) belge referansı.
 /// [snapshotEvents] ile canlı dinleme olayları elle üretilir.
 final class StubDocumentReference implements DocumentReference<Json> {
   /// [error] verilmezse çağrılar askıda kalır.
-  StubDocumentReference({this.error, this.path = 'posts/p01'});
+  StubDocumentReference({this.error, this.path = 'posts/p01', this.cached});
 
   /// Her çağrının fırlattığı hata; `null` ise çağrı tamamlanmaz.
   final Object? error;
+
+  /// Önbellek okumasının döndürdüğü belge; `null` ise önbellekte yok.
+  final DocumentSnapshot<Json>? cached;
 
   @override
   final String path;
@@ -33,11 +48,18 @@ final class StubDocumentReference implements DocumentReference<Json> {
   final StreamController<DocumentSnapshot<Json>> snapshotEvents =
       StreamController<DocumentSnapshot<Json>>();
 
+  /// [get] çağrılarına verilen seçenekler, sırasıyla (T-44 · önbellek okuması).
+  final List<GetOptions?> getOptions = [];
+
   @override
   String get id => path.split('/').last;
 
   @override
-  Future<DocumentSnapshot<Json>> get([GetOptions? options]) => _outcome(error);
+  Future<DocumentSnapshot<Json>> get([GetOptions? options]) {
+    getOptions.add(options);
+    if (options?.source == Source.cache) return _cacheOutcome(cached, error);
+    return _outcome(error);
+  }
 
   @override
   Future<void> set(Json data, [SetOptions? options]) => _outcome(error);
@@ -59,17 +81,30 @@ final class StubDocumentReference implements DocumentReference<Json> {
 /// Sorgu kurucuları (`limit`, `where` …) aynı nesneyi döndürür.
 final class StubQuery implements CollectionReference<Json> {
   /// [error] verilmezse çağrılar askıda kalır.
-  StubQuery({this.error});
+  StubQuery({this.error, this.cached});
 
   /// Her çağrının fırlattığı hata; `null` ise çağrı tamamlanmaz.
   final Object? error;
+
+  /// Önbellek okumasının döndürdüğü sonuç; `null` ise önbellekte yok.
+  final QuerySnapshot<Json>? cached;
+
+  /// Önbellekten okuma çağrıları (T-44 · A4-05); sayısı [cacheReads].
+  final List<GetOptions?> cacheReadLog = [];
+
+  /// Önbellekten okuma çağrı sayısı.
+  int get cacheReads => cacheReadLog.length;
 
   /// [snapshots] akışının denetleyicisi.
   final StreamController<QuerySnapshot<Json>> snapshotEvents =
       StreamController<QuerySnapshot<Json>>();
 
   @override
-  Future<QuerySnapshot<Json>> get([GetOptions? options]) => _outcome(error);
+  Future<QuerySnapshot<Json>> get([GetOptions? options]) {
+    if (options?.source != Source.cache) return _outcome(error);
+    cacheReadLog.add(options);
+    return _cacheOutcome(cached, error);
+  }
 
   @override
   Query<Json> limit(int limit) => this;
@@ -205,6 +240,25 @@ final class StubFirestore implements FirebaseFirestore {
     return _outcome(error);
   }
 
+  /// `enableNetwork` / `disableNetwork` çağrıları (`true` = açma), sırasıyla
+  /// (T-44 · A4-08). Ağ anahtarı [error] doluysa onunla biter, boşsa hemen
+  /// tamamlanır (askıda kalmaz).
+  final List<bool> networkCalls = [];
+
+  @override
+  Future<void> enableNetwork() {
+    networkCalls.add(true);
+    final failure = error;
+    return failure == null ? Future.value() : Future.error(failure);
+  }
+
+  @override
+  Future<void> disableNetwork() {
+    networkCalls.add(false);
+    final failure = error;
+    return failure == null ? Future.value() : Future.error(failure);
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -231,4 +285,36 @@ final class FailingBatchFirestore implements FirebaseFirestore {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Olmayan belgenin anlık görüntüsü; [fromCache] `true` ise SDK'nın
+/// çevrimdışı "önbellekte yok" olayıdır (T-44 · A4-02).
+final class StubMissingSnapshot implements DocumentSnapshot<Json> {
+  /// [fromCache] önbellek bayrağıyla olmayan belge.
+  StubMissingSnapshot({required this.fromCache});
+
+  /// `metadata.isFromCache` değeri.
+  final bool fromCache;
+
+  @override
+  bool get exists => false;
+
+  @override
+  Json? data() => null;
+
+  @override
+  SnapshotMetadata get metadata => _StubMetadata(isFromCache: fromCache);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final class _StubMetadata implements SnapshotMetadata {
+  _StubMetadata({required this.isFromCache});
+
+  @override
+  final bool isFromCache;
+
+  @override
+  bool get hasPendingWrites => false;
 }
