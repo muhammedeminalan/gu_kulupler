@@ -61,6 +61,16 @@ node tool/admin/send_system_notification.js --text-key welcome --email sen@ogr.g
 
 `--text-key`: `welcome` | `maintenance`. Belge kimliği `system_{olay anahtarı}_{uid}` (koşum başına tek anahtar).
 
+## Serbest metinli push (`send_push.js`)
+
+Yazdığın başlık ve metni **telefonlara push** olarak gönderir (FCM, Admin SDK). Uygulama içi bildirim kutusuna yazmaz; kutuya da düşsün istiyorsan hazır metinler için `send_system_notification.js` kullan. Jetonlar `users/{uid}/private/account.fcmTokens`'tan okunur: uygulamaya giriş yapıp bildirim izni vermemiş kullanıcıya gitmez. Sınırlar: başlık 60, metin 300 karakter. Emülatörde çalışmaz.
+
+```bash
+node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Batu, Kerime'ye APK'yı at, denesin." --all            # kuru: hesap ve cihaz sayısı
+node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Batu, Kerime'ye APK'yı at, denesin." --all --yes      # gönder
+node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Merhaba" --email kisi@ogr.gumushane.edu.tr --yes       # tek kişi
+```
+
 ## Yarım kalan hesap silme temizliği (`finish_account_deletion.js` — W-91)
 
 > **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon ve betik (T-45, `lib/account_cleanup_runner.js`) aynı ilkeyle yazar: **iki geçiş** (önce tüm hesapların kritik temizliği — hesap belgesi, katılım, üyelik, iletişim — sonra kişisel belgeler), **sayfalı okuma** (kişisel belgeler ve `--all-deleted` listesi `documentId()` sırasıyla sayfa sayfa; kuru çalıştırma kişisel belgeleri yalnızca sayar), kişisel yazımlar **≤ 450'lik gruplu batch** ve her yazım okunduğu andaki `lastUpdateTime` **önkoşuluyla** (kritik birimde ilk yazım). Araya giren yazımda (fonksiyonun ya da istemcinin eşzamanlı temizliği) batch bütünüyle reddedilir, yarım yazım ve çift sayaç düşüşü olmaz; çıktı `! … önkoşul` der → betiği yeniden çalıştır. Yine de fonksiyonun koşu saatinde (03:30 civarı) çalıştırmamak reddi azaltır.
