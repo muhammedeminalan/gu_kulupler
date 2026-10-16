@@ -115,7 +115,7 @@ void main() {
         const Center(
           child: GuEmblem(
             size: GuEmblemSize.xs,
-            child: GuLogo(size: 20, placeholder: true),
+            child: GuLogo(size: 20),
           ),
         ),
       );

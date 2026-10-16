@@ -7,24 +7,26 @@ import 'package:gu_ui/gu_ui.dart';
 /// SET-04 kartları — prototip `screens-profile.js:100–103`. Durum ve
 /// eylemler `AboutView`'dan gelir; kartlar yalnızca çizer.
 
-/// "Ekip" kartı (`card-body col gap8`): başlık + ad / rol satırları (avatar
-/// 32, satır aralığı 8 — K-42 `row gap10` → 8).
+/// "Ekip" kartı (`card-body col gap8`): başlık + ekip satırı.
+///
+/// Kullanıcı kararı 2026-10-16: tek kişi; satır = avatar 40 (profil
+/// fotoğrafı, yüklenemezse baş harfler) + ad, altında GitHub satırı
+/// (`external-link` 14 + `github.com/<kullanıcı>`, caption, marka rengi).
+/// Satırın tamamı dokunulabilir (`SET-04.team.github` → [onOpenGithub],
+/// DLG-32 dış bağlantı onayı).
 class AboutTeamCard extends StatelessWidget {
-  /// Ekip kartı.
-  const AboutTeamCard({super.key});
+  /// [onOpenGithub] ekip satırına dokunmadır.
+  const AboutTeamCard({required this.onOpenGithub, super.key});
 
-  static String _role(AppLocalizations l10n, AboutTeamRole role) =>
-      switch (role) {
-        AboutTeamRole.pm => l10n.aboutTeamPm,
-        AboutTeamRole.design => l10n.aboutTeamDesign,
-        AboutTeamRole.dev => l10n.aboutTeamDev,
-      };
+  /// Ekip satırına dokunma (`SET-04.team.github`).
+  final ValueChanged<AboutTeamMember> onOpenGithub;
 
   @override
   Widget build(BuildContext context) {
     final gu = context.gu;
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context);
+    final link = gu.colors.brandPrimaryText;
     return GuCard(
       padding: GuInsets.all16,
       child: Column(
@@ -33,26 +35,61 @@ class AboutTeamCard extends StatelessWidget {
         children: [
           Text(l10n.aboutTeam.upperFor(locale), style: gu.text.overline),
           for (final member in AboutContent.team)
-            Row(
-              spacing: GuSpacing.s8,
-              children: [
-                GuAvatar(
-                  initials: member.name.initials,
-                  seed: member.name,
-                  size: GuSizes.avatarSizes[1],
-                ),
-                Expanded(
-                  child: Text(
-                    member.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: gu.text.bodyM.copyWith(
-                      color: gu.colors.textHeading,
+            GuTapTarget(
+              key: GuKey.action('SET-04.team.github'),
+              onTap: () => onOpenGithub(member),
+              child: Row(
+                spacing: GuSizes.tileGap,
+                children: [
+                  GuAvatar(
+                    initials: member.name.initials,
+                    seed: member.name,
+                    image: switch (member.avatarAsset) {
+                      final asset? => AssetImage(asset),
+                      null => null,
+                    },
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: GuSpacing.s2,
+                      children: [
+                        Text(
+                          member.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: gu.text.bodyM.copyWith(
+                            color: gu.colors.textHeading,
+                          ),
+                        ),
+                        // Ekran okuyucu adresi değil "GitHub profili"ni okur.
+                        Semantics(
+                          label: l10n.aboutTeamGithub,
+                          excludeSemantics: true,
+                          child: Row(
+                            spacing: GuSpacing.s4,
+                            children: [
+                              GuIcon(
+                                GuIcons.externalLink,
+                                size: GuSizes.icon14,
+                                color: link,
+                              ),
+                              Flexible(
+                                child: Text(
+                                  member.githubLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: gu.text.caption.copyWith(color: link),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Text(_role(l10n, member.role), style: gu.text.caption),
-              ],
+                ],
+              ),
             ),
         ],
       ),

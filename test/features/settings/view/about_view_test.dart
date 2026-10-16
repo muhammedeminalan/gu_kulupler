@@ -1,5 +1,6 @@
-// SET-04 · Hakkında — başlık (amblem, ad, "v{sürüm} · Demo sürümü",
-// açıklama), ekip, lisanslar (açılır + "Lisansı görüntüle" → DLG-32), sürüm
+// SET-04 · Hakkında — başlık (amblem, ad, "v{sürüm}", açıklama), ekip
+// (tek kişi + GitHub satırı → DLG-32; kullanıcı kararı 2026-10-16),
+// lisanslar (açılır + "Lisansı görüntüle" → DLG-32), sürüm
 // notları (açılır), koşullar / gizlilik (AUT-06 push) / destek (SET-05),
 // geri, aksiyon envanteri, cihaz matrisi, açık + koyu golden.
 // Referans: design/reference-shots/screens/SET-04__*.webp,
@@ -17,10 +18,12 @@ import 'package:gu_kulupler/features/settings/provider/about_view_model.dart';
 import 'package:gu_kulupler/features/settings/view/about_view.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
+import 'package:gu_kulupler/product/service/url_launcher_service.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_feedback_service.dart';
 import '../../../fakes/fake_session_states.dart';
+import '../../../fakes/fake_url_launcher_service.dart';
 import '../../../helpers/a11y_guidelines.dart';
 import '../../../helpers/action_inventory.dart';
 import '../../../helpers/device_matrix.dart';
@@ -109,11 +112,26 @@ void main() {
       final l10n = tester.l10n;
       expect(find.byType(GuLogo), findsOneWidget);
       expect(find.text(AppConstants.appName), findsOneWidget);
-      expect(find.text('v1.0.0 · ${l10n.aboutBuild}'), findsOneWidget);
+      // Kullanıcı kararı 2026-10-16: yalnızca sürüm ("· Demo sürümü" yok).
+      expect(find.text('v1.0.0'), findsNWidgets(2));
+      expect(find.textContaining(' · '), findsNothing);
       expect(find.text(l10n.aboutDesc), findsOneWidget);
-      for (final member in AboutContent.team) {
-        expect(find.text(member.name), findsOneWidget);
-      }
+      expect(AboutContent.team, hasLength(1));
+      final member = AboutContent.team.single;
+      expect(member.name, 'Muhammed Emin Alan');
+      expect(find.text(member.name), findsOneWidget);
+      expect(find.text('github.com/muhammedeminalan'), findsOneWidget);
+      final avatar = tester.widget<GuAvatar>(find.byType(GuAvatar));
+      expect(
+        avatar.image,
+        const AssetImage('assets/team/muhammed-emin-alan.jpg'),
+      );
+      expect(avatar.size, GuSizes.avatar);
+      // Satır tek düğüm: ad + "GitHub profili" (adres okunmaz).
+      final row = tester.getSemantics(find.byKey(_k('team.github')));
+      expect(row.label, contains(member.name));
+      expect(row.label, contains(l10n.aboutTeamGithub));
+      expect(row.label, isNot(contains(member.githubLabel)));
       for (final license in AboutLicense.values) {
         expect(find.text(license.title), findsOneWidget);
       }
@@ -148,6 +166,23 @@ void main() {
       await tester.tap(find.byKey(_k('releaseNotes')));
       await tester.pump();
       expect(find.text(l10n.aboutNote4), findsOneWidget);
+    });
+
+    testWidgets('ekip satırı → DLG-32 → "Aç" → GitHub profili açılır', (
+      tester,
+    ) async {
+      await _pump(tester);
+      // `pumpApp` GetIt'i sıfırlar: sahteler çizimden sonra alınır.
+      final feedback = GetIt.I<FeedbackService>() as FakeFeedbackService;
+      final launcher = GetIt.I<UrlLauncherService>() as FakeUrlLauncherService;
+      feedback.dialogResults[DialogId.dlg32] = true;
+      await tester.ensureVisible(find.byKey(_k('team.github')));
+      await tester.tap(find.byKey(_k('team.github')));
+      await tester.pumpAndSettle();
+      expect(feedback.dialogs, [DialogId.dlg32]);
+      expect(launcher.opened, [
+        Uri.parse('https://github.com/muhammedeminalan'),
+      ]);
     });
 
     testWidgets('koşullar / gizlilik → AUT-06 (push); destek → SET-05; '
@@ -192,19 +227,21 @@ void main() {
   });
 
   group('SET-04 · Hakkında · golden', () {
-    // Amblem PNG'si çözülmüş hâlde (kod çözme motor tarafındadır →
-    // `runAsync`; AUT-01 kalıbı).
+    // Ekip fotoğrafı çözülmüş hâlde (kod çözme motor tarafındadır →
+    // `runAsync`; AUT-01 kalıbı). Amblem SVG'dir (mühür PNG'si yok).
     testWidgets('varsayılan (açık + koyu)', (tester) async {
       const locale = Locale('tr');
       for (final theme in kGoldenThemes) {
         await tester.pumpApp(const AboutView(), theme: theme);
-        final logo = find.descendant(
-          of: find.byType(GuLogo),
+        final photo = find.descendant(
+          of: find.byType(GuAvatar),
           matching: find.byType(Image),
         );
-        final image = tester.widget<Image>(logo);
         await tester.runAsync(
-          () => precacheImage(image.image, tester.element(logo)),
+          () => precacheImage(
+            tester.widget<Image>(photo).image,
+            tester.element(photo),
+          ),
         );
         await tester.pumpAndSettle();
         await expectLater(

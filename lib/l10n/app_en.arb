@@ -56,10 +56,6 @@
       }
     }
   },
-  "aboutBuild": "Demo build",
-  "@aboutBuild": {
-    "description": "Key about.build"
-  },
   "aboutDesc": "Developed for Gümüşhane University student clubs as an entrepreneurship course project.",
   "@aboutDesc": {
     "description": "Key about.desc"
@@ -104,17 +100,9 @@
   "@aboutTeam": {
     "description": "Key about.team"
   },
-  "aboutTeamDesign": "Design",
-  "@aboutTeamDesign": {
-    "description": "Key about.team.design"
-  },
-  "aboutTeamDev": "Engineering",
-  "@aboutTeamDev": {
-    "description": "Key about.team.dev"
-  },
-  "aboutTeamPm": "Product",
-  "@aboutTeamPm": {
-    "description": "Key about.team.pm"
+  "aboutTeamGithub": "GitHub profile",
+  "@aboutTeamGithub": {
+    "description": "Key about.team.github"
   },
   "aboutTitle": "About",
   "@aboutTitle": {

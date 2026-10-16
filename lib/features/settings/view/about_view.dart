@@ -18,13 +18,16 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Yukarıdan aşağıya (yatay 16, kartlar arası 20, alt 24 + güvenli alan):
 /// başlık çubuğu (geri · "Hakkında") · amblem 80 + "GÜ Kulüpler" +
-/// "v{sürüm} · Demo sürümü" + açıklama (ortalı, en çok 300) · "Ekip" kartı ·
+/// "v{sürüm}" (kullanıcı kararı 2026-10-16: "· Demo sürümü" yok) + açıklama
+/// (ortalı, en çok 300) · "Ekip" kartı ·
 /// "Açık kaynak lisansları" kartı (açılır satırlar) · "Sürüm notları" kartı
 /// (açılır) · Kullanım Koşulları / Gizlilik Politikası / Yardım ve destek
 /// kartı.
 ///
 /// * Lisans satırı açılınca açıklama + "Lisansı görüntüle" (DLG-32 → dış
 ///   adres) görünür; "Sürüm notları" açılınca 4 madde.
+/// * Ekip satırı (kullanıcı kararı 2026-10-16: tek kişi + GitHub) DLG-32 →
+///   GitHub profilini açar.
 /// * Koşullar / gizlilik AUT-06'yı geçici sayfa olarak açar (`push` —
 ///   guard'sız, PLAN §13.10); destek SET-05'e gider (`go`).
 /// * Ekran veri okumaz (sürüm paketten); yükleniyor / boş / hata durumu
@@ -34,9 +37,6 @@ import 'package:gu_ui/gu_ui.dart';
 class AboutView extends ConsumerWidget {
   /// Hakkında.
   const AboutView({super.key});
-
-  /// Başlık altı ayraç (`v1.0.0 · Demo sürümü`).
-  static const String _separator = ' · ';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,7 +89,7 @@ class AboutView extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    [version, l10n.aboutBuild].join(_separator),
+                    version,
                     textAlign: TextAlign.center,
                     style: gu.text.caption,
                   ),
@@ -108,7 +108,10 @@ class AboutView extends ConsumerWidget {
                 ],
               ),
             ),
-            const AboutTeamCard(),
+            AboutTeamCard(
+              onOpenGithub: (member) =>
+                  unawaited(viewModel.openTeamGithub(member)),
+            ),
             AboutLicensesCard(
               isOpen: state.isLicenseOpen,
               onToggle: viewModel.toggleLicense,

@@ -56,10 +56,6 @@
       }
     }
   },
-  "aboutBuild": "Demo sürümü",
-  "@aboutBuild": {
-    "description": "Key about.build"
-  },
   "aboutDesc": "Gümüşhane Üniversitesi öğrenci kulüpleri için, girişimcilik dersi projesi olarak geliştirilmiştir.",
   "@aboutDesc": {
     "description": "Key about.desc"
@@ -104,17 +100,9 @@
   "@aboutTeam": {
     "description": "Key about.team"
   },
-  "aboutTeamDesign": "Tasarım",
-  "@aboutTeamDesign": {
-    "description": "Key about.team.design"
-  },
-  "aboutTeamDev": "Geliştirme",
-  "@aboutTeamDev": {
-    "description": "Key about.team.dev"
-  },
-  "aboutTeamPm": "Ürün",
-  "@aboutTeamPm": {
-    "description": "Key about.team.pm"
+  "aboutTeamGithub": "GitHub profili",
+  "@aboutTeamGithub": {
+    "description": "Key about.team.github"
   },
   "aboutTitle": "Hakkında",
   "@aboutTitle": {

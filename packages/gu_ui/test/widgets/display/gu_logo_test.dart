@@ -1,4 +1,6 @@
-// T-03 · GuLogo (widget-catalog #48; CD-90, K-10).
+// T-03 · GuLogo (widget-catalog #48; CD-90, K-10). Kullanıcı kararı
+// 2026-10-16: üniversite mührü (`gu-logo.png`) çizilmez; her zaman uygulama
+// amblemi (açık / koyu SVG).
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +15,7 @@ String _svgAsset(WidgetTester tester) =>
 
 void main() {
   group('T-03 · GuLogo', () {
-    testWidgets('amblem: gu-logo.png daire kırpılmış, dekoratif (CD-90)', (
+    testWidgets('amblem SVG (açık / koyu), mühür PNG yok, dekoratif', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
@@ -21,69 +23,37 @@ void main() {
       await tester.pump();
       expect(tester.takeException(), isNull);
       expect(tester.getSize(find.byType(GuLogo)), const Size.square(96));
-      expect(find.byType(ClipOval), findsOneWidget);
-      final image = tester.widget<Image>(find.byType(Image));
-      expect(image.width, 96);
-      expect(image.height, 96);
-      expect(image.fit, BoxFit.cover);
-      // Hedef piksel boyutunda çözülür (kaynak 1854 px).
-      final resized = image.image as ResizeImage;
-      expect(resized.width, 96);
-      expect(
-        (resized.imageProvider as AssetImage).assetName,
-        GuLogoAssets.logo,
-      );
-      expect(find.byType(SvgPicture), findsNothing);
+      expect(_svgAsset(tester), GuLogoAssets.emblem);
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      expect(svg.width, 96);
+      expect(svg.height, 96);
+      expect(find.byType(Image), findsNothing);
+      expect(find.byType(ClipOval), findsNothing);
       expect(find.bySemanticsLabel(RegExp('.+')), findsNothing);
 
-      // PNG gerçekten çözülür (kod çözme motor tarafında → runAsync).
-      await tester.runAsync(
-        () => precacheImage(image.image, tester.element(find.byType(Image))),
+      await tester.pumpApp(
+        const Center(child: GuLogo(size: 20)),
+        theme: ThemeMode.dark,
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
-      final decoded = tester.widget<RawImage>(find.byType(RawImage)).image;
-      expect(decoded, isNotNull);
-      expect(decoded!.width, 96);
-      expect(decoded.height, 96);
+      expect(tester.getSize(find.byType(GuLogo)), const Size.square(20));
+      expect(_svgAsset(tester), GuLogoAssets.emblemDark);
+      expect(find.byType(Image), findsNothing);
       handle.dispose();
     });
 
     testWidgets('semanticLabel → Semantics(label, image)', (tester) async {
       final handle = tester.ensureSemantics();
       await tester.pumpApp(
-        const Center(
-          child: GuLogo(size: 72, semanticLabel: 'Gümüşhane Üniversitesi'),
-        ),
+        const Center(child: GuLogo(size: 72, semanticLabel: 'GÜ Kulüpler')),
       );
       await tester.pump();
       expect(
-        tester.getSemantics(find.bySemanticsLabel('Gümüşhane Üniversitesi')),
-        matchesSemantics(label: 'Gümüşhane Üniversitesi', isImage: true),
+        tester.getSemantics(find.bySemanticsLabel('GÜ Kulüpler')),
+        matchesSemantics(label: 'GÜ Kulüpler', isImage: true),
       );
       handle.dispose();
-    });
-
-    testWidgets('placeholder: yer tutucu amblem SVG (açık / koyu, K-10)', (
-      tester,
-    ) async {
-      await tester.pumpApp(
-        const Center(child: GuLogo(size: 80, placeholder: true)),
-      );
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(GuLogo)), const Size.square(80));
-      expect(_svgAsset(tester), GuLogoAssets.placeholderEmblem);
-      expect(find.byType(Image), findsNothing);
-
-      await tester.pumpApp(
-        const Center(child: GuLogo(size: 20, placeholder: true)),
-        theme: ThemeMode.dark,
-      );
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(GuLogo)), const Size.square(20));
-      expect(_svgAsset(tester), GuLogoAssets.placeholderEmblemDark);
     });
   });
 }
