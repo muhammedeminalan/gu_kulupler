@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#D00A2D</color>
+    <!-- Bildirim vurgu rengi = brand.primary (GuColors açık #D00A2D). -->
+    <color name="notification_accent">#D00A2D</color>
+</resources>

@@ -69,7 +69,14 @@ void main() {
           'com.google.firebase.messaging.default_notification_icon',
           'resource',
         ),
-        '@mipmap/ic_launcher',
+        '@drawable/ic_stat_notification',
+      );
+      expect(
+        metaValue(
+          'com.google.firebase.messaging.default_notification_color',
+          'resource',
+        ),
+        '@color/notification_accent',
       );
       expect(
         metaValue('firebase_messaging_auto_init_enabled', 'value'),

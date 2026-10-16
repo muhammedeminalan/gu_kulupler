@@ -1,8 +1,8 @@
-# Yerel splash yapılandırması (PLAN §5.6.3). T-00: yalnızca dosya; çalıştırma T-46:
+# Yerel splash yapılandırması (PLAN §5.6.3). Çalıştırma (T-46, 2026-10-16):
 #   dart run flutter_native_splash:create --path=flutter_native_splash.yaml
 # Renkler = design/extracted/registry.json#tokens.COLORS["bg.canvas"] (açık / koyu);
 # parite testi: test/platform/native_splash_tokens_test.dart.
-# image_dark: koyu amblemin PNG'si yok (placeholder-emblem-dark.svg); T-46'da 512 px PNG'ye çevrilip bağlanır.
+# image_dark: koyu amblem (placeholder-emblem-dark.svg) açık amblemle aynı çizim — aynı 512 px PNG kullanılır (T-46).
 flutter_native_splash:
   color: "#FAF9F6"
   color_dark: "#17191C"
