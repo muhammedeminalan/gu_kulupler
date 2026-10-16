@@ -6,7 +6,10 @@
 // erişilebilirlik, cihaz matrisi ve galeri golden'ı (açık + koyu). Kaynak:
 // prototip `cards.js:96–127`; referans `screens/FED-01__*.webp`,
 // `FED-02__*.webp`.
+import 'dart:isolate';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/product/widget/post/image_grid.dart';
@@ -146,6 +149,36 @@ Widget _gallery(BuildContext context) => Scaffold(
 );
 
 void main() {
+  // Cihaz hatası (2026-10-16, Crashlytics `_VectorGraphicWidgetState._loadPicture`):
+  // `SvgLoader` yükleyiciyi `compute` ile ayrı isolate'e gönderir; önbellekli
+  // paketi alanında tutan yükleyici gönderilemez → release'te ikon çizilmez.
+  testWidgets(
+    "dolu ikon (beğeni / kayıt) yükleyicisi isolate'e gönderilebilir",
+    (
+      tester,
+    ) async {
+      final calls = _Calls();
+      await pumpPost(
+        tester,
+        calls.card(kAnnouncement, liked: true, saved: true),
+      );
+      await tester.pumpAndSettle();
+      // Paketin dize önbelleğini doldur (`SynchronousFuture`).
+      await DefaultAssetBundle.of(
+        tester.element(find.byType(PostCard)),
+      ).loadString(GuIcons.heart.assetPath);
+      final pictures = tester.widgetList<SvgPicture>(find.byType(SvgPicture));
+      expect(pictures, isNotEmpty);
+      for (final picture in pictures) {
+        final loader = picture.bytesLoader;
+        final sent = await tester.runAsync(
+          () => Isolate.run(() => loader.runtimeType.toString()),
+        );
+        expect(sent, isNotNull, reason: '${loader.runtimeType} gönderilemedi');
+      }
+    },
+  );
+
   group('T-20 · PostCard · içerik', () {
     testWidgets('duyuru: sabit şeridi, yazar + rol rozeti + göreli zaman, '
         '"Duyuru" rozeti + "Bildirim gönderildi", başlık, metin, sayaçlar — '

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gu_ui/src/extensions/build_context_x.dart';
@@ -151,20 +152,18 @@ class GuCover extends StatelessWidget {
         errorBuilder: _imageError,
       );
     } else if (asset != null) {
-      final bundle = DefaultAssetBundle.of(context);
       final clubIcon = icon;
+      // `bundle:` yükleyiciye verilmez — GuIcon'daki isolate notu.
       art = clubIcon == null || clubIcon == GuIcons.sparkles
           ? SvgPicture.asset(
               asset,
               fit: BoxFit.cover,
-              bundle: bundle,
               excludeFromSemantics: true,
             )
           : SvgPicture(
               _TemplateIconLoader(
                 templateAsset: asset,
                 iconAsset: clubIcon.assetPath,
-                bundle: bundle,
               ),
               fit: BoxFit.cover,
               excludeFromSemantics: true,
@@ -191,34 +190,50 @@ class GuCover extends StatelessWidget {
 
 /// Şablon SVG'sini kulüp ikonuyla birleştirerek yükler
 /// (`GuCovers.composeTemplate`); önbellek anahtarı şablon + ikon + paket.
+///
+/// Varlık paketi alanda TUTULMAZ: `SvgLoader` SVG'yi `compute` ile ayrı
+/// isolate'te çözer ve yükleyiciyi oraya gönderir; önbellekli paket
+/// (`SynchronousFuture`) gönderilemez → release / profil derlemede kapak
+/// çizilmez. Paket `prepareMessage` / [cacheKey] sırasında ana isolate'te
+/// `DefaultAssetBundle`'dan çözülür.
 class _TemplateIconLoader extends SvgLoader<(String, String)> {
   const _TemplateIconLoader({
     required this.templateAsset,
     required this.iconAsset,
-    required this.bundle,
   });
 
   final String templateAsset;
   final String iconAsset;
-  final AssetBundle bundle;
+
+  static AssetBundle _bundleOf(BuildContext? context) =>
+      context == null ? rootBundle : DefaultAssetBundle.of(context);
 
   @override
-  Future<(String, String)?> prepareMessage(BuildContext? context) async => (
-    await bundle.loadString(templateAsset),
-    await bundle.loadString(iconAsset),
-  );
+  Future<(String, String)?> prepareMessage(BuildContext? context) async {
+    final bundle = _bundleOf(context);
+    return (
+      await bundle.loadString(templateAsset),
+      await bundle.loadString(iconAsset),
+    );
+  }
 
   @override
   String provideSvg((String, String)? message) =>
       message == null ? '' : GuCovers.composeTemplate(message.$1, message.$2);
 
   @override
+  SvgCacheKey cacheKey(BuildContext? context) => SvgCacheKey(
+    keyData: (this, _bundleOf(context)),
+    theme: getTheme(context),
+    colorMapper: colorMapper,
+  );
+
+  @override
   bool operator ==(Object other) =>
       other is _TemplateIconLoader &&
       other.templateAsset == templateAsset &&
-      other.iconAsset == iconAsset &&
-      other.bundle == bundle;
+      other.iconAsset == iconAsset;
 
   @override
-  int get hashCode => Object.hash(templateAsset, iconAsset, bundle);
+  int get hashCode => Object.hash(templateAsset, iconAsset);
 }

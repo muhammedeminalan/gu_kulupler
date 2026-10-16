@@ -69,7 +69,7 @@ class GuLogo extends StatelessWidget {
             : GuLogoAssets.placeholderEmblem,
         width: size,
         height: size,
-        bundle: bundle,
+        // `bundle:` verilmez — GuIcon'daki isolate notu (paket yükleyicide durmaz).
         excludeFromSemantics: true,
       );
     } else {

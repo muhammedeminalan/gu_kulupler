@@ -29,7 +29,7 @@ class GuIllustration extends StatelessWidget {
       illustration.assetPath,
       width: size,
       height: size,
-      bundle: DefaultAssetBundle.of(context),
+      // `bundle:` verilmez — GuIcon'daki isolate notu (paket yükleyicide durmaz).
       excludeFromSemantics: true,
     ),
   );

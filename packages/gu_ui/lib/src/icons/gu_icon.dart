@@ -47,7 +47,10 @@ class GuIcon extends StatelessWidget {
         color ?? context.gu.colors.textHeading,
         BlendMode.srcIn,
       ),
-      bundle: DefaultAssetBundle.of(context),
+      // `bundle:` verilmez: yükleyici SVG'yi `compute` ile ayrı isolate'te
+      // çözer ve kendisini oraya gönderir; alanında duran önbellekli paket
+      // (`SynchronousFuture`) gönderilemez → release'te ikon hiç çizilmez.
+      // Paket `prepareMessage` sırasında `DefaultAssetBundle`'dan çözülür.
       excludeFromSemantics: true,
     );
     final label = semanticLabel;
