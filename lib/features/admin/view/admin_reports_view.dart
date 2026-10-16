@@ -6,22 +6,22 @@ import 'package:gu_kulupler/features/admin/provider/admin_reports_view_model.dar
 import 'package:gu_kulupler/features/admin/provider/report_group.dart';
 import 'package:gu_kulupler/features/admin/provider/report_target_preview.dart';
 import 'package:gu_kulupler/features/admin/view/mixin/admin_reports_view_mixin.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_group_row.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
 import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-/// Admin şikayetler — `AdminReportsRoute` (`/admin/reports?tab=&reportId=`;
-/// guard `S`: yalnızca süper admin, router'da). Prototip `Reports`
-/// (`screens-admin.js:61–66`).
+/// Admin şikayetler bölmesi (ADM-04) — admin kökünün (`AdminView`,
+/// `/admin?tab=reports&reportsTab=&reportId=`; guard `S`) Şikayetler bölmesi.
+/// Prototip `Reports` (`screens-admin.js:61–66`).
 ///
-/// Yukarıdan aşağıya: büyük başlık "Admin" + "Süper Admin" rozeti ·
-/// `AdminSegmentBar` (Şikayetler seçili) · sekmeler (Açık — açık grup
+/// Başlık ve `AdminSegmentBar` kökte (`AdminView`; kullanıcı kararı
+/// 2026-10-16 — önceden ayrı sayfa). Bölme: sekmeler (Açık — açık grup
 /// sayacı · Çözüldü) · hedef türü çipleri (`.hscroll.py8`: Tümü · Gönderi ·
 /// Yorum · Kullanıcı · Kulüp · Etkinlik) · kaydırma alanı (çek-yenile,
-/// sayfalı): `ReportGroupRow` satırları (dokunuş SHT-26).
+/// sayfalı; sekme / süzgeç değişimi kısa solma, `GuSliverContentFade`):
+/// `ReportGroupRow` satırları (dokunuş SHT-26).
 ///
 /// Durumlar (sıra: hata → yükleniyor → boş → dolu; referans
 /// `states/ADM-04__*`) yalnızca listeyi değiştirir; boş görünüm "Açık
@@ -32,15 +32,26 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Design: ADM-04
 class AdminReportsView extends ConsumerStatefulWidget {
-  /// Şikayet listesi; [tab] ilk açılan sekme, [reportId] açılışta SHT-26'sı
-  /// açılan grup anahtarı.
-  const AdminReportsView({this.tab, this.reportId, super.key});
+  /// Şikayet listesi; [tab] açılan sekme, [reportId] SHT-26'sı açılan grup
+  /// anahtarı.
+  const AdminReportsView({
+    this.tab,
+    this.reportId,
+    this.active = true,
+    super.key,
+  });
 
-  /// İlk açılan sekme (`AdminReportsRoute.tab`; `null` → açık).
+  /// Açılan sekme (`AdminRoute.reportsTab`; değişip dolu geldiğinde
+  /// uygulanır; ilk açılışta açık).
   final AdminReportsTab? tab;
 
-  /// Açılışta SHT-26'sı açılan grup (`{targetType}_{targetId}`).
+  /// SHT-26'sı açılan grup (`{targetType}_{targetId}`; değişip dolu
+  /// geldiğinde).
   final String? reportId;
+
+  /// Bölme sahnede mi (sekmeye yeniden dokunma yalnızca etkin bölmeyi başa
+  /// kaydırır).
+  final bool active;
 
   @override
   ConsumerState<AdminReportsView> createState() => _AdminReportsViewState();
@@ -158,78 +169,62 @@ class _AdminReportsViewState extends ConsumerState<AdminReportsView>
 
   @override
   Widget build(BuildContext context) {
-    final gu = context.gu;
     final l10n = context.l10n;
     final state = ref.watch(adminReportsViewModelProvider);
     final openCount = state.loadedTabs.contains(AdminReportsTab.open)
         ? state.openCount
         : 0;
 
-    return Scaffold(
-      backgroundColor: gu.colors.bgCanvas,
-      appBar: GuAppBar(
-        title: l10n.navAdmin,
-        large: true,
-        actions: [
-          GuRoleBadge(
-            kind: GuRoleBadgeKind.superadmin,
-            label: l10n.roleSuperadmin,
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AdminSegmentBar(
-            current: AdminSegmentBar.reports,
-            onSelect: openSegment,
-            keyOf: (id) => GuKey.action('ADM-04.seg.$id'),
-          ),
-          GuTabs(
-            tabs: [
-              for (final tab in AdminReportsTab.values)
-                GuTabItem(
-                  id: tab.name,
-                  label: _tabLabel(l10n, tab),
-                  count: tab == AdminReportsTab.open && openCount > 0
-                      ? openCount
-                      : null,
-                ),
-            ],
-            value: state.tab.name,
-            onChanged: selectTab,
-            tabKeyBuilder: (index) => _tabKeys[index],
-          ),
-          // `.hscroll.py8` yazılmıştır, ancak `.hscroll` dolgusu ezer:
-          // dikey 3 px (K-59).
-          GuHorizontalList(
-            children: [
-              for (final filter in ReportTargetFilter.values)
-                GuChip(
-                  key: _filterKey(filter),
-                  label: _filterLabel(l10n, filter),
-                  selected: state.typeFilter == filter,
-                  onTap: () => selectFilter(filter),
-                ),
-            ],
-          ),
-          Expanded(
-            child: GuRefresh(
-              onRefresh: refresh,
-              child: CustomScrollView(
-                controller: scrollController,
-                slivers: [
-                  ..._slivers(state, l10n),
-                  const SliverSafeArea(
-                    top: false,
-                    sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
-                  ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GuTabs(
+          tabs: [
+            for (final tab in AdminReportsTab.values)
+              GuTabItem(
+                id: tab.name,
+                label: _tabLabel(l10n, tab),
+                count: tab == AdminReportsTab.open && openCount > 0
+                    ? openCount
+                    : null,
               ),
+          ],
+          value: state.tab.name,
+          onChanged: selectTab,
+          tabKeyBuilder: (index) => _tabKeys[index],
+        ),
+        // `.hscroll.py8` yazılmıştır, ancak `.hscroll` dolgusu ezer:
+        // dikey 3 px (K-59).
+        GuHorizontalList(
+          children: [
+            for (final filter in ReportTargetFilter.values)
+              GuChip(
+                key: _filterKey(filter),
+                label: _filterLabel(l10n, filter),
+                selected: state.typeFilter == filter,
+                onTap: () => selectFilter(filter),
+              ),
+          ],
+        ),
+        Expanded(
+          child: GuRefresh(
+            onRefresh: refresh,
+            child: CustomScrollView(
+              controller: scrollController,
+              slivers: [
+                GuSliverContentFade(
+                  value: (state.tab, state.typeFilter),
+                  sliver: SliverMainAxisGroup(slivers: _slivers(state, l10n)),
+                ),
+                const SliverSafeArea(
+                  top: false,
+                  sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

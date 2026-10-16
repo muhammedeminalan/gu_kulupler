@@ -7,18 +7,21 @@ import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_view_model.dart';
 import 'package:gu_kulupler/features/admin/view/admin_users_view.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_user_menu.dart';
 import 'package:gu_kulupler/product/feedback/dialogs/suspend_user_dialog.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
+import 'package:gu_ui/gu_ui.dart';
 
-/// ADM-05 davranışı: açılış süzgeci (`?filter=`), arama, süzgeç,
-/// çek-yenile, sayfalama, satır menüsü ve gezinme.
+/// ADM-05 bölmesinin davranışı: açılış süzgeci (`?filter=`), arama, süzgeç,
+/// çek-yenile, başa kaydırma, sayfalama, satır menüsü ve gezinme.
 ///
 /// * Gezinme `go` ile (guard'lı rotalar): satır ve menü "Profili gör" →
-///   CLB-07 (`AdminUserProfileRoute`, admin yığını); bölmeli geçiş → ADM-01 /
-///   ADM-02 / ADM-04 (prototip `nav.replace`).
+///   CLB-07 (`AdminUserProfileRoute`, admin kökünün alt sayfası; geri → bu
+///   bölme). Bölmeli geçiş admin kökündedir (`AdminViewMixin`); etkin
+///   sekmeye yeniden dokunma (`scrollTopRequestProvider`) bölme sahnedeyse
+///   ([AdminUsersView.active]) listeyi başa kaydırır.
 /// * "Askıya al" / "Askıyı kaldır" → DLG-30 → ViewModel (TST-52); kendi
 ///   satırında öğe yoktur (W-101 b).
 /// * Liste sonuna yaklaşınca (ya da süzülen liste ekranı doldurmuyorsa) ad
@@ -28,6 +31,8 @@ mixin AdminUsersViewMixin on ConsumerState<AdminUsersView> {
   final ScrollController scrollController = ScrollController();
 
   ProviderSubscription<AdminUsersState>? _stateSubscription;
+
+  ProviderSubscription<int>? _scrollTopSubscription;
 
   /// Ekranın ViewModel'i.
   AdminUsersViewModel get viewModel =>
@@ -54,6 +59,12 @@ mixin AdminUsersViewMixin on ConsumerState<AdminUsersView> {
         (_) => _loadMoreIfNearEnd(),
       );
     });
+    _scrollTopSubscription = ref.listenManual(
+      scrollTopRequestProvider(GuTab.admin),
+      (_, _) {
+        if (widget.active) scrollToTop();
+      },
+    );
     _applyRouteFilter();
   }
 
@@ -61,25 +72,35 @@ mixin AdminUsersViewMixin on ConsumerState<AdminUsersView> {
   void didUpdateWidget(AdminUsersView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.filter != oldWidget.filter) _applyRouteFilter();
+    // Bölme yeniden seçildi: öteki bölmenin yazımı (SHT-26 askı / çözüm,
+    // ADM-02 askı, başkan) burada bayat kalmasın — içerik kalarak yeniden
+    // okunur (çek-yenile gibi; ilk seçimde ViewModel zaten okur). Yaşam
+    // döngüsünde sağlayıcı değişmez: kare sonunda.
+    if (widget.active && !oldWidget.active) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.active) unawaited(viewModel.refresh());
+      });
+    }
   }
 
   @override
   void dispose() {
     _stateSubscription?.close();
+    _scrollTopSubscription?.close();
     scrollController.dispose();
     super.dispose();
   }
 
-  /// Bölmeli geçiş (`ADM-05.seg.<hedef>`); kendi seçeneği etkisizdir.
-  void openSegment(String screenId) {
-    switch (screenId) {
-      case AdminSegmentBar.overview:
-        const AdminRoute().go(context);
-      case AdminSegmentBar.clubs:
-        const AdminClubsRoute().go(context);
-      case AdminSegmentBar.reports:
-        const AdminReportsRoute().go(context);
-    }
+  /// Listeyi başa kaydırır (sekmeye yeniden dokunma).
+  void scrollToTop() {
+    if (!scrollController.hasClients) return;
+    unawaited(
+      scrollController.animateTo(
+        0,
+        duration: context.gu.duration(GuMotion.base),
+        curve: GuMotion.easeStandard,
+      ),
+    );
   }
 
   /// Arama (`ADM-05.search`).
@@ -150,7 +171,7 @@ mixin AdminUsersViewMixin on ConsumerState<AdminUsersView> {
   }
 
   /// Rotadaki `?filter=` süzgecini ilk kareden sonra uygular (yapım
-  /// sırasında sağlayıcı değiştirilmez).
+  /// sırasında sağlayıcı değiştirilmez); boş değer hâli değiştirmez.
   void _applyRouteFilter() {
     final filter = widget.filter;
     if (filter == null) return;

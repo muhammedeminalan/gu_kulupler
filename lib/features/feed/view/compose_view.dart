@@ -113,7 +113,7 @@ class _ComposeViewState extends ConsumerState<ComposeView>
 
   Widget _content(ComposeState state, {required bool canSwitchClub}) {
     final preview = state.preview;
-    return SingleChildScrollView(
+    return GuFormScrollView(
       padding: GuInsets.only(
         left: GuSpacing.s16,
         right: GuSpacing.s16,

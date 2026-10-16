@@ -184,54 +184,61 @@ class _NotificationsViewState extends ConsumerState<NotificationsView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  ...switch (status) {
-                    _ when OfflineListFallback.applies(ref, status) => [
-                      OfflineListFallback.sliver(onReload: refresh),
-                    ],
-                    GuListStatus.error => [
-                      SliverToBoxAdapter(
-                        child: GuErrorState(
-                          title: l10n.sysErrorTitle,
-                          description: l10n.sysErrorDesc,
-                          retryLabel: l10n.commonRetry,
-                          retryActionKey: GuKey.action('NTF-01.retry'),
-                          inline: true,
-                          onRetry: refresh,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.loading => [
-                      SliverToBoxAdapter(
-                        child: GuSkeletonList(
-                          semanticLabel: l10n.commonLoading,
-                          count: _skeletonRows,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.empty => [
-                      SliverToBoxAdapter(
-                        child: GuEmptyState(
-                          illustration: GuIllustrations.emptyNotifications,
-                          title: l10n.notifEmptyTitle,
-                          description: l10n.notifEmptyDesc,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.data => [
-                      for (final section in state.sections)
-                        NotificationGroup(
-                          key: ValueKey<NotificationDay>(section.day),
-                          title: _dayLabel(l10n, section.day),
-                          children: [
-                            for (final n in section.items)
-                              _row(state, n, texts, relative, nowUtc),
-                          ],
-                        ),
-                      SliverToBoxAdapter(
-                        child: GuListEnd(label: l10n.commonAllDone),
-                      ),
-                    ],
-                  },
+                  // Süzgeç değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                  // `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: state.filter,
+                    sliver: SliverMainAxisGroup(
+                      slivers: switch (status) {
+                        _ when OfflineListFallback.applies(ref, status) => [
+                          OfflineListFallback.sliver(onReload: refresh),
+                        ],
+                        GuListStatus.error => [
+                          SliverToBoxAdapter(
+                            child: GuErrorState(
+                              title: l10n.sysErrorTitle,
+                              description: l10n.sysErrorDesc,
+                              retryLabel: l10n.commonRetry,
+                              retryActionKey: GuKey.action('NTF-01.retry'),
+                              inline: true,
+                              onRetry: refresh,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.loading => [
+                          SliverToBoxAdapter(
+                            child: GuSkeletonList(
+                              semanticLabel: l10n.commonLoading,
+                              count: _skeletonRows,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.empty => [
+                          SliverToBoxAdapter(
+                            child: GuEmptyState(
+                              illustration: GuIllustrations.emptyNotifications,
+                              title: l10n.notifEmptyTitle,
+                              description: l10n.notifEmptyDesc,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.data => [
+                          for (final section in state.sections)
+                            NotificationGroup(
+                              key: ValueKey<NotificationDay>(section.day),
+                              title: _dayLabel(l10n, section.day),
+                              children: [
+                                for (final n in section.items)
+                                  _row(state, n, texts, relative, nowUtc),
+                              ],
+                            ),
+                          SliverToBoxAdapter(
+                            child: GuListEnd(label: l10n.commonAllDone),
+                          ),
+                        ],
+                      },
+                    ),
+                  ),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),

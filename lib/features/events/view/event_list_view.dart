@@ -276,24 +276,33 @@ class _EventListViewState extends ConsumerState<EventListView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  if (listMode)
-                    ..._listSlivers(l10n, state, clock, card)
-                  else if (state.isError)
-                    _errorSliver(l10n)
-                  else
-                    SliverToBoxAdapter(
-                      child: EventCalendarSection(
-                        events: state.events,
-                        month:
-                            state.calendarMonth ??
-                            DateTime(today.year, today.month),
-                        selectedDay: state.selectedDay ?? today,
-                        today: today,
-                        onSelectDay: viewModel.selectDay,
-                        onMonthChanged: viewModel.setMonth,
-                        cardBuilder: compactCard,
-                      ),
+                  // Liste / takvim ve zaman çipi değişimi kısa solma
+                  // (kullanıcı kararı 2026-10-16; `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: (state.mode, state.chip),
+                    sliver: SliverMainAxisGroup(
+                      slivers: [
+                        if (listMode)
+                          ..._listSlivers(l10n, state, clock, card)
+                        else if (state.isError)
+                          _errorSliver(l10n)
+                        else
+                          SliverToBoxAdapter(
+                            child: EventCalendarSection(
+                              events: state.events,
+                              month:
+                                  state.calendarMonth ??
+                                  DateTime(today.year, today.month),
+                              selectedDay: state.selectedDay ?? today,
+                              today: today,
+                              onSelectDay: viewModel.selectDay,
+                              onMonthChanged: viewModel.setMonth,
+                              cardBuilder: compactCard,
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),

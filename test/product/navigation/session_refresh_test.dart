@@ -138,9 +138,9 @@ void main() {
         tester,
         redirect: true,
         session: FakeSessionStates.activeSuper,
-        location: '/admin/users',
+        location: '/admin?tab=users',
       );
-      expect(app.location, '/admin/users');
+      expect(app.location, '/admin?tab=users');
 
       app.session = FakeSessionStates.active;
       await tester.pumpAndSettle();

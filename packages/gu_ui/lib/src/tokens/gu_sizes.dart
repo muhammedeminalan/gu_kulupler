@@ -932,6 +932,11 @@ abstract final class GuSizes {
   /// `int` — `GuInput(int rows = GuSizes.textareaRows)`.
   static const int textareaRows = 4;
 
+  /// Tasarım dışı (K-93, kullanıcı kararı): yorum alanı (FED-02 / SHT-09)
+  /// 1 satırla başlar, en çok bu kadar satıra büyür, sonra kayar —
+  /// `int` — `GuInput(maxRows:)`.
+  static const int commentMaxRows = 5;
+
   /// ui.js:28 `<span class="in-icon"><${Icon} name=${icon} size=${20} />`.
   static const double inputIcon = 20;
 

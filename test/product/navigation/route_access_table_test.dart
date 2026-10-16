@@ -1,4 +1,5 @@
-// T-11 · RouteAccessTable: 59 yol kalıbı (T-43: +2 kulüp bağlamlı CLB-07) ↔ PLAN §13.3 "Guard" sütunu
+// T-11 · RouteAccessTable: 56 yol kalıbı (T-43: +2 kulüp bağlamlı CLB-07; 2026-10-16: admin bölmeleri
+// tek kök `/admin?tab=`, −3) ↔ PLAN §13.3 "Guard" sütunu
 // (navigation.md §2). Tablo burada açıkça yazılıdır; satır başına assert.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/product/navigation/route_guards.dart';
@@ -65,13 +66,11 @@ const Map<String, RouteAccess> _expected = {
   '/profile/settings/delete': RouteAccess.active,
   '/profile/settings/about': RouteAccess.active,
   '/profile/settings/support': RouteAccess.active,
-  // §13.3.6 Admin (7)
+  // §13.3.6 Admin (4; ADM-01 / 02 / 04 / 05 tek kök — kullanıcı kararı
+  // 2026-10-16)
   '/admin': RouteAccess.superAdmin,
-  '/admin/clubs': RouteAccess.superAdmin,
   '/admin/clubs/new': RouteAccess.superAdmin,
   '/admin/clubs/:clubId/edit': RouteAccess.superAdmin,
-  '/admin/reports': RouteAccess.superAdmin,
-  '/admin/users': RouteAccess.superAdmin,
   '/admin/users/:userId': RouteAccess.superAdmin,
 };
 
@@ -90,8 +89,8 @@ String _sample(String pattern) => pattern.replaceAllMapped(
 
 void main() {
   group('T-11 · RouteAccessTable', () {
-    test('59 kalıp vardır ve PLAN §13.3 ile birebir aynıdır', () {
-      expect(_expected, hasLength(59));
+    test('56 kalıp vardır ve PLAN §13.3 ile birebir aynıdır', () {
+      expect(_expected, hasLength(56));
       expect(RouteAccessTable.patterns, _expected);
     });
 

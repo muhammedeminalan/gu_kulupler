@@ -53,7 +53,7 @@ class _SupportViewState extends ConsumerState<SupportView>
           backSemanticLabel: l10n.a11yBack,
           backActionKey: GuKey.action('SET-05.back'),
         ),
-        body: SingleChildScrollView(
+        body: GuFormScrollView(
           padding: GuInsets.only(
             left: GuSpacing.s16,
             right: GuSpacing.s16,

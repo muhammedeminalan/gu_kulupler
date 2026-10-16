@@ -26,6 +26,10 @@ import 'package:gu_ui/src/widgets/primitives/gu_icon_button.dart';
 ///   çizgi, dolgu 12 / 16 + alt güvenli alan; `GuButton` çocuklar satırı
 ///   eşit paylaşır — css:277). Oranlar `ekran − üst inset` üzerindendir
 ///   (K-07); klavye açıkken çerçeve kalan alanı aşmaz, gövde kayar.
+/// * Klavye (K-93): [footer] `TextFieldTapRegion` içindedir — gövdedeki
+///   metin alanı odaktayken footer düğmesine (gönder / kaydet) dokunmak
+///   klavyeyi kapatmaz, doğrulama hatasında alan odakta kalır; gövdenin
+///   başka yerine dokunmak kapatır (`GuInput.onTapOutside`).
 /// * Kapanma yolları — X, aşağı sürükleme (> `GuSizes.sheetDragCloseThreshold`;
 ///   gövde başa kaydırılmışken gövdeden de), geri tuşu ve scrim — tek kapıdan
 ///   geçer: [onWillClose] `false` dönerse açık kalır (kirli form → DLG-25
@@ -285,12 +289,17 @@ class _GuSheetFrameState extends State<GuSheetFrame> {
                 right: GuSizes.sheetFootPaddingX,
                 bottom: GuSizes.sheetFootPaddingY + safeBottom,
               ),
-              child: Row(
-                spacing: GuSizes.sheetFootGap,
-                children: [
-                  for (final child in footer)
-                    if (child is GuButton) Expanded(child: child) else child,
-                ],
+              // K-93: footer eylemleri gövdedeki metin alanıyla çalışır
+              // (gönder / kaydet) — dokunmak klavyeyi kapatmaz; doğrulama
+              // hatasında alan odakta kalır (SHT-05 not alanı).
+              child: TextFieldTapRegion(
+                child: Row(
+                  spacing: GuSizes.sheetFootGap,
+                  children: [
+                    for (final child in footer)
+                      if (child is GuButton) Expanded(child: child) else child,
+                  ],
+                ),
               ),
             ),
           ),

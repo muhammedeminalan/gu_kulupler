@@ -82,6 +82,8 @@ export 'src/widgets/inputs/gu_switch.dart';
 export 'src/widgets/inputs/gu_tabs.dart';
 export 'src/widgets/inputs/gu_wheel_picker.dart';
 export 'src/widgets/layout/gu_content_column.dart';
+export 'src/widgets/layout/gu_content_fade.dart';
+export 'src/widgets/layout/gu_form_scroll_view.dart';
 export 'src/widgets/navigation/gu_app_bar.dart';
 export 'src/widgets/navigation/gu_bottom_nav.dart';
 export 'src/widgets/navigation/gu_page_dots.dart';

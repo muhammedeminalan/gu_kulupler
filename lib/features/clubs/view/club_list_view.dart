@@ -13,6 +13,7 @@ import 'package:gu_kulupler/features/clubs/view/widget/first_club_card.dart';
 import 'package:gu_kulupler/features/clubs/view/widget/my_clubs_strip.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/notification/unread_notification_clubs.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
@@ -97,12 +98,22 @@ class _ClubListViewState extends ConsumerState<ClubListView>
         membershipStatus: joining
             ? MembershipStatus.active
             : session.memberships[club.id]?.status,
+        // Fotoğraf yalnızca liste kartında çizilen ilk [ClubCard.previewMax]
+        // yönetici için istenir (ızgara kartında avatar grubu yoktur);
+        // görünen kartların kimlikleri tek toplu okumada çözülür.
         memberPreview: [
-          for (final manager
-              in state.managerPreviews[club.id] ?? const <MembershipModel>[])
+          for (final (index, manager)
+              in (state.managerPreviews[club.id] ?? const <MembershipModel>[])
+                  .indexed)
             GuAvatarData(
               initials: manager.applicant.name.initials,
               seed: manager.applicant.avatarSeed,
+              image: grid || index >= ClubCard.previewMax
+                  ? null
+                  : ref.userAvatarImageOf(
+                      manager.userId,
+                      displaySize: ClubCard.avatarSize,
+                    ),
             ),
         ],
         grid: grid,

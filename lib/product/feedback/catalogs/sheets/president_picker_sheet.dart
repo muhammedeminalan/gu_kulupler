@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -27,6 +28,7 @@ final class PresidentCandidate extends Equatable {
     required this.avatarSeed,
     this.department,
     this.year,
+    this.user,
   });
 
   /// Aktif üyelikten aday (devir kipi; `applicant` anlık görüntüsü).
@@ -47,6 +49,7 @@ final class PresidentCandidate extends Equatable {
         avatarSeed: user.avatarSeed,
         department: user.department,
         year: user.year,
+        user: user,
       );
 
   /// Adayın kullanıcı kimliği (`pop` değeri).
@@ -64,8 +67,20 @@ final class PresidentCandidate extends Equatable {
   /// Sınıf; yoksa `null`.
   final YearLevel? year;
 
+  /// Adayın kullanıcı belgesi (atama kipi, [PresidentCandidate.fromUser]):
+  /// fotoğraf doğrudan bundan çizilir. `null` (devir kipi — üyelik anlık
+  /// görüntüsü) → fotoğraf yolu avatar dizininden toplu okunur.
+  final UserModel? user;
+
   @override
-  List<Object?> get props => [userId, name, avatarSeed, department, year];
+  List<Object?> get props => [
+    userId,
+    name,
+    avatarSeed,
+    department,
+    year,
+    user,
+  ];
 }
 
 /// SHT-25 "Başkanlığı devret" / "Başkan ata" — kişi arama ve seçme sayfası
@@ -184,6 +199,14 @@ class _PresidentPickerSheetState extends ConsumerState<PresidentPickerSheet> {
             UserRow.named(
               name: c.name,
               avatarSeed: c.avatarSeed,
+              // Atama kipinde belge elde (okuma yok); devir kipinde görünen
+              // adayların fotoğrafları tek toplu okumada çözülür.
+              avatarImage: c.user != null
+                  ? ref.userAvatarImage(c.user, displaySize: GuSizes.avatar)
+                  : ref.userAvatarImageOf(
+                      c.userId,
+                      displaySize: GuSizes.avatar,
+                    ),
               sub: MemberRow.departmentAndYear(
                 context,
                 department: c.department,

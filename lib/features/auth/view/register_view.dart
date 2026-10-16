@@ -60,7 +60,7 @@ class _RegisterViewState extends ConsumerState<RegisterView>
         backActionKey: GuKey.action('AUT-02.back'),
         actions: [LanguageMenuButton(key: GuKey.action('AUT-02.lang'))],
       ),
-      body: SingleChildScrollView(
+      body: GuFormScrollView(
         padding: GuInsets.only(
           left: GuSpacing.s16,
           top: GuSpacing.s8,

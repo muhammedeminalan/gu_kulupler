@@ -9,6 +9,7 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/club_look_picker.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
@@ -420,6 +421,10 @@ class _ClubSettingsFormState extends ConsumerState<ClubSettingsForm> {
       child: UserRow.named(
         name: name,
         avatarSeed: advisor.userId ?? name,
+        avatarImage: ref.userAvatarImageOf(
+          advisor.userId,
+          displaySize: GuSizes.avatar,
+        ),
         sub: l10n.clubSettingsAdvisorLocked,
         inCard: true,
       ),

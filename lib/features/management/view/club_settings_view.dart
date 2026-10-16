@@ -83,7 +83,7 @@ class _ClubSettingsViewState extends ConsumerState<ClubSettingsView>
     ],
   );
 
-  Widget _form(ClubSettingsState state) => SingleChildScrollView(
+  Widget _form(ClubSettingsState state) => GuFormScrollView(
     padding: GuInsets.only(
       left: GuSpacing.s16,
       right: GuSpacing.s16,

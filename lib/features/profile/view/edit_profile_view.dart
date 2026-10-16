@@ -92,7 +92,7 @@ class _EditProfileViewState extends ConsumerState<EditProfileView>
     final year = state.year;
     final photoError = errorTextOf(EditProfileField.photo, state, l10n);
     final submitError = submitErrorTextOf(state, l10n);
-    return SingleChildScrollView(
+    return GuFormScrollView(
       padding: GuInsets.only(
         left: GuSpacing.s16,
         right: GuSpacing.s16,

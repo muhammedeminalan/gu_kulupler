@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/share_sheet.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_kulupler/product/widget/member/user_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -285,7 +287,7 @@ class ClubAboutTab extends StatelessWidget {
       advisor.title.trim(),
       advisor.name.trim(),
     ].where((part) => part.isNotEmpty).join(' ');
-    return UserRow.named(
+    UserRow row([ImageProvider? avatarImage]) => UserRow.named(
       name: name,
       avatarSeed: userId ?? name,
       sub: context.l10n.roleAdvisor,
@@ -293,16 +295,31 @@ class ClubAboutTab extends StatelessWidget {
       chevron: userId != null,
       actionKey: userId == null ? null : personKeyOf(userId),
       onTap: userId == null ? null : () => onPerson(userId),
+      avatarImage: avatarImage,
+    );
+    if (userId == null) return row();
+    // Hesaba bağlı danışmanın fotoğrafı kimliğinden çözülür.
+    return Consumer(
+      builder: (context, ref, _) =>
+          row(ref.userAvatarImageOf(userId, displaySize: GuSizes.avatar)),
     );
   }
 
   /// Yönetim kurulu satırı: rol rozeti + bölüm · sınıf.
-  Widget _managerRow(MembershipModel manager) => MemberRow(
-    membership: manager,
-    inCard: true,
-    chevron: true,
-    actionKey: personKeyOf(manager.userId),
-    onTap: () => onPerson(manager.userId),
+  /// Fotoğraf yöneticinin kimliğinden çözülür (kartın bütün satırları tek
+  /// toplu okumada — `userAvatarImageOf`).
+  Widget _managerRow(MembershipModel manager) => Consumer(
+    builder: (context, ref, _) => MemberRow(
+      membership: manager,
+      inCard: true,
+      chevron: true,
+      avatarImage: ref.userAvatarImageOf(
+        manager.userId,
+        displaySize: GuSizes.avatar,
+      ),
+      actionKey: personKeyOf(manager.userId),
+      onTap: () => onPerson(manager.userId),
+    ),
   );
 
   /// Katılım koşulu: madde imi (20 dp girinti, `ul{padding-left:20px}`) +

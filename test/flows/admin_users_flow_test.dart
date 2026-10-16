@@ -64,7 +64,7 @@ void main() {
     // ADM-01 "Toplam kullanıcı" → ADM-05 (W-47).
     await flowTap(tester, _k('NAV.tab.admin'));
     await flowTap(tester, _k('ADM-01.kpi.users'));
-    expect(flowLocation(tester), '/admin/users');
+    expect(flowLocation(tester), '/admin?tab=users');
     expect(find.byType(AdminUsersView), findsOneWidget);
 
     // E-posta araması (`@` → `findUserByEmail`, küçük harfe çevrilir).
@@ -79,9 +79,12 @@ void main() {
     expect(find.text(_email), findsOneWidget);
     expect(find.byKey(_k('CLB-07.copyEmail')), findsOneWidget);
 
-    // Geri → ADM-05 (arama korunur).
+    // Geri → admin kökü, Kullanıcılar bölmesi (arama korunur; alt çubuk
+    // görünür — tek sayfa, kullanıcı kararı 2026-10-16).
     await flowTap(tester, _k('CLB-07.back'));
-    expect(flowLocation(tester), '/admin/users');
+    expect(flowLocation(tester), '/admin');
+    expect(find.byType(AdminUsersView), findsOneWidget);
+    expect(find.byType(GuBottomNav), findsOneWidget);
     expect(_row(_uid), findsOneWidget);
 
     // Menü "Askıya al" → DLG-30 (neden) → TST-52.

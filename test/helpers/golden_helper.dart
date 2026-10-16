@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import 'pump_app.dart';
@@ -50,6 +51,8 @@ Uri goldenUri(String relative) =>
 /// [widget] için açık + koyu tam ekran golden'ı ([locales] her biri için;
 /// varsayılan yalnızca TR). `pumpApp` → `pump(GuMotion.base)` →
 /// `kPumpAppBoundaryKey` (MaterialApp + overlay katmanları) yakalanır.
+/// [wrapInShell]: ekran gerçek kabukta [shellTab] sekmesinin kökü olarak
+/// çizilir (alt sekme çubuğu görüntüde — `pumpApp(wrapInShell:)`).
 Future<void> goldenForThemes(
   WidgetTester tester,
   String name,
@@ -57,6 +60,8 @@ Future<void> goldenForThemes(
   List<Locale> locales = const [Locale('tr')],
   Size size = const Size(390, 844),
   List<Override> overrides = const [],
+  bool wrapInShell = false,
+  GuTab shellTab = GuTab.clubs,
 }) async {
   for (final locale in locales) {
     for (final theme in kGoldenThemes) {
@@ -66,6 +71,8 @@ Future<void> goldenForThemes(
         theme: theme,
         size: size,
         overrides: overrides,
+        wrapInShell: wrapInShell,
+        shellTab: shellTab,
       );
       await tester.pump(GuMotion.base);
       await expectLater(

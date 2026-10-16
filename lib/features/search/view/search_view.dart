@@ -12,6 +12,7 @@ import 'package:gu_kulupler/features/search/view/mixin/search_view_mixin.dart';
 import 'package:gu_kulupler/features/search/view/widget/recent_searches_section.dart';
 import 'package:gu_kulupler/features/search/view/widget/search_result_section.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/club_card.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -83,12 +84,21 @@ class _SearchViewState extends ConsumerState<SearchView>
     club: club,
     access: session.accessTo(club.id),
     membershipStatus: session.memberships[club.id]?.status,
+    // Fotoğraf yalnızca kartta çizilen ilk [ClubCard.previewMax] yönetici
+    // için istenir; kartların kimlikleri tek toplu okumada çözülür.
     memberPreview: [
-      for (final manager
-          in state.managerPreviews[club.id] ?? const <MembershipModel>[])
+      for (final (index, manager)
+          in (state.managerPreviews[club.id] ?? const <MembershipModel>[])
+              .indexed)
         GuAvatarData(
           initials: manager.applicant.name.initials,
           seed: manager.applicant.avatarSeed,
+          image: index >= ClubCard.previewMax
+              ? null
+              : ref.userAvatarImageOf(
+                  manager.userId,
+                  displaySize: ClubCard.avatarSize,
+                ),
         ),
     ],
     coverImage: ref.clubCoverImage(club),
@@ -290,7 +300,12 @@ class _SearchViewState extends ConsumerState<SearchView>
                   bottom:
                       MediaQuery.viewPaddingOf(context).bottom + GuSpacing.s8,
                 ),
-                child: state.hasTerm ? _results(state) : _defaults(state),
+                // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                // `GuMotion.tabSwitch`).
+                child: GuContentFade(
+                  value: state.scope,
+                  child: state.hasTerm ? _results(state) : _defaults(state),
+                ),
               ),
             ),
           ],

@@ -34,6 +34,9 @@ enum GuDialogActionsLayout {
 ///   `overflow:auto`).
 /// * [actions] sırası çağırandan: birincil / danger → ikincil → metin
 ///   (`GuButton`). [actionsLayout] `column` düğmeleri tam genişlik dizer.
+/// * Klavye (K-93): [actions] `TextFieldTapRegion` içindedir — [child]
+///   girdisi odaktayken eyleme dokunmak klavyeyi kapatmaz (DLG-28 / DLG-30
+///   zorunlu neden hatasında alan odakta kalır).
 /// * Yüzey `bg.surfaceRaised`, `GuRadius.lg`, gölge `e2`; koyu temada 1 px
 ///   `border.default` (css:283).
 /// * [dismissable] `false` (DLG-26, DLG-27) → geri tuşu ve scrim kapatmaz
@@ -175,7 +178,9 @@ class GuDialogFrame extends StatelessWidget {
                         ?child,
                         Padding(
                           padding: GuInsets.only(top: GuSizes.dialogActionsTop),
-                          child: actionsArea,
+                          // K-93: eylemler [child] girdisiyle çalışır —
+                          // dokunmak klavyeyi kapatmaz.
+                          child: TextFieldTapRegion(child: actionsArea),
                         ),
                       ],
                     ),

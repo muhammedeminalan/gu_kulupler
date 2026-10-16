@@ -149,7 +149,7 @@ class _EventFormViewState extends ConsumerState<EventFormView>
   Widget _form(EventFormState state) {
     final gu = context.gu;
     final l10n = context.l10n;
-    return SingleChildScrollView(
+    return GuFormScrollView(
       // Adım başına ayrı kaydırma konumu (prototip `routeKey`).
       key: PageStorageKey<String>('event-form-${state.step.name}'),
       padding: GuInsets.only(

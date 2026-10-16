@@ -231,7 +231,7 @@ class _ClubApplicationViewState extends ConsumerState<ClubApplicationView>
     ClubApplicationState state,
     ClubModel club,
     AppLocalizations l10n,
-  ) => SingleChildScrollView(
+  ) => GuFormScrollView(
     padding: GuInsets.only(
       left: GuSpacing.s16,
       top: GuSpacing.s8,

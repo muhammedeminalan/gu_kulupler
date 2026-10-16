@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
 
@@ -64,10 +66,18 @@ class ClubMembersTab extends StatelessWidget {
             ),
           ),
           for (final member in members)
-            MemberRow(
-              membership: member,
-              actionKey: memberKeyOf(member.userId),
-              onTap: () => onMember(member.userId),
+            // Yalnızca bu üyenin fotoğraf yolu izlenir (önizlemedeki bütün
+            // kimlikler tek toplu okumada çözülür — `userAvatarImageOf`).
+            Consumer(
+              builder: (context, ref, _) => MemberRow(
+                membership: member,
+                avatarImage: ref.userAvatarImageOf(
+                  member.userId,
+                  displaySize: GuSizes.avatar,
+                ),
+                actionKey: memberKeyOf(member.userId),
+                onTap: () => onMember(member.userId),
+              ),
             ),
           Padding(
             padding: GuInsets.h16,

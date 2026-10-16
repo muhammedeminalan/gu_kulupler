@@ -4,7 +4,11 @@
 // (17 anahtar), temel aksiyon sonuçları (bölme "Genel" / "Kulüpler" → ADM-01
 // / ADM-02, sekme / süzgeç, satır → SHT-26, `?reportId=` → SHT-26, SHT-26
 // eylemleri → DLG-29 / DLG-30 → çözüm + TST-51 / TST-52, ihlal yok →
-// TST-56), ReportGroupRow, cihaz matrisi, açık + koyu golden.
+// TST-56), ReportGroupRow, cihaz matrisi, açık + koyu golden (kabukta, alt
+// çubuk görünür).
+// 2026-10-16'dan beri ADM-04 admin kökünün (`AdminView`, `/admin?tab=reports`)
+// Şikayetler bölmesidir (kullanıcı kararı; tek sayfa). Bildirim `new_report`
+// → `/admin?tab=reports&reportId=` başka bölmedeyken de Şikayetler'i açar.
 // Referans: design/reference-shots/screens/ADM-04__*.webp,
 // states/ADM-04__*.webp; design/prototype/app/screens-admin.js:61–66,
 // sheets.js:120–128, dialogs.js:48–50.
@@ -20,7 +24,9 @@ import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_reports_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_reports_view_model.dart';
 import 'package:gu_kulupler/features/admin/provider/report_target_preview.dart';
+import 'package:gu_kulupler/features/admin/view/admin_overview_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_reports_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/admin/view/mixin/admin_reports_view_mixin.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_detail_sheet.dart';
@@ -29,7 +35,8 @@ import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
-import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
+import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_admin_repository.dart';
@@ -43,13 +50,15 @@ import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_l10n.dart';
 import '../admin_reports_test_support.dart';
+import '../admin_test_support.dart';
 
 Key _k(String id) => GuKey.action(id);
 
 /// Tüm satırlar kurulsun diye uzun yüzey.
 const Size _tall = Size(390, 1400);
 
-const Widget _view = AdminReportsView();
+/// Admin kökü, Şikayetler bölmesi açık.
+const Widget _view = AdminView(tab: AdminTab.reports);
 
 /// Durum kipi: oturum + ViewModel durumu ezilir.
 List<Override> _overrides({AdminReportsState? state}) => [
@@ -85,18 +94,7 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String query = ''}) async {
       initialLocation: '/start',
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin/clubs', builder: (_, s) => stub(s)),
-        GoRoute(
-          path: '/admin/reports',
-          builder: (_, s) => AdminReportsView(
-            tab: switch (s.uri.queryParameters['tab']) {
-              'resolved' => AdminReportsTab.resolved,
-              _ => null,
-            },
-            reportId: s.uri.queryParameters['reportId'],
-          ),
-        ),
+        GoRoute(path: '/admin', builder: (_, s) => adminViewOf(s)),
       ],
     ),
     overrides: [
@@ -114,7 +112,7 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String query = ''}) async {
     emailVerified: true,
     displayName: 'Mehmet',
   );
-  router.go('/admin/reports$query');
+  router.go('/admin?tab=reports$query');
   await tester.pumpAndSettle();
   return router;
 }
@@ -281,20 +279,43 @@ void main() {
 
   group('ADM-04 · Admin şikayetler · aksiyonlar', () {
     testWidgets('bölme "Genel" → ADM-01; "Kulüpler" → ADM-02; "Kullanıcılar" → '
-        'ADM-05', (tester) async {
+        'ADM-05 (aynı sayfa, adres eşitlenir)', (tester) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _k('ADM-04.seg.ADM-01'));
       expect(_location(router), '/admin');
+      expect(find.byType(AdminOverviewView), findsOneWidget);
 
-      router.go('/admin/reports');
-      await tester.pumpAndSettle();
+      await _tapKey(tester, _k('ADM-01.seg.ADM-04'));
       await _tapKey(tester, _k('ADM-04.seg.ADM-02'));
-      expect(_location(router), '/admin/clubs');
+      expect(_location(router), '/admin?tab=clubs');
 
-      router.go('/admin/reports');
-      await tester.pumpAndSettle();
+      await _tapKey(tester, _k('ADM-02.seg.ADM-04'));
+      expect(_location(router), '/admin?tab=reports');
+      expect(find.byType(AdminReportsView), findsOneWidget);
       await _tapKey(tester, _k('ADM-04.seg.ADM-05'));
-      expect(_location(router), '/admin/users');
+      expect(_location(router), '/admin?tab=users');
+    });
+
+    testWidgets('bildirim `new_report` başka bölmedeyken: Şikayetler açılır, '
+        'gecikmeyle SHT-26 (W-29)', (tester) async {
+      final router = await _pumpRoute(tester);
+      await _tapKey(tester, _k('ADM-04.seg.ADM-05'));
+      expect(find.byType(AdminReportsView), findsNothing);
+      router.go(
+        const AdminRoute(
+          tab: AdminTab.reports,
+          reportId: 'user_u077',
+        ).location,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminReportsView), findsOneWidget);
+      expect(
+        tester.widget<AdminSegmentBar>(find.byType(AdminSegmentBar)).current,
+        AdminSegmentBar.reports,
+      );
+      await tester.pump(AppDurations.postNavigationSheetDelay);
+      await tester.pumpAndSettle();
+      expect(_feedback.sheets, [SheetId.sht26]);
     });
 
     testWidgets('sekme "Çözüldü" ve süzgeç "Kullanıcı"', (tester) async {
@@ -321,7 +342,7 @@ void main() {
     testWidgets('?reportId= → gecikmeyle SHT-26 (listede olmayan grup da)', (
       tester,
     ) async {
-      await _pumpRoute(tester, query: '?reportId=user_u077');
+      await _pumpRoute(tester, query: '&reportId=user_u077');
       await tester.pump(AppDurations.postNavigationSheetDelay);
       await tester.pumpAndSettle();
       expect(_feedback.sheets, [SheetId.sht26]);
@@ -399,7 +420,14 @@ void main() {
 
   group('ADM-04 · Admin şikayetler · golden', () {
     testWidgets('varsayılan açık + koyu', (tester) async {
-      await goldenForThemes(tester, 'ADM-04', _view, overrides: _overrides());
+      await goldenForThemes(
+        tester,
+        'ADM-04',
+        _view,
+        overrides: _overrides(),
+        wrapInShell: true,
+        shellTab: GuTab.admin,
+      );
     });
   });
 }

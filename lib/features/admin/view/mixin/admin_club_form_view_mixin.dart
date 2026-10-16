@@ -27,8 +27,8 @@ import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 /// * **Kategori** → SHT-33; **logo** → SHT-16 → seçici; **kapak** → SHT-31:
 ///   şablon ya da "Galeriden seç" (SHT-16).
 /// * **Başkan ata** → SHT-25 atama kipi (adaylar `presidentCandidates`).
-/// * **Kaydet** başarılıysa ADM-02'ye dönülür (`AdminClubsRoute`, `go`;
-///   prototip `popTo('ADM-02')`).
+/// * **Kaydet** başarılıysa admin kökünün Kulüpler bölmesine dönülür
+///   (`AdminRoute(tab: clubs)`, `go`; prototip `popTo('ADM-02')`).
 mixin AdminClubFormViewMixin on UnsavedChangesMixin<AdminClubFormView> {
   /// Ekranın ViewModel sağlayıcısı (kulüp ailesi; yeni kulüpte `null`).
   AdminClubFormViewModelProvider get provider =>
@@ -44,13 +44,13 @@ mixin AdminClubFormViewMixin on UnsavedChangesMixin<AdminClubFormView> {
   @override
   bool get isDirty => ref.watch(provider.select((state) => state.isDirty));
 
-  /// Önceki sayfa; yığın yoksa ADM-02.
+  /// Önceki sayfa; yığın yoksa admin kökü (Kulüpler bölmesi).
   @override
   void leaveScreen() {
     if (context.canPop()) {
       context.pop();
     } else {
-      const AdminClubsRoute().go(context);
+      const AdminRoute(tab: AdminTab.clubs).go(context);
     }
   }
 
@@ -69,7 +69,7 @@ mixin AdminClubFormViewMixin on UnsavedChangesMixin<AdminClubFormView> {
     if (!mounted) return;
     if (outcome == AdminClubFormOutcome.created ||
         outcome == AdminClubFormOutcome.saved) {
-      const AdminClubsRoute().go(context);
+      const AdminRoute(tab: AdminTab.clubs).go(context);
     }
   }
 

@@ -25,8 +25,9 @@ import '../helpers/design_sources.dart';
 /// içermez.) + T-17 `myClubsAllTileWidth` 1 = 403
 /// + T-20 `commentsSheetMinHeight` 1 = 404
 /// + T-31 `activityRowAvatar`, `manageHeaderClubMaxWidth` 2 = 406
-/// + T-35 `scanHintMaxWidth` 1 = 407.
-const int _gusizesCount = 407;
+/// + T-35 `scanHintMaxWidth` 1 = 407
+/// + K-93 `commentMaxRows` 1 (tasarım dışı, kullanıcı kararı) = 408.
+const int _gusizesCount = 408;
 
 /// `GuOpacity`: §8.8 8 + `coverIcon` 1.
 const int _guOpacityCount = 9;
@@ -2914,6 +2915,13 @@ List<_Row> _sizesTable(CssMeasure css, _Js js) => [
       "transform: leaving.includes(m.userId) ? 'translateX(40px)' : 'none'",
     ),
   ]),
+  // Tasarım dışı (kullanıcı kararı): prototipte karşılığı yok.
+  _Row(
+    name: 'commentMaxRows',
+    source: 'Karar K-93 — yorum alanı 1 → 5 satır büyür',
+    expected: () => 5,
+    actual: GuSizes.commentMaxRows,
+  ),
   // §8.10
   _platform(
     'tapTargetIos',
@@ -3489,6 +3497,7 @@ void main() {
       expect(GuSizes.avatarGroupMax, isA<int>());
       expect(GuSizes.calendarDotsMax, isA<int>());
       expect(GuSizes.calendarWeeks, isA<int>());
+      expect(GuSizes.commentMaxRows, isA<int>());
     });
   });
 

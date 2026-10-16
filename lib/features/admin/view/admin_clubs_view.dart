@@ -5,22 +5,23 @@ import 'package:gu_kulupler/features/admin/provider/admin_clubs_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_clubs_view_model.dart';
 import 'package:gu_kulupler/features/admin/view/mixin/admin_clubs_view_mixin.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_club_row.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart';
 import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-/// Admin kulüpler — `AdminClubsRoute` (`/admin/clubs?tab=`; guard `S`:
-/// yalnızca süper admin, router'da). Prototip `AdminClubs`
-/// (`screens-admin.js:29–35`).
+/// Admin kulüpler bölmesi (ADM-02) — admin kökünün (`AdminView`,
+/// `/admin?tab=clubs&clubsTab=`; guard `S`) Kulüpler bölmesi. Prototip
+/// `AdminClubs` (`screens-admin.js:29–35`).
 ///
-/// Yukarıdan aşağıya: büyük başlık "Admin" + "Süper Admin" rozeti ·
-/// `AdminSegmentBar` (Kulüpler seçili) · `.px16.pb16.col.gap8`: sekmeler
-/// (Aktif · Askıda) + arama · kaydırma alanı (çek-yenile): `AdminClubRow`
-/// satırları (dokunuş CLB-03, "⋮" → Görüntüle · Düzenle · Başkanı değiştir ·
-/// Askıya al / Etkinleştir) · "Kulüp oluştur" FAB (`+`, ADM-03; sekme kökü
-/// konumu — K-34).
+/// Başlık ve `AdminSegmentBar` kökte (`AdminView`; kullanıcı kararı
+/// 2026-10-16 — önceden ayrı sayfa). Bölme: `.px16.pb16.col.gap8`: sekmeler
+/// (Aktif · Askıda) + arama · kaydırma alanı (çek-yenile; sekme değişimi
+/// kısa solma, `GuSliverContentFade`): `AdminClubRow` satırları (dokunuş
+/// CLB-03, "⋮" → Görüntüle · Düzenle · Başkanı değiştir · Askıya al /
+/// Etkinleştir) · "Kulüp oluştur" FAB (`+`, ADM-03). Bölme alt sekme
+/// çubuğunun üstünde biter: FAB bölmenin altından `fabMargin` yukarıdadır
+/// (tasarımdaki `nav-h + 16` — K-34).
 ///
 /// Durumlar (sıra: hata → yükleniyor → boş → dolu; referans
 /// `states/ADM-02__*`) yalnızca listeyi değiştirir; boş görünüm "Kulüp yok".
@@ -30,11 +31,16 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Design: ADM-02
 class AdminClubsView extends ConsumerStatefulWidget {
-  /// Kulüp listesi; [tab] ilk açılan sekme (`null` → etkin).
-  const AdminClubsView({this.tab, super.key});
+  /// Kulüp listesi; [tab] açılan sekme (`null` → son seçili, ilk açılışta
+  /// etkin).
+  const AdminClubsView({this.tab, this.active = true, super.key});
 
-  /// İlk açılan sekme (`AdminClubsRoute.tab`).
+  /// Açılan sekme (`AdminRoute.clubsTab`; değişip dolu geldiğinde uygulanır).
   final AdminClubsTab? tab;
+
+  /// Bölme sahnede mi (sekmeye yeniden dokunma yalnızca etkin bölmeyi başa
+  /// kaydırır).
+  final bool active;
 
   @override
   ConsumerState<AdminClubsView> createState() => _AdminClubsViewState();
@@ -123,100 +129,82 @@ class _AdminClubsViewState extends ConsumerState<AdminClubsView>
 
   @override
   Widget build(BuildContext context) {
-    final gu = context.gu;
     final l10n = context.l10n;
     final state = ref.watch(adminClubsViewModelProvider);
 
-    return Scaffold(
-      backgroundColor: gu.colors.bgCanvas,
-      appBar: GuAppBar(
-        title: l10n.navAdmin,
-        large: true,
-        actions: [
-          GuRoleBadge(
-            kind: GuRoleBadgeKind.superadmin,
-            label: l10n.roleSuperadmin,
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AdminSegmentBar(
-                current: AdminSegmentBar.clubs,
-                onSelect: openSegment,
-                keyOf: (id) => GuKey.action('ADM-02.seg.$id'),
+    return Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: GuInsets.only(
+                left: GuSpacing.s16,
+                right: GuSpacing.s16,
+                bottom: GuSpacing.s16,
               ),
-              Padding(
-                padding: GuInsets.only(
-                  left: GuSpacing.s16,
-                  right: GuSpacing.s16,
-                  bottom: GuSpacing.s16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: GuSpacing.s8,
-                  children: [
-                    GuSegmented(
-                      options: [
-                        for (final tab in AdminClubsTab.values)
-                          GuSegmentOption(
-                            id: tab.name,
-                            label: _tabLabel(l10n, tab),
-                          ),
-                      ],
-                      value: state.tab.name,
-                      optionKeyBuilder: (index) => _tabKeys[index],
-                      onChanged: selectTab,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: GuSpacing.s8,
+                children: [
+                  GuSegmented(
+                    options: [
+                      for (final tab in AdminClubsTab.values)
+                        GuSegmentOption(
+                          id: tab.name,
+                          label: _tabLabel(l10n, tab),
+                        ),
+                    ],
+                    value: state.tab.name,
+                    optionKeyBuilder: (index) => _tabKeys[index],
+                    onChanged: selectTab,
+                  ),
+                  GuSearchField(
+                    value: state.query,
+                    onChanged: search,
+                    placeholder: l10n.commonSearch,
+                    semanticLabel: l10n.commonSearch,
+                    actionKey: GuKey.action('ADM-02.search'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: GuRefresh(
+                onRefresh: refresh,
+                child: CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    GuSliverContentFade(
+                      value: state.tab,
+                      sliver: SliverMainAxisGroup(
+                        slivers: _slivers(state, l10n),
+                      ),
                     ),
-                    GuSearchField(
-                      value: state.query,
-                      onChanged: search,
-                      placeholder: l10n.commonSearch,
-                      semanticLabel: l10n.commonSearch,
-                      actionKey: GuKey.action('ADM-02.search'),
+                    // FAB son satırın "⋮" düğmesini örtmesin.
+                    const SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: GuSizes.fabHeight + GuSizes.fabMargin,
+                      ),
+                    ),
+                    const SliverSafeArea(
+                      top: false,
+                      sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: GuRefresh(
-                  onRefresh: refresh,
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    slivers: [
-                      ..._slivers(state, l10n),
-                      // FAB son satırın "⋮" düğmesini örtmesin.
-                      const SliverToBoxAdapter(
-                        child: SizedBox(
-                          height:
-                              GuSizes.fabHeight +
-                              GuSizes.fabMargin +
-                              GuSizes.bottomNavHeight,
-                        ),
-                      ),
-                      const SliverSafeArea(
-                        top: false,
-                        sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          GuFab(
-            key: GuKey.action('ADM-02.create'),
-            label: l10n.adminClubsCreate,
-            icon: GuIcons.plus,
-            semanticLabel: l10n.adminClubsCreate,
-            aboveNav: true,
-            onPressed: createClub,
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+        GuFab(
+          key: GuKey.action('ADM-02.create'),
+          label: l10n.adminClubsCreate,
+          icon: GuIcons.plus,
+          semanticLabel: l10n.adminClubsCreate,
+          onPressed: createClub,
+        ),
+      ],
     );
   }
 }

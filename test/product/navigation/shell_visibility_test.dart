@@ -45,7 +45,13 @@ void main() {
         location: '/admin',
       );
       expect(find.byType(GuBottomNav), findsOneWidget);
-      await app.go('/admin/users');
+      // Admin bölmeleri kökün sorgusudur (2026-10-16): çubuk görünür kalır.
+      for (final tab in ['clubs', 'reports', 'users']) {
+        await app.go('/admin?tab=$tab');
+        expect(find.byType(GuBottomNav), findsOneWidget, reason: tab);
+      }
+      // Alt sayfa (admin CLB-07) derindir: çubuk gizlenir.
+      await app.go('/admin/users/u01');
       expect(find.byType(GuBottomNav), findsNothing);
     });
 

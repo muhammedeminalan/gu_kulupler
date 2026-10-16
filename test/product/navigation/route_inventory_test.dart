@@ -47,6 +47,10 @@
 // T-43 · K-69: `ClubDetailUserProfileRoute` (`/clubs/:clubId/user/:userId`)
 // ve `ClubMembersUserProfileRoute` (`/clubs/:clubId/members/:userId`) —
 // kulüp bağlamlı CLB-07 (geri → geldiği kulüp).
+// Tasarım hataları turu (kullanıcı kararı 2026-10-16) · ADM-01 / 02 / 04 / 05
+// tek kök `AdminRoute` (`/admin?tab=&clubsTab=&reportsTab=&reportId=
+// &filter=`); `AdminClubsRoute`, `AdminReportsRoute`, `AdminUsersRoute`
+// kaldırıldı (59 → 56 yol); ADM-03 ve admin CLB-07 kökün altındadır.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
@@ -63,7 +67,7 @@ import '../../helpers/design_ids.dart';
 /// Bildirilen rota sınıfları ve router'daki yol kalıpları (T-11 + T-13 +
 /// T-14 + T-16 + T-17 + T-18 + T-20 + T-21 + T-23 + T-24 + T-26 + T-27 +
 /// T-28 + T-29 + T-31 + T-32 + T-33 + T-34 + T-35 + T-36 + T-39 + T-40 +
-/// T-41 + T-43).
+/// T-41 + T-43; admin tek kök 2026-10-16).
 const Map<GoRouteData, String> _routes = {
   // Sistem (kabuksuz)
   SplashRoute(): '/splash',
@@ -127,15 +131,11 @@ const Map<GoRouteData, String> _routes = {
   NotificationsRoute(): '/notifications',
   // Bildirimler dalı (T-26: NTF-02)
   NotificationPrefsRoute(): '/notifications/preferences',
+  // Admin dalı: ADM-01 / 02 / 04 / 05 tek kök (2026-10-16); ADM-03 (iki rota
+  // sınıfı, tek view — CD-54) ve CLB-07 (paylaşılan) kökün altında
   AdminRoute(): '/admin',
-  // Admin dalı (T-39: ADM-02, ADM-03 — iki rota sınıfı, tek view, CD-54)
-  AdminClubsRoute(): '/admin/clubs',
   AdminClubFormRoute(): '/admin/clubs/new',
   AdminClubEditRoute(clubId: _clubId): '/admin/clubs/:clubId/edit',
-  // T-40: ADM-04
-  AdminReportsRoute(): '/admin/reports',
-  // T-41: ADM-05, CLB-07 (paylaşılan)
-  AdminUsersRoute(): '/admin/users',
   AdminUserProfileRoute(userId: _userId): '/admin/users/:userId',
   ProfileRoute(): '/profile',
   // Profil dalı (T-27: PRF-02, PRF-03, PRF-04)
@@ -221,108 +221,100 @@ Map<String, String> _documentedPaths() {
 
 void main() {
   group('T-11 · rota envanteri', () {
-    test('router yolları = kapsamdaki 59 yol (T-11: 14, T-13: +2, '
+    test('router yolları = kapsamdaki 56 yol (T-11: 14, T-13: +2, '
         'T-14: +1, T-16: +3, T-17: +2, T-18: +2, T-20: +1, T-21: +1, '
         'T-23: +2, T-24: +1, T-26: +1, T-27: +3, T-28: +6, T-29: +1, '
         'T-31: +2, T-32: +1, T-33: +1, T-34: +3, T-35: +2, T-36: +2, '
-        'T-39: +3, T-40: +1, T-41: +2, T-43: +2)', () {
+        'T-39: +3, T-40: +1, T-41: +2, T-43: +2; admin tek kök: −3)', () {
       expect(_collectPaths(AppRouter.routes), _routes.values.toSet());
-      expect(_routes, hasLength(59));
+      expect(_routes, hasLength(56));
     });
 
     test(
-      "T-41 · ADM-05 ADM-01'in altındadır (`filter` sorgu parametresi); "
-      "CLB-07 (paylaşılan) ADM-05'in altındadır; ikisi de süper admin (S) "
-      'ister',
+      'Admin tek kök (kullanıcı kararı 2026-10-16): ADM-01 / 02 / 04 / 05 '
+      '`AdminRoute` sorgusudur (`tab`, `clubsTab`, `reportsTab`, `reportId`, '
+      '`filter`); yol ve guard (S) sorgudan bağımsızdır',
       () {
-        expect(AdminUsersRoute.segment, 'users');
-        expect(AdminUserProfileRoute.segment, ':userId');
+        expect(AdminTab.values.map((tab) => tab.name), [
+          'overview',
+          'clubs',
+          'reports',
+          'users',
+        ]);
+        expect(AdminClubsTab.values.map((tab) => tab.name), [
+          'active',
+          'suspended',
+        ]);
+        expect(AdminReportsTab.values.map((tab) => tab.name), [
+          'open',
+          'resolved',
+        ]);
         expect(AdminUsersFilter.values.map((filter) => filter.name), [
           'all',
           'managers',
           'suspended',
         ]);
-        const plain = AdminUsersRoute();
-        expect(plain.filter, isNull);
-        final deep = Uri.parse(
-          const AdminUsersRoute(filter: AdminUsersFilter.suspended).location,
-        );
-        expect(deep.path, '/admin/users');
-        expect(deep.queryParameters, {'filter': 'suspended'});
-        for (final MapEntry(key: route, value: location)
-            in <GoRouteData, String>{
-              plain: '/admin/users',
-              const AdminUserProfileRoute(userId: _userId): '/admin/users/u01',
+        const plain = AdminRoute();
+        expect(plain.tab, isNull);
+        expect(plain.location, '/admin');
+        for (final MapEntry(key: route, value: query)
+            in <AdminRoute, Map<String, String>>{
+              const AdminRoute(
+                tab: AdminTab.clubs,
+                clubsTab: AdminClubsTab.suspended,
+              ): {
+                'tab': 'clubs',
+                'clubsTab': 'suspended',
+              },
+              const AdminRoute(
+                tab: AdminTab.reports,
+                reportsTab: AdminReportsTab.resolved,
+                reportId: 'post_p13',
+              ): {
+                'tab': 'reports',
+                'reportsTab': 'resolved',
+                'reportId': 'post_p13',
+              },
+              const AdminRoute(
+                tab: AdminTab.users,
+                filter: AdminUsersFilter.suspended,
+              ): {
+                'tab': 'users',
+                'filter': 'suspended',
+              },
             }.entries) {
-          final name = '${route.runtimeType}';
-          expect(route.location, location, reason: name);
-          final match = RouteAccessTable.match(Uri.parse(location));
-          expect(match.pattern, _routes[route], reason: name);
-          expect(match.access, RouteAccess.superAdmin, reason: name);
+          final location = Uri.parse(route.location);
+          expect(location.path, '/admin');
+          expect(location.queryParameters, query);
+          final match = RouteAccessTable.match(location);
+          expect(match.pattern, '/admin');
+          expect(match.access, RouteAccess.superAdmin);
         }
-        expect(
-          const AdminUserProfileRoute(userId: 'a/b').location,
-          '/admin/users/a%2Fb',
-        );
+        // Eski bölme yolları yoktur (kaldırıldı; guard yine süper admin).
+        for (final old in ['/admin/clubs', '/admin/reports', '/admin/users']) {
+          expect(_routes.values, isNot(contains(old)), reason: old);
+          expect(
+            RouteAccessTable.match(Uri.parse(old)).access,
+            RouteAccess.superAdmin,
+            reason: old,
+          );
+        }
       },
     );
 
     test(
-      "T-40 · ADM-04 ADM-01'in altındadır (`tab` + `reportId` sorgu "
-      'parametreleri; `reportId` grup anahtarıdır) ve süper admin (S) ister',
+      "T-39 / T-41 · ADM-03 iki rota sınıfı tek view'dır (CD-54); ADM-03 ve "
+      'admin CLB-07 admin kökünün altındadır; hepsi süper admin (S) ister',
       () {
-        expect(AdminReportsRoute.segment, 'reports');
-        expect(AdminReportsTab.values.map((tab) => tab.name), [
-          'open',
-          'resolved',
-        ]);
-        const plain = AdminReportsRoute();
-        expect(plain.tab, isNull);
-        expect(plain.reportId, isNull);
-        expect(plain.location, '/admin/reports');
-        final deep = Uri.parse(
-          const AdminReportsRoute(
-            tab: AdminReportsTab.resolved,
-            reportId: 'post_p13',
-          ).location,
-        );
-        expect(deep.path, '/admin/reports');
-        expect(deep.queryParameters, {
-          'tab': 'resolved',
-          'reportId': 'post_p13',
-        });
-        final match = RouteAccessTable.match(Uri.parse(plain.location));
-        expect(match.pattern, _routes[plain]);
-        expect(match.access, RouteAccess.superAdmin);
-      },
-    );
-
-    test(
-      "T-39 · ADM-02 ADM-01'in altındadır (`tab` sorgu parametresi); ADM-03 "
-      "iki rota sınıfı tek view'dır (CD-54) ve ADM-02'nin altındadır; hepsi "
-      'süper admin (S) ister',
-      () {
-        expect(AdminClubsRoute.segment, 'clubs');
-        expect(AdminClubFormRoute.segment, 'new');
-        expect(AdminClubEditRoute.segment, ':clubId/edit');
-        expect(AdminClubsTab.values.map((tab) => tab.name), [
-          'active',
-          'suspended',
-        ]);
-        const plain = AdminClubsRoute();
-        expect(plain.tab, isNull);
-        expect(plain.location, '/admin/clubs');
-        final deep = Uri.parse(
-          const AdminClubsRoute(tab: AdminClubsTab.suspended).location,
-        );
-        expect(deep.path, '/admin/clubs');
-        expect(deep.queryParameters, {'tab': 'suspended'});
+        expect(AdminClubFormRoute.segment, 'clubs/new');
+        expect(AdminClubEditRoute.segment, 'clubs/:clubId/edit');
+        expect(AdminUserProfileRoute.segment, 'users/:userId');
         for (final MapEntry(key: route, value: location)
             in <GoRouteData, String>{
-              plain: '/admin/clubs',
               const AdminClubFormRoute(): '/admin/clubs/new',
               const AdminClubEditRoute(clubId: _clubId):
                   '/admin/clubs/c01/edit',
+              const AdminUserProfileRoute(userId: _userId): '/admin/users/u01',
             }.entries) {
           final name = '${route.runtimeType}';
           expect(route.location, location, reason: name);
@@ -333,6 +325,10 @@ void main() {
         expect(
           const AdminClubEditRoute(clubId: 'a/b').location,
           '/admin/clubs/a%2Fb/edit',
+        );
+        expect(
+          const AdminUserProfileRoute(userId: 'a/b').location,
+          '/admin/users/a%2Fb',
         );
         // navigation.md ADM-03 satırı iki yolu birlikte yazar (CD-54).
         final row = readText('docs/navigation.md')

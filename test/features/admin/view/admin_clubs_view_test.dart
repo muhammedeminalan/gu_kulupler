@@ -4,7 +4,9 @@
 // sonuçları (satır → CLB-03, "Kulüp oluştur" → ADM-03, bölme "Genel" →
 // ADM-01, sekme / arama, menü → DLG-28 → askı + TST-50, menü "Düzenle" →
 // ADM-03 düzenleme), DLG-28 (neden zorunlu), cihaz matrisi, açık + koyu
-// golden.
+// golden (kabukta, alt çubuk görünür).
+// 2026-10-16'dan beri ADM-02 admin kökünün (`AdminView`, `/admin?tab=clubs`)
+// Kulüpler bölmesidir (kullanıcı kararı; tek sayfa).
 // Referans: design/reference-shots/screens/ADM-02__*.webp,
 // states/ADM-02__*.webp, dialogs/DLG-28__*.webp;
 // design/prototype/app/screens-admin.js:29–35, dialogs.js:46–47.
@@ -17,7 +19,8 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_clubs_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_clubs_view_model.dart';
-import 'package:gu_kulupler/features/admin/view/admin_clubs_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_overview_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_club_menu.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_club_row.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
@@ -26,6 +29,8 @@ import 'package:gu_kulupler/product/feedback/dialogs/suspend_club_dialog.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
 import 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart';
+import 'package:gu_kulupler/product/navigation/admin_tab.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_admin_repository.dart';
@@ -39,13 +44,15 @@ import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_l10n.dart';
 import '../admin_clubs_test_support.dart';
+import '../admin_test_support.dart';
 
 Key _k(String id) => GuKey.action(id);
 
 /// Tüm satırlar kurulsun diye uzun yüzey.
 const Size _tall = Size(390, 2000);
 
-const Widget _view = AdminClubsView();
+/// Admin kökü, Kulüpler bölmesi açık.
+const Widget _view = AdminView(tab: AdminTab.clubs);
 
 /// Durum kipi: oturum + ViewModel durumu ezilir.
 List<Override> _overrides({AdminClubsState? state}) => [
@@ -82,18 +89,14 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String tab = ''}) async {
       initialLocation: '/start',
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin', builder: (_, s) => stub(s)),
         GoRoute(
-          path: '/admin/clubs',
-          builder: (_, s) => AdminClubsView(
-            tab: switch (s.uri.queryParameters['tab']) {
-              'suspended' => AdminClubsTab.suspended,
-              _ => null,
-            },
-          ),
+          path: '/admin',
+          builder: (_, s) => adminViewOf(s),
+          routes: [
+            GoRoute(path: 'clubs/new', builder: (_, s) => stub(s)),
+            GoRoute(path: 'clubs/:clubId/edit', builder: (_, s) => stub(s)),
+          ],
         ),
-        GoRoute(path: '/admin/clubs/new', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin/clubs/:clubId/edit', builder: (_, s) => stub(s)),
         GoRoute(path: '/clubs/:clubId', builder: (_, s) => stub(s)),
       ],
     ),
@@ -110,7 +113,9 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String tab = ''}) async {
   clubs[kAdminSuspendedClubId] = clubs[kAdminSuspendedClubId]!.copyWith(
     status: ClubStatus.suspended,
   );
-  router.go(tab.isEmpty ? '/admin/clubs' : '/admin/clubs?tab=$tab');
+  router.go(
+    tab.isEmpty ? '/admin?tab=clubs' : '/admin?tab=clubs&clubsTab=$tab',
+  );
   await tester.pumpAndSettle();
   return router;
 }
@@ -134,6 +139,10 @@ Future<void> _tapKey(WidgetTester tester, Key key) async {
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }
+
+/// Seçili bölme (`AdminSegmentBar.current`).
+String _segment(WidgetTester tester) =>
+    tester.widget<AdminSegmentBar>(find.byType(AdminSegmentBar)).current;
 
 FakeFeedbackService get _feedback =>
     GetIt.I<FeedbackService>() as FakeFeedbackService;
@@ -232,19 +241,23 @@ void main() {
       expect(_location(router), '/admin/clubs/new');
     });
 
-    testWidgets('bölme "Genel" → ADM-01', (tester) async {
+    testWidgets('bölme "Genel" → ADM-01 (aynı sayfa)', (tester) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _k('ADM-02.seg.ADM-01'));
       expect(_location(router), '/admin');
+      expect(find.byType(AdminOverviewView), findsOneWidget);
     });
 
-    testWidgets('bölme "Kullanıcılar" → ADM-05 (W-47)', (tester) async {
+    testWidgets('bölme "Kullanıcılar" → ADM-05 (W-47; aynı sayfa)', (
+      tester,
+    ) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _k('ADM-02.seg.ADM-05'));
-      expect(_location(router), '/admin/users');
+      expect(_location(router), '/admin?tab=users');
+      expect(_segment(tester), AdminSegmentBar.users);
     });
 
-    testWidgets('?tab=suspended → askıda sekmesi; sekme ve arama süzer', (
+    testWidgets('?clubsTab=suspended → askıda sekmesi; sekme ve arama süzer', (
       tester,
     ) async {
       await _pumpRoute(tester, tab: 'suspended');
@@ -260,6 +273,32 @@ void main() {
       await tester.pumpAndSettle();
       final rows = tester.widgetList<AdminClubRow>(find.byType(AdminClubRow));
       expect(rows.map((r) => r.club.id), ['c10']);
+    });
+
+    testWidgets('sekme değişimi listeyi kısa solmayla değiştirir '
+        '(GuMotion.tabSwitch; kullanıcı kararı 2026-10-16)', (tester) async {
+      await _pumpRoute(tester);
+      double opacity() => tester
+          .widget<SliverFadeTransition>(
+            find.descendant(
+              of: find.byType(GuSliverContentFade),
+              matching: find.byType(SliverFadeTransition),
+            ),
+          )
+          .opacity
+          .value;
+      expect(opacity(), 1);
+      await tester.tap(find.byKey(_k('ADM-02.tab.suspended')));
+      await tester.pump();
+      expect(opacity(), 0);
+      await tester.pump(GuMotion.tabSwitch ~/ 2);
+      expect(opacity(), inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(opacity(), 1);
+      expect(
+        find.byKey(_k('ADM-02.row.$kAdminSuspendedClubId')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('menü "Düzenle" → ADM-03 düzenleme', (tester) async {
@@ -389,8 +428,17 @@ void main() {
   });
 
   group('ADM-02 · Admin kulüpler · golden', () {
-    testWidgets('varsayılan açık + koyu', (tester) async {
-      await goldenForThemes(tester, 'ADM-02', _view, overrides: _overrides());
+    testWidgets('varsayılan açık + koyu (kabukta: alt çubuk görünür)', (
+      tester,
+    ) async {
+      await goldenForThemes(
+        tester,
+        'ADM-02',
+        _view,
+        overrides: _overrides(),
+        wrapInShell: true,
+        shellTab: GuTab.admin,
+      );
     });
   });
 }

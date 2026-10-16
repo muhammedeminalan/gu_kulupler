@@ -165,44 +165,48 @@ class ClubEventsTab extends StatelessWidget {
               icon: GuIcons.lock,
               text: l10n.clubEventsVisitorNote,
             ),
-          GuListState(
-            status: GuListStatus.resolve(
-              isError: isError && events.isEmpty,
-              isLoading: isFetching && events.isEmpty,
-              isEmpty: shown.isEmpty,
-            ),
-            skeletonCount: skeletonCount,
-            skeletonVariant: GuSkeletonVariant.card,
-            skeletonSemanticLabel: l10n.commonLoading,
-            // Çevrimdışı + önbellekte etkinlik yok → SYS-03 (T-44 · A4-03);
-            // dilim boşsa ama kulübün etkinliği varsa boş durum kalır.
-            errorBuilder: (_) => OfflineListFallback(
-              onReload: onRetry,
-              child: GuErrorState(
-                title: l10n.sysErrorTitle,
-                description: l10n.sysErrorDesc,
-                retryLabel: l10n.commonRetry,
-                onRetry: onRetry,
-                retryActionKey: retryKey,
-                inline: true,
+          // Segment değişimi kısa solma (kullanıcı kararı 2026-10-16).
+          GuContentFade(
+            value: segment,
+            child: GuListState(
+              status: GuListStatus.resolve(
+                isError: isError && events.isEmpty,
+                isLoading: isFetching && events.isEmpty,
+                isEmpty: shown.isEmpty,
               ),
-            ),
-            emptyBuilder: (_) {
-              final empty = GuEmptyState(
-                illustration: GuIllustrations.emptyEvents,
-                title: l10n.eventEmptyTitle,
-                compact: true,
-              );
-              return events.isEmpty
-                  ? OfflineListFallback(onReload: onRetry, child: empty)
-                  : empty;
-            },
-            dataBuilder: (_) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: GuSpacing.s12,
-              children: [
-                for (final event in shown) _card(event),
-              ],
+              skeletonCount: skeletonCount,
+              skeletonVariant: GuSkeletonVariant.card,
+              skeletonSemanticLabel: l10n.commonLoading,
+              // Çevrimdışı + önbellekte etkinlik yok → SYS-03 (T-44 · A4-03);
+              // dilim boşsa ama kulübün etkinliği varsa boş durum kalır.
+              errorBuilder: (_) => OfflineListFallback(
+                onReload: onRetry,
+                child: GuErrorState(
+                  title: l10n.sysErrorTitle,
+                  description: l10n.sysErrorDesc,
+                  retryLabel: l10n.commonRetry,
+                  onRetry: onRetry,
+                  retryActionKey: retryKey,
+                  inline: true,
+                ),
+              ),
+              emptyBuilder: (_) {
+                final empty = GuEmptyState(
+                  illustration: GuIllustrations.emptyEvents,
+                  title: l10n.eventEmptyTitle,
+                  compact: true,
+                );
+                return events.isEmpty
+                    ? OfflineListFallback(onReload: onRetry, child: empty)
+                    : empty;
+              },
+              dataBuilder: (_) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: GuSpacing.s12,
+                children: [
+                  for (final event in shown) _card(event),
+                ],
+              ),
             ),
           ),
         ],

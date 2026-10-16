@@ -30,7 +30,7 @@ part 'notification_navigator.g.dart';
 /// | `eventCancelled` | `/events/{eventId}?showCancelled=true` | events |
 /// | `eventReminder`, `waitlistPromoted` | `hasTicket` → `/events/{eventId}/ticket`, değilse `/events/{eventId}` | events |
 /// | `reportResolved` | `null` (rota yok; yalnızca TST-17) | — |
-/// | `newReport` | `/admin/reports?reportId={reportId}` (ADM-04; açılıştan 250 ms sonra SHT-26 — W-29) | admin |
+/// | `newReport` | `/admin?tab=reports&reportId={reportId}` (admin kökü › Şikayetler, ADM-04; açılıştan 250 ms sonra SHT-26 — W-29) | admin |
 /// | `system`, `unknown` (varsayılan) | `/profile/settings/about` (`AboutRoute`, SET-04) | profile |
 ///
 /// Türün gerektirdiği kimlik ([NotificationRefsModel]) eksikse hedef
@@ -84,14 +84,18 @@ abstract final class NotificationTargets {
             ? TicketRoute(eventId: eventId).location
             : EventDetailRoute(eventId: eventId).location,
       NotificationType.reportResolved => null,
-      // ADM-04; `?reportId=` (grup anahtarı `{targetType}_{targetId}`) →
-      // ekran `postNavigationSheetDelay` sonra o grubun SHT-26'sını açar
+      // Admin kökü › Şikayetler (ADM-04, tek sayfa — kullanıcı kararı
+      // 2026-10-16); `?reportId=` (grup anahtarı `{targetType}_{targetId}`)
+      // → bölme `postNavigationSheetDelay` sonra o grubun SHT-26'sını açar
       // (W-29). Rota süper admin guard'lıdır; CD-37: Mod C'de üretilmez ama
       // hedef tanımlıdır.
       NotificationType.newReport =>
         refs.reportId == null
             ? AppPaths.notFound
-            : AdminReportsRoute(reportId: refs.reportId).location,
+            : AdminRoute(
+                tab: AdminTab.reports,
+                reportId: refs.reportId,
+              ).location,
       // SET-04 Hakkında (PLAN §13.7; yığın Profil → Ayarlar → Hakkında).
       NotificationType.system ||
       NotificationType.unknown => const AboutRoute().location,

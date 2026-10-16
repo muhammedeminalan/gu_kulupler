@@ -144,56 +144,63 @@ class _MyEventsViewState extends ConsumerState<MyEventsView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  ...switch (status) {
-                    _ when OfflineListFallback.applies(ref, status) => [
-                      OfflineListFallback.sliver(onReload: retry),
-                    ],
-                    GuListStatus.error => [
-                      SliverToBoxAdapter(
-                        child: GuErrorState(
-                          title: l10n.sysErrorTitle,
-                          description: l10n.sysErrorDesc,
-                          retryLabel: l10n.commonRetry,
-                          retryActionKey: GuKey.action('EVT-04.retry'),
-                          inline: true,
-                          onRetry: retry,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.loading => [
-                      SliverToBoxAdapter(
-                        // Prototip `ListState n=4` (varsayılan sayı).
-                        child: GuSkeletonList(
-                          semanticLabel: l10n.commonLoading,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.empty => [
-                      SliverToBoxAdapter(
-                        child: GuEmptyState(
-                          illustration: GuIllustrations.emptyEvents,
-                          title: _emptyTitle(l10n, state.tab),
-                          ctaLabel: l10n.eventsDiscover,
-                          ctaActionKey: GuKey.action('EVT-04.discover'),
-                          onCta: discover,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.data => [
-                      SliverList.builder(
-                        itemCount: visible.length,
-                        itemBuilder: (_, index) =>
-                            _tile(state, visible[index], nowUtc),
-                      ),
-                      if (state.isLoadingMore)
-                        SliverToBoxAdapter(
-                          child: GuSkeletonList(
-                            semanticLabel: l10n.commonLoading,
-                            count: _nextPageRows,
+                  // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                  // `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: state.tab,
+                    sliver: SliverMainAxisGroup(
+                      slivers: switch (status) {
+                        _ when OfflineListFallback.applies(ref, status) => [
+                          OfflineListFallback.sliver(onReload: retry),
+                        ],
+                        GuListStatus.error => [
+                          SliverToBoxAdapter(
+                            child: GuErrorState(
+                              title: l10n.sysErrorTitle,
+                              description: l10n.sysErrorDesc,
+                              retryLabel: l10n.commonRetry,
+                              retryActionKey: GuKey.action('EVT-04.retry'),
+                              inline: true,
+                              onRetry: retry,
+                            ),
                           ),
-                        ),
-                    ],
-                  },
+                        ],
+                        GuListStatus.loading => [
+                          SliverToBoxAdapter(
+                            // Prototip `ListState n=4` (varsayılan sayı).
+                            child: GuSkeletonList(
+                              semanticLabel: l10n.commonLoading,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.empty => [
+                          SliverToBoxAdapter(
+                            child: GuEmptyState(
+                              illustration: GuIllustrations.emptyEvents,
+                              title: _emptyTitle(l10n, state.tab),
+                              ctaLabel: l10n.eventsDiscover,
+                              ctaActionKey: GuKey.action('EVT-04.discover'),
+                              onCta: discover,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.data => [
+                          SliverList.builder(
+                            itemCount: visible.length,
+                            itemBuilder: (_, index) =>
+                                _tile(state, visible[index], nowUtc),
+                          ),
+                          if (state.isLoadingMore)
+                            SliverToBoxAdapter(
+                              child: GuSkeletonList(
+                                semanticLabel: l10n.commonLoading,
+                                count: _nextPageRows,
+                              ),
+                            ),
+                        ],
+                      },
+                    ),
+                  ),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),

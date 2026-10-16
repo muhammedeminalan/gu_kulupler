@@ -2,9 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
 import 'package:gu_ui/gu_ui.dart';
@@ -233,15 +235,23 @@ class ClubHeader extends StatelessWidget {
                   spacing: GuSpacing.s8,
                   children: [
                     if (shown.isNotEmpty)
-                      GuAvatarGroup(
-                        avatars: [
-                          for (final member in shown)
-                            GuAvatarData(
-                              initials: member.applicant.name.initials,
-                              seed: member.applicant.avatarSeed,
-                            ),
-                        ],
-                        moreLabel: rest > 0 ? '+$rest' : null,
+                      // Fotoğraflar üyelerin kimliğinden tek toplu okumada
+                      // çözülür; yalnızca grup yeniden çizilir.
+                      Consumer(
+                        builder: (context, ref, _) => GuAvatarGroup(
+                          avatars: [
+                            for (final member in shown)
+                              GuAvatarData(
+                                initials: member.applicant.name.initials,
+                                seed: member.applicant.avatarSeed,
+                                image: ref.userAvatarImageOf(
+                                  member.userId,
+                                  displaySize: GuSizes.avatarGroupSize,
+                                ),
+                              ),
+                          ],
+                          moreLabel: rest > 0 ? '+$rest' : null,
+                        ),
                       ),
                     Flexible(
                       child: Text(

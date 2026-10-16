@@ -9,6 +9,7 @@ import 'package:gu_kulupler/product/form/form_field_error.dart';
 import 'package:gu_kulupler/product/l10n/static_labels.dart';
 import 'package:gu_kulupler/product/media/club_media_image.dart';
 import 'package:gu_kulupler/product/media/post_image_resolver.dart';
+import 'package:gu_kulupler/product/media/user_avatar_image.dart';
 import 'package:gu_kulupler/product/widget/club/club_look_picker.dart';
 import 'package:gu_kulupler/product/widget/club/cover_mapper.dart';
 import 'package:gu_kulupler/product/widget/member/member_row.dart';
@@ -225,6 +226,10 @@ class _AdminClubFormBodyState extends ConsumerState<AdminClubFormBody> {
         : GuCard(
             child: UserRow(
               user: president,
+              avatarImage: ref.userAvatarImage(
+                president,
+                displaySize: GuSizes.avatar,
+              ),
               sub: MemberRow.departmentAndYear(
                 context,
                 department: president?.department,
@@ -288,6 +293,10 @@ class _AdminClubFormBodyState extends ConsumerState<AdminClubFormBody> {
       child: UserRow.named(
         name: name,
         avatarSeed: userId,
+        avatarImage: ref.userAvatarImageOf(
+          userId,
+          displaySize: GuSizes.avatar,
+        ),
         sub: l10n.clubFormAdvisorLinked,
         inCard: true,
         trailing: _removeButton(

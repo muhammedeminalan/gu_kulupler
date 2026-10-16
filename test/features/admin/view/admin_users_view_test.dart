@@ -4,7 +4,10 @@
 // envanteri (168 anahtar), temel aksiyon sonuçları (satır → CLB-07, bölme →
 // ADM-01 / ADM-02, süzgeç, `?filter=`, menü "Profili gör" → CLB-07, menü
 // "Askıya al" → DLG-30 → askı + TST-52, kendi satırında askı öğesi yok —
-// W-101 b), cihaz matrisi, açık + koyu golden.
+// W-101 b), cihaz matrisi, açık + koyu golden (kabukta, alt çubuk görünür).
+// 2026-10-16'dan beri ADM-05 admin kökünün (`AdminView`, `/admin?tab=users`)
+// Kullanıcılar bölmesidir (kullanıcı kararı; tek sayfa); CLB-07 alt sayfasından
+// geri aynı bölmeye (arama korunur) döner.
 // Referans: design/reference-shots/screens/ADM-05__*.webp,
 // states/ADM-05__*.webp; design/prototype/app/screens-admin.js:72–78,
 // dialogs.js:49–50.
@@ -17,14 +20,18 @@ import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_view_model.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_view_model.dart';
+import 'package:gu_kulupler/features/admin/view/admin_overview_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_users_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_user_menu.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_user_row.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/navigation/admin_tab.dart';
 import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../../fakes/fake_admin_repository.dart';
@@ -37,6 +44,7 @@ import '../../../helpers/device_matrix.dart';
 import '../../../helpers/golden_helper.dart';
 import '../../../helpers/pump_app.dart';
 import '../../../helpers/test_l10n.dart';
+import '../admin_test_support.dart';
 import '../admin_users_test_support.dart';
 
 Key _k(String id) => GuKey.action(id);
@@ -44,7 +52,8 @@ Key _k(String id) => GuKey.action(id);
 /// Tüm satırlar (80) kurulsun diye uzun yüzey.
 const Size _tall = Size(390, 8000);
 
-const Widget _view = AdminUsersView();
+/// Admin kökü, Kullanıcılar bölmesi açık.
+const Widget _view = AdminView(tab: AdminTab.users);
 
 /// Durum kipi: oturum + ViewModel durumu ezilir.
 List<Override> _overrides({AdminUsersState? state}) => [
@@ -81,20 +90,11 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String filter = ''}) async {
       initialLocation: '/start',
       routes: [
         GoRoute(path: '/start', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin/clubs', builder: (_, s) => stub(s)),
-        GoRoute(path: '/admin/reports', builder: (_, s) => stub(s)),
         GoRoute(
-          path: '/admin/users',
-          builder: (_, s) => AdminUsersView(
-            filter: switch (s.uri.queryParameters['filter']) {
-              'suspended' => AdminUsersFilter.suspended,
-              'managers' => AdminUsersFilter.managers,
-              _ => null,
-            },
-          ),
+          path: '/admin',
+          builder: (_, s) => adminViewOf(s),
+          routes: [GoRoute(path: 'users/:userId', builder: (_, s) => stub(s))],
         ),
-        GoRoute(path: '/admin/users/:userId', builder: (_, s) => stub(s)),
       ],
     ),
     overrides: [
@@ -106,7 +106,9 @@ Future<GoRouter> _pumpRoute(WidgetTester tester, {String filter = ''}) async {
   final router = created!;
   addTearDown(router.dispose);
   seedAdminUsers();
-  router.go(filter.isEmpty ? '/admin/users' : '/admin/users?filter=$filter');
+  router.go(
+    filter.isEmpty ? '/admin?tab=users' : '/admin?tab=users&filter=$filter',
+  );
   await tester.pumpAndSettle();
   return router;
 }
@@ -223,21 +225,43 @@ void main() {
   });
 
   group('ADM-05 · Admin kullanıcılar · aksiyonlar', () {
-    testWidgets('satır → CLB-07 (`/admin/users/:id`)', (tester) async {
+    testWidgets('satır → CLB-07 (`/admin/users/:id`); geri → Kullanıcılar '
+        'bölmesi (arama korunur)', (tester) async {
       final router = await _pumpRoute(tester);
+      await tester.enterText(find.byKey(_k('ADM-05.search')), kFirstUserName);
+      await tester.pump(Limits.searchDebounce);
+      await tester.pumpAndSettle();
       await _tapKey(tester, _k('ADM-05.row.$_firstUid'));
       expect(_location(router), '/admin/users/$_firstUid');
+
+      router.pop();
+      await tester.pumpAndSettle();
+      expect(_location(router), '/admin');
+      expect(find.byType(AdminUsersView), findsOneWidget);
+      expect(
+        tester.widget<AdminSegmentBar>(find.byType(AdminSegmentBar)).current,
+        AdminSegmentBar.users,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(_k('ADM-05.search')),
+          matching: find.text(kFirstUserName),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(_k('ADM-05.row.$_firstUid')), findsOneWidget);
     });
 
-    testWidgets('bölme "Genel" → ADM-01; "Kulüpler" → ADM-02', (tester) async {
+    testWidgets('bölme "Genel" → ADM-01; "Kulüpler" → ADM-02 (aynı sayfa)', (
+      tester,
+    ) async {
       final router = await _pumpRoute(tester);
       await _tapKey(tester, _k('ADM-05.seg.ADM-02'));
-      expect(_location(router), '/admin/clubs');
+      expect(_location(router), '/admin?tab=clubs');
 
-      router.go('/admin/users');
-      await tester.pumpAndSettle();
-      await _tapKey(tester, _k('ADM-05.seg.ADM-01'));
+      await _tapKey(tester, _k('ADM-02.seg.ADM-01'));
       expect(_location(router), '/admin');
+      expect(find.byType(AdminOverviewView), findsOneWidget);
     });
 
     testWidgets('?filter=suspended → askıda süzgeci; "Tümü" çipi geri alır; '
@@ -341,7 +365,14 @@ void main() {
 
   group('ADM-05 · Admin kullanıcılar · golden', () {
     testWidgets('varsayılan açık + koyu', (tester) async {
-      await goldenForThemes(tester, 'ADM-05', _view, overrides: _overrides());
+      await goldenForThemes(
+        tester,
+        'ADM-05',
+        _view,
+        overrides: _overrides(),
+        wrapInShell: true,
+        shellTab: GuTab.admin,
+      );
     });
   });
 }

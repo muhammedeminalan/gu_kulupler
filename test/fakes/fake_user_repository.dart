@@ -82,6 +82,10 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
   /// araya giren olayların (yarış) sırası testte elle kurulur.
   Completer<void>? getUserGate;
 
+  /// Verilirse [getUsers] sonuç dönmeden önce bunu bekler (toplu okuma
+  /// sürerken oturum değişimi gibi yarışlar).
+  Completer<void>? getUsersGate;
+
   /// [uid] için profili tamamlanmış, aktif bir kullanıcı (ve hesap belgesi)
   /// kurar ve döndürür: doğrulanmış oturum `AuthStatus.active` çözülür.
   UserModel putActive(
@@ -135,6 +139,7 @@ final class FakeUserRepository extends FakeBase implements UserRepository {
   }) async {
     record('getUsers', [uids]);
     if (forceRefresh) forcedReads.add('getUsers');
+    if (getUsersGate case final gate?) await gate.future;
     if (_failure() case final error?) return FirebaseFailure(error);
     if (!uids.every(RepositoryHelpers.isValidId)) {
       return const FirebaseFailure(FirestoreError.invalidArgument);

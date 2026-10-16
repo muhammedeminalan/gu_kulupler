@@ -84,7 +84,7 @@ class _DeleteAccountViewState extends ConsumerState<DeleteAccountView>
               ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: GuFormScrollView(
           // Adım başına ayrı kaydırma konumu (prototip `routeKey="delete"`).
           key: PageStorageKey<String>('delete-${step.name}'),
           padding: GuInsets.only(

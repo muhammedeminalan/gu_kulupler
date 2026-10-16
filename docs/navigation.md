@@ -14,11 +14,11 @@ GoRouter (rootNavigatorKey, refreshListenable: SessionViewModel, redirect: AuthG
     ├── branch clubs          /clubs                 CLB-01   (+ alt ağaç)
     ├── branch events         /events                EVT-01
     ├── branch notifications  /notifications         NTF-01
-    ├── branch admin          /admin                 ADM-01   (yalnızca süper admin; sekme yoksa branch erişilmez)
+    ├── branch admin          /admin                 ADM-01/02/04/05 tek sayfa (`?tab=`; yalnızca süper admin; sekme yoksa branch erişilmez)
     └── branch profile        /profile               PRF-01
 ```
 
-- **Her sekme kendi yığınını korur** (indexedStack); sekmeler arası yığın **karışmaz**. Aktif sekmeye tekrar dokunma: yığın derinse köke döner (`goBranch(i, initialLocation: true)`), kökteyse listeyi başa kaydırır (`scrollTopReq`).
+- **Her sekme kendi yığınını korur** (indexedStack; dal kabı `GuFadeIndexedStack` — dal değişiminde kısa solma, §5); sekmeler arası yığın **karışmaz**. Aktif sekmeye tekrar dokunma: yığın derinse köke döner (`goBranch(i, initialLocation: true)`), kökteyse listeyi başa kaydırır (`scrollTopReq`).
 - **Alt sekme çubuğu yalnızca sekme kökünde görünür** (prototip: `nav.depth()==1`). Daha derin ekranlarda gizlenir; `AppShellView` bunu `GoRouterState`'ten (derinlik) türetir, **ekran ekran elle** değil. Toast, çubuk görünürken onun üstünde durur.
 - **Yığın rota ağacından türetilir** (`go` kuralı): geri tuşunun çalışması istenen her ekran, mantıksal ebeveyninin `routes:` listesinde **alt-rota**dır.
 - Zorunlu id'ler **path parametresidir**; `$extra` ile model taşınmaz. Opsiyonel bağlam **query parametresidir** (`?clubId=`, `?tab=`).
@@ -114,12 +114,14 @@ Typed route sınıf adı = `<Ad>Route` (go_router_builder). Prototip yolu `core.
 
 | ID | Flutter yolu | Sınıf | Ebeveyn | Guard |
 |---|---|---|---|---|
-| ADM-01 | `/admin` | `AdminRoute` | T | S |
-| ADM-02 | `/admin/clubs` | `AdminClubsRoute` | ADM-01 | S |
-| ADM-03 | `/admin/clubs/new` · `/admin/clubs/:id/edit` | `AdminClubFormRoute` | ADM-02 | S |
-| ADM-04 | `/admin/reports?reportId=` | `AdminReportsRoute` | ADM-01 | S |
-| ADM-05 | `/admin/users?filter=` | `AdminUsersRoute` | ADM-01 | S |
-| CLB-07 (paylaşılan) | `/admin/users/:userId` | `AdminUserProfileRoute` | ADM-05 | S |
+| ADM-01 | `/admin` (`?tab=overview`) | `AdminRoute` | T | S |
+| ADM-02 | `/admin?tab=clubs&clubsTab=active\|suspended` | `AdminRoute` | T (bölme) | S |
+| ADM-03 | `/admin/clubs/new` · `/admin/clubs/:id/edit` | `AdminClubFormRoute` | admin kökü (Kulüpler bölmesi) | S |
+| ADM-04 | `/admin?tab=reports&reportsTab=open\|resolved&reportId=` | `AdminRoute` | T (bölme) | S |
+| ADM-05 | `/admin?tab=users&filter=all\|managers\|suspended` | `AdminRoute` | T (bölme) | S |
+| CLB-07 (paylaşılan) | `/admin/users/:userId` | `AdminUserProfileRoute` | admin kökü (Kullanıcılar bölmesi) | S |
+
+- **Admin tek sayfa** (kullanıcı kararı H-18, 2026-10-16; tasarımdan sapma K-94): ADM-01 / 02 / 04 / 05 aynı `AdminView` sayfasının bölmeleridir (`AdminSegmentBar`). Hepsi sekme kökündedir (yol `/admin`, derinlik 1): **alt çubuk görünür**, geri oku yok; bölme değişimi yığını değiştirmez, içerik kısa solmayla değişir (§5) ve her bölme hâlini korur (arama, sekme, süzgeç, kaydırma; bölme ilk seçildiğinde kurulur, yeniden seçildiğinde içerik kalarak yeniden okunur — öteki bölmenin yazımı bayat kalmaz). Bölme seçimi adresi `AdminRoute`'a `go` ile eşitler (aynı sayfa anahtarı, geçiş yok). **Sorgu komuttur:** `tab` / `clubsTab` / `reportsTab` / `reportId` / `filter` değişip dolu geldiğinde uygulanır; boş değer hâli değiştirmez — alt sayfaya `go` edilirken ebeveyn sorgusuz kurulur, geri dönüşte aynı bölme açıktır. Eski `/admin/clubs`, `/admin/reports`, `/admin/users` yolları **kaldırıldı** (guard'da `/admin/**` yine `S`; bilinmeyen yol SYS-04). ADM-03 ve admin CLB-07 kökün alt sayfasıdır (alt çubuk gizli, geri → aynı bölme); SHT-26 sheet'tir.
 
 - Sekme çubuğu: `Kulüpler · Etkinlikler · Bildirimler · [Admin] · Profil`; **Admin yalnızca `isSuperAdmin`** (kabuk bunu gösterir/gizler; rota guard'ı yine de uygular). Bildirim rozeti: okunmamış sayısı, 9 üstü "9+".
 - **Paylaşılan yaprak ekranlar** (bir görünüm sınıfı, birden çok rota sınıfı): `Search` (clubs, events), `NotificationPrefs` (notifications, profile), `UserProfile/CLB-07` (clubs ×3 — kulüpsüz, CLB-03 altı, CLB-06 altı; profile, admin). Gerekçe: bu ekranlar birden çok sekmeden doğal olarak açılır ve ağır alt ağaçları yoktur; sekme değiştirmek yanlış hissettirirdi.
@@ -169,7 +171,7 @@ Kural: kaydı okundu işaretle → hedefi `go` ile aç → hedef yoksa/silinmiş
 | `event_cancelled` | `/events/:eid?showCancelled=true` | |
 | `event_reminder`, `waitlist_promoted` | kayıtlıysa `/events/:eid/ticket`, değilse `/events/:eid` | |
 | `report_resolved` | rota yok | yalnızca TST-17 |
-| `new_report` | `/admin/reports?reportId=` | süper ise 250 ms sonra SHT-26 |
+| `new_report` | `/admin?tab=reports&reportId=` (admin kökü › Şikayetler) | süper ise 250 ms sonra SHT-26 |
 | `system` / varsayılan | `/profile/settings/about` | |
 
 FCM push tıklaması aynı çözücüyü kullanır (`NotificationNavigator.open(NotificationModel)`); uygulama kapalıyken açılış `getInitialMessage` ile, splash sonrası.
@@ -180,14 +182,16 @@ FCM push tıklaması aynı çözücüyü kullanır (`NotificationNavigator.open(
 
 | Geçiş | Animasyon | Gerekçe (prototip `nav.anim`) |
 |---|---|---|
-| Sekme değiştirme | animasyonsuz / çapraz solma (`GuMotion.fast`) | `fade` |
+| Alt sekme (dal) değiştirme | yeni dal solarak girer, 200 ms (`GuMotion.tabSwitch`, `easeStandard`; dal kabı `GuFadeIndexedStack` — `AppShellRouteData.$navigatorContainerBuilder`); etkin sekmeye yeniden dokunma solmaz | kullanıcı kararı H-19, 2026-10-16 (K-95; prototipte animasyonsuz) |
+| Sayfa içi sekme / segment / süzgeç içerik değişimi (CLB-03, CLB-02, EVT-01, EVT-04, PRF-03, NTF-01, MGT-02/04/08, ADM bölmeleri ve ADM-02/04/05 listeleri, AUT-06) | içerik giriş solması `GuMotion.tabSwitch` (`GuContentFade` / `GuSliverContentFade`); sayfa geçişi değildir | kullanıcı kararı H-19, 2026-10-16 (K-95) |
 | Splash → ilk ekran, giriş sonrası uygulamaya geçiş (`enterApp`), çıkış, hesap silme sonrası | solma (`GuMotion.base`) | `fade` |
 | `replace` benzeri (örn. bildirim → hedef) | solma | `fade` |
 | Sheet | alttan yükselme, 28 radius üst köşe, `GuMotion.base`; sürükleyerek kapanma | tasarım |
 | Dialog | solma + hafif ölçek `GuMotion.fast` | tasarım |
 | Toast | alttan yükselme/solma | tasarım |
 
-- Hiçbir ekranda ad hoc `CustomTransitionPage` yok; yukarıdaki üç satır tek yardımcıdan (`GuPageTransitions`) gelir.
+- Hiçbir ekranda ad hoc `CustomTransitionPage` yok; sayfa solmaları tek yardımcıdan (`GuPageTransitions`) gelir. Her rota sınıfı `PlatformPageMixin` ya da `FadePageMixin` kullanır (2026-10-16 denetimi: 56 / 56). Sekme ve içerik solmaları sayfa değil, gu_ui widget'larıdır (`GuFadeIndexedStack`, `GuContentFade`).
+- **Bilinen sınır:** go_router sayfa anahtarı rota kalıbıdır (`ValueKey(route.path)`); aynı kalıplı iki konum arasında `go` (ör. `/events/e01` → `/events/e02`, `/clubs/c01` → `/clubs/c02`) sayfayı yerinde günceller — geçiş animasyonu oynamaz. Yalnızca sorgu değişen `go` da aynı sayfadır (admin bölmeleri bunu bilerek kullanır).
 - `MediaQuery.disableAnimations` açıksa tüm süreler 0.
 - **Test:** iOS ve Android platform geçersiz kılmasıyla (`debugDefaultTargetPlatformOverride`) rota geçişi + geri; kenar kaydırma; yığın boyu doğrulaması.
 
@@ -203,5 +207,5 @@ FCM push tıklaması aynı çözücüyü kullanır (`NotificationNavigator.open(
 1. `AppRedirect` tablo testi (§3'ün her satırı).
 2. Rota envanteri: `registry.json#inventory` (51 satır) ↔ typed route sınıfları; her ekran bir rotadan ulaşılabilir; tüm path parametreleri ve guard'lar tabloyla aynı.
 3. Yığın testi: derin bağlantı tablosu (§4.1) beklenen yığını üretir; geri tuşu beklenen ekrana iner; sekme yığınları birbirine karışmaz (sekme A'da derinleş → B → A: yığın korunur; aktif sekme tekrar dokunma köke indirir).
-4. Platform geçiş testi (iOS/Android).
+4. Platform geçiş testi (iOS/Android); sekme dalı solması + azaltılmış harekette anında (`app_router_test`); admin bölme geçişi (alt çubuk görünür, hâl korunur, sorgu komutu — `admin_view_test`, `admin_*_flow_test`).
 5. `grep` testi: `context.push(` yalnızca `LegalRoute`; view'da `Navigator.`/`GetIt.I` yok.
