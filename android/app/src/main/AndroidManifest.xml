@@ -74,9 +74,14 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="gu_push" />
+        <!-- T-46: bildirim küçük ikonu tek renkli beyaz amblem (Android durum çubuğu yalnızca
+             alfa kanalını kullanır; renkli uygulama ikonu gri kare görünür) + vurgu rengi. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_stat_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

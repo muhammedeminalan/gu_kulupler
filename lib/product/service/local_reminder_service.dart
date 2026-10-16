@@ -182,8 +182,9 @@ final class FlutterLocalReminderService implements LocalReminderService {
   /// Hatırlatıcıların saat dilimi (D-26).
   static const String timeZoneName = 'Europe/Istanbul';
 
-  /// Android bildirim küçük ikonu (uygulama ikonu; T-46 tek renkli ikon).
-  static const String androidIcon = '@mipmap/ic_launcher';
+  /// Android bildirim küçük ikonu: tek renkli beyaz amblem (T-46;
+  /// `res/drawable-*/ic_stat_notification.png`, push ile aynı ikon).
+  static const String androidIcon = '@drawable/ic_stat_notification';
 
   /// Eklenti kurulum ayarları: iOS izin **istemez** (PLAN §15.6).
   static const InitializationSettings initializationSettings =
