@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -744,10 +745,7 @@ class _FilledIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
     child: SvgPicture(
-      _FilledIconLoader(
-        asset: icon.assetPath,
-        bundle: DefaultAssetBundle.of(context),
-      ),
+      _FilledIconLoader(asset: icon.assetPath),
       width: GuSizes.postActionIcon,
       height: GuSizes.postActionIcon,
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -758,29 +756,41 @@ class _FilledIcon extends StatelessWidget {
 
 /// İkon varlığını kök `fill="none"` özniteliği dolguya çevrilmiş olarak
 /// yükler; önbellek anahtarı varlık + paket.
+///
+/// Varlık paketi alanda TUTULMAZ: `SvgLoader` SVG'yi `compute` ile ayrı
+/// isolate'te çözer ve yükleyiciyi oraya gönderir; önbellekli paket
+/// (`SynchronousFuture`) gönderilemez → release / profil derlemede ikon
+/// çizilmez. Paket ana isolate'te `DefaultAssetBundle`'dan çözülür.
 class _FilledIconLoader extends SvgLoader<String> {
-  const _FilledIconLoader({required this.asset, required this.bundle});
+  const _FilledIconLoader({required this.asset});
 
   static const String _strokeOnly = 'fill="none"';
   static const String _filled = 'fill="currentColor"';
 
   final String asset;
-  final AssetBundle bundle;
+
+  static AssetBundle _bundleOf(BuildContext? context) =>
+      context == null ? rootBundle : DefaultAssetBundle.of(context);
 
   @override
   Future<String?> prepareMessage(BuildContext? context) =>
-      bundle.loadString(asset);
+      _bundleOf(context).loadString(asset);
 
   @override
   String provideSvg(String? message) =>
       (message ?? '').replaceFirst(_strokeOnly, _filled);
 
   @override
-  bool operator ==(Object other) =>
-      other is _FilledIconLoader &&
-      other.asset == asset &&
-      other.bundle == bundle;
+  SvgCacheKey cacheKey(BuildContext? context) => SvgCacheKey(
+    keyData: (this, _bundleOf(context)),
+    theme: getTheme(context),
+    colorMapper: colorMapper,
+  );
 
   @override
-  int get hashCode => Object.hash(asset, bundle);
+  bool operator ==(Object other) =>
+      other is _FilledIconLoader && other.asset == asset;
+
+  @override
+  int get hashCode => asset.hashCode;
 }
