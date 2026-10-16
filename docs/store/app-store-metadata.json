@@ -1,0 +1,174 @@
+{
+  "_note": "App Store Connect mağaza bilgileri (T-46). asc ile yüklenir; kullanıcı onayı olmadan yüklenmez. Sınırlar: başlık / alt başlık 30, anahtar kelime 100, tanıtım 170, açıklama 4000. Anahtar kelimeler başlık / alt başlık sözcüklerini tekrar etmez, aksansız yazılır.",
+  "appId": "6823367574",
+  "bundleId": "com.gukulupler.guKulupler",
+  "availability": {
+    "territories": [
+      "TUR"
+    ],
+    "price": "free",
+    "_note": "Yalnızca Türkiye (kullanıcı kararı 2026-10-16). Türkiye mağazası tr + en-GB yerelleştirmelerini dizinler: en-GB anahtar kelimeleri tr'dekileri tekrar etmez (ek arama terimleri)."
+  },
+  "categories": {
+    "primary": "EDUCATION",
+    "secondary": "SOCIAL_NETWORKING"
+  },
+  "urls": {
+    "privacyPolicy": {
+      "tr": "https://gu-kulupler.web.app/gizlilik",
+      "en-GB": "https://gu-kulupler.web.app/privacy"
+    },
+    "support": {
+      "tr": "https://gu-kulupler.web.app/destek",
+      "en-GB": "https://gu-kulupler.web.app/support"
+    }
+  },
+  "localizations": {
+    "tr": {
+      "name": "GÜ Kulüpler",
+      "subtitle": "Kulüp, etkinlik ve duyurular",
+      "keywords": "gumushane,universite,ogrenci,topluluk,kampus,uyelik,basvuru,yoklama,bilet,takvim,sosyal,gonullu,spor",
+      "promotionalText": "Gümüşhane Üniversitesi'nin tüm öğrenci kulüpleri tek uygulamada: keşfet, başvur, etkinliklere katıl, duyuruları kaçırma.",
+      "description": "GÜ Kulüpler, Gümüşhane Üniversitesi öğrenci kulüplerinin resmî olmayan, öğrenciler için yapılmış yönetim ve sosyal uygulamasıdır. Kampüsteki tüm kulüpleri keşfet, ilgi alanına uygun olana birkaç dokunuşla başvur, etkinlikleri takvimine ekle ve kulübünden gelen duyuruları anında öğren.\n\nKEŞFET\n• Tüm kulüpleri kategoriye ve ilgi alanına göre listele, ara\n• Kulüp sayfasında hakkında bilgisi, yönetim kurulu, gönderiler ve etkinlikler\n• Sana uygun kulüp önerileri\n\nKATIL\n• Tek dokunuşla üyelik başvurusu, başvurunun durumunu takip et\n• Etkinliklere katılım bildir; kontenjan dolduysa bekleme listesine gir, yer açılınca otomatik geç\n• QR biletinle etkinlik girişinde yoklamaya katıl\n• Etkinlik öncesi hatırlatıcı\n\nTAKİP ET\n• Kulübünün duyuruları, gönderileri ve anketleri tek akışta\n• Beğen, yorum yap, kaydet\n• Önemli gelişmelerde bildirim: başvuru sonucu, yeni etkinlik, iptal\n\nKULÜBÜNÜ YÖNET\nBaşkan ve yönetim kurulu için:\n• Başvuruları onayla veya reddet, üyeleri ve rolleri yönet\n• Etkinlik oluştur, katılımcıları gör, QR ile yoklama al\n• Duyuru ve gönderi paylaş, içeriği yönet\n• Kulüp profilini, logosunu ve kapağını düzenle\n\nGÜVENLİ VE ÖZEL\n• Yalnızca üniversite e-posta adresiyle kayıt\n• E-posta adresin profilinde gösterilmez; yalnızca başvurduğun kulübün yönetimi görür\n• İçerik şikayet etme ve kullanıcı engelleme\n• Hesabını uygulama içinden istediğin zaman silebilirsin\n\nTürkçe ve İngilizce, açık ve koyu tema desteğiyle.",
+      "whatsNew": "İlk sürüm."
+    },
+    "en-GB": {
+      "name": "GÜ Kulüpler",
+      "subtitle": "Clubs, events & announcements",
+      "keywords": "university,student,campus,society,community,membership,attendance,ticket,calendar,volunteer,poll",
+      "promotionalText": "Every student club at Gümüşhane University in one app: discover, apply, join events and never miss an announcement.",
+      "description": "GÜ Kulüpler is a community-built management and social app for student clubs at Gümüşhane University. Discover every club on campus, apply to the ones that match your interests in a few taps, add events to your calendar and get your club's announcements instantly.\n\nDISCOVER\n• Browse and search all clubs by category and interest\n• Club pages with about info, board members, posts and events\n• Club suggestions picked for you\n\nJOIN\n• One-tap membership applications with status tracking\n• RSVP to events; join the waitlist when an event is full and move up automatically when a spot opens\n• Check in at events with your QR ticket\n• Reminders before events\n\nFOLLOW\n• Your clubs' announcements, posts and polls in one feed\n• Like, comment and save\n• Notifications for what matters: application results, new events, cancellations\n\nRUN YOUR CLUB\nFor presidents and board members:\n• Approve or reject applications, manage members and roles\n• Create events, see attendees, take attendance with QR\n• Share announcements and posts, moderate content\n• Edit your club profile, logo and cover\n\nSAFE AND PRIVATE\n• Sign-up with a university email address only\n• Your email is not shown on your profile; only the management of clubs you apply to can see it\n• Report content and block users\n• Delete your account from within the app at any time\n\nAvailable in Turkish and English, with light and dark themes.",
+      "whatsNew": "First release."
+    }
+  },
+  "reviewNotes": {
+    "tr": "Kayıt yalnızca üniversite e-posta alan adıyla açıktır; inceleme için hazır bir deneme hesabı bilgileri 'Sign-In Information' alanında verilmiştir. Hesap silme: Profil > Ayarlar > Hesabı sil. Kullanıcı içeriği (gönderi, yorum) için şikayet ve engelleme: gönderi / yorum menüsü > Şikayet et, profil > Engelle. Bildirimler isteğe bağlıdır.",
+    "en-GB": "Sign-up is limited to the university email domain; credentials for a ready demo account are provided in 'Sign-In Information'. Account deletion: Profile > Settings > Delete account. Reporting and blocking for user content (posts, comments): post / comment menu > Report, profile > Block. Notifications are optional."
+  },
+  "ageRatingAnswers": {
+    "_note": "Kullanıcı içeriği var (gönderi, yorum) + şikayet / engelleme var; şiddet, kumar, cinsellik, alkol, reklam yok. Sonuç Apple tarafından hesaplanır.",
+    "userGeneratedContent": true,
+    "messagingAndChat": false,
+    "advertising": false,
+    "gambling": false,
+    "unrestrictedWebAccess": false
+  },
+  "appPrivacy": {
+    "_note": "App Store Connect › App Privacy yanıtları (gizlilik denetimi 2026-10-16). Anahtarlar fastlane upload_app_privacy_details_to_app_store kategori / amaç adlarıdır. Hiçbir veri izleme (tracking) amaçlı değildir; ATT istenmez. 'linked' = kullanıcının kimliğine bağlı. ANALYTICS amacı yalnızca Firebase SDK gizlilik bildirimlerinden (PrivacyInfo.xcprivacy) gelir; uygulamada analitik aracı yoktur. Crashlytics setUserIdentifier kaldırılırsa CRASH_DATA 'linked: false' beyan edilebilir. Kaynak metin: hosting/public/gizlilik/ (bölüm 2).",
+    "tracking": false,
+    "collected": {
+      "NAME": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Ad soyad: profil ve Firebase Authentication kaydı"
+      },
+      "EMAIL_ADDRESS": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Üniversite e-postası: hesap, doğrulama, kulüp başvurusu, destek"
+      },
+      "PHOTOS_OR_VIDEOS": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Profil fotoğrafı, gönderi görseli, kulüp logosu / kapağı, etkinlik kapağı, destek eki"
+      },
+      "CUSTOMER_SUPPORT": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Uygulama içi destek talepleri ve e-posta yazışmaları"
+      },
+      "OTHER_USER_CONTENT": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Gönderi, yorum, biyografi, ilgi alanları, başvuru notu, şikayet notu, anket oyu"
+      },
+      "USER_ID": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Firebase Authentication kullanıcı kimliği; Crashlytics raporuna bağlanan kullanıcı kimliği"
+      },
+      "DEVICE_ID": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "FCM push jetonu (hesap kaydına yazılır) ve Firebase Installations kimliği"
+      },
+      "CRASH_DATA": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY"
+        ],
+        "note": "Firebase Crashlytics çökme ve hata raporları; kullanıcı kimliği rapora bağlı (90 gün)"
+      },
+      "OTHER_DIAGNOSTIC_DATA": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY",
+          "ANALYTICS"
+        ],
+        "note": "Crashlytics günlük satırları ve Firebase Sessions oturum bilgisi (kullanıcı kimliğine bağlı); ANALYTICS amacı FirebaseInstallations, FirebaseAuth, FirebaseFirestore, FirebaseRemoteConfig ve GoogleDataTransport bildirimlerinden"
+      },
+      "OTHER_DATA": {
+        "linked": true,
+        "tracking": false,
+        "purposes": [
+          "APP_FUNCTIONALITY",
+          "ANALYTICS"
+        ],
+        "note": "Üyelik ve rol, etkinlik katılımı ve QR yoklama, bildirim tercihleri, engelleme ve şikayet kayıtları, personel bilgisi; ANALYTICS amacı FirebaseMessaging bildiriminden"
+      }
+    },
+    "notCollected": [
+      "PHONE_NUMBER",
+      "PHYSICAL_ADDRESS",
+      "OTHER_CONTACT_INFO",
+      "HEALTH",
+      "FITNESS",
+      "PAYMENT_INFORMATION",
+      "CREDIT_AND_FRAUD",
+      "OTHER_FINANCIAL_INFO",
+      "PRECISE_LOCATION",
+      "COARSE_LOCATION",
+      "SENSITIVE_INFO",
+      "CONTACTS",
+      "EMAILS_OR_TEXT_MESSAGES",
+      "AUDIO",
+      "GAMEPLAY_CONTENT",
+      "BROWSING_HISTORY",
+      "SEARCH_HISTORY",
+      "PURCHASE_HISTORY",
+      "PRODUCT_INTERACTION",
+      "ADVERTISING_DATA",
+      "OTHER_USAGE_DATA",
+      "PERFORMANCE_DATA"
+    ],
+    "_notCollectedNotes": {
+      "SEARCH_HISTORY": "Son aramalar yalnızca cihazda tutulur, sunucuya gönderilmez",
+      "PRODUCT_INTERACTION": "Firebase Sessions oturum zamanlaması teşhis amaçlıdır; OTHER_DIAGNOSTIC_DATA altında beyan edildi",
+      "PERFORMANCE_DATA": "Firebase Performance Monitoring yok",
+      "ADVERTISING_DATA": "Reklam ve reklam kimliği (IDFA) yok"
+    }
+  }
+}

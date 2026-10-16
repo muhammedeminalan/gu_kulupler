@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#D00A2D">
+<title>Gizlilik Politikası ve KVKK Aydınlatma Metni · GÜ Kulüpler</title>
+<meta name="description" content="GÜ Kulüpler uygulamasının gizlilik politikası ve 6698 sayılı KVKK kapsamındaki aydınlatma metni.">
+<link rel="canonical" href="https://gu-kulupler.web.app/gizlilik/">
+<link rel="alternate" hreflang="tr" href="https://gu-kulupler.web.app/gizlilik/">
+<link rel="alternate" hreflang="en" href="https://gu-kulupler.web.app/privacy/">
+<!-- Bu sayfa privacy/ ile birlikte güncellenir.
+     Gmail notu: W-61 (gmail.com geçici izni) kapatıldığında "test döneminde … Gmail" cümleleri kaldırılır.
+     AÇIK KALEMLER: 1) Bölüm 6: KVKK m.9 aktarım güvencesi seçilmedi; metin hukuki dayanak iddia etmez.
+     2) Uygulama içi yasal metinler (ARB legalKvkk*, legalGizlilik*) ve supportEmail (app_constants.dart) bu metinle eşitlenmeli. -->
+<style>
+:root{color-scheme:light dark;--brand:#D00A2D;--brand-text:#D00A2D;--on-brand:#FFFFFF;--tonal:#FCE8EC;--on-tonal:#7A0619;--bg:#FAF9F6;--surface:#FFFFFF;--border:#E2E8F0;--soft:#EEF1F5;--text:#101828;--muted:#5E708A}
+@media (prefers-color-scheme:dark){:root{--brand-text:#F2536C;--tonal:#3A0C16;--on-tonal:#FFD9E0;--bg:#17191C;--surface:#1E2024;--border:#39414B;--soft:#303740;--text:#F1F1ED;--muted:#AEB5BF}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:break-word}
+a{color:var(--brand-text);text-underline-offset:.15em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--brand-text);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:0}
+.skip:focus{left:16px;top:12px;z-index:10;background:var(--surface);color:var(--text);padding:10px 14px;border:2px solid var(--brand-text);border-radius:10px}
+.top{background:var(--surface);border-bottom:1px solid var(--border)}
+.wrap{max-width:760px;margin:0 auto;padding-left:16px;padding-right:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding-top:10px;padding-bottom:10px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--text);text-decoration:none;font-weight:700;font-size:1.05rem}
+.mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--on-brand);font-size:.8rem;font-weight:800;letter-spacing:.02em}
+.nav ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:.95rem}
+.nav a:hover{background:var(--soft)}
+.nav a[aria-current="page"]{background:var(--tonal);color:var(--on-tonal)}
+.nav a.lang{border:1px solid var(--border)}
+main{padding-top:28px;padding-bottom:56px}
+h1{font-size:clamp(1.6rem,1.25rem + 1.6vw,2.15rem);line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+h2{font-size:1.3rem;line-height:1.3;margin:2.2em 0 .6em;scroll-margin-top:16px}
+h3{font-size:1.06rem;line-height:1.35;margin:1.5em 0 .4em;scroll-margin-top:16px}
+p,ul,ol{margin:.6em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+li::marker{color:var(--brand-text)}
+.lead{font-size:1.1rem;color:var(--muted);margin-top:0}
+.meta{color:var(--muted);font-size:.93rem}
+.notice{background:var(--tonal);color:var(--on-tonal);border-radius:14px;padding:14px 18px;margin:20px 0}
+.notice a{color:inherit}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:16px 0}
+.card>h2:first-child,.card>h3:first-child{margin-top:.8em}
+.who{color:var(--muted)}
+.who strong{color:var(--text)}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:24px 0}
+.toc h2{font-size:1rem;margin:.8em 0 .2em}
+.path{font-weight:600}
+hr{border:0;border-top:1px solid var(--border);margin:40px 0}
+.foot{border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.foot .wrap{padding-top:20px;padding-bottom:32px}
+.foot a{color:var(--muted)}
+@media print{.nav,.skip{display:none}body{background:#fff;color:#000}.card,.toc,.notice{background:#fff;color:#000;border:1px solid #999}}
+</style>
+</head>
+<body>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="../"><span class="mark" aria-hidden="true">GÜ</span>GÜ Kulüpler</a>
+    <nav class="nav" aria-label="Site">
+      <ul>
+        <li><a href="../gizlilik/" aria-current="page">Gizlilik</a></li>
+        <li><a href="../destek/">Destek</a></li>
+        <li><a class="lang" href="../privacy/" hreflang="en" lang="en">English</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="icerik" class="wrap">
+  <h1>Gizlilik Politikası ve KVKK Aydınlatma Metni</h1>
+  <p class="meta">Yürürlük tarihi: 16 Ekim 2026 · Son güncelleme: 16 Ekim 2026</p>
+  <p class="lead">Bu metin, GÜ Kulüpler mobil uygulamasında hangi kişisel verilerin işlendiğini, neden işlendiğini, kimlerin görebildiğini ve haklarınızı açıklar. 6698 sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamındaki aydınlatma metni olarak da hazırlanmıştır.</p>
+
+  <div class="notice" role="note">
+    <strong>Resmî uygulama değildir.</strong> GÜ Kulüpler, Gümüşhane Üniversitesi öğrenci kulüpleri için öğrenciler tarafından geliştirilen bağımsız bir öğrenci projesidir. Gümüşhane Üniversitesi tarafından geliştirilmemiştir, işletilmemektedir ve onaylanmamıştır.
+  </div>
+
+  <section class="card" aria-labelledby="kisaca">
+    <h2 id="kisaca">Kısaca</h2>
+    <ul>
+      <li>Reklam, reklam kimliği, uygulamalar arası izleme, analitik aracı (Firebase / Google Analytics) ve konum verisi <strong>yoktur</strong>. Firebase bileşenleri yalnızca hizmetin çalışması ve kalitesi için teknik teşhis verisi toplar.</li>
+      <li>E-posta adresiniz profilinizde gösterilmez; yalnızca siz, başvurduğunuz (sonuç ne olursa olsun) veya üyesi olduğunuz kulüplerin yönetimi ve uygulama yöneticileri görebilir.</li>
+      <li>Verileriniz Google Firebase altyapısında, Türkiye dışında (başta Amerika Birleşik Devletleri) saklanır ve işlenir.</li>
+      <li>Hesabınızı uygulamanın içinden silebilirsiniz: <span class="path">Profil › Ayarlar › Hesabı sil</span>.</li>
+      <li>Sorularınız ve talepleriniz için: <a href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></li>
+    </ul>
+  </section>
+
+  <nav class="toc" aria-labelledby="icindekiler">
+    <h2 id="icindekiler">İçindekiler</h2>
+    <ol>
+      <li><a href="#veri-sorumlusu">Veri sorumlusu ve iletişim</a></li>
+      <li><a href="#veriler">İşlenen kişisel veriler</a></li>
+      <li><a href="#toplamadiklarimiz">Toplamadığımız veriler</a></li>
+      <li><a href="#amaclar">İşleme amaçları, yöntemi ve hukuki sebepler</a></li>
+      <li><a href="#paylasim">Kimlerle paylaşıyoruz</a></li>
+      <li><a href="#yurt-disi">Yurt dışına aktarım</a></li>
+      <li><a href="#saklama">Saklama süresi ve silme</a></li>
+      <li><a href="#haklar">Haklarınız ve başvuru yolu</a></li>
+      <li><a href="#cocuklar">Çocuklar</a></li>
+      <li><a href="#guvenlik">Güvenlik</a></li>
+      <li><a href="#degisiklikler">Değişiklikler ve yürürlük</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="veri-sorumlusu">1. Veri sorumlusu ve iletişim</h2>
+  <p>KVKK kapsamında veri sorumlusu, GÜ Kulüpler uygulamasını geliştiren ve App Store’da yayımlayan gerçek kişidir. Gümüşhane Üniversitesi bu uygulamayı işletmez ve veri sorumlusu değildir.</p>
+  <ul>
+    <li>Veri sorumlusu: <strong>Muhammed Emin Alan</strong></li>
+    <li>Yazışma: KVKK başvuruları dahil tüm yazışmalar yalnızca e-postayla yapılır.</li>
+    <li>E-posta: <a href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></li>
+    <li>Uygulama içinden: <span class="path">Profil › Ayarlar › Yardım ve destek</span></li>
+  </ul>
+
+  <h2 id="veriler">2. İşlenen kişisel veriler</h2>
+  <p>Yalnızca uygulamanın çalışması için gereken verileri işleriz. Aşağıda her kategori için neyin tutulduğunu ve kimlerin görebildiğini bulabilirsiniz. “Kulüp yönetimi” ifadesi ilgili kulübün başkanını, yönetim kurulu üyelerini ve danışmanını; “uygulama yöneticileri” ise proje ekibinden yetkilendirilmiş kişileri kapsar.</p>
+
+  <section class="card" aria-labelledby="v-hesap">
+    <h3 id="v-hesap">2.1 Hesap bilgileri</h3>
+    <ul>
+      <li>Ad soyad ve e-posta adresiniz. Kayıt üniversite e-posta adresiyle (@ogr.gumushane.edu.tr veya @gumushane.edu.tr) yapılır; test döneminde geçici olarak Gmail adresleri de kabul edilmektedir.</li>
+      <li>Şifreniz: Firebase Authentication tarafından geri çevrilemeyen bir özet (hash) olarak saklanır; biz şifrenizi göremeyiz.</li>
+      <li>E-posta doğrulama durumu, hesap durumu (etkin, askıda, silinmiş) ve son giriş zamanı.</li>
+      <li>Hesap askıya alınırsa askıya alma gerekçesi.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> E-posta adresiniz profilinizden ayrı, erişimi kısıtlı bir hesap kaydında tutulur ve profilinizde gösterilmez. Bu hesap kaydını (e-posta, son giriş zamanı, varsa askıya alma gerekçesi ve push jetonları) yalnızca siz ve uygulama yöneticileri görebilir. Bir kulübe başvurduğunuzda e-posta adresiniz o başvurunun kısıtlı kaydına da yazılır ve o kulübün yönetimi görebilir; başvuru reddedilse, iptal edilse veya kulüpten ayrılsanız da bu kayıt hesabınızı silene kadar kalır.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-profil">
+    <h3 id="v-profil">2.2 Profil bilgileri</h3>
+    <ul>
+      <li>Bölüm, sınıf, ilgi alanları (1–5 adet) ve kısa biyografi (en çok 140 karakter).</li>
+      <li>Profil fotoğrafı (isteğe bağlı).</li>
+      <li>Akademik veya idari personel olup olmadığınız ve hesabınızın etkin ya da askıda olduğu bilgisi.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> Uygulamaya doğrulanmış hesapla giriş yapmış tüm kullanıcılar. Uygulama bu bilgileri gönderi yazarı, üye listesi veya başvuru gibi ekranlarda gösterir; ortak bir kulübünüz olmasa da doğrulanmış her kullanıcı profilinizi teknik olarak okuyabilir.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-uyelik">
+    <h3 id="v-uyelik">2.3 Kulüp üyelikleri ve başvurular</h3>
+    <ul>
+      <li>Üyelik durumunuz (bekliyor, üye, reddedildi, ayrıldı vb.) ve kulüpteki rolünüz.</li>
+      <li>Başvuru ve karar tarihleri, ret nedeni ve notu, önceki başvuru sayınız.</li>
+      <li>Başvuru anındaki ad, bölüm ve sınıf bilginiz ile başvuru notunuz (en çok 300 karakter).</li>
+      <li>Kulüp yönetim günlüğü: başvuru, katılma, ayrılma, rol değişikliği gibi kulüp işlemleri; işlemi yapan ve ilgili kişinin kullanıcı kimliğiyle kaydedilir ve sonradan değiştirilemez.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> Kulübün aktif üyeleri, diğer aktif üyelerin ad, bölüm, sınıf ve rol bilgisini, başvuru ve onay tarihlerini görebilir; kulüp yöneticilerinin ve danışmanının kim olduğu herkese görünür. Başvuru notunuzu, e-posta adresinizi ve yönetim günlüğünü yalnızca kulüp yönetimi ve uygulama yöneticileri görür. Kulüp yönetimi üye listesini (ad, e-posta, bölüm, sınıf, rol, katılım tarihi) CSV dosyası olarak dışa aktarabilir. Dosya cihazın paylaşım ekranıyla uygulama dışına çıkar; sonrasında nerede saklanacağı ve kimlerle paylaşılacağı dışa aktaran kulüp yöneticisinin kontrolündedir.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-icerik">
+    <h3 id="v-icerik">2.4 Gönderiler, yorumlar, beğeniler, oylar ve kaydedilenler</h3>
+    <ul>
+      <li>Kulüp yönetiminin paylaştığı gönderi, duyuru ve anketler (metin ve en çok 4 görsel).</li>
+      <li>Yorumlarınız (en çok 500 karakter), beğenileriniz ve anket oylarınız.</li>
+      <li>Kaydettiğiniz gönderiler.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> Gönderi ve yorumlar, yazarının adıyla birlikte ilgili kulübün üyelerine görünür. Beğeniler ve anket oyları anonim değildir: kullanıcı kimliğinizle saklanır ve kulübün üyeleri bu kayıtlara teknik olarak erişebilir; uygulama kimin neyi beğendiğini veya neye oy verdiğini göstermez. Kaydettiğiniz gönderileri yalnızca siz görürsünüz.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-etkinlik">
+    <h3 id="v-etkinlik">2.5 Etkinlik katılımı ve yoklama (QR bilet)</h3>
+    <ul>
+      <li>Katılım durumunuz (kayıtlı, bekleme listesinde, katıldı, vazgeçti) ve bekleme listesine giriş zamanınız.</li>
+      <li>Hatırlatıcı tercihiniz ve bilet kodunuz.</li>
+      <li>Biletiniz etkinlik girişinde okutulduğunda okutma zamanı ve okutan görevli.</li>
+    </ul>
+    <p>QR kodu yalnızca etkinlik kimliğini ve bilet kodunu içerir; adınız veya e-postanız QR koduna yazılmaz. Etkinlik hatırlatıcıları cihazınızda yerel bildirim olarak planlanır.</p>
+    <p class="who"><strong>Kim görebilir:</strong> Siz, kulüp yönetimi ve uygulama yöneticileri. Kulüp yönetimi katılımcı listesini (kayıtlılar ve bekleme listesi; ad, durum, okutma zamanı ve o kulübe başvuru kaydı olan katılımcılar için e-posta) CSV dosyası olarak dışa aktarabilir; dosya, üye listesi gibi, paylaşım ekranıyla uygulama dışına çıkar.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-bildirim">
+    <h3 id="v-bildirim">2.6 Bildirimler, tercihler ve push jetonu</h3>
+    <ul>
+      <li>Uygulama içi bildirimleriniz (başvuru sonucu, yeni etkinlik, etkinlik iptali vb.).</li>
+      <li>Bildirim tercihleriniz, sessiz saatleriniz ve kulüp bazlı bildirim ayarlarınız.</li>
+      <li>Push bildirimine izin verirseniz cihazınızın bildirim jetonu (push token), cihaz platformu (iOS veya Android) ve uygulama diliniz hesap kaydınıza yazılır. Firebase Cloud Messaging, jetonu oluştururken cihaz modeli, işletim sistemi sürümü, dil, saat dilimi ve uygulama sürümü gibi teknik bilgileri de Google’a gönderir.</li>
+      <li>Çıkış yaptığınızda o cihazın jetonu hesabınızdan kaldırılır; çevrimdışıyken çıkış yaparsanız kaldırma, uygulama bir sonraki kez bağlantıyla açıldığında yapılır.</li>
+    </ul>
+    <p>Push bildirim metinleri en fazla kulüp adını ve etkinlik başlığını içerir; kişi adı, e-posta, başvuru notu veya gönderi metni içermez.</p>
+    <p class="who"><strong>Kim görebilir:</strong> Bildirimlerinizi ve bildirim tercihlerinizi yalnızca siz görürsünüz. Push jetonu hesap kaydınızda durur; bu kaydı siz ve uygulama yöneticileri görebilir. Jetonu yalnızca bildirimi gönderen sunucu işlevi kullanır.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-sikayet">
+    <h3 id="v-sikayet">2.7 Şikayet ve engelleme kayıtları</h3>
+    <ul>
+      <li>Şikayet ettiğiniz içerik veya kullanıcı, seçtiğiniz neden, isteğe bağlı notunuz (en çok 300 karakter), şikayetin durumu ve sonucu.</li>
+      <li>Kötüye kullanımı önlemek için günlük şikayet sayacı (kullanıcı başına günde en çok 20 şikayet).</li>
+      <li>Başka bir kullanıcı sizi veya içeriğinizi şikayet ederse, şikayet kaydı hedef olarak kullanıcı kimliğinizi veya içeriğinizin kimliğini içerir.</li>
+      <li>Engellediğiniz kullanıcıların listesi.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> Şikayetlerinizi yalnızca siz ve uygulama yöneticileri görür; şikayet edilen kişiye kimliğiniz gösterilmez. Engellediğiniz kişiye bildirim gitmez; engelleme listenizi yalnızca siz görürsünüz.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-destek">
+    <h3 id="v-destek">2.8 Destek talepleri</h3>
+    <ul>
+      <li>Uygulama içi destek formunda: konu, mesaj (en çok 500 karakter), isteğe bağlı bir ekran görüntüsü, talep numarası ve tarih.</li>
+      <li>Bize e-postayla yazarsanız e-posta adresiniz ve yazışmanın içeriği.</li>
+    </ul>
+    <p class="who"><strong>Kim görebilir:</strong> Siz ve uygulama yöneticileri.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-cokme">
+    <h3 id="v-cokme">2.9 Çökme raporları (Firebase Crashlytics)</h3>
+    <p>Crashlytics yalnızca yayın derlemelerinde (App Store ve TestFlight sürümleri) çalışır ve şunları gönderir:</p>
+    <ul>
+      <li><strong>Her oturumda:</strong> oturum bilgisi (oturum kimliği ve zamanı, uygulamanın arka plana alındığı an gibi oturum zamanlaması, Firebase Installations kimliği, cihaz modeli, işletim sistemi ve uygulama sürümü, ağ bağlantı türü). Bu bilgi hata oranlarını oturumlara göre ölçmek için kullanılır.</li>
+      <li><strong>Uygulama çöktüğünde veya beklenmeyen bir hata oluştuğunda:</strong> hata ayrıntıları ve yığın izi, hatadan önceki uygulama günlük satırları (kulüp ve etkinlik gibi teknik kimlikleri ve hata kodlarını içerebilir), cihaz ve uygulama bilgisi ve rastgele oluşturulmuş kullanıcı kimliğiniz.</li>
+    </ul>
+    <p>Adınız ve e-posta adresiniz rapora eklenmez. Çıkış yaptığınızda kullanıcı kimliğiniz sonraki raporlara eklenmez; daha önce gönderilmiş raporlarda kalır. Raporlar 90 gün saklanır. Amaç hataları bulup düzeltmek ve uygulamanın kararlılığını izlemektir.</p>
+    <p class="who"><strong>Kim görebilir:</strong> Proje ekibi.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-teknik">
+    <h3 id="v-teknik">2.10 Teknik veriler ve uygulama ayarları</h3>
+    <ul>
+      <li>Firebase; push bildirimleri, çökme raporları ve uzaktan ayarlar için uygulama kurulumuna özgü rastgele bir kimlik (Firebase Installations kimliği) kullanır.</li>
+      <li>Uzaktan ayarlar (Firebase Remote Config) uygulama genelindeki ayarları indirir: desteklenen en düşük sürüm, bakım mesajı, günlük duyuru sınırı ve yeniden başvuru bekleme süresi. Bu istekle birlikte ülke kodu, dil, saat dilimi, işletim sistemi sürümü, uygulama kimliği ve Firebase Installations kimliği Google’a gönderilir. Size özel hedefleme yapılmaz.</li>
+      <li>Firebase bileşenleri, hizmet kalitesini izlemek için kimliğinize bağlanmayan teknik teşhis bilgisi (ör. SDK, işletim sistemi ve uygulama sürümleri) gönderir; Google bu bilgiyi kullanım eğilimlerini ölçmek için toplu hâlde kullanır.</li>
+      <li>Android’de QR okuma Google ML Kit ile cihazda yapılır; ML Kit Google’a cihaz ve uygulama bilgisi ile kullanım ve performans ölçümleri gönderebilir, kamera görüntüsü göndermez. iOS’ta QR okuma Apple’ın sistem çerçeveleriyle yapılır.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="v-cihaz">
+    <h3 id="v-cihaz">2.11 Cihazınızda saklananlar</h3>
+    <ul>
+      <li>Oturum bilginiz (Firebase Authentication).</li>
+      <li>Tema, dil ve yazı boyutu tercihleri; tanıtım ekranlarının ve izin açıklamalarının gösterilip gösterilmediği.</li>
+      <li>Profil kurulumunu tamamlayana kadar kayıtta girdiğiniz ad; push jetonunun en son yazıldığı hesabın kimliği; hatırlatıcısı tamamlanmış etkinliklerin listesi.</li>
+      <li>Son aramalarınız (en çok 6; çıkışta silinir) ve kulüp yazı taslakları.</li>
+      <li>Görsel bağlantılarının önbelleği ve indirilen görsellerin dosya önbelleği.</li>
+      <li>Çevrimdışı kullanım için Firestore veri önbelleği: okuduğunuz kayıtların (kulüp, gönderi, etkinlik, kendi hesap kaydınız vb.) cihazdaki kopyası. Kulüp yöneticisiyseniz görüntülediğiniz üyelerin e-posta adreslerini de içerebilir. Bu önbellek çıkış yaptığınızda silinmez; uygulamayı sildiğinizde kaldırılır.</li>
+      <li>Planlanmış etkinlik hatırlatıcıları (yerel bildirim).</li>
+    </ul>
+    <p>Android’de uygulama verisi Google yedeğine ve cihazdan cihaza aktarıma dahil edilmez. iOS’ta oturum bilgisi Anahtar Zinciri’nde tutulur; uygulamayı silip yeniden yüklediğinizde oturumunuz geri gelebilir, bu yüzden uygulamayı silmeden önce çıkış yapmanızı öneririz. Diğer yerel veriler (Firestore önbelleği dahil) iOS’un kendi kurallarına göre iCloud veya cihaz yedeğine dahil olabilir.</p>
+  </section>
+
+  <section class="card" aria-labelledby="v-kamera">
+    <h3 id="v-kamera">2.12 Kamera ve fotoğraflar</h3>
+    <ul>
+      <li>Kamera yalnızca siz seçtiğinizde kullanılır: profil fotoğrafı, gönderi görseli, kulüp logosu ve kapağı ile etkinlik kapağı çekmek, destek talebine fotoğraf eklemek ve kulüp yönetiminin etkinlik girişinde QR bilet okutması için. Çektiğiniz fotoğraf yalnızca onu yüklediğinizde gönderilir. QR okuma cihazda yapılır; okutma sırasındaki kamera görüntüsü kaydedilmez ve gönderilmez.</li>
+      <li>Fotoğraf seçimi sistemin fotoğraf seçicisiyle yapılır; uygulama galerinizin tamamına erişmez.</li>
+      <li>Seçtiğiniz fotoğraf yüklenmeden önce yeniden sıkıştırılır ve konum dahil fotoğraf üst verileri (EXIF) silinir.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="v-kulup">
+    <h3 id="v-kulup">2.13 Kulüp ve etkinlik bilgileri</h3>
+    <p>Kulüp yönetiminin girdiği kulüp tanıtımı, kulüp iletişim adresi ve sosyal medya bağlantıları, danışmanın adı ve unvanı ile etkinlik bilgileri, uygulamaya giriş yapan kullanıcılara görünür. Yalnızca üyelere açık etkinlikleri kulübün üyeleri görür.</p>
+  </section>
+
+  <h2 id="toplamadiklarimiz">3. Toplamadığımız veriler</h2>
+  <ul>
+    <li>Reklam göstermeyiz ve reklam kimliği (IDFA / AAID) kullanmayız.</li>
+    <li>Sizi uygulamalar ve web siteleri arasında izlemeyiz; üçüncü taraf izleme aracı yoktur.</li>
+    <li>Analitik aracı kullanmayız (Firebase Analytics / Google Analytics dahil). Firebase bileşenlerinin topladığı teknik teşhis verisi bölüm 2.9 ve 2.10’da açıklanmıştır.</li>
+    <li>Konum, rehber (kişiler) ve mikrofon erişimi istemeyiz.</li>
+    <li>Verilerinizi satmayız ve pazarlama amacıyla paylaşmayız.</li>
+    <li>Bu web sayfaları çerez ve betik kullanmaz.</li>
+  </ul>
+  <p>Özel nitelikli kişisel veri (sağlık, din, siyasi görüş vb.) istemeyiz. Lütfen gönderi, yorum, başvuru notu ve destek mesajlarına bu tür bilgiler yazmayın.</p>
+
+  <h2 id="amaclar">4. İşleme amaçları, yöntemi ve hukuki sebepler</h2>
+  <p><strong>Toplama yöntemi:</strong> Kişisel verileriniz uygulama üzerinden elektronik ortamda toplanır: bir kısmını siz girersiniz (ad, profil, başvuru notu, gönderi, yorum, destek mesajı), bir kısmı uygulamayı kullanırken oluşur (üyelik, katılım, bildirim, çökme raporu).</p>
+  <ul>
+    <li><strong>Hesap oluşturma, e-postayla doğrulama ve giriş; kulüp keşfi, başvuru ve üyelik; etkinlik kaydı, bilet ve yoklama; gönderi, yorum, anket ve bildirimler; destek taleplerinin yanıtlanması.</strong><br>Hukuki sebep: KVKK m.5/2-c — bir sözleşmenin (uygulamanın kullanım koşullarının) kurulması veya ifasıyla doğrudan ilgili olması.</li>
+    <li><strong>Hesap ve platform güvenliği, kötüye kullanımın önlenmesi (şikayet, engelleme, askıya alma, günlük sınırlar, kulüp yönetim günlüğü) ve çökme raporlarıyla hataların giderilmesi.</strong><br>Hukuki sebep: KVKK m.5/2-f — temel hak ve özgürlüklerinize zarar vermemek kaydıyla meşru menfaat.</li>
+    <li><strong>Yetkili kurumların yasal talepleri ve olası uyuşmazlıklar.</strong><br>Hukuki sebep: KVKK m.5/2-ç (hukuki yükümlülük) ve m.5/2-e (bir hakkın tesisi, kullanılması veya korunması).</li>
+    <li><strong>Açık rıza ve isteğe bağlı izinler.</strong><br>Yukarıdakiler dışında açık rızaya dayalı bir işleme yapmayız. Push bildirimleri ile kamera ve fotoğraf erişimi cihaz izninize bağlıdır ve isteğe bağlıdır; profil fotoğrafı ve biyografi de isteğe bağlıdır. İzinleri istediğiniz zaman cihazınızın ayarlarından geri alabilirsiniz.</li>
+  </ul>
+
+  <h2 id="paylasim">5. Kimlerle paylaşıyoruz</h2>
+  <ul>
+    <li><strong>Uygulamadaki diğer kullanıcılar ve kulüp yönetimi:</strong> yalnızca bölüm 2’de “Kim görebilir” altında yazıldığı kadarıyla.</li>
+    <li><strong>Uygulama yöneticileri:</strong> şikayetleri inceler, destek taleplerini yanıtlar, gerektiğinde hesap veya kulüp askıya alır; bu amaçla kullanıcıyı e-posta adresiyle arayabilir.</li>
+    <li><strong>Google (Firebase):</strong> hizmet sağlayıcımızdır. Veriler bizim adımıza Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions, Firebase Cloud Messaging, Crashlytics ve Remote Config hizmetlerinde işlenir. Doğrulama ve şifre sıfırlama e-postaları Firebase Authentication tarafından gönderilir. Android’de QR okuma için Google ML Kit kullanılır (bölüm 2.10).</li>
+    <li><strong>Apple ve Google bildirim servisleri:</strong> push bildirimleri iOS’ta Apple Push Notification service, Android’de Firebase Cloud Messaging üzerinden cihazınıza iletilir.</li>
+    <li><strong>Yetkili kamu kurum ve kuruluşları:</strong> yalnızca yasal zorunluluk hâlinde.</li>
+  </ul>
+
+  <h2 id="yurt-disi">6. Yurt dışına aktarım (KVKK m.9)</h2>
+  <p>Uygulama Türkiye’de sunucu kullanmaz. Verileriniz Google Firebase altyapısında, Türkiye dışında saklanır ve işlenir:</p>
+  <ul>
+    <li><strong>Cloud Firestore veritabanı:</strong> Google Cloud “nam5” çoklu bölgesi (Amerika Birleşik Devletleri).</li>
+    <li><strong>Cloud Functions</strong> (push gönderimi, bekleme listesi ve hesap silme temizliği): “us-central1” bölgesi (Amerika Birleşik Devletleri).</li>
+    <li><strong>Firebase Authentication:</strong> yalnızca Amerika Birleşik Devletleri’ndeki Google veri merkezleri.</li>
+    <li><strong>Cloud Storage</strong> (yüklenen görseller ve destek ekleri): Google Cloud “us-east1” bölgesi (tek bölge, Amerika Birleşik Devletleri).</li>
+    <li><strong>Cloud Messaging, Crashlytics ve Remote Config:</strong> Google’ın küresel altyapısı; veriler Google’ın herhangi bir veri merkezinde işlenebilir.</li>
+  </ul>
+  <!-- AÇIK KALEM: KVKK m.9 aktarım güvencesi seçilmedi; bu bölüm yalnızca aktarımı, sağlayıcıyı ve ülkeyi bildirir. -->
+  <p>Bu durum, KVKK m.9 kapsamında kişisel verilerin yurt dışına aktarılması anlamına gelir. Verileriniz hizmet sağlayıcımız Google’ın Firebase hizmetlerine, böylece yukarıda sayılan konumlara, başta Amerika Birleşik Devletleri olmak üzere Türkiye dışına aktarılır ve orada Google tarafından bizim adımıza işlenir. Aktarımın sona ermesini istiyorsanız hesabınızı silebilir ve kalan verilerinizin kalıcı olarak silinmesini isteyebilirsiniz (bölüm 7).</p>
+
+  <h2 id="saklama">7. Saklama süresi ve silme</h2>
+  <p>Verilerinizi hesabınız var olduğu sürece saklarız. Hesabınızı sildikten sonra aşağıda “Şunlar kalır” başlığı altında sayılan kayıtlar, kalıcı silme talebinde bulunana kadar süresiz saklanır; şu anda belirli bir süre sonunda verileri kendiliğinden kalıcı olarak silen bir süreç yoktur. İstisnalar: çökme raporları 90 gün, Firebase Authentication’ın IP kayıtları birkaç hafta saklanır; cihazınızdaki veriler uygulamayı sildiğinizde kaldırılır.</p>
+  <h3>Uygulamada silme nasıl çalışır?</h3>
+  <p>Uygulamadaki silme işlemleri “yumuşak silme”dir: sildiğiniz gönderi, yorum, bildirim, kaydedilen gönderi veya engel kaydı “silindi” olarak işaretlenir ve diğer kullanıcılara gösterilmez, ancak veritabanından hemen kaldırılmaz. Bu, yanlışlıkla yapılan silmenin geri alınabilmesi ve kötüye kullanımın incelenebilmesi içindir. Yüklenen görsel dosyaları da silinmez; yalnızca içerikle bağlantısı kaldırılır.</p>
+  <h3>Hesabınızı silerseniz</h3>
+  <p><span class="path">Profil › Ayarlar › Hesabı sil</span> adımlarından sonra:</p>
+  <ul>
+    <li>Adınız “Silinmiş kullanıcı” olarak değiştirilir; bölüm, sınıf, ilgi alanları, biyografi ve profil fotoğrafı bağlantısı kaldırılır.</li>
+    <li>E-posta adresiniz hesap kaydından ve tüm kulüp başvuru kayıtlarınızdan, başvuru notlarınız ve push jetonlarınız silinir.</li>
+    <li>Aktif üyelikleriniz sona erdirilir, bekleyen başvurularınız iptal edilir, henüz bitmemiş etkinlik kayıtlarınız iptal edilir.</li>
+    <li>Bildirimleriniz, kaydettiğiniz gönderiler ve engelleme kayıtlarınız silindi olarak işaretlenir.</li>
+    <li>Hesabınızla yeniden giriş yapılamaz.</li>
+  </ul>
+  <p>Şunlar kalır:</p>
+  <ul>
+    <li>gönderi ve yorumlarınız (“Silinmiş kullanıcı” adıyla), gönderilerin beğeni listelerindeki kullanıcı kimliğiniz ve anket oylarınız;</li>
+    <li>geçmiş etkinlik katılım ve yoklama kayıtlarınız;</li>
+    <li>anonimleştirilmiş geçmiş üyelik ve başvuru kayıtlarınız (rol, tarihler, varsa ret nedeni ve notu dahil) ve kulüp yönetim günlüğü kayıtları;</li>
+    <li>gönderdiğiniz şikayetler, sizi veya içeriğinizi hedef alan şikayetler ve günlük şikayet sayaçlarınız;</li>
+    <li>destek talepleriniz ve ekleri;</li>
+    <li>bildirim tercihleriniz;</li>
+    <li>hesap kaydınızdaki son giriş zamanı ve varsa askıya alma gerekçesi; profil kaydınızdaki personel bilgisi, avatar tohumu (varsayılan avatarı oluşturan rastgele değer) ve kayıt tarihi;</li>
+    <li>bağlantısı kaldırılmış görsel dosyalarınız (profil fotoğrafı dahil);</li>
+    <li>kulüp danışmanıysanız kulüp sayfasındaki danışman adı ve unvanı (hesabınızla bağlantısı kaldırılır);</li>
+    <li>Firebase Authentication’daki giriş kaydınız (e-posta adresiniz, kayıtta girdiğiniz ad ve şifre özeti) ve Google’ın birkaç hafta tuttuğu IP kayıtları;</li>
+    <li>daha önce gönderilmiş çökme raporları (90 gün).</li>
+  </ul>
+  <h3>Kalıcı silme talebi</h3>
+  <p>Kalan verilerinizin (giriş kaydınız dahil) kalıcı olarak silinmesini <a href="mailto:eminalan334@gmail.com?subject=Veri%20silme%20talebi">eminalan334@gmail.com</a> adresine “Veri silme talebi” konulu bir e-postayla isteyebilirsiniz. Talebinizi, yasal olarak saklamamız gereken bilgiler dışında yerine getiririz. Firebase Authentication’daki giriş kaydınız silindiğinde Google onu canlı ve yedek sistemlerinden 180 gün içinde kaldırır.</p>
+
+  <h2 id="haklar">8. Haklarınız ve başvuru yolu (KVKK m.11)</h2>
+  <p>KVKK’nın 11. maddesi uyarınca:</p>
+  <ul>
+    <li>kişisel verilerinizin işlenip işlenmediğini öğrenme,</li>
+    <li>işlenmişse buna ilişkin bilgi talep etme,</li>
+    <li>işlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme,</li>
+    <li>yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme,</li>
+    <li>eksik veya yanlış işlenmişse düzeltilmesini isteme,</li>
+    <li>KVKK m.7’deki şartlar çerçevesinde silinmesini veya yok edilmesini isteme,</li>
+    <li>düzeltme, silme veya yok etme işlemlerinin verilerin aktarıldığı üçüncü kişilere bildirilmesini isteme,</li>
+    <li>işlenen verilerin münhasıran otomatik sistemlerle analiz edilmesi sonucu aleyhinize bir sonuç çıkmasına itiraz etme,</li>
+    <li>kanuna aykırı işleme nedeniyle zarara uğramanız hâlinde zararın giderilmesini talep etme</li>
+  </ul>
+  <p>haklarına sahipsiniz.</p>
+  <p><strong>Başvuru:</strong> Talebinizi, kimliğinizi doğrulayabilmemiz için uygulamada kayıtlı e-posta adresinizden <a href="mailto:eminalan334@gmail.com?subject=KVKK%20ba%C5%9Fvurusu">eminalan334@gmail.com</a> adresine gönderebilir veya uygulamada <span class="path">Profil › Ayarlar › Yardım ve destek › Yeni talep</span> yolunu kullanabilirsiniz. Başvurunuzu en geç 30 gün içinde ücretsiz olarak yanıtlarız. Yanıtımızdan memnun kalmazsanız Kişisel Verileri Koruma Kurulu’na şikayette bulunabilirsiniz.</p>
+
+  <h2 id="cocuklar">9. Çocuklar</h2>
+  <p>Uygulama üniversite öğrencileri ve personeli içindir; çocuklara yönelik değildir. 13 yaşından küçüklerden bilerek veri toplamayız. Böyle bir durumu fark ederseniz bize yazın; ilgili hesabı kapatırız.</p>
+
+  <h2 id="guvenlik">10. Güvenlik</h2>
+  <ul>
+    <li>Verilere erişim, rol bazlı Firebase güvenlik kurallarıyla sunucu tarafında denetlenir; yetki yalnızca arayüzde gizlenerek sağlanmaz.</li>
+    <li>E-posta adresleri ve başvuru notları profilden ayrı, erişimi kısıtlı kayıtlarda tutulur.</li>
+    <li>Uygulama ile sunucular arasındaki bağlantı şifrelidir (TLS). Şifrenizi biz göremeyiz; Firebase Authentication yönetir.</li>
+    <li>Kayıt üniversite e-posta adresiyle (@ogr.gumushane.edu.tr veya @gumushane.edu.tr) yapılır; test döneminde geçici olarak Gmail adresleri de kabul edilmektedir. E-postası doğrulanmamış hesaplar verilere erişemez.</li>
+    <li>Android’de uygulama verisi bulut yedeğine alınmaz; yüklenen fotoğraflardan konum bilgisi silinir.</li>
+  </ul>
+  <p>Hiçbir sistem tamamen güvenli değildir. Bir güvenlik sorunu fark ederseniz lütfen bize yazın.</p>
+
+  <h2 id="degisiklikler">11. Değişiklikler ve yürürlük</h2>
+  <p>Bu metni zaman zaman güncelleyebiliriz. Güncel sürüm her zaman bu sayfada yer alır ve üstteki tarih değiştirilir; önemli değişiklikleri uygulama içinden de duyururuz.</p>
+  <p>Bu metin <strong>16 Ekim 2026</strong> tarihinde yürürlüğe girmiştir.</p>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>GÜ Kulüpler, Gümüşhane Üniversitesi’nin resmî uygulaması değildir; bağımsız bir öğrenci projesidir.</p>
+    <p><a href="../">Ana sayfa</a> · <a href="../destek/">Destek</a> · <a href="../privacy/" hreflang="en" lang="en">Privacy Policy (English)</a></p>
+  </div>
+</footer>
+</body>
+</html>

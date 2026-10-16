@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#D00A2D">
+<title>Support and FAQ · GÜ Kulüpler</title>
+<meta name="description" content="Frequently asked questions and support contact for the GÜ Kulüpler app.">
+<link rel="canonical" href="https://gu-kulupler.web.app/support/">
+<link rel="alternate" hreflang="tr" href="https://gu-kulupler.web.app/destek/">
+<link rel="alternate" hreflang="en" href="https://gu-kulupler.web.app/support/">
+<!-- Gmail note: remove the Gmail sentence in the "Who can sign up?" answer once W-61 (temporary gmail.com allowance) is closed.
+     OPEN ITEM: supportEmail in the app (lib/core/constants/app_constants.dart) must be aligned with the address on this page. -->
+<style>
+:root{color-scheme:light dark;--brand:#D00A2D;--brand-text:#D00A2D;--on-brand:#FFFFFF;--tonal:#FCE8EC;--on-tonal:#7A0619;--bg:#FAF9F6;--surface:#FFFFFF;--border:#E2E8F0;--soft:#EEF1F5;--text:#101828;--muted:#5E708A}
+@media (prefers-color-scheme:dark){:root{--brand-text:#F2536C;--tonal:#3A0C16;--on-tonal:#FFD9E0;--bg:#17191C;--surface:#1E2024;--border:#39414B;--soft:#303740;--text:#F1F1ED;--muted:#AEB5BF}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:break-word}
+a{color:var(--brand-text);text-underline-offset:.15em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--brand-text);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:0}
+.skip:focus{left:16px;top:12px;z-index:10;background:var(--surface);color:var(--text);padding:10px 14px;border:2px solid var(--brand-text);border-radius:10px}
+.top{background:var(--surface);border-bottom:1px solid var(--border)}
+.wrap{max-width:760px;margin:0 auto;padding-left:16px;padding-right:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding-top:10px;padding-bottom:10px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--text);text-decoration:none;font-weight:700;font-size:1.05rem}
+.mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--on-brand);font-size:.8rem;font-weight:800;letter-spacing:.02em}
+.nav ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:.95rem}
+.nav a:hover{background:var(--soft)}
+.nav a[aria-current="page"]{background:var(--tonal);color:var(--on-tonal)}
+.nav a.lang{border:1px solid var(--border)}
+main{padding-top:28px;padding-bottom:56px}
+h1{font-size:clamp(1.6rem,1.25rem + 1.6vw,2.15rem);line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+h2{font-size:1.3rem;line-height:1.3;margin:2.2em 0 .6em;scroll-margin-top:16px}
+h3{font-size:1.06rem;line-height:1.35;margin:1.5em 0 .4em;scroll-margin-top:16px}
+p,ul,ol{margin:.6em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+li::marker{color:var(--brand-text)}
+.lead{font-size:1.1rem;color:var(--muted);margin-top:0}
+.meta{color:var(--muted);font-size:.93rem}
+.notice{background:var(--tonal);color:var(--on-tonal);border-radius:14px;padding:14px 18px;margin:20px 0}
+.notice a{color:inherit}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:16px 0}
+.card>h2:first-child,.card>h3:first-child{margin-top:.8em}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:24px 0}
+.toc h2{font-size:1rem;margin:.8em 0 .2em}
+.path{font-weight:600}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;line-height:1.3;border-radius:12px;background:var(--brand);color:var(--on-brand);text-decoration:none;font-weight:700;max-width:100%;overflow-wrap:anywhere}
+.btn:hover{filter:brightness(.92)}
+.foot{border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.foot .wrap{padding-top:20px;padding-bottom:32px}
+.foot a{color:var(--muted)}
+@media print{.nav,.skip{display:none}body{background:#fff;color:#000}.card,.toc,.notice{background:#fff;color:#000;border:1px solid #999}.btn{background:#fff;color:#000;border:1px solid #999}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="../"><span class="mark" aria-hidden="true">GÜ</span>GÜ Kulüpler</a>
+    <nav class="nav" aria-label="Site">
+      <ul>
+        <li><a href="../privacy/">Privacy</a></li>
+        <li><a href="../support/" aria-current="page">Support</a></li>
+        <li><a class="lang" href="../destek/" hreflang="tr" lang="tr">Türkçe</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="content" class="wrap">
+  <h1>Support and frequently asked questions</h1>
+  <p class="lead">Answers to the most common questions about GÜ Kulüpler. If you can’t find what you need, write to us.</p>
+
+  <section class="card" aria-labelledby="contact">
+    <h2 id="contact">Contact us</h2>
+    <p><a class="btn" href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></p>
+    <p>You can also write from inside the app: <span class="path">Profile › Settings › Help &amp; support › New request</span>. If you have a request number (e.g. #GU-XXXXXX), include it in your email.</p>
+    <p><strong>Never share your password.</strong> We will never ask you for it.</p>
+  </section>
+
+  <nav class="toc" aria-labelledby="topics">
+    <h2 id="topics">Topics</h2>
+    <ol>
+      <li><a href="#account">Account and sign-in</a></li>
+      <li><a href="#clubs">Clubs and applications</a></li>
+      <li><a href="#events">Events and QR tickets</a></li>
+      <li><a href="#notifications">Notifications</a></li>
+      <li><a href="#safety">Reporting and blocking</a></li>
+      <li><a href="#deletion">Account and data deletion</a></li>
+      <li><a href="#other">Other</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="account">Account and sign-in</h2>
+  <div class="card">
+    <h3 id="who-can-sign-up">Who can sign up?</h3>
+    <p>Sign-up uses a university email address: <strong>@ogr.gumushane.edu.tr</strong> (students) or <strong>@gumushane.edu.tr</strong> (staff). During the test period, Gmail addresses are temporarily accepted as well. Your password must be at least 8 characters long and contain at least one capital letter and one number.</p>
+
+    <h3 id="verification">I didn’t receive the verification email</h3>
+    <ol>
+      <li>On the “Verify your email” screen, check that your address is spelled correctly. If not, fix it with <span class="path">Change email</span>.</li>
+      <li>Look in the <strong>Junk / Spam</strong> folder of your mailbox. The email can take a few minutes to arrive.</li>
+      <li>If it still hasn’t arrived, tap <span class="path">Resend</span> (available once every 60 seconds).</li>
+      <li>After clicking the link in the email, return to the app and tap <span class="path">I verified it</span>.</li>
+    </ol>
+    <p>If the problem continues, write to us and include the address you signed up with.</p>
+
+    <h3 id="forgot-password">I forgot my password</h3>
+    <p>On the sign-in screen, tap <span class="path">Forgot password</span>, enter the email address you signed up with and tap <span class="path">Send link</span>. Set a new password with the link in the email. For security, the same confirmation is shown even if the address is not registered. After 5 failed sign-in attempts in a row you need to wait 30 seconds.</p>
+
+    <h3 id="change-password">How do I change my password?</h3>
+    <p><span class="path">Profile › Settings › Change password</span>.</p>
+
+    <h3 id="change-email">Can I change my email address?</h3>
+    <p>The email address you signed up with identifies your account and cannot be changed later. If you mistyped it during verification, use <span class="path">Change email</span> on the verification screen.</p>
+  </div>
+
+  <h2 id="clubs">Clubs and applications</h2>
+  <div class="card">
+    <h3 id="apply">How do I apply to a club?</h3>
+    <p>Open the club from the <span class="path">Clubs</span> tab and tap <span class="path">Join</span>. For clubs that require approval you write a short note to the club management (up to 300 characters; only club management and the app administrators can see it). For instant-join clubs you become a member right away. You can follow the result in <span class="path">Notifications</span>.</p>
+
+    <h3 id="pending">Why is my application still pending?</h3>
+    <p>Applications are reviewed by the club’s board. You can see the status in <span class="path">Profile › My clubs &amp; applications › Pending</span>, where you can also update your note or cancel the request.</p>
+
+    <h3 id="rejected">My application was rejected. Can I apply again?</h3>
+    <p>Yes. If your application was rejected or you were removed from a club, you can apply again after 7 days; the app shows the time remaining.</p>
+
+    <h3 id="club-missing">My club isn’t in the app. How can it be added?</h3>
+    <p>Clubs are added by the app administrators. The club’s president or advisor can email us with the club’s name.</p>
+  </div>
+
+  <h2 id="events">Events and QR tickets</h2>
+  <div class="card">
+    <h3 id="register">How do I register for an event?</h3>
+    <p>Tap <span class="path">Join</span> on the event page. If the event is full, tap <span class="path">Join waitlist</span>; when a spot opens you are moved up automatically in order and get a notification. Members-only events are open only to the club’s members. If you can’t attend, tap <span class="path">Leave</span> before the event ends so your spot goes to someone on the waitlist.</p>
+
+    <h3 id="ticket">Where is my ticket?</h3>
+    <p>Tap <span class="path">Show ticket</span> on the event page or open <span class="path">Profile › My tickets</span>. At the entrance, staff scan the QR code on your ticket to check you in.</p>
+
+    <h3 id="qr">My QR code won’t scan. What should I do?</h3>
+    <p>Raise the screen brightness and open the ticket full screen. If it still fails, read the code under the QR to the staff; it can be entered manually.</p>
+  </div>
+
+  <h2 id="notifications">Notifications</h2>
+  <div class="card">
+    <h3 id="no-notifications">I’m not getting notifications</h3>
+    <ul>
+      <li>Check that notifications are allowed for GÜ Kulüpler in your phone’s settings.</li>
+      <li>In <span class="path">Profile › Settings › Notification preferences</span>, make sure the relevant notification types are not turned off.</li>
+      <li>If you muted a club, you won’t get notifications from it.</li>
+      <li>During quiet hours, notifications arrive silently.</li>
+    </ul>
+  </div>
+
+  <h2 id="safety">Reporting and blocking</h2>
+  <div class="card">
+    <h3 id="report">How do I report content or a user?</h3>
+    <p>Use the <span class="path">⋯</span> menu on a post, comment, user or club, choose <span class="path">Report</span>, pick a reason (Spam, Inappropriate content, Harassment or bullying, Misinformation, Not relevant to the club, Other) and add a short note if you like. Reports are reviewed by the app administrators and you are notified of the outcome. Your identity is not shown to the person reported. You can send up to 20 reports per day.</p>
+
+    <h3 id="block">How do I block a user?</h3>
+    <p>Use <span class="path">Block user</span> in the <span class="path">⋯</span> menu of their post, or <span class="path">Block</span> on their profile. You will no longer see their posts and comments, and they are not notified.</p>
+
+    <h3 id="unblock">How do I unblock someone?</h3>
+    <p><span class="path">Profile › Settings › Blocked users</span>.</p>
+  </div>
+
+  <h2 id="deletion">Account and data deletion</h2>
+  <div class="card">
+    <h3 id="delete-account">How do I delete my account?</h3>
+    <ol>
+      <li>Open <span class="path">Profile › Settings › Delete account</span> and read the warnings. If you are a club president, you must hand over the presidency first.</li>
+      <li>Optionally choose why you are leaving (this is not stored).</li>
+      <li>Enter your password, type <strong>SİL</strong> to confirm and tap <span class="path">Permanently delete my account</span>.</li>
+    </ol>
+    <p>Your name becomes “Deleted user”; your profile details, email address, memberships, pending applications and upcoming event tickets are removed. Your posts and comments remain, shown as “Deleted user”. This cannot be undone, and you can no longer sign in with the same account. Details: <a href="../privacy/#retention">Privacy Policy, section 7</a>.</p>
+
+    <h3 id="data-deletion">How do I request full deletion of my data?</h3>
+    <p>Some records remain after account deletion (for example your sign-in record, posts and comments, past event attendance and support requests). To have them permanently deleted, email <a href="mailto:eminalan334@gmail.com?subject=Data%20deletion%20request">eminalan334@gmail.com</a> from your registered email address with the subject <strong>“Data deletion request”</strong>. You can also make this request without deleting your account first. We will answer within 30 days at the latest.</p>
+  </div>
+
+  <h2 id="other">Other</h2>
+  <div class="card">
+    <h3 id="official">Is this the university’s official app?</h3>
+    <p>No. GÜ Kulüpler is an independent student project built by students; it is not developed, operated or endorsed by Gümüşhane University.</p>
+
+    <h3 id="languages">Which languages does the app support?</h3>
+    <p>Turkish and English. You can change the language in <span class="path">Profile › Settings › Language</span>.</p>
+
+    <h3 id="privacy">How is my data used?</h3>
+    <p>Our <a href="../privacy/">Privacy Policy and KVKK Notice</a> explains what data is collected, who can see it and what your rights are. The app has no ads, tracking, analytics tools or location data.</p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>GÜ Kulüpler is not an official app of Gümüşhane University; it is an independent student project.</p>
+    <p><a href="../">Home</a> · <a href="../privacy/">Privacy</a> · <a href="../destek/" hreflang="tr" lang="tr">Destek (Türkçe)</a></p>
+  </div>
+</footer>
+</body>
+</html>
