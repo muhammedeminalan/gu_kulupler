@@ -8,7 +8,7 @@ import 'fake_share_service.dart';
 import 'register_fakes.dart';
 
 void main() {
-  const link = 'https://kulupler.gumushane.edu.tr/clubs/c01';
+  const link = 'https://gu-kulupler.web.app/clubs/c01';
 
   group('T-16 · FakeShareService', () {
     test('ShareService arayüzünü uygular; registerDefaultFakes kaydeder', () {

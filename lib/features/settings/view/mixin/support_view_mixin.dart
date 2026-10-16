@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_constants.dart';
 import 'package:gu_kulupler/features/settings/provider/support_state.dart';
 import 'package:gu_kulupler/features/settings/provider/support_view_model.dart';
 import 'package:gu_kulupler/features/settings/view/support_view.dart';
@@ -191,7 +192,7 @@ mixin SupportViewMixin on UnsavedChangesMixin<SupportView> {
         3 => (l10n.faqQ3, l10n.faqA3),
         4 => (l10n.faqQ4, l10n.faqA4),
         5 => (l10n.faqQ5, l10n.faqA5),
-        6 => (l10n.faqQ6, l10n.faqA6),
+        6 => (l10n.faqQ6, l10n.faqA6(AppConstants.supportEmail)),
         7 => (l10n.faqQ7, l10n.faqA7),
         _ => (l10n.faqQ8, l10n.faqA8),
       };

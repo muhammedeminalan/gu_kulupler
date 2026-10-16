@@ -298,7 +298,7 @@ void main() {
       expect(_feedback().sheets, [SheetId.sht14]);
       expect(
         (GetIt.I<ShareService>() as FakeShareService).copied,
-        ['https://kulupler.gumushane.edu.tr/events/e01'],
+        ['https://gu-kulupler.web.app/events/e01'],
       );
       expect(_feedback().toasts, [ToastId.tst35]);
     });

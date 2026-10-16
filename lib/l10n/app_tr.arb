@@ -1234,7 +1234,7 @@
   "@clubSettingsAbout": {
     "description": "Key clubSettings.about"
   },
-  "clubSettingsAdvisorLocked": "Danışman kampüs yönetimi tarafından atanır",
+  "clubSettingsAdvisorLocked": "Danışman uygulama yöneticileri tarafından atanır",
   "@clubSettingsAdvisorLocked": {
     "description": "Key clubSettings.advisorLocked"
   },
@@ -1298,7 +1298,7 @@
   "@clubSettingsName": {
     "description": "Key clubSettings.name"
   },
-  "clubSettingsNameLocked": "Ad değişikliği için kampüs yönetimiyle iletişime geç",
+  "clubSettingsNameLocked": "Ad değişikliği için uygulama yöneticileriyle iletişime geç",
   "@clubSettingsNameLocked": {
     "description": "Key clubSettings.nameLocked"
   },
@@ -1831,7 +1831,7 @@
   "@deleteAccountItemNotifications": {
     "description": "Key deleteAccount.item.notifications"
   },
-  "deleteAccountItemTickets": "Etkinlik biletlerin",
+  "deleteAccountItemTickets": "Gelecekteki etkinlik biletlerin",
   "@deleteAccountItemTickets": {
     "description": "Key deleteAccount.item.tickets"
   },
@@ -2107,7 +2107,7 @@
       }
     }
   },
-  "dlg12Body": "Teşekkürler. Kampüs yönetimi içeriği inceleyecek; sonucu bildirimle haber vereceğiz.",
+  "dlg12Body": "Teşekkürler. Uygulama yöneticileri içeriği inceleyecek; sonucu bildirimle haber vereceğiz.",
   "@dlg12Body": {
     "description": "Key dlg.12.body"
   },
@@ -2949,19 +2949,24 @@
   "@faqA4": {
     "description": "Key faq.a4"
   },
-  "faqA5": "Ayarlar › Hesabı sil adımlarını izle. Kulüp başkanıysan önce başkanlığı devretmen gerekir. Gönderi ve yorumların anonimleşir, üyelik ve biletlerin silinir.",
+  "faqA5": "Ayarlar › Hesabı sil adımlarını izle. Kulüp başkanıysan önce başkanlığı devretmen gerekir. Gönderi ve yorumların \"Silinmiş kullanıcı\" adıyla kalır; üyeliklerin sona erer, bekleyen başvuruların ve gelecekteki etkinlik kayıtların iptal edilir.",
   "@faqA5": {
     "description": "Key faq.a5"
   },
-  "faqA6": "Kulüpler kampüs yönetimi tarafından eklenir. Kulüp danışmanın ya da başkanın Sağlık, Kültür ve Spor birimine yazarak kulübün eklenmesini isteyebilir.",
+  "faqA6": "Kulüpleri uygulama yöneticileri ekler. Kulübün başkanı ya da danışmanı, kulübün adıyla birlikte {email} adresine yazarak eklenmesini isteyebilir.",
   "@faqA6": {
-    "description": "Key faq.a6"
+    "description": "Key faq.a6",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "faqA7": "Üniversite e-postası hesabının kimliğidir ve değiştirilemez. Doğrulama aşamasında yanlış yazdıysan E-postayı değiştir seçeneğiyle düzeltebilirsin.",
+  "faqA7": "Kayıt olduğun e-posta adresi hesabının kimliğidir ve değiştirilemez (kayıt üniversite e-postasıyla yapılır; test döneminde geçici olarak Gmail de kabul edilir). Doğrulama aşamasında yanlış yazdıysan E-postayı değiştir seçeneğiyle düzeltebilirsin.",
   "@faqA7": {
     "description": "Key faq.a7"
   },
-  "faqA8": "Gönderi, yorum, kullanıcı ya da kulübün ⋯ menüsünden Şikayet et’i seç, nedeni belirt. Kampüs yönetimi inceler; sonucu bildirimle alırsın.",
+  "faqA8": "Gönderi, yorum, kullanıcı ya da kulübün ⋯ menüsünden Şikayet et’i seç, nedeni belirt. Uygulama yöneticileri inceler; sonucu bildirimle alırsın.",
   "@faqA8": {
     "description": "Key faq.a8"
   },
@@ -3176,7 +3181,7 @@
   "@legalAccept": {
     "description": "Key legal.accept"
   },
-  "legalGizlilikB1": "Bu politika {appName} mobil uygulamasında toplanan bilgileri ve kullanımını açıklar.",
+  "legalGizlilikB1": "Bu politika {appName} mobil uygulamasında hangi kişisel verilerin işlendiğini, neden işlendiğini ve kimlerin görebildiğini açıklar. Uygulama, Gümüşhane Üniversitesi öğrenci kulüpleri için öğrenciler tarafından geliştirilen bağımsız bir öğrenci projesidir; üniversitenin resmî uygulaması değildir, üniversite tarafından işletilmez ve onaylanmamıştır. \"Kulüp yönetimi\" kulübün başkanını, yönetim kurulunu ve danışmanını; \"uygulama yöneticileri\" proje ekibinden yetkilendirilmiş kişileri kapsar.",
   "@legalGizlilikB1": {
     "description": "Key legal.gizlilik.b1",
     "placeholders": {
@@ -3185,29 +3190,34 @@
       }
     }
   },
-  "legalGizlilikB2": "Hesabınız üniversite e-postanızla oluşturulur; e-posta yalnızca kulüp yöneticilerine görünür.",
+  "legalGizlilikB2": "Hesabınız ad soyad ve e-posta adresinizle oluşturulur; kayıt üniversite e-postasıyla yapılır, test döneminde geçici olarak Gmail adresleri de kabul edilir. Şifrenizi göremeyiz; Firebase Authentication yönetir. E-posta adresiniz profilinizde gösterilmez: profilden ayrı, erişimi kısıtlı hesap kaydında tutulur ve bu kaydı yalnızca siz ve uygulama yöneticileri görür. Bir kulübe başvurduğunuzda e-postanız ve başvuru notunuz o başvurunun kısıtlı kaydına yazılır; bunu yalnızca o kulübün yönetimi ve uygulama yöneticileri görür.",
   "@legalGizlilikB2": {
     "description": "Key legal.gizlilik.b2"
   },
-  "legalGizlilikB3": "Profiliniz yalnızca ortak kulüp üyelerine ve kulüp yöneticilerine görünür. Bölüm ve sınıf bilgisi herkese açık değildir.",
+  "legalGizlilikB3": "Ad soyad, bölüm, sınıf, ilgi alanları, biyografi, profil fotoğrafı, personel bilgisi ve hesap durumu, doğrulanmış hesapla giriş yapmış tüm kullanıcılara açıktır; ortak kulübünüz olmasa da doğrulanmış her kullanıcı profilinizi teknik olarak okuyabilir. Kulübün aktif üyeleri birbirinin ad, bölüm, sınıf ve rolünü görür. Kulüp yönetimi ve uygulama yöneticileri ayrıca başvuru notlarını, başvuranların e-postasını, kulüp yönetim günlüğünü ve etkinlik katılım / yoklama kayıtlarını görür; kulüp yönetimi üye ve katılımcı listesini CSV olarak dışa aktarabilir. Beğeni ve anket oyları anonim değildir, kullanıcı kimliğinizle saklanır; kulübün üyeleri bu kayıtlara teknik olarak erişebilir, ancak uygulama kimin neyi beğendiğini göstermez.",
   "@legalGizlilikB3": {
     "description": "Key legal.gizlilik.b3"
   },
-  "legalGizlilikB4": "Bildirim tercihlerinizi istediğiniz zaman Ayarlar’dan değiştirebilirsiniz. Sessiz saatler cihazınızda uygulanır.",
+  "legalGizlilikB4": "Bildirim tercihlerinizi istediğiniz zaman Ayarlar’dan değiştirebilirsiniz. Sessiz saatler sunucuda uygulanır: bu saatlerde push bildirimleri sessiz gelir. Push bildirimine izin verirseniz cihazınızın bildirim jetonu, platformu ve uygulama diliniz hesap kaydınıza yazılır; çıkış yaptığınızda o cihazın jetonu kaldırılır. Push metinleri en fazla kulüp adını ve etkinlik başlığını içerir; kişi adı, e-posta veya gönderi metni içermez. Etkinlik hatırlatıcıları cihazınızda yerel bildirim olarak planlanır.",
   "@legalGizlilikB4": {
     "description": "Key legal.gizlilik.b4"
   },
-  "legalGizlilikB5": "Uygulama yalnızca oturumunuzu sürdürmek için yerel depolama kullanır; üçüncü taraf reklam izleyicisi yoktur.",
+  "legalGizlilikB5": "Reklam, reklam kimliği, uygulamalar arası izleme ve analitik aracı (Firebase / Google Analytics dahil) yoktur. Firebase bileşenleri hizmetin çalışması ve kalitesini izlemek için teknik teşhis verisi gönderir; Crashlytics yalnızca yayın sürümünde çökme raporu toplar (ad ve e-posta eklenmez, raporlar 90 gün saklanır). Uygulama cihazınızda oturum bilginizi, tema, dil ve yazı boyutu tercihlerinizi, son aramalarınızı, taslakları, görsel önbelleğini ve çevrimdışı kullanım için Firestore önbelleğini saklar; bu önbellek çıkışta silinmez, uygulamayı sildiğinizde kaldırılır.",
   "@legalGizlilikB5": {
     "description": "Key legal.gizlilik.b5"
   },
-  "legalGizlilikB6": "Engellediğiniz kullanıcılar bunu görmez. Şikayetler kampüs yönetimi tarafından gizlilik içinde incelenir.",
+  "legalGizlilikB6": "Engellediğiniz kişiye bildirim gitmez; engelleme listenizi yalnızca siz görürsünüz. Şikayetler uygulama yöneticileri tarafından gizlilik içinde incelenir; kimliğiniz şikayet edilen kişiye gösterilmez. Kötüye kullanımı önlemek için günde en çok 20 şikayet gönderilebilir.",
   "@legalGizlilikB6": {
     "description": "Key legal.gizlilik.b6"
   },
-  "legalGizlilikB7": "Politikadaki önemli değişiklikler uygulama içi bildirimle duyurulur.",
+  "legalGizlilikB7": "Politikadaki önemli değişiklikler uygulama içinden duyurulur. Verilerin yurt dışına aktarımı, saklama süresi, hesap silme ve haklarınız KVKK Aydınlatma Metni’nde açıklanır. Tam metin: {webHost}/gizlilik",
   "@legalGizlilikB7": {
-    "description": "Key legal.gizlilik.b7"
+    "description": "Key legal.gizlilik.b7",
+    "placeholders": {
+      "webHost": {
+        "type": "String"
+      }
+    }
   },
   "legalGizlilikH1": "Kapsam",
   "@legalGizlilikH1": {
@@ -3249,7 +3259,7 @@
   "@legalKosullarB1": {
     "description": "Key legal.kosullar.b1"
   },
-  "legalKosullarB2": "Uygulama yalnızca geçerli üniversite e-postasına sahip öğrenci ve personelin kullanımına açıktır.",
+  "legalKosullarB2": "Uygulama yalnızca geçerli üniversite e-postasına sahip öğrenci ve personelin kullanımına açıktır; test döneminde geçici olarak Gmail adresleri de kabul edilir.",
   "@legalKosullarB2": {
     "description": "Key legal.kosullar.b2"
   },
@@ -3269,7 +3279,7 @@
   "@legalKosullarB6": {
     "description": "Key legal.kosullar.b6"
   },
-  "legalKosullarB7": "Uygulama \"olduğu gibi\" sunulur; kulüp etkinliklerinin içeriğinden ilgili kulüp sorumludur.",
+  "legalKosullarB7": "Uygulama bağımsız bir öğrenci projesidir ve \"olduğu gibi\" sunulur; Gümüşhane Üniversitesi’nin resmî uygulaması değildir. Kulüp etkinliklerinin içeriğinden ilgili kulüp sorumludur.",
   "@legalKosullarB7": {
     "description": "Key legal.kosullar.b7"
   },
@@ -3309,33 +3319,54 @@
   "@legalKosullarTitle": {
     "description": "Key legal.kosullar.title"
   },
-  "legalKvkkB1": "Kişisel verileriniz, 6698 sayılı KVKK kapsamında veri sorumlusu sıfatıyla Gümüşhane Üniversitesi tarafından işlenir.",
+  "legalKvkkB1": "6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusu, {appName} uygulamasını geliştiren ve App Store’da yayımlayan Muhammed Emin Alan’dır. {appName}, Gümüşhane Üniversitesi’nin resmî uygulaması değil, bağımsız bir öğrenci projesidir; üniversite bu uygulamayı işletmez ve veri sorumlusu değildir. KVKK başvuruları dahil tüm yazışmalar e-postayla yapılır: {email}",
   "@legalKvkkB1": {
-    "description": "Key legal.kvkk.b1"
+    "description": "Key legal.kvkk.b1",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      },
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "legalKvkkB2": "Ad soyad, üniversite e-postası, bölüm, sınıf, ilgi alanları ve etkinlik katılım kayıtları işlenir. Konum ve rehber verisi toplanmaz.",
+  "legalKvkkB2": "Hesap: ad soyad, e-posta adresi (kayıt üniversite e-postasıyla yapılır; test döneminde geçici olarak Gmail adresleri de kabul edilir), doğrulama ve hesap durumu, son giriş zamanı; şifreniz yalnızca Firebase Authentication’da geri çevrilemez bir özet olarak tutulur. Profil: bölüm, sınıf, ilgi alanları, biyografi, isteğe bağlı profil fotoğrafı ve personel bilgisi. Kullanım: kulüp üyelikleri ve başvuruları (başvuru notu dahil), gönderi, yorum, beğeni ve anket oyları, kaydedilen gönderiler, etkinlik kaydı ve QR yoklama kayıtları, bildirim tercihleri ve push jetonu, şikayet ve engelleme kayıtları, destek talepleri ve çökme raporları. Reklam kimliği, konum, rehber ve mikrofon verisi toplanmaz; uygulamalar arası izleme ve analitik aracı yoktur.",
   "@legalKvkkB2": {
     "description": "Key legal.kvkk.b2"
   },
-  "legalKvkkB3": "Kulüp üyeliklerinin yönetimi, etkinlik kayıt ve yoklaması, duyuruların iletilmesi ve güvenliğin sağlanması amacıyla işlenir.",
+  "legalKvkkB3": "Verileriniz uygulama üzerinden elektronik ortamda toplanır. Hesap, doğrulama ve giriş; kulüp keşfi, başvuru ve üyelik; etkinlik kaydı, bilet ve yoklama; gönderi, yorum, anket ve bildirimler ile destek taleplerinin yanıtlanması için işlenir (KVKK m.5/2-c, sözleşmenin ifası). Hesap ve platform güvenliği, kötüye kullanımın önlenmesi ve hataların giderilmesi meşru menfaate (m.5/2-f); yetkili kurumların yasal talepleri ve uyuşmazlıklar m.5/2-ç ve m.5/2-e’ye dayanır. Açık rızaya dayalı işleme yoktur; push bildirimi, kamera ve fotoğraf erişimi isteğe bağlı cihaz izinleridir ve cihaz ayarlarından geri alınabilir.",
   "@legalKvkkB3": {
     "description": "Key legal.kvkk.b3"
   },
-  "legalKvkkB4": "Verileriniz yalnızca üye olduğunuz kulübün yönetim kuruluyla ve yasal zorunluluk hâlinde yetkili kurumlarla paylaşılır.",
+  "legalKvkkB4": "Uygulama Türkiye’de sunucu kullanmaz. Verileriniz hizmet sağlayıcımız Google’ın Firebase altyapısına, Türkiye dışına aktarılır ve orada bizim adımıza işlenir (KVKK m.9): Cloud Firestore \"nam5\" çoklu bölgesi, Cloud Functions \"us-central1\" bölgesi, Firebase Authentication ABD'deki Google veri merkezleri, Cloud Storage \"us-east1\" bölgesi (hepsi ABD); Cloud Messaging, Crashlytics ve Remote Config Google’ın küresel altyapısında. Push bildirimleri iOS’ta Apple Push Notification service ile iletilir. Diğer kullanıcılar, kulüp yönetimi ve uygulama yöneticileri yalnızca Gizlilik Politikası’nda belirtilen verileri görür; kamu kurumlarıyla yalnızca yasal zorunluluk hâlinde paylaşılır. Verileriniz satılmaz ve pazarlama amacıyla paylaşılmaz.",
   "@legalKvkkB4": {
     "description": "Key legal.kvkk.b4"
   },
-  "legalKvkkB5": "Üyelik verileri mezuniyet veya hesap silme tarihinden itibaren en çok 1 yıl saklanır; yoklama kayıtları dönem sonunda anonimleştirilir.",
+  "legalKvkkB5": "Verileriniz hesabınız var olduğu sürece saklanır. Uygulamadaki silmeler \"yumuşak silme\"dir: silinen içerik gizlenir, veritabanından hemen kaldırılmaz. Profil › Ayarlar › Hesabı sil ile hesabınızı sildiğinizde adınız \"Silinmiş kullanıcı\" olur; profil bilgileriniz, e-posta adresiniz, başvuru notlarınız ve push jetonlarınız silinir, üyelikleriniz ve bitmemiş etkinlik kayıtlarınız sona erer. Gönderi ve yorumlarınız, geçmiş katılım kayıtları, anonimleştirilmiş üyelik kayıtları, beğeni ve anket oylarınız, bildirim tercihleriniz, bağlantısı kaldırılmış görselleriniz (profil fotoğrafı dahil), şikayet ve destek kayıtları ile Firebase Authentication giriş kaydınız kalıcı silme talep edene kadar kalır; belirli bir süre sonunda kendiliğinden silen bir süreç yoktur. Çökme raporları 90 gün saklanır. Tam liste: gu-kulupler.web.app/gizlilik, bölüm 7. Kalıcı silme için {email} adresine \"Veri silme talebi\" konulu bir e-posta gönderebilirsiniz.",
   "@legalKvkkB5": {
-    "description": "Key legal.kvkk.b5"
+    "description": "Key legal.kvkk.b5",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "legalKvkkB6": "KVKK’nın 11. maddesi uyarınca verilerinize erişme, düzeltme, silme ve işlemeye itiraz etme hakkına sahipsiniz.",
+  "legalKvkkB6": "KVKK’nın 11. maddesi uyarınca verilerinizin işlenip işlenmediğini öğrenme, işlenmişse bilgi talep etme, işleme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme, yurt içinde veya yurt dışında aktarıldığı üçüncü kişileri bilme, eksik veya yanlış işlenmişse düzeltilmesini, m.7 çerçevesinde silinmesini veya yok edilmesini ve bu işlemlerin aktarıldığı üçüncü kişilere bildirilmesini isteme, münhasıran otomatik sistemlerle analiz sonucu aleyhinize çıkan sonuca itiraz etme ve kanuna aykırı işleme nedeniyle zararın giderilmesini talep etme haklarına sahipsiniz.",
   "@legalKvkkB6": {
     "description": "Key legal.kvkk.b6"
   },
-  "legalKvkkB7": "Taleplerinizi uygulama içindeki Yardım ve destek formu ya da kvkk@gumushane.edu.tr adresi üzerinden iletebilirsiniz.",
+  "legalKvkkB7": "Talebinizi, kimliğinizi doğrulayabilmemiz için uygulamada kayıtlı e-posta adresinizden {email} adresine gönderebilir ya da Profil › Ayarlar › Yardım ve destek › Yeni talep yolunu kullanabilirsiniz. Başvurunuz en geç 30 gün içinde ücretsiz yanıtlanır; yanıttan memnun kalmazsanız Kişisel Verileri Koruma Kurulu’na şikayette bulunabilirsiniz. Tam metin: {webHost}/gizlilik",
   "@legalKvkkB7": {
-    "description": "Key legal.kvkk.b7"
+    "description": "Key legal.kvkk.b7",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      },
+      "webHost": {
+        "type": "String"
+      }
+    }
   },
   "legalKvkkH1": "Veri sorumlusu",
   "@legalKvkkH1": {
@@ -3389,7 +3420,7 @@
   "@legalTitle": {
     "description": "Key legal.title"
   },
-  "legalUpdated": "Son güncelleme: Eylül 2026",
+  "legalUpdated": "Son güncelleme: Ekim 2026",
   "@legalUpdated": {
     "description": "Key legal.updated"
   },
@@ -3939,7 +3970,7 @@
   "@notifTypeRemovedFromClubTitle": {
     "description": "Key notifType.removed_from_club.title"
   },
-  "notifTypeReportResolvedBody": "Kampüs yönetimi şikayetini inceledi ve gereken işlemi yaptı.",
+  "notifTypeReportResolvedBody": "Uygulama yöneticileri şikayetini inceledi ve gereken işlemi yaptı.",
   "@notifTypeReportResolvedBody": {
     "description": "Key notifType.report_resolved.body"
   },
@@ -4584,7 +4615,7 @@
   "@sht10DailyLimit": {
     "description": "Key sht.10.dailyLimit"
   },
-  "sht10Desc": "Şikayetin kampüs yönetimine iletilir; kimliğin paylaşılmaz.",
+  "sht10Desc": "Şikayetin uygulama yöneticilerine iletilir; kimliğin paylaşılmaz.",
   "@sht10Desc": {
     "description": "Key sht.10.desc"
   },

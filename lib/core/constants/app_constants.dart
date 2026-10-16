@@ -19,11 +19,20 @@ abstract final class AppConstants {
   static const List<String> allowedEmailDomains =
       EmailDomainPolicy.allowedDomains;
 
-  /// Paylaşım bağlantısı kökü (K-09 yer tutucu; yalnızca kopyala/paylaş, App Links yok).
-  static const String shareBaseUrl = 'https://kulupler.gumushane.edu.tr';
+  /// Uygulamanın web sitesinin sunucu adı (Firebase Hosting; gizlilik ve
+  /// destek sayfaları — `hosting/public`). AUT-06 yasal metinleri "Tam metin"
+  /// bağlantısını `{webHost}` yer tutucusuyla buradan alır (K-96).
+  static const String webHost = 'gu-kulupler.web.app';
 
-  /// Destek e-postası (DLG-01 mailto, SET-04; yer tutucu — K-N).
-  static const String supportEmail = 'kulupler-destek@gumushane.edu.tr';
+  /// Paylaşım bağlantısı kökü (K-09, K-96; yalnızca kopyala/paylaş, App Links
+  /// yok). Uygulama dışında açılan paylaşım yolları `hosting/public/404.html`
+  /// sayfasına düşer (mağaza bağlantısı + ana sayfa).
+  static const String shareBaseUrl = 'https://$webHost';
+
+  /// Destek, iletişim ve KVKK başvuru e-postası (veri sorumlusu; DLG-01
+  /// mailto, SET-04, AUT-06 `{email}`, SSS — kullanıcı kararı 2026-10-16,
+  /// K-96). Web sayfalarındaki adresle aynıdır.
+  static const String supportEmail = 'eminalan334@gmail.com';
 
   /// [supportEmail] adresine e-posta açan bağlantı (`UrlLauncherService.open`;
   /// DLG-01 "Destekle iletişime geç", SET-04 / SET-05).
@@ -33,10 +42,10 @@ abstract final class AppConstants {
   /// `applicationId` ile parite testi); Google Play adresinde kullanılır.
   static const String androidApplicationId = 'com.gukulupler.gu_kulupler';
 
-  /// App Store uygulama kimliği (`apps.apple.com/app/id…`).
-  // TODO(T-46): yer tutucu — App Store Connect kaydı açılınca gerçek kimlik
-  // yazılır (mağaza ve yayın hazırlığı).
-  static const String appStoreId = '0000000000';
+  /// App Store uygulama kimliği (Apple ID; `apps.apple.com/app/id…` — W-58,
+  /// App Store Connect kaydı 2026-10-16). `hosting/public/404.html` mağaza
+  /// bağlantısı aynı kimliği kullanır (parite testi).
+  static const String appStoreId = '6823367574';
 
   /// Uygulamanın [platform] mağazasındaki sayfası (DLG-26 "Güncelle";
   /// `UrlLauncherService.open`). Apple platformlarında App Store, diğerlerinde

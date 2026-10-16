@@ -54,7 +54,7 @@ abstract final class ShareLinks {
   );
 
   /// [url]'in şemasız, ekranda gösterilen biçimi
-  /// (`kulupler.gumushane.edu.tr/clubs/c01`).
+  /// (`gu-kulupler.web.app/clubs/c01`).
   static String display(String url) {
     final scheme = Uri.tryParse(url)?.scheme ?? '';
     final prefix = '$scheme$_schemeSeparator';

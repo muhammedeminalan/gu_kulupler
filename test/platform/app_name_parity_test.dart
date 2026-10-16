@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_kulupler/core/constants/app_constants.dart';
 
 /// D-01: ürün adı tek kaynaktan; platform dosyaları bu sabitle aynı olmalı.
-/// Q-13: dikey kilit; CD-59: iOS 15.0.
+/// Q-13: dikey kilit; CD-59: iOS 15.0; yalnızca iPhone (2026-10-16).
 void main() {
   group('T-00 · platform paritesi', () {
     test('Info.plist CFBundleDisplayName == AppConstants.appName', () {
@@ -33,10 +33,22 @@ void main() {
         orientations('UISupportedInterfaceOrientations'),
         equals(const ['UIInterfaceOrientationPortrait']),
       );
-      expect(
-        orientations('UISupportedInterfaceOrientations~ipad'),
-        equals(const ['UIInterfaceOrientationPortrait']),
-      );
+      // Yalnızca iPhone (kullanıcı kararı 2026-10-16): iPad anahtarı yok.
+      expect(plist, isNot(contains('~ipad')));
+    });
+
+    test('Xcode projesi yalnızca iPhone hedefler (kullanıcı kararı '
+        '2026-10-16)', () {
+      final pbx = File(
+        'ios/Runner.xcodeproj/project.pbxproj',
+      ).readAsStringSync();
+      final families = RegExp(
+        'TARGETED_DEVICE_FAMILY = ([^;]+);',
+      ).allMatches(pbx).map((m) => m.group(1)).toList();
+      // Proje düzeyi Debug / Release / Profile (Runner ve RunnerTests miras
+      // alır).
+      expect(families, hasLength(greaterThanOrEqualTo(3)));
+      expect(families, everyElement('1'));
     });
 
     test('Xcode projesi iOS 15.0 hedefler (CD-59)', () {

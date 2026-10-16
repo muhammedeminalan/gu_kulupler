@@ -25,7 +25,7 @@ const Locale _en = Locale('en');
 /// Referans görüntüdeki öğe: `c01` kulübü.
 final String _title = ClubModelFixtures.c01.name;
 const String _url = '${AppConstants.shareBaseUrl}/clubs/c01';
-const String _displayUrl = 'kulupler.gumushane.edu.tr/clubs/c01';
+const String _displayUrl = 'gu-kulupler.web.app/clubs/c01';
 
 const String _longTitle =
     'Yazılım, Yapay Zekâ, Robotik, Siber Güvenlik ve Açık Kaynak Teknolojileri '
@@ -85,11 +85,11 @@ void main() {
   });
 
   group('SHT-15 · Paylaş · ShareLinks', () {
-    test('display: şema atılır (`kulupler.gumushane.edu.tr/clubs/c01`)', () {
+    test('display: şema atılır (`gu-kulupler.web.app/clubs/c01`)', () {
       expect(ShareLinks.display(_url), _displayUrl);
       expect(
         ShareLinks.display('${AppConstants.shareBaseUrl}/events/e01'),
-        'kulupler.gumushane.edu.tr/events/e01',
+        'gu-kulupler.web.app/events/e01',
       );
       expect(
         ShareLinks.display('http://example.org/a?b=c'),
@@ -105,7 +105,7 @@ void main() {
       final uri = ShareLinks.whatsApp(_url);
       expect(
         uri.toString(),
-        'https://wa.me/?text=https%3A%2F%2Fkulupler.gumushane.edu.tr'
+        'https://wa.me/?text=https%3A%2F%2Fgu-kulupler.web.app'
         '%2Fclubs%2Fc01',
       );
       expect(uri.scheme, 'https');

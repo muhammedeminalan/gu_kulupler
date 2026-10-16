@@ -13,7 +13,7 @@ import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 /// (prototip `sheets.js:73`).
 abstract final class EventLinks {
   /// [eventId] etkinliğinin paylaşım bağlantısı
-  /// (`https://kulupler.gumushane.edu.tr/events/<id>` — K-D).
+  /// (`https://gu-kulupler.web.app/events/<id>` — K-D).
   static String share(String eventId) =>
       '${AppConstants.shareBaseUrl}${AppPaths.events}/$eventId';
 

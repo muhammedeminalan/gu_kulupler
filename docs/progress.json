@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-10-15T22:18:41.041Z",
+  "updated": "2026-10-16T12:30:25.561Z",
   "gate": {
     "planApproved": true,
     "designAnalysisApproved": true
@@ -1199,7 +1199,10 @@
       "resolveIn": [
         "T-46"
       ],
-      "status": "open"
+      "status": "closed",
+      "closedIn": null,
+      "closedAt": "2026-10-16T12:30:25.560Z",
+      "closeNote": "App Store Apple ID 6823367574 (asc apps list, 2026-10-16)"
     },
     {
       "id": "W-59",
@@ -2047,6 +2050,11 @@
       "date": "2026-10-14",
       "task": "T-27",
       "text": "K-79 PRF-01..04 prototip farkları: biyografi PRF-01'de yok, PRF-02 fotoğraf Kaydet'e dahil + sayaç %80 eşiği, PRF-03 Geçmiş ayrılınan/iptal de içerir ('Ayrıldı' rozeti), PRF-04 özet kart, ilgi alanı çipi kategori köprüsü + EVT-04 Geçmiş (CD-150)"
+    },
+    {
+      "date": "2026-10-16",
+      "task": null,
+      "text": "K-96 yayın öncesi metinler: AUT-06 KVKK / Gizlilik web sayfasıyla eşit (veri sorumlusu Muhammed Emin Alan, resmî değil), 'kampüs yönetimi' → 'uygulama yöneticileri', paylaşım kökü gu-kulupler.web.app + 404 sayfası — kullanıcı kararı 2026-10-16"
     }
   ]
 }

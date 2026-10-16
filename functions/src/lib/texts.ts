@@ -86,7 +86,7 @@ const TR: Record<Exclude<NotificationType, 'system'>, Template> = {
   }),
   report_resolved: () => ({
     title: 'Şikayetin sonuçlandı',
-    body: 'Kampüs yönetimi şikayetini inceledi ve gereken işlemi yaptı.',
+    body: 'Uygulama yöneticileri şikayetini inceledi ve gereken işlemi yaptı.',
   }),
   new_report: () => ({ title: 'Yeni şikayet', body: 'İncelenmeyi bekleyen yeni bir şikayet var.' }),
 };
@@ -135,7 +135,7 @@ const EN: Record<Exclude<NotificationType, 'system'>, Template> = {
   }),
   report_resolved: () => ({
     title: 'Your report was resolved',
-    body: 'Campus administration reviewed your report and took action.',
+    body: "The app's admins reviewed your report and took action.",
   }),
   new_report: () => ({ title: 'New report', body: 'A new report is waiting for review.' }),
 };

@@ -8,7 +8,10 @@ import 'package:gu_ui/gu_ui.dart';
 /// anahtarları (`screens-auth.js:153–158`): sekme adı, başlık ve 7 bölüm.
 ///
 /// Metinler ARB'dedir (`legalKvkk*`, `legalGizlilik*`, `legalKosullar*`;
-/// K-06); bu sınıf yalnızca [LegalTab] → anahtar eşlemesidir.
+/// K-06); bu sınıf yalnızca [LegalTab] → anahtar eşlemesidir. KVKK ve
+/// Gizlilik metinleri web sayfasının (`hosting/public/gizlilik`, `privacy`)
+/// kısaltılmış eşdeğeridir (K-96); ürün adı, e-posta ve site adresi
+/// [AppConstants]'tan yer tutucuyla gelir.
 @immutable
 final class LegalDocument {
   const LegalDocument._({
@@ -24,13 +27,28 @@ final class LegalDocument {
           shortTitle: l10n.legalKvkkShort,
           title: l10n.legalKvkkTitle,
           sections: [
-            (heading: l10n.legalKvkkH1, body: l10n.legalKvkkB1),
+            (
+              heading: l10n.legalKvkkH1,
+              body: l10n.legalKvkkB1(
+                AppConstants.appName,
+                AppConstants.supportEmail,
+              ),
+            ),
             (heading: l10n.legalKvkkH2, body: l10n.legalKvkkB2),
             (heading: l10n.legalKvkkH3, body: l10n.legalKvkkB3),
             (heading: l10n.legalKvkkH4, body: l10n.legalKvkkB4),
-            (heading: l10n.legalKvkkH5, body: l10n.legalKvkkB5),
+            (
+              heading: l10n.legalKvkkH5,
+              body: l10n.legalKvkkB5(AppConstants.supportEmail),
+            ),
             (heading: l10n.legalKvkkH6, body: l10n.legalKvkkB6),
-            (heading: l10n.legalKvkkH7, body: l10n.legalKvkkB7),
+            (
+              heading: l10n.legalKvkkH7,
+              body: l10n.legalKvkkB7(
+                AppConstants.supportEmail,
+                AppConstants.webHost,
+              ),
+            ),
           ],
         ),
         LegalTab.gizlilik => LegalDocument._(
@@ -46,7 +64,10 @@ final class LegalDocument {
             (heading: l10n.legalGizlilikH4, body: l10n.legalGizlilikB4),
             (heading: l10n.legalGizlilikH5, body: l10n.legalGizlilikB5),
             (heading: l10n.legalGizlilikH6, body: l10n.legalGizlilikB6),
-            (heading: l10n.legalGizlilikH7, body: l10n.legalGizlilikB7),
+            (
+              heading: l10n.legalGizlilikH7,
+              body: l10n.legalGizlilikB7(AppConstants.webHost),
+            ),
           ],
         ),
         LegalTab.kosullar => LegalDocument._(
