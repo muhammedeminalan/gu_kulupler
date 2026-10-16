@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#D00A2D">
+<title>Destek ve SSS · GÜ Kulüpler</title>
+<meta name="description" content="GÜ Kulüpler uygulaması için sık sorulan sorular ve destek iletişim bilgileri.">
+<link rel="canonical" href="https://gu-kulupler.web.app/destek/">
+<link rel="alternate" hreflang="tr" href="https://gu-kulupler.web.app/destek/">
+<link rel="alternate" hreflang="en" href="https://gu-kulupler.web.app/support/">
+<!-- Gmail notu: W-61 (gmail.com geçici izni) kapatıldığında "Kimler kayıt olabilir?" yanıtındaki Gmail cümlesi kaldırılır.
+     AÇIK KALEM: uygulamadaki supportEmail (lib/core/constants/app_constants.dart) bu sayfadaki adresle eşitlenmeli. -->
+<style>
+:root{color-scheme:light dark;--brand:#D00A2D;--brand-text:#D00A2D;--on-brand:#FFFFFF;--tonal:#FCE8EC;--on-tonal:#7A0619;--bg:#FAF9F6;--surface:#FFFFFF;--border:#E2E8F0;--soft:#EEF1F5;--text:#101828;--muted:#5E708A}
+@media (prefers-color-scheme:dark){:root{--brand-text:#F2536C;--tonal:#3A0C16;--on-tonal:#FFD9E0;--bg:#17191C;--surface:#1E2024;--border:#39414B;--soft:#303740;--text:#F1F1ED;--muted:#AEB5BF}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:break-word}
+a{color:var(--brand-text);text-underline-offset:.15em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--brand-text);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:0}
+.skip:focus{left:16px;top:12px;z-index:10;background:var(--surface);color:var(--text);padding:10px 14px;border:2px solid var(--brand-text);border-radius:10px}
+.top{background:var(--surface);border-bottom:1px solid var(--border)}
+.wrap{max-width:760px;margin:0 auto;padding-left:16px;padding-right:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding-top:10px;padding-bottom:10px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--text);text-decoration:none;font-weight:700;font-size:1.05rem}
+.mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--on-brand);font-size:.8rem;font-weight:800;letter-spacing:.02em}
+.nav ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:.95rem}
+.nav a:hover{background:var(--soft)}
+.nav a[aria-current="page"]{background:var(--tonal);color:var(--on-tonal)}
+.nav a.lang{border:1px solid var(--border)}
+main{padding-top:28px;padding-bottom:56px}
+h1{font-size:clamp(1.6rem,1.25rem + 1.6vw,2.15rem);line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+h2{font-size:1.3rem;line-height:1.3;margin:2.2em 0 .6em;scroll-margin-top:16px}
+h3{font-size:1.06rem;line-height:1.35;margin:1.5em 0 .4em;scroll-margin-top:16px}
+p,ul,ol{margin:.6em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+li::marker{color:var(--brand-text)}
+.lead{font-size:1.1rem;color:var(--muted);margin-top:0}
+.meta{color:var(--muted);font-size:.93rem}
+.notice{background:var(--tonal);color:var(--on-tonal);border-radius:14px;padding:14px 18px;margin:20px 0}
+.notice a{color:inherit}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:16px 0}
+.card>h2:first-child,.card>h3:first-child{margin-top:.8em}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:24px 0}
+.toc h2{font-size:1rem;margin:.8em 0 .2em}
+.path{font-weight:600}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;line-height:1.3;border-radius:12px;background:var(--brand);color:var(--on-brand);text-decoration:none;font-weight:700;max-width:100%;overflow-wrap:anywhere}
+.btn:hover{filter:brightness(.92)}
+.foot{border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.foot .wrap{padding-top:20px;padding-bottom:32px}
+.foot a{color:var(--muted)}
+@media print{.nav,.skip{display:none}body{background:#fff;color:#000}.card,.toc,.notice{background:#fff;color:#000;border:1px solid #999}.btn{background:#fff;color:#000;border:1px solid #999}}
+</style>
+</head>
+<body>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="../"><span class="mark" aria-hidden="true">GÜ</span>GÜ Kulüpler</a>
+    <nav class="nav" aria-label="Site">
+      <ul>
+        <li><a href="../gizlilik/">Gizlilik</a></li>
+        <li><a href="../destek/" aria-current="page">Destek</a></li>
+        <li><a class="lang" href="../support/" hreflang="en" lang="en">English</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="icerik" class="wrap">
+  <h1>Destek ve sık sorulan sorular</h1>
+  <p class="lead">GÜ Kulüpler ile ilgili en sık sorulan soruların yanıtları burada. Aradığını bulamazsan bize yaz.</p>
+
+  <section class="card" aria-labelledby="iletisim">
+    <h2 id="iletisim">Bize ulaş</h2>
+    <p><a class="btn" href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></p>
+    <p>Uygulamanın içinden de yazabilirsin: <span class="path">Profil › Ayarlar › Yardım ve destek › Yeni talep</span>. Talep numaran varsa (ör. #GU-XXXXXX) e-postana ekle.</p>
+    <p><strong>Şifreni kimseyle paylaşma.</strong> Senden hiçbir zaman şifre istemeyiz.</p>
+  </section>
+
+  <nav class="toc" aria-labelledby="konular">
+    <h2 id="konular">Konular</h2>
+    <ol>
+      <li><a href="#hesap">Hesap ve giriş</a></li>
+      <li><a href="#kulupler">Kulüpler ve başvurular</a></li>
+      <li><a href="#etkinlikler">Etkinlikler ve QR bilet</a></li>
+      <li><a href="#bildirimler">Bildirimler</a></li>
+      <li><a href="#guvenlik">Şikayet ve engelleme</a></li>
+      <li><a href="#silme">Hesap ve veri silme</a></li>
+      <li><a href="#diger">Diğer</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="hesap">Hesap ve giriş</h2>
+  <div class="card">
+    <h3 id="kimler-kayit">Kimler kayıt olabilir?</h3>
+    <p>Kayıt üniversite e-posta adresiyle yapılır: <strong>@ogr.gumushane.edu.tr</strong> (öğrenciler) veya <strong>@gumushane.edu.tr</strong> (personel). Test döneminde geçici olarak Gmail adresleri de kabul edilmektedir. Şifren en az 8 karakter olmalı, en az bir büyük harf ve bir rakam içermelidir.</p>
+
+    <h3 id="dogrulama">Doğrulama e-postası gelmedi</h3>
+    <ol>
+      <li>“E-postanı doğrula” ekranında adresinin doğru yazıldığını kontrol et. Yanlışsa <span class="path">E-postayı değiştir</span> ile düzelt.</li>
+      <li>E-posta kutunun <strong>Gereksiz / Spam</strong> klasörüne bak. E-postanın gelmesi birkaç dakika sürebilir.</li>
+      <li>Gelmediyse <span class="path">Tekrar gönder</span>’e dokun (60 saniyede bir gönderilebilir).</li>
+      <li>E-postadaki bağlantıya tıkladıktan sonra uygulamaya dön ve <span class="path">Doğruladım</span>’a dokun.</li>
+    </ol>
+    <p>Hâlâ sorun varsa kayıt olduğun adresle birlikte bize yaz.</p>
+
+    <h3 id="sifre">Şifremi unuttum</h3>
+    <p>Giriş ekranında <span class="path">Şifremi unuttum</span>’a dokun, kayıtlı e-posta adresini yaz ve <span class="path">Bağlantı gönder</span>’e bas. E-postadaki bağlantıyla yeni şifreni belirle. Güvenlik nedeniyle, adres kayıtlı olmasa da aynı onay mesajı gösterilir. Art arda 5 hatalı girişten sonra 30 saniye beklemen gerekir.</p>
+
+    <h3 id="sifre-degistir">Şifremi nasıl değiştiririm?</h3>
+    <p><span class="path">Profil › Ayarlar › Şifre değiştir</span>.</p>
+
+    <h3 id="eposta-degistir">E-posta adresimi değiştirebilir miyim?</h3>
+    <p>Kayıt olduğun e-posta adresi hesabının kimliğidir ve sonradan değiştirilemez. Doğrulama aşamasında yanlış yazdıysan doğrulama ekranındaki <span class="path">E-postayı değiştir</span> ile düzeltebilirsin.</p>
+  </div>
+
+  <h2 id="kulupler">Kulüpler ve başvurular</h2>
+  <div class="card">
+    <h3 id="basvuru">Bir kulübe nasıl başvururum?</h3>
+    <p><span class="path">Kulüpler</span> sekmesinden kulübü aç ve <span class="path">Katıl</span>’a dokun. Onay gerektiren kulüplerde kulüp yönetimine kısa bir not yazarsın (en çok 300 karakter; notunu yalnızca kulüp yönetimi ve uygulama yöneticileri görür). Anında katılımlı kulüplerde hemen üye olursun. Sonucu <span class="path">Bildirimler</span>’den takip edebilirsin.</p>
+
+    <h3 id="beklemede">Başvurum neden hâlâ beklemede?</h3>
+    <p>Başvuruları kulübün yönetim kurulu değerlendirir. Durumunu <span class="path">Profil › Kulüplerim ve başvurularım › Bekleyen</span> sekmesinden görebilir, notunu güncelleyebilir veya isteğini iptal edebilirsin.</p>
+
+    <h3 id="red">Başvurum reddedildi, tekrar başvurabilir miyim?</h3>
+    <p>Evet. Reddedilen veya kulüpten çıkarılan üyeler 7 gün sonra yeniden başvurabilir; uygulama kalan süreyi gösterir.</p>
+
+    <h3 id="kulup-yok">Kulübüm uygulamada yok, nasıl eklenir?</h3>
+    <p>Kulüpleri uygulama yöneticileri ekler. Kulübün başkanı veya danışmanı kulübün adıyla birlikte bize e-posta gönderebilir.</p>
+  </div>
+
+  <h2 id="etkinlikler">Etkinlikler ve QR bilet</h2>
+  <div class="card">
+    <h3 id="kayit">Bir etkinliğe nasıl kaydolurum?</h3>
+    <p>Etkinlik sayfasında <span class="path">Katıl</span>’a dokun. Kontenjan doluysa <span class="path">Bekleme listesine katıl</span>; yer açıldığında sıranla otomatik olarak kayıtlıya alınırsın ve bildirim gelir. Üyelere özel etkinliklere yalnızca kulübün üyeleri katılabilir. Katılamayacaksan etkinlik bitmeden <span class="path">Vazgeç</span>’e dokunarak yerini bekleyenlere bırak.</p>
+
+    <h3 id="bilet">Biletim nerede?</h3>
+    <p>Etkinlik sayfasında <span class="path">Biletini göster</span>’e dokun ya da <span class="path">Profil › Biletlerim</span>’i aç. Etkinlik girişinde görevli biletindeki QR kodu okutur ve yoklaman alınır.</p>
+
+    <h3 id="qr">QR kodum okutulmuyor, ne yapmalıyım?</h3>
+    <p>Ekran parlaklığını artır ve bileti tam ekran aç. Yine olmazsa görevliye biletin altındaki kodu söyle; kod elle de girilebilir.</p>
+  </div>
+
+  <h2 id="bildirimler">Bildirimler</h2>
+  <div class="card">
+    <h3 id="bildirim-yok">Bildirim alamıyorum</h3>
+    <ul>
+      <li>Telefonunun ayarlarında GÜ Kulüpler için bildirim izninin açık olduğunu kontrol et.</li>
+      <li><span class="path">Profil › Ayarlar › Bildirim tercihleri</span>’nden ilgili bildirim türlerinin kapatılmadığına bak.</li>
+      <li>Bir kulübü sessize aldıysan o kulübün bildirimleri gelmez.</li>
+      <li>Sessiz saatlerde bildirimler sessiz gelir.</li>
+    </ul>
+  </div>
+
+  <h2 id="guvenlik">Şikayet ve engelleme</h2>
+  <div class="card">
+    <h3 id="sikayet">Bir içeriği veya kullanıcıyı nasıl şikayet ederim?</h3>
+    <p>Gönderi, yorum, kullanıcı ya da kulübün <span class="path">⋯</span> menüsünden <span class="path">Şikayet et</span>’i seç, nedeni belirt (Spam, Uygunsuz içerik, Taciz veya zorbalık, Yanlış bilgi, Kulübe uygun değil, Diğer) ve istersen kısa bir not ekle. Şikayetleri uygulama yöneticileri inceler; sonucu bildirimle alırsın. Kimliğin şikayet edilen kişiye gösterilmez. Günde en çok 20 şikayet gönderebilirsin.</p>
+
+    <h3 id="engelle">Bir kullanıcıyı nasıl engellerim?</h3>
+    <p>Kullanıcının gönderisindeki <span class="path">⋯</span> menüsünden <span class="path">Kullanıcıyı engelle</span>’yi ya da profilindeki <span class="path">Engelle</span> seçeneğini kullan. Engellediğin kişinin gönderileri ve yorumları sana gösterilmez; karşı tarafa bildirim gitmez.</p>
+
+    <h3 id="engel-kaldir">Engeli nasıl kaldırırım?</h3>
+    <p><span class="path">Profil › Ayarlar › Engellenen kullanıcılar</span>.</p>
+  </div>
+
+  <h2 id="silme">Hesap ve veri silme</h2>
+  <div class="card">
+    <h3 id="hesap-sil">Hesabımı nasıl silerim?</h3>
+    <ol>
+      <li><span class="path">Profil › Ayarlar › Hesabı sil</span>’i aç ve uyarıları oku. Bir kulübün başkanıysan önce başkanlığı devretmen gerekir.</li>
+      <li>İstersen neden ayrıldığını seç (bu bilgi kaydedilmez).</li>
+      <li>Şifreni gir, onaylamak için <strong>SİL</strong> yaz ve <span class="path">Hesabımı kalıcı olarak sil</span>’e dokun.</li>
+    </ol>
+    <p>Adın “Silinmiş kullanıcı” olur; profil bilgilerin, e-posta adresin, üyeliklerin, bekleyen başvuruların ve gelecekteki etkinlik biletlerin kaldırılır. Gönderi ve yorumların “Silinmiş kullanıcı” adıyla kalır. Bu işlem geri alınamaz ve aynı hesapla tekrar giriş yapamazsın. Ayrıntılar: <a href="../gizlilik/#saklama">Gizlilik Politikası, bölüm 7</a>.</p>
+
+    <h3 id="veri-silme">Verilerimin tamamen silinmesini nasıl isterim?</h3>
+    <p>Hesap silindikten sonra bazı kayıtlar kalır (ör. giriş kaydın, gönderi ve yorumların, geçmiş etkinlik katılımların, destek taleplerin). Bunların kalıcı olarak silinmesi için kayıtlı e-posta adresinden <a href="mailto:eminalan334@gmail.com?subject=Veri%20silme%20talebi">eminalan334@gmail.com</a> adresine <strong>“Veri silme talebi”</strong> konulu bir e-posta gönder. Hesabını silmeden de bu talepte bulunabilirsin. Talebini en geç 30 gün içinde yanıtlarız.</p>
+  </div>
+
+  <h2 id="diger">Diğer</h2>
+  <div class="card">
+    <h3 id="resmi">Bu uygulama üniversitenin resmî uygulaması mı?</h3>
+    <p>Hayır. GÜ Kulüpler, öğrenciler tarafından geliştirilen bağımsız bir öğrenci projesidir; Gümüşhane Üniversitesi tarafından geliştirilmemiş, işletilmemekte ve onaylanmamaktadır.</p>
+
+    <h3 id="dil">Uygulama hangi dilleri destekliyor?</h3>
+    <p>Türkçe ve İngilizce. Dili <span class="path">Profil › Ayarlar › Dil</span>’den değiştirebilirsin.</p>
+
+    <h3 id="gizlilik">Verilerim nasıl kullanılıyor?</h3>
+    <p>Hangi verilerin toplandığını, kimlerin görebildiğini ve haklarını <a href="../gizlilik/">Gizlilik Politikası ve KVKK Aydınlatma Metni</a>’nde bulabilirsin. Uygulamada reklam, izleme, analitik aracı ve konum verisi yoktur.</p>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>GÜ Kulüpler, Gümüşhane Üniversitesi’nin resmî uygulaması değildir; bağımsız bir öğrenci projesidir.</p>
+    <p><a href="../">Ana sayfa</a> · <a href="../gizlilik/">Gizlilik</a> · <a href="../support/" hreflang="en" lang="en">Support (English)</a></p>
+  </div>
+</footer>
+</body>
+</html>

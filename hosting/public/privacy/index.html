@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#D00A2D">
+<title>Privacy Policy and KVKK Notice · GÜ Kulüpler</title>
+<meta name="description" content="Privacy policy of the GÜ Kulüpler app and its information notice under the Turkish Personal Data Protection Law No. 6698 (KVKK).">
+<link rel="canonical" href="https://gu-kulupler.web.app/privacy/">
+<link rel="alternate" hreflang="tr" href="https://gu-kulupler.web.app/gizlilik/">
+<link rel="alternate" hreflang="en" href="https://gu-kulupler.web.app/privacy/">
+<!-- Update this page together with gizlilik/.
+     Gmail note: remove the "during the test period … Gmail" sentences once W-61 (temporary gmail.com allowance) is closed.
+     OPEN ITEMS: 1) Section 6: no KVKK Art. 9 transfer safeguard has been chosen; the text claims no legal ground.
+     2) The in-app legal texts (ARB legalKvkk*, legalGizlilik*) and supportEmail (app_constants.dart) must be aligned with this text. -->
+<style>
+:root{color-scheme:light dark;--brand:#D00A2D;--brand-text:#D00A2D;--on-brand:#FFFFFF;--tonal:#FCE8EC;--on-tonal:#7A0619;--bg:#FAF9F6;--surface:#FFFFFF;--border:#E2E8F0;--soft:#EEF1F5;--text:#101828;--muted:#5E708A}
+@media (prefers-color-scheme:dark){:root{--brand-text:#F2536C;--tonal:#3A0C16;--on-tonal:#FFD9E0;--bg:#17191C;--surface:#1E2024;--border:#39414B;--soft:#303740;--text:#F1F1ED;--muted:#AEB5BF}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:break-word}
+a{color:var(--brand-text);text-underline-offset:.15em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--brand-text);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:0}
+.skip:focus{left:16px;top:12px;z-index:10;background:var(--surface);color:var(--text);padding:10px 14px;border:2px solid var(--brand-text);border-radius:10px}
+.top{background:var(--surface);border-bottom:1px solid var(--border)}
+.wrap{max-width:760px;margin:0 auto;padding-left:16px;padding-right:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding-top:10px;padding-bottom:10px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--text);text-decoration:none;font-weight:700;font-size:1.05rem}
+.mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--on-brand);font-size:.8rem;font-weight:800;letter-spacing:.02em}
+.nav ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:.95rem}
+.nav a:hover{background:var(--soft)}
+.nav a[aria-current="page"]{background:var(--tonal);color:var(--on-tonal)}
+.nav a.lang{border:1px solid var(--border)}
+main{padding-top:28px;padding-bottom:56px}
+h1{font-size:clamp(1.6rem,1.25rem + 1.6vw,2.15rem);line-height:1.2;margin:0 0 .4em;letter-spacing:-.01em}
+h2{font-size:1.3rem;line-height:1.3;margin:2.2em 0 .6em;scroll-margin-top:16px}
+h3{font-size:1.06rem;line-height:1.35;margin:1.5em 0 .4em;scroll-margin-top:16px}
+p,ul,ol{margin:.6em 0}
+ul,ol{padding-left:1.35em}
+li{margin:.35em 0}
+li::marker{color:var(--brand-text)}
+.lead{font-size:1.1rem;color:var(--muted);margin-top:0}
+.meta{color:var(--muted);font-size:.93rem}
+.notice{background:var(--tonal);color:var(--on-tonal);border-radius:14px;padding:14px 18px;margin:20px 0}
+.notice a{color:inherit}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:16px 0}
+.card>h2:first-child,.card>h3:first-child{margin-top:.8em}
+.who{color:var(--muted)}
+.who strong{color:var(--text)}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 18px 10px;margin:24px 0}
+.toc h2{font-size:1rem;margin:.8em 0 .2em}
+.path{font-weight:600}
+hr{border:0;border-top:1px solid var(--border);margin:40px 0}
+.foot{border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.foot .wrap{padding-top:20px;padding-bottom:32px}
+.foot a{color:var(--muted)}
+@media print{.nav,.skip{display:none}body{background:#fff;color:#000}.card,.toc,.notice{background:#fff;color:#000;border:1px solid #999}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="../"><span class="mark" aria-hidden="true">GÜ</span>GÜ Kulüpler</a>
+    <nav class="nav" aria-label="Site">
+      <ul>
+        <li><a href="../privacy/" aria-current="page">Privacy</a></li>
+        <li><a href="../support/">Support</a></li>
+        <li><a class="lang" href="../gizlilik/" hreflang="tr" lang="tr">Türkçe</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="content" class="wrap">
+  <h1>Privacy Policy and KVKK Notice</h1>
+  <p class="meta">Effective date: 16 October 2026 · Last updated: 16 October 2026</p>
+  <p class="lead">This page explains which personal data the GÜ Kulüpler mobile app processes, why, who can see it and what your rights are. It also serves as the information notice required by the Turkish Personal Data Protection Law No. 6698 (“KVKK”). The Turkish version is available at <a href="../gizlilik/" hreflang="tr">gu-kulupler.web.app/gizlilik</a>.</p>
+
+  <div class="notice" role="note">
+    <strong>Not an official app.</strong> GÜ Kulüpler is an independent student project built by students for the student clubs of Gümüşhane University. It is not developed, operated or endorsed by Gümüşhane University.
+  </div>
+
+  <section class="card" aria-labelledby="summary">
+    <h2 id="summary">In short</h2>
+    <ul>
+      <li>There are <strong>no</strong> ads, advertising identifiers, cross-app tracking, analytics tools (Firebase / Google Analytics) or location data. Firebase components only collect technical diagnostic data needed to run the service and keep it reliable.</li>
+      <li>Your email address is not shown on your profile; only you, the management of clubs you applied to (whatever the outcome) or belong to, and the app administrators can see it.</li>
+      <li>Your data is stored and processed on Google Firebase infrastructure outside Türkiye (mainly in the United States).</li>
+      <li>You can delete your account inside the app: <span class="path">Profile › Settings › Delete account</span>.</li>
+      <li>Questions and requests: <a href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></li>
+    </ul>
+  </section>
+
+  <nav class="toc" aria-labelledby="contents">
+    <h2 id="contents">Contents</h2>
+    <ol>
+      <li><a href="#controller">Data controller and contact</a></li>
+      <li><a href="#data">Personal data we process</a></li>
+      <li><a href="#not-collected">Data we do not collect</a></li>
+      <li><a href="#purposes">Purposes, method and legal grounds</a></li>
+      <li><a href="#sharing">Who we share data with</a></li>
+      <li><a href="#transfer">Transfer abroad</a></li>
+      <li><a href="#retention">Retention and deletion</a></li>
+      <li><a href="#rights">Your rights and how to apply</a></li>
+      <li><a href="#children">Children</a></li>
+      <li><a href="#security">Security</a></li>
+      <li><a href="#changes">Changes and effective date</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="controller">1. Data controller and contact</h2>
+  <p>Under the KVKK, the data controller is the individual who develops the GÜ Kulüpler app and publishes it on the App Store. Gümüşhane University does not operate this app and is not its data controller.</p>
+  <ul>
+    <li>Data controller: <strong>Muhammed Emin Alan</strong></li>
+    <li>Correspondence: all correspondence, including KVKK requests, is handled by email only.</li>
+    <li>Email: <a href="mailto:eminalan334@gmail.com">eminalan334@gmail.com</a></li>
+    <li>In the app: <span class="path">Profile › Settings › Help &amp; support</span></li>
+  </ul>
+
+  <h2 id="data">2. Personal data we process</h2>
+  <p>We only process the data the app needs to work. Below you will find, for each category, what is stored and who can see it. “Club management” means the president, board members and advisor of the club concerned; “app administrators” means authorised members of the project team.</p>
+
+  <section class="card" aria-labelledby="d-account">
+    <h3 id="d-account">2.1 Account information</h3>
+    <ul>
+      <li>Your full name and email address. Sign-up uses a university email address (@ogr.gumushane.edu.tr or @gumushane.edu.tr); during the test period, Gmail addresses are temporarily accepted as well.</li>
+      <li>Your password: stored by Firebase Authentication as a one-way hash; we cannot see it.</li>
+      <li>Email verification status, account status (active, suspended, deleted) and last sign-in time.</li>
+      <li>If your account is suspended, the reason for the suspension.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> Your email address is kept in a restricted account record, separate from your profile, and is not shown on your profile. Only you and the app administrators can see this account record (email, last sign-in time, any suspension reason and push tokens). When you apply to a club, your email address is also written to the restricted record of that application, which the club’s management can see; this record stays until you delete your account, even if the application is rejected or cancelled or you leave the club.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-profile">
+    <h3 id="d-profile">2.2 Profile information</h3>
+    <ul>
+      <li>Department, year of study, interests (1–5) and a short bio (up to 140 characters).</li>
+      <li>Profile photo (optional).</li>
+      <li>Whether you are academic or administrative staff, and whether your account is active or suspended.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> All users signed in to the app with a verified account. The app shows this information on screens such as posts, member lists and applications; even if you share no club, any verified user can technically read your profile.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-membership">
+    <h3 id="d-membership">2.3 Club memberships and applications</h3>
+    <ul>
+      <li>Your membership status (pending, member, rejected, left, etc.) and your role in the club.</li>
+      <li>Application and decision dates, rejection reason and note, and the number of earlier applications.</li>
+      <li>Your name, department and year at the time of applying, and your application note (up to 300 characters).</li>
+      <li>Club management log: club actions such as applications, joining, leaving and role changes, recorded with the user IDs of the person acting and the person concerned; these records cannot be changed afterwards.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> Active members of the club can see other active members’ name, department, year and role, and their application and approval dates; who manages a club and who its advisor is are visible to everyone. Only club management and the app administrators see your application note, your email address and the management log. Club management can export the member list (name, email, department, year, role, join date) as a CSV file. The file leaves the app through the device’s share sheet; where it is then stored and who it is shared with is under the control of the club manager who exported it.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-content">
+    <h3 id="d-content">2.4 Posts, comments, likes, votes and saved posts</h3>
+    <ul>
+      <li>Posts, announcements and polls shared by club management (text and up to 4 images).</li>
+      <li>Your comments (up to 500 characters), likes and poll votes.</li>
+      <li>Posts you save.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> Posts and comments are visible to members of the club, together with the author’s name. Likes and poll votes are not anonymous: they are stored with your user ID and the club’s members can technically access these records; the app does not show who liked what or who voted for what. Only you can see your saved posts.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-events">
+    <h3 id="d-events">2.5 Event attendance and check-in (QR ticket)</h3>
+    <ul>
+      <li>Your registration status (registered, waitlisted, attended, cancelled) and the time you joined the waitlist.</li>
+      <li>Your reminder preference and ticket code.</li>
+      <li>When your ticket is scanned at the entrance, the scan time and the staff member who scanned it.</li>
+    </ul>
+    <p>The QR code only contains the event ID and the ticket code; your name and email are not written into it. Event reminders are scheduled on your device as local notifications.</p>
+    <p class="who"><strong>Who can see it:</strong> You, club management and the app administrators. Club management can export the attendee list (registered and waitlisted; name, status, scan time, and email for attendees who have an application record with that club) as a CSV file; like the member list, the file leaves the app through the share sheet.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-notifications">
+    <h3 id="d-notifications">2.6 Notifications, preferences and push token</h3>
+    <ul>
+      <li>Your in-app notifications (application results, new events, event cancellations, etc.).</li>
+      <li>Your notification preferences, quiet hours and per-club notification settings.</li>
+      <li>If you allow push notifications, your device’s push token, its platform (iOS or Android) and your app language are written to your account record. When it creates the token, Firebase Cloud Messaging also sends technical information such as the device model, operating system version, language, time zone and app version to Google.</li>
+      <li>When you sign out, that device’s token is removed from your account; if you sign out while offline, it is removed the next time the app opens with a connection.</li>
+    </ul>
+    <p>Push notification texts contain at most a club name and an event title; they never contain a person’s name, email, application note or post text.</p>
+    <p class="who"><strong>Who can see it:</strong> Only you can see your notifications and notification preferences. The push token is kept in your account record, which you and the app administrators can see. The token is used only by the server function that sends notifications.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-reports">
+    <h3 id="d-reports">2.7 Reports and blocks</h3>
+    <ul>
+      <li>The content or user you report, the reason you choose, your optional note (up to 300 characters), and the status and outcome of the report.</li>
+      <li>A daily report counter to prevent abuse (at most 20 reports per user per day).</li>
+      <li>If another user reports you or your content, the report contains your user ID or your content’s ID as its target.</li>
+      <li>The list of users you have blocked.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> Only you and the app administrators see your reports; your identity is not shown to the person reported. The person you block is not notified, and only you can see your block list.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-support">
+    <h3 id="d-support">2.8 Support requests</h3>
+    <ul>
+      <li>Through the in-app support form: subject, message (up to 500 characters), one optional screenshot, request number and date.</li>
+      <li>If you email us: your email address and the content of the correspondence.</li>
+    </ul>
+    <p class="who"><strong>Who can see it:</strong> You and the app administrators.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-crash">
+    <h3 id="d-crash">2.9 Crash reports (Firebase Crashlytics)</h3>
+    <p>Crashlytics runs only in release builds (App Store and TestFlight versions) and sends the following:</p>
+    <ul>
+      <li><strong>In every session:</strong> session information (session ID and time, session timing such as when the app was moved to the background, Firebase Installations ID, device model, operating system and app version, network connection type). This is used to measure error rates per session.</li>
+      <li><strong>When the app crashes or an unexpected error occurs:</strong> error details and stack trace, the app log lines leading up to the error (which may contain technical IDs such as club and event IDs and error codes), device and app information, and your randomly generated user ID.</li>
+    </ul>
+    <p>Your name and email address are not added to reports. When you sign out, your user ID is no longer added to later reports; it stays in reports already sent. Reports are kept for 90 days. The purpose is to find and fix bugs and to monitor the app’s stability.</p>
+    <p class="who"><strong>Who can see it:</strong> The project team.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-technical">
+    <h3 id="d-technical">2.10 Technical data and app settings</h3>
+    <ul>
+      <li>Firebase uses a random identifier specific to the app installation (the Firebase Installations ID) for push notifications, crash reports and remote settings.</li>
+      <li>Remote settings (Firebase Remote Config) download app-wide settings: the minimum supported version, a maintenance message, the daily announcement limit and the re-application waiting period. With this request, the country code, language, time zone, operating system version, app ID and Firebase Installations ID are sent to Google. There is no personal targeting.</li>
+      <li>Firebase components send technical diagnostic information that is not linked to your identity (for example SDK, operating system and app versions) to monitor service quality; Google uses it in aggregate to measure usage trends.</li>
+      <li>On Android, QR scanning is done on the device with Google ML Kit; ML Kit may send device and app information and usage and performance metrics to Google, but not camera images. On iOS, QR scanning uses Apple’s system frameworks.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="d-device">
+    <h3 id="d-device">2.11 Data stored on your device</h3>
+    <ul>
+      <li>Your sign-in session (Firebase Authentication).</li>
+      <li>Theme, language and text size preferences; whether the introduction screens and permission explanations have been shown.</li>
+      <li>The name you entered at sign-up, until you finish setting up your profile; the ID of the account the push token was last written to; the list of events whose reminders are done.</li>
+      <li>Your recent searches (up to 6; cleared on sign-out) and club post drafts.</li>
+      <li>A cache of image links and a file cache of downloaded images.</li>
+      <li>A Firestore data cache for offline use: an on-device copy of records you have read (clubs, posts, events, your own account record, etc.). If you are a club manager, it may also contain the email addresses of members you have viewed. This cache is not cleared when you sign out; it is removed when you delete the app.</li>
+      <li>Scheduled event reminders (local notifications).</li>
+    </ul>
+    <p>On Android, app data is excluded from Google backup and device-to-device transfer. On iOS, the sign-in session is kept in the Keychain, so it may come back if you delete and reinstall the app; we recommend signing out before deleting the app. Other local data (including the Firestore cache) may be included in iCloud or device backups according to iOS’s own rules.</p>
+  </section>
+
+  <section class="card" aria-labelledby="d-camera">
+    <h3 id="d-camera">2.12 Camera and photos</h3>
+    <ul>
+      <li>The camera is used only when you choose it: to take a profile photo, a post image, a club logo or cover, or an event cover, to attach a photo to a support request, and for club management to scan QR tickets at event check-in. A photo you take is only sent when you upload it. QR scanning happens on the device; the camera feed during scanning is not stored or sent.</li>
+      <li>Photos are picked with the system photo picker; the app does not access your whole photo library.</li>
+      <li>A chosen photo is re-compressed before upload and its metadata (EXIF), including location, is removed.</li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="d-clubs">
+    <h3 id="d-clubs">2.13 Club and event information</h3>
+    <p>Club descriptions, the club contact address and social media links, the advisor’s name and title, and event details entered by club management are visible to users signed in to the app. Members-only events are visible to the club’s members.</p>
+  </section>
+
+  <h2 id="not-collected">3. Data we do not collect</h2>
+  <ul>
+    <li>We do not show ads and do not use advertising identifiers (IDFA / AAID).</li>
+    <li>We do not track you across apps or websites; there are no third-party tracking tools.</li>
+    <li>We do not use analytics tools (including Firebase Analytics / Google Analytics). The technical diagnostic data collected by Firebase components is described in sections 2.9 and 2.10.</li>
+    <li>We do not ask for location, contacts or microphone access.</li>
+    <li>We do not sell your data or share it for marketing.</li>
+    <li>These web pages use no cookies and no scripts.</li>
+  </ul>
+  <p>We do not ask for special categories of personal data (health, religion, political opinion, etc.). Please do not include such information in posts, comments, application notes or support messages.</p>
+
+  <h2 id="purposes">4. Purposes, method and legal grounds</h2>
+  <p><strong>Method of collection:</strong> Personal data is collected electronically through the app: some of it you enter yourself (name, profile, application note, posts, comments, support messages), and some is created as you use the app (memberships, attendance, notifications, crash reports).</p>
+  <ul>
+    <li><strong>Creating your account, verifying it by email and signing in; discovering, applying to and joining clubs; event registration, tickets and check-in; posts, comments, polls and notifications; answering support requests.</strong><br>Legal ground: KVKK Art. 5(2)(c) — necessary for the conclusion or performance of a contract (the app’s terms of use).</li>
+    <li><strong>Account and platform security, preventing abuse (reports, blocks, suspensions, daily limits, the club management log) and fixing bugs using crash reports.</strong><br>Legal ground: KVKK Art. 5(2)(f) — legitimate interest, provided it does not harm your fundamental rights and freedoms.</li>
+    <li><strong>Lawful requests from competent authorities and possible disputes.</strong><br>Legal grounds: KVKK Art. 5(2)(ç) (legal obligation) and Art. 5(2)(e) (establishing, exercising or protecting a right).</li>
+    <li><strong>Explicit consent and optional permissions.</strong><br>Apart from the above, we do not carry out any processing based on explicit consent. Push notifications and camera and photo access depend on your device permission and are optional; a profile photo and bio are optional too. You can withdraw these permissions at any time in your device settings.</li>
+  </ul>
+
+  <h2 id="sharing">5. Who we share data with</h2>
+  <ul>
+    <li><strong>Other users of the app and club management:</strong> only to the extent described under “Who can see it” in section 2.</li>
+    <li><strong>App administrators:</strong> review reports, answer support requests and suspend accounts or clubs where necessary; for this they can look up a user by email address.</li>
+    <li><strong>Google (Firebase):</strong> our service provider. Data is processed on our behalf in Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions, Firebase Cloud Messaging, Crashlytics and Remote Config. Verification and password reset emails are sent by Firebase Authentication. On Android, Google ML Kit is used for QR scanning (section 2.10).</li>
+    <li><strong>Apple and Google notification services:</strong> push notifications are delivered to your device through the Apple Push Notification service on iOS and Firebase Cloud Messaging on Android.</li>
+    <li><strong>Competent public authorities:</strong> only where required by law.</li>
+  </ul>
+
+  <h2 id="transfer">6. Transfer abroad (KVKK Art. 9)</h2>
+  <p>The app does not use servers in Türkiye. Your data is stored and processed on Google Firebase infrastructure outside Türkiye:</p>
+  <ul>
+    <li><strong>Cloud Firestore database:</strong> Google Cloud “nam5” multi-region (United States).</li>
+    <li><strong>Cloud Functions</strong> (sending push notifications, waitlist and account deletion clean-up): “us-central1” region (United States).</li>
+    <li><strong>Firebase Authentication:</strong> Google data centres in the United States only.</li>
+    <li><strong>Cloud Storage</strong> (uploaded images and support attachments): Google Cloud “us-east1” region (single region, United States).</li>
+    <li><strong>Cloud Messaging, Crashlytics and Remote Config:</strong> Google’s global infrastructure; data may be processed in any Google data centre.</li>
+  </ul>
+  <!-- OPEN ITEM: no KVKK Art. 9 transfer safeguard has been chosen; this section only states the transfer, the provider and the country. -->
+  <p>This means your personal data is transferred abroad within the meaning of KVKK Art. 9. Your data is transferred to the Firebase services of our service provider Google, and thereby to the locations listed above outside Türkiye, mainly in the United States, where Google processes it on our behalf. If you want the transfer to stop, you can delete your account and ask for your remaining data to be permanently deleted (section 7).</p>
+
+  <h2 id="retention">7. Retention and deletion</h2>
+  <p>We keep your data for as long as your account exists. After you delete your account, the records listed below under “What remains” are kept indefinitely until you ask for permanent deletion; there is currently no process that automatically and permanently deletes data after a set period. Exceptions: crash reports are kept for 90 days and Firebase Authentication’s IP address logs for a few weeks; data on your device is removed when you delete the app.</p>
+  <h3>How deletion works in the app</h3>
+  <p>Deletion in the app is a “soft delete”: a post, comment, notification, saved post or block you delete is marked as deleted and hidden from other users, but it is not removed from the database straight away. This allows accidental deletions to be undone and abuse to be investigated. Uploaded image files are not deleted either; only their link to the content is removed.</p>
+  <h3>If you delete your account</h3>
+  <p>After the steps in <span class="path">Profile › Settings › Delete account</span>:</p>
+  <ul>
+    <li>Your name is changed to “Deleted user”; your department, year, interests, bio and the link to your profile photo are removed.</li>
+    <li>Your email address is removed from your account record and from all your club application records; your application notes and push tokens are deleted.</li>
+    <li>Your active memberships end, your pending applications are cancelled, and your registrations for events that have not yet ended are cancelled.</li>
+    <li>Your notifications, saved posts and blocks are marked as deleted.</li>
+    <li>The account can no longer be used to sign in.</li>
+  </ul>
+  <p>What remains:</p>
+  <ul>
+    <li>your posts and comments (shown as “Deleted user”), your user ID in posts’ like lists, and your poll votes;</li>
+    <li>past event attendance and check-in records;</li>
+    <li>your anonymised past membership and application records (including role, dates and any rejection reason and note) and club management log entries;</li>
+    <li>reports you sent, reports targeting you or your content, and your daily report counters;</li>
+    <li>your support requests and their attachments;</li>
+    <li>your notification preferences;</li>
+    <li>the last sign-in time and any suspension reason in your account record; the staff flag, avatar seed (a random value that generates the default avatar) and sign-up date in your profile record;</li>
+    <li>your unlinked image files (including your profile photo);</li>
+    <li>if you were a club advisor, the advisor name and title on the club page (its link to your account is removed);</li>
+    <li>your sign-in record in Firebase Authentication (your email address, the name you entered at sign-up and your password hash) and the IP address logs Google keeps for a few weeks;</li>
+    <li>crash reports already sent (90 days).</li>
+  </ul>
+  <h3>Request for permanent deletion</h3>
+  <p>You can ask for your remaining data (including your sign-in record) to be permanently deleted by emailing <a href="mailto:eminalan334@gmail.com?subject=Data%20deletion%20request">eminalan334@gmail.com</a> with the subject “Data deletion request”. We will carry out your request, except for information we are legally required to keep. Once your sign-in record in Firebase Authentication is deleted, Google removes it from its live and backup systems within 180 days.</p>
+
+  <h2 id="rights">8. Your rights and how to apply (KVKK Art. 11)</h2>
+  <p>Under Article 11 of the KVKK, you have the right to:</p>
+  <ul>
+    <li>learn whether your personal data is processed,</li>
+    <li>request information about it if it is processed,</li>
+    <li>learn the purpose of processing and whether it is used accordingly,</li>
+    <li>know the third parties in Türkiye or abroad to whom it is transferred,</li>
+    <li>request correction if it is incomplete or inaccurate,</li>
+    <li>request its deletion or destruction under the conditions of KVKK Art. 7,</li>
+    <li>request that corrections, deletions or destructions be notified to the third parties to whom the data was transferred,</li>
+    <li>object to a result against you arising exclusively from automated analysis of the processed data,</li>
+    <li>claim compensation if you suffer damage due to unlawful processing.</li>
+  </ul>
+  <p><strong>How to apply:</strong> So that we can verify your identity, send your request from the email address registered in the app to <a href="mailto:eminalan334@gmail.com?subject=KVKK%20request">eminalan334@gmail.com</a>, or use <span class="path">Profile › Settings › Help &amp; support › New request</span> in the app. We will answer free of charge within 30 days at the latest. If you are not satisfied with our answer, you can lodge a complaint with the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu).</p>
+
+  <h2 id="children">9. Children</h2>
+  <p>The app is for university students and staff and is not directed at children. We do not knowingly collect data from children under 13. If you become aware of such a case, please write to us and we will close the account.</p>
+
+  <h2 id="security">10. Security</h2>
+  <ul>
+    <li>Access to data is enforced on the server by role-based Firebase security rules; permissions are not just hidden in the interface.</li>
+    <li>Email addresses and application notes are kept in restricted records, separate from profiles.</li>
+    <li>The connection between the app and the servers is encrypted (TLS). We cannot see your password; Firebase Authentication manages it.</li>
+    <li>Sign-up uses a university email address (@ogr.gumushane.edu.tr or @gumushane.edu.tr); during the test period, Gmail addresses are temporarily accepted as well. Accounts with an unverified email cannot access any data.</li>
+    <li>On Android, app data is not included in cloud backups; location information is removed from uploaded photos.</li>
+  </ul>
+  <p>No system is completely secure. If you notice a security issue, please let us know.</p>
+
+  <h2 id="changes">11. Changes and effective date</h2>
+  <p>We may update this policy from time to time. The current version is always on this page with the date at the top updated; we will also announce significant changes in the app.</p>
+  <p>This policy takes effect on <strong>16 October 2026</strong>.</p>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>GÜ Kulüpler is not an official app of Gümüşhane University; it is an independent student project.</p>
+    <p><a href="../">Home</a> · <a href="../support/">Support</a> · <a href="../gizlilik/" hreflang="tr" lang="tr">Gizlilik Politikası (Türkçe)</a></p>
+  </div>
+</footer>
+</body>
+</html>

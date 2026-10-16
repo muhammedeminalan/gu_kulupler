@@ -34,6 +34,21 @@
   "storage": {
     "rules": "firebase/storage.rules"
   },
+  "hosting": {
+    "public": "hosting/public",
+    "cleanUrls": true,
+    "ignore": ["**/.*"],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      }
+    ]
+  },
   "remoteconfig": {
     "template": "firebase/remoteconfig.template.json"
   },
