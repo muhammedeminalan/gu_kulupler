@@ -1246,7 +1246,7 @@
   "@clubSettingsAbout": {
     "description": "Key clubSettings.about"
   },
-  "clubSettingsAdvisorLocked": "The advisor is assigned by campus administration",
+  "clubSettingsAdvisorLocked": "The advisor is assigned by the app's admins",
   "@clubSettingsAdvisorLocked": {
     "description": "Key clubSettings.advisorLocked"
   },
@@ -1310,7 +1310,7 @@
   "@clubSettingsName": {
     "description": "Key clubSettings.name"
   },
-  "clubSettingsNameLocked": "Contact campus administration to change the name",
+  "clubSettingsNameLocked": "Contact the app's admins to change the name",
   "@clubSettingsNameLocked": {
     "description": "Key clubSettings.nameLocked"
   },
@@ -1843,7 +1843,7 @@
   "@deleteAccountItemNotifications": {
     "description": "Key deleteAccount.item.notifications"
   },
-  "deleteAccountItemTickets": "Your event tickets",
+  "deleteAccountItemTickets": "Tickets for upcoming events",
   "@deleteAccountItemTickets": {
     "description": "Key deleteAccount.item.tickets"
   },
@@ -2119,7 +2119,7 @@
       }
     }
   },
-  "dlg12Body": "Thanks. Campus administration will review it; we will notify you about the result.",
+  "dlg12Body": "Thanks. The app's admins will review it; we will notify you about the result.",
   "@dlg12Body": {
     "description": "Key dlg.12.body"
   },
@@ -2961,19 +2961,24 @@
   "@faqA4": {
     "description": "Key faq.a4"
   },
-  "faqA5": "Follow Settings › Delete account. If you are a club president, transfer the presidency first. Your posts and comments are anonymised; memberships and tickets are deleted.",
+  "faqA5": "Follow Settings › Delete account. If you are a club president, transfer the presidency first. Your posts and comments remain under \"Deleted user\"; your memberships end and pending applications and upcoming event registrations are cancelled.",
   "@faqA5": {
     "description": "Key faq.a5"
   },
-  "faqA6": "Clubs are added by campus administration. Your advisor or president can ask the Health, Culture and Sports office to add the club.",
+  "faqA6": "Clubs are added by the app's admins. The club's president or advisor can email {email} with the club's name to have it added.",
   "@faqA6": {
-    "description": "Key faq.a6"
+    "description": "Key faq.a6",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "faqA7": "Your university email identifies your account and cannot be changed. If you mistyped it during verification, use Change email on that screen.",
+  "faqA7": "The email address you signed up with identifies your account and cannot be changed (sign-up uses a university email; during the test period, Gmail is temporarily accepted as well). If you mistyped it during verification, use Change email on that screen.",
   "@faqA7": {
     "description": "Key faq.a7"
   },
-  "faqA8": "Use the ⋯ menu on a post, comment, user or club and choose Report, then pick a reason. Campus administration reviews it and notifies you of the result.",
+  "faqA8": "Use the ⋯ menu on a post, comment, user or club and choose Report, then pick a reason. The app's admins review it and notify you of the result.",
   "@faqA8": {
     "description": "Key faq.a8"
   },
@@ -3188,7 +3193,7 @@
   "@legalAccept": {
     "description": "Key legal.accept"
   },
-  "legalGizlilikB1": "This policy explains what information the {appName} app collects and how it is used.",
+  "legalGizlilikB1": "This policy explains which personal data the {appName} app processes, why, and who can see it. The app is an independent student project built by students for the student clubs of Gümüşhane University; it is not an official university app and is not operated or endorsed by the university. \"Club management\" means the president, board and advisor of the club concerned; \"the app's admins\" means authorised members of the project team.",
   "@legalGizlilikB1": {
     "description": "Key legal.gizlilik.b1",
     "placeholders": {
@@ -3197,29 +3202,34 @@
       }
     }
   },
-  "legalGizlilikB2": "Your account is created with your university email; the email is visible only to club managers.",
+  "legalGizlilikB2": "Your account is created with your full name and email address; sign-up uses a university email, and during the test period Gmail addresses are temporarily accepted as well. We cannot see your password; Firebase Authentication manages it. Your email is not shown on your profile: it is kept in a restricted account record, separate from your profile, that only you and the app's admins can see. When you apply to a club, your email and application note are written to the restricted record of that application, which only that club's management and the app's admins can see.",
   "@legalGizlilikB2": {
     "description": "Key legal.gizlilik.b2"
   },
-  "legalGizlilikB3": "Your profile is visible only to shared-club members and club managers. Department and year are not public.",
+  "legalGizlilikB3": "Your name, department, year, interests, bio, profile photo, staff status and account status are visible to all users signed in with a verified account; even if you share no club, any verified user can technically read your profile. Active members of a club see each other's name, department, year and role. Club management and the app's admins also see application notes, applicants' email addresses, the club management log and event attendance / check-in records; club management can export member and attendee lists as CSV. Likes and poll votes are not anonymous and are stored with your user ID; club members can technically access these records, but the app does not show who liked what.",
   "@legalGizlilikB3": {
     "description": "Key legal.gizlilik.b3"
   },
-  "legalGizlilikB4": "You can change notification preferences any time in Settings. Quiet hours are applied on your device.",
+  "legalGizlilikB4": "You can change notification preferences any time in Settings. Quiet hours are applied on the server: during them, push notifications arrive silently. If you allow push notifications, your device's push token, platform and app language are written to your account record; when you sign out, that device's token is removed. Push texts contain at most a club name and an event title, never a person's name, email or post text. Event reminders are scheduled on your device as local notifications.",
   "@legalGizlilikB4": {
     "description": "Key legal.gizlilik.b4"
   },
-  "legalGizlilikB5": "The app uses local storage only to keep your session; there are no third-party ad trackers.",
+  "legalGizlilikB5": "There are no ads, advertising identifiers, cross-app tracking or analytics tools (including Firebase / Google Analytics). Firebase components send technical diagnostic data to run the service and monitor its quality; Crashlytics collects crash reports only in release builds (no name or email; reports are kept for 90 days). On your device the app stores your sign-in session, theme, language and text size preferences, recent searches, drafts, an image cache and a Firestore cache for offline use; this cache is not cleared on sign-out and is removed when you delete the app.",
   "@legalGizlilikB5": {
     "description": "Key legal.gizlilik.b5"
   },
-  "legalGizlilikB6": "Blocked users are not informed. Reports are reviewed confidentially by campus administration.",
+  "legalGizlilikB6": "Blocked users are not informed, and only you can see your block list. Reports are reviewed confidentially by the app's admins; your identity is not shown to the person reported. To prevent abuse, at most 20 reports can be sent per day.",
   "@legalGizlilikB6": {
     "description": "Key legal.gizlilik.b6"
   },
-  "legalGizlilikB7": "Significant changes to this policy are announced with an in-app notification.",
+  "legalGizlilikB7": "Significant changes to this policy are announced in the app. Transfers abroad, retention, account deletion and your rights are explained in the Personal Data Notice. Full text: {webHost}/privacy",
   "@legalGizlilikB7": {
-    "description": "Key legal.gizlilik.b7"
+    "description": "Key legal.gizlilik.b7",
+    "placeholders": {
+      "webHost": {
+        "type": "String"
+      }
+    }
   },
   "legalGizlilikH1": "Scope",
   "@legalGizlilikH1": {
@@ -3261,7 +3271,7 @@
   "@legalKosullarB1": {
     "description": "Key legal.kosullar.b1"
   },
-  "legalKosullarB2": "The app is available only to students and staff with a valid university email.",
+  "legalKosullarB2": "The app is available only to students and staff with a valid university email; during the test period, Gmail addresses are temporarily accepted as well.",
   "@legalKosullarB2": {
     "description": "Key legal.kosullar.b2"
   },
@@ -3281,7 +3291,7 @@
   "@legalKosullarB6": {
     "description": "Key legal.kosullar.b6"
   },
-  "legalKosullarB7": "The app is provided \"as is\"; the relevant club is responsible for the content of its events.",
+  "legalKosullarB7": "The app is an independent student project provided \"as is\"; it is not an official app of Gümüşhane University. The relevant club is responsible for the content of its events.",
   "@legalKosullarB7": {
     "description": "Key legal.kosullar.b7"
   },
@@ -3321,33 +3331,54 @@
   "@legalKosullarTitle": {
     "description": "Key legal.kosullar.title"
   },
-  "legalKvkkB1": "Your personal data is processed by Gümüşhane University as the data controller under Law No. 6698 (KVKK).",
+  "legalKvkkB1": "Under the Turkish Personal Data Protection Law No. 6698 (KVKK), the data controller is Muhammed Emin Alan, who develops the {appName} app and publishes it on the App Store. {appName} is not an official app of Gümüşhane University but an independent student project; the university does not operate it and is not its data controller. All correspondence, including KVKK requests, is handled by email: {email}",
   "@legalKvkkB1": {
-    "description": "Key legal.kvkk.b1"
+    "description": "Key legal.kvkk.b1",
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      },
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "legalKvkkB2": "Name, university email, department, year, interests and event attendance records are processed. Location and contacts are not collected.",
+  "legalKvkkB2": "Account: full name, email address (sign-up uses a university email; during the test period, Gmail addresses are temporarily accepted as well), verification and account status, last sign-in time; your password is kept only by Firebase Authentication as a one-way hash. Profile: department, year, interests, bio, an optional profile photo and staff status. Usage: club memberships and applications (including the application note), posts, comments, likes and poll votes, saved posts, event registrations and QR check-in records, notification preferences and push token, reports and blocks, support requests and crash reports. Advertising identifiers, location, contacts and microphone data are not collected; there is no cross-app tracking and no analytics tool.",
   "@legalKvkkB2": {
     "description": "Key legal.kvkk.b2"
   },
-  "legalKvkkB3": "Data is processed to manage club memberships, event registration and attendance, deliver announcements and keep the service secure.",
+  "legalKvkkB3": "Data is collected electronically through the app. It is processed for your account, verification and sign-in; club discovery, applications and membership; event registration, tickets and check-in; posts, comments, polls and notifications; and answering support requests (KVKK Art. 5(2)(c), performance of a contract). Account and platform security, abuse prevention and bug fixing rely on legitimate interest (Art. 5(2)(f)); lawful requests from authorities and disputes rely on Art. 5(2)(ç) and (e). No processing is based on explicit consent; push notifications and camera and photo access are optional device permissions you can withdraw in your device settings.",
   "@legalKvkkB3": {
     "description": "Key legal.kvkk.b3"
   },
-  "legalKvkkB4": "Your data is shared only with the board of clubs you join and, when legally required, with authorised institutions.",
+  "legalKvkkB4": "The app does not use servers in Türkiye. Your data is transferred abroad to the Firebase infrastructure of our service provider Google and processed there on our behalf (KVKK Art. 9): Cloud Firestore in the \"nam5\" multi-region, Cloud Functions in \"us-central1\", Firebase Authentication in Google's US data centres, and Cloud Storage in \"us-east1\" (all United States); Cloud Messaging, Crashlytics and Remote Config on Google's global infrastructure. On iOS, push notifications are delivered through the Apple Push Notification service. Other users, club management and the app's admins see only the data described in the Privacy Policy; data is shared with public authorities only where required by law. Your data is never sold or shared for marketing.",
   "@legalKvkkB4": {
     "description": "Key legal.kvkk.b4"
   },
-  "legalKvkkB5": "Membership data is kept at most 1 year after graduation or deletion; attendance records are anonymised at term end.",
+  "legalKvkkB5": "Your data is kept for as long as your account exists. Deletion in the app is a \"soft delete\": deleted content is hidden but not removed from the database straight away. When you delete your account in Profile › Settings › Delete account, your name becomes \"Deleted user\"; your profile details, email address, application notes and push tokens are deleted, and your memberships and registrations for events that have not ended are cancelled. Your posts and comments, past attendance records, anonymised membership records, your likes and poll votes, notification preferences, unlinked images (including your profile photo), reports and support requests, and your Firebase Authentication sign-in record remain until you ask for permanent deletion; there is no process that deletes them automatically after a set period. Crash reports are kept for 90 days. Full list: gu-kulupler.web.app/privacy, section 7. To request permanent deletion, email {email} with the subject \"Data deletion request\".",
   "@legalKvkkB5": {
-    "description": "Key legal.kvkk.b5"
+    "description": "Key legal.kvkk.b5",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
-  "legalKvkkB6": "Under Article 11 of KVKK you may access, correct, delete your data and object to processing.",
+  "legalKvkkB6": "Under Article 11 of the KVKK you have the right to learn whether your personal data is processed and request information about it, learn the purpose of processing and whether it is used accordingly, know the third parties in Türkiye or abroad it is transferred to, request correction if it is incomplete or inaccurate, request deletion or destruction under KVKK Art. 7 and that these be notified to those third parties, object to a result against you arising exclusively from automated analysis, and claim compensation for damage caused by unlawful processing.",
   "@legalKvkkB6": {
     "description": "Key legal.kvkk.b6"
   },
-  "legalKvkkB7": "Submit requests through the in-app Help & support form or kvkk@gumushane.edu.tr.",
+  "legalKvkkB7": "So that we can verify your identity, send your request from the email address registered in the app to {email}, or use Profile › Settings › Help & support › New request. We answer free of charge within 30 days at the latest; if you are not satisfied, you can complain to the Turkish Personal Data Protection Board (Kişisel Verileri Koruma Kurulu). Full text: {webHost}/privacy",
   "@legalKvkkB7": {
-    "description": "Key legal.kvkk.b7"
+    "description": "Key legal.kvkk.b7",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      },
+      "webHost": {
+        "type": "String"
+      }
+    }
   },
   "legalKvkkH1": "Data controller",
   "@legalKvkkH1": {
@@ -3401,7 +3432,7 @@
   "@legalTitle": {
     "description": "Key legal.title"
   },
-  "legalUpdated": "Last updated: September 2026",
+  "legalUpdated": "Last updated: October 2026",
   "@legalUpdated": {
     "description": "Key legal.updated"
   },
@@ -3951,7 +3982,7 @@
   "@notifTypeRemovedFromClubTitle": {
     "description": "Key notifType.removed_from_club.title"
   },
-  "notifTypeReportResolvedBody": "Campus administration reviewed your report and took action.",
+  "notifTypeReportResolvedBody": "The app's admins reviewed your report and took action.",
   "@notifTypeReportResolvedBody": {
     "description": "Key notifType.report_resolved.body"
   },
@@ -4596,7 +4627,7 @@
   "@sht10DailyLimit": {
     "description": "Key sht.10.dailyLimit"
   },
-  "sht10Desc": "Your report goes to campus administration; your identity is not shared.",
+  "sht10Desc": "Your report goes to the app's admins; your identity is not shared.",
   "@sht10Desc": {
     "description": "Key sht.10.desc"
   },

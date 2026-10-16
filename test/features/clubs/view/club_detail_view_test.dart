@@ -724,7 +724,7 @@ void main() {
               )
               as ShareSheet;
       expect(sheet.title, kClub.name);
-      expect(sheet.url, 'https://kulupler.gumushane.edu.tr/clubs/$kClubId');
+      expect(sheet.url, 'https://gu-kulupler.web.app/clubs/$kClubId');
       expect(_shareService().copied, [sheet.url]);
       expect(_feedback().toasts, [ToastId.tst35]);
     });

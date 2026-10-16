@@ -341,7 +341,7 @@ void main() {
         clubName: kTicketClub.name,
         placeLabel: _place,
       );
-      expect(share.copied, ['https://kulupler.gumushane.edu.tr/events/e01']);
+      expect(share.copied, ['https://gu-kulupler.web.app/events/e01']);
       expect(share.copied.single, EventLinks.share(kTicketEventId));
       expect(feedback.toasts, [ToastId.tst35]);
     });

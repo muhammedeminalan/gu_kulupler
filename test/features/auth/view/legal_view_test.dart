@@ -164,9 +164,15 @@ void main() {
             .toList();
         expect(sections, hasLength(LegalDocument.sectionCount));
         expect(sections.first.heading, _heading(l10n, LegalTab.kvkk, 1));
-        expect(sections.first.body, l10n.legalKvkkB1);
+        expect(
+          sections.first.body,
+          l10n.legalKvkkB1(AppConstants.appName, AppConstants.supportEmail),
+        );
         expect(sections.last.heading, _heading(l10n, LegalTab.kvkk, 7));
-        expect(sections.last.body, l10n.legalKvkkB7);
+        expect(
+          sections.last.body,
+          l10n.legalKvkkB7(AppConstants.supportEmail, AppConstants.webHost),
+        );
 
         // Onay çubuğu yalnızca kayıt formundan açılışta.
         expect(find.byType(GuStickyCta), findsNothing);
@@ -213,13 +219,13 @@ void main() {
         expect(
           [for (final section in kvkk.sections) section.body],
           [
-            l10n.legalKvkkB1,
+            l10n.legalKvkkB1(AppConstants.appName, AppConstants.supportEmail),
             l10n.legalKvkkB2,
             l10n.legalKvkkB3,
             l10n.legalKvkkB4,
-            l10n.legalKvkkB5,
+            l10n.legalKvkkB5(AppConstants.supportEmail),
             l10n.legalKvkkB6,
-            l10n.legalKvkkB7,
+            l10n.legalKvkkB7(AppConstants.supportEmail, AppConstants.webHost),
           ],
         );
         expect(
@@ -243,10 +249,32 @@ void main() {
             l10n.legalGizlilikB4,
             l10n.legalGizlilikB5,
             l10n.legalGizlilikB6,
-            l10n.legalGizlilikB7,
+            l10n.legalGizlilikB7(AppConstants.webHost),
           ],
         );
         expect(gizlilik.sections.first.body, contains(AppConstants.appName));
+        // Web sayfasıyla eşit içerik (K-96): veri sorumlusu ve e-posta,
+        // sonda tam metin adresi (dile göre yol), resmî uygulama değil.
+        final privacyPath = locale == _tr ? 'gizlilik' : 'privacy';
+        expect(kvkk.sections.first.body, contains('Muhammed Emin Alan'));
+        expect(kvkk.sections.first.body, contains(AppConstants.supportEmail));
+        expect(kvkk.sections[4].body, contains(AppConstants.supportEmail));
+        for (final document in [kvkk, gizlilik]) {
+          expect(
+            document.sections.last.body,
+            endsWith('${AppConstants.webHost}/$privacyPath'),
+          );
+        }
+        for (final body in [
+          for (final section in [...kvkk.sections, ...gizlilik.sections])
+            section.body,
+        ]) {
+          expect(body.toLowerCase(), isNot(contains('kampüs')));
+          expect(body.toLowerCase(), isNot(contains('campus')));
+          expect(body, isNot(contains('gumushane.edu.tr')));
+          expect(body, isNot(contains('1 yıl')));
+          expect(body, isNot(contains('1 year')));
+        }
         expect(
           [for (final section in kosullar.sections) section.heading],
           [

@@ -105,6 +105,8 @@ firebase/.emulator-data/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+# Firebase CLI yerel önbelleği (hosting deploy dosya özetleri; yalnızca yerel)
+.firebase/
 
 # Golden testi başarısız olunca Flutter'ın yazdığı karşılaştırma görüntüleri (geçici)
 **/failures/

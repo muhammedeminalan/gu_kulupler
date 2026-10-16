@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#D00A2D">
+<meta name="robots" content="noindex">
+<title>GÜ Kulüpler · Bağlantı uygulamada açılır</title>
+<meta name="description" content="Bu bağlantı GÜ Kulüpler uygulamasında açılır. This link opens in the GÜ Kulüpler app.">
+<!-- Paylaşılan bağlantı yolları (/clubs/…, /events/… — AppConstants.shareBaseUrl) ve bulunamayan sayfalar
+     Firebase Hosting'in 404 sayfasına düşer. Bağlantılar köke göre mutlaktır (sayfa her derinlikte sunulur).
+     Mağaza kimliği AppConstants.appStoreId ile aynıdır (test/core/constants/app_constants_test.dart). -->
+<style>
+:root{color-scheme:light dark;--brand:#D00A2D;--brand-text:#D00A2D;--on-brand:#FFFFFF;--tonal:#FCE8EC;--on-tonal:#7A0619;--bg:#FAF9F6;--surface:#FFFFFF;--border:#E2E8F0;--soft:#EEF1F5;--text:#101828;--muted:#5E708A}
+@media (prefers-color-scheme:dark){:root{--brand-text:#F2536C;--tonal:#3A0C16;--on-tonal:#FFD9E0;--bg:#17191C;--surface:#1E2024;--border:#39414B;--soft:#303740;--text:#F1F1ED;--muted:#AEB5BF}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 1rem/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;overflow-wrap:break-word}
+a{color:var(--brand-text);text-underline-offset:.15em}
+a:hover{text-decoration-thickness:2px}
+:focus-visible{outline:3px solid var(--brand-text);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-9999px;top:0}
+.skip:focus{left:16px;top:12px;z-index:10;background:var(--surface);color:var(--text);padding:10px 14px;border:2px solid var(--brand-text);border-radius:10px}
+.top{background:var(--surface);border-bottom:1px solid var(--border)}
+.wrap{max-width:760px;margin:0 auto;padding-left:16px;padding-right:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding-top:10px;padding-bottom:10px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;color:var(--text);text-decoration:none;font-weight:700;font-size:1.05rem}
+.mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--on-brand);font-size:.8rem;font-weight:800;letter-spacing:.02em}
+.nav ul{display:flex;flex-wrap:wrap;gap:4px;margin:0;padding:0;list-style:none}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:600;font-size:.95rem}
+.nav a:hover{background:var(--soft)}
+.nav a.lang{border:1px solid var(--border)}
+main{padding-top:36px;padding-bottom:56px}
+.hero{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.hero .mark{width:64px;height:64px;border-radius:18px;font-size:1.35rem;flex:none}
+h1{font-size:clamp(1.8rem,1.4rem + 2vw,2.5rem);line-height:1.15;margin:0;letter-spacing:-.01em}
+h2{font-size:1.3rem;line-height:1.3;margin:1.6em 0 .5em;scroll-margin-top:16px}
+p,ul{margin:.6em 0}
+ul{padding-left:1.35em}
+li{margin:.35em 0}
+li::marker{color:var(--brand-text)}
+.lead{font-size:1.1rem;color:var(--muted)}
+.notice{background:var(--tonal);color:var(--on-tonal);border-radius:14px;padding:14px 18px;margin:20px 0}
+.links{display:grid;gap:12px;margin:16px 0;padding:0;list-style:none}
+.links li{margin:0}
+@media (min-width:560px){.links{grid-template-columns:1fr 1fr}}
+.links a{display:block;height:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;color:var(--text);text-decoration:none}
+.links a:hover{border-color:var(--brand-text)}
+.links strong{display:block;color:var(--brand-text);font-size:1.05rem;margin-bottom:2px}
+.links span{display:block;color:var(--muted);font-size:.95rem}
+hr{border:0;border-top:1px solid var(--border);margin:44px 0 8px}
+.foot{border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.foot .wrap{padding-top:20px;padding-bottom:32px}
+.foot a{color:var(--muted)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.btn{display:inline-flex;align-items:center;min-height:48px;padding:0 20px;border-radius:12px;font-weight:700;text-decoration:none}
+.btn.primary{background:var(--brand);color:var(--on-brand)}
+.btn.primary:hover{text-decoration:none;filter:brightness(1.08)}
+.btn.secondary{border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.btn.secondary:hover{border-color:var(--brand-text)}
+@media print{.nav,.skip{display:none}body{background:#fff;color:#000}.links a,.notice,.btn{background:#fff;color:#000;border:1px solid #999}}
+</style>
+</head>
+<body>
+<a class="skip" href="#icerik">İçeriğe geç</a>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="/"><span class="mark" aria-hidden="true">GÜ</span>GÜ Kulüpler</a>
+    <nav class="nav" aria-label="Site">
+      <ul>
+        <li><a href="/gizlilik/">Gizlilik</a></li>
+        <li><a href="/destek/">Destek</a></li>
+        <li><a class="lang" href="#english" hreflang="en" lang="en">English</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="icerik" class="wrap">
+  <section aria-labelledby="turkce">
+    <h1 id="turkce">Bu bağlantı GÜ Kulüpler uygulamasında açılır</h1>
+    <p class="lead">Paylaşılan kulüp, etkinlik ve gönderi bağlantıları yalnızca uygulamanın içinde görüntülenir. Uygulamayı yükleyip giriş yaptıktan sonra ilgili kulübü veya etkinliği uygulamada bulabilirsin.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://apps.apple.com/tr/app/id6823367574">App Store’dan indir (iPhone)</a>
+      <a class="btn secondary" href="/">Ana sayfaya dön</a>
+    </div>
+    <p>Aradığın sayfa bu sitede yoksa ana sayfadan <a href="/gizlilik/">Gizlilik</a> veya <a href="/destek/">Destek</a> sayfalarına ulaşabilirsin.</p>
+  </section>
+
+  <hr>
+
+  <section id="english" lang="en" aria-labelledby="english-title">
+    <h2 id="english-title">This link opens in the GÜ Kulüpler app</h2>
+    <p class="lead">Shared club, event and post links can only be viewed inside the app. Install the app and sign in, then find the club or event in the app.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://apps.apple.com/tr/app/id6823367574">Download on the App Store (iPhone)</a>
+      <a class="btn secondary" href="/">Back to the home page</a>
+    </div>
+    <p>If the page you are looking for is not on this site, the home page links to the <a href="/privacy/">Privacy</a> and <a href="/support/">Support</a> pages.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>GÜ Kulüpler · Resmî olmayan öğrenci projesi · <span lang="en">Unofficial student project</span></p>
+    <p><a href="/gizlilik/">Gizlilik</a> · <a href="/destek/">Destek</a> · <a href="/privacy/" lang="en">Privacy</a> · <a href="/support/" lang="en">Support</a></p>
+  </div>
+</footer>
+</body>
+</html>

@@ -40,8 +40,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   `.requireNote`; ikon 20 `text.muted` + başlık + açıklama, ayırıcılı);
 ///   onay kapalıysa uyarı bandı "Herkes anında üye olur."
 /// * **Danışman** (`col gap8`): kart içinde danışman satırı (dokunulmaz) +
-///   "Danışman kampüs yönetimi tarafından atanır"; danışman kaydı yoksa grup
-///   çizilmez.
+///   "Danışman uygulama yöneticileri tarafından atanır"; danışman kaydı
+///   yoksa grup çizilmez.
 ///
 /// Danışman bakışında ([ClubSettingsState.isReadOnly]) metin alanları kapalı,
 /// anahtarlar kapalıdır (dokunma [onReadOnlyTap] → TST-26); logo / kapak /

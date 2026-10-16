@@ -106,6 +106,64 @@ void main() {
     );
   });
 
+  group(
+    'Yayın öncesi · gerçek adresler (kullanıcı kararı 2026-10-16, K-96)',
+    () {
+      test('destek / KVKK e-postası veri sorumlusunun adresidir', () {
+        expect(AppConstants.supportEmail, 'eminalan334@gmail.com');
+      });
+
+      test('paylaşım kökü Firebase Hosting sitesidir (yer tutucu değil)', () {
+        expect(AppConstants.webHost, 'gu-kulupler.web.app');
+        expect(AppConstants.shareBaseUrl, 'https://gu-kulupler.web.app');
+        expect(AppConstants.shareBaseUrl, isNot(contains('gumushane.edu.tr')));
+      });
+
+      test('App Store Apple ID gerçek kimliktir (W-58)', () {
+        expect(AppConstants.appStoreId, '6823367574');
+        expect(
+          AppConstants.storeUri(TargetPlatform.iOS).toString(),
+          'https://apps.apple.com/app/id6823367574',
+        );
+      });
+
+      test(
+        'web sayfaları aynı e-postayı taşır (gizlilik / destek, TR + EN)',
+        () {
+          for (final page in [
+            'hosting/public/index.html',
+            'hosting/public/gizlilik/index.html',
+            'hosting/public/privacy/index.html',
+            'hosting/public/destek/index.html',
+            'hosting/public/support/index.html',
+          ]) {
+            expect(
+              readText(page),
+              contains(AppConstants.supportEmail),
+              reason: page,
+            );
+          }
+        },
+      );
+
+      test('404 sayfası (paylaşılan bağlantılar) mağaza kimliğini ve köke göre '
+          'mutlak bağlantıları kullanır', () {
+        final page = readText('hosting/public/404.html');
+
+        expect(
+          page,
+          contains(
+            'href="https://apps.apple.com/tr/app/id${AppConstants.appStoreId}"',
+          ),
+        );
+        expect(page, contains('href="/"'));
+        expect(page, isNot(contains('href="gizlilik/')));
+        expect(page, contains('lang="tr"'));
+        expect(page, contains('lang="en"'));
+      });
+    },
+  );
+
   group('T-13 · AppConstants.storeUri (DLG-26 "Güncelle", W-55)', () {
     test('Android ve diğer platformlar: Google Play sayfası', () {
       for (final platform in [

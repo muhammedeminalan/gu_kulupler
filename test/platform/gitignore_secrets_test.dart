@@ -64,5 +64,18 @@ void main() {
       ];
       expect(_ignored(tracked), isEmpty);
     });
+
+    test('Firebase CLI yerel önbelleği (`.firebase/`) yok sayılır; '
+        'hosting sayfaları izlenir', () {
+      const cache = '.firebase/hosting.aG9zdGluZy9wdWJsaWM.cache';
+      expect(_ignored(const [cache]), {cache});
+      expect(
+        _ignored(const [
+          'hosting/public/index.html',
+          'hosting/public/404.html',
+        ]),
+        isEmpty,
+      );
+    });
   });
 }
