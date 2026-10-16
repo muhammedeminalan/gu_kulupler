@@ -61,11 +61,11 @@ void main() {
     await _expectSendable(tester);
   });
 
-  testWidgets('GuLogo yer tutucu amblem yükleyicisi gönderilebilir', (
+  testWidgets('GuLogo amblem yükleyicisi gönderilebilir', (
     tester,
   ) async {
     await tester.pumpApp(
-      const Center(child: GuLogo(size: 40, placeholder: true)),
+      const Center(child: GuLogo(size: 40)),
     );
     await _expectSendable(tester);
   });

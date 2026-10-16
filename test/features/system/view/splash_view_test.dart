@@ -152,11 +152,7 @@ void main() {
     testWidgets('golden: açık + koyu', (tester) async {
       for (final theme in kGoldenThemes) {
         await tester.pumpApp(const SplashView(), theme: theme);
-        // PNG kod çözümü motor tarafındadır → runAsync.
-        final image = tester.widget<Image>(find.byType(Image));
-        await tester.runAsync(
-          () => precacheImage(image.image, tester.element(find.byType(Image))),
-        );
+        // Amblem SVG'dir (kullanıcı kararı 2026-10-16: mühür PNG'si yok).
         await tester.pumpAndSettle();
         await expectLater(
           find.byKey(kPumpAppBoundaryKey),

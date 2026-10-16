@@ -14,6 +14,7 @@ part 'about_view_model.g.dart';
 /// | [toggleLicense] (`SET-04.license.<k>`) | satır açılır / kapanır |
 /// | [toggleReleaseNotes] (`SET-04.releaseNotes`) | sürüm notları açılır / kapanır |
 /// | [openLicense] (`SET-04.licenseLink.<k>`) | DLG-32 → "Aç" → adres cihazda açılır |
+/// | [openTeamGithub] (`SET-04.team.github`) | DLG-32 → "Aç" → GitHub profili cihazda açılır |
 ///
 /// Sürüm ve derleme numarası `AppInfoService`'ten eşzamanlı okunur (servis
 /// açılışta yüklenir); ayrı yükleme adımı yoktur. Gezinme (koşullar,
@@ -43,4 +44,9 @@ final class AboutViewModel extends _$AboutViewModel
   /// "Lisansı görüntüle": DLG-32 onayı → [license] adresi cihazda açılır.
   Future<ExternalLinkResult> openLicense(AboutLicense license) =>
       openExternalLink(license.uri);
+
+  /// Ekip satırı: DLG-32 onayı → [member]'ın GitHub profili cihazda açılır
+  /// (kullanıcı kararı 2026-10-16).
+  Future<ExternalLinkResult> openTeamGithub(AboutTeamMember member) =>
+      openExternalLink(member.githubUrl);
 }

@@ -95,6 +95,7 @@ flutter:
     - assets/covers/
     - assets/patterns/
     - assets/logo/
+    - assets/team/
 
   # Paketli TTF'ler (D-12); google_fonts kullanılmaz.
   fonts:

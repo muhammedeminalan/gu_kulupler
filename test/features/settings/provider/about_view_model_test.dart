@@ -1,6 +1,6 @@
 // SET-04 · AboutViewModel + AboutState: sürüm / derleme (AppInfoService),
-// açılır satırlar, "Lisansı görüntüle" (DLG-32 → UrlLauncherService)
-// (PLAN §12.12).
+// açılır satırlar, "Lisansı görüntüle" ve ekip GitHub satırı (DLG-32 →
+// UrlLauncherService) (PLAN §12.12; ekip: kullanıcı kararı 2026-10-16).
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -101,5 +101,28 @@ void main() {
         .openLicense(AboutLicense.lucide);
     expect(result, ExternalLinkResult.cancelled);
     expect(launcher.opened, isEmpty);
+  });
+
+  test('ekip satırı: DLG-32 "Aç" → GitHub profili açılır; vazgeçilirse '
+      'açılmaz', () async {
+    final member = AboutContent.team.single;
+    expect(member.githubUrl, Uri.parse('https://github.com/muhammedeminalan'));
+    expect(member.githubLabel, 'github.com/muhammedeminalan');
+
+    feedback.dialogResults[DialogId.dlg32] = true;
+    final c = container();
+    expect(
+      await c.read(aboutViewModelProvider.notifier).openTeamGithub(member),
+      ExternalLinkResult.opened,
+    );
+    expect(feedback.dialogs, [DialogId.dlg32]);
+    expect(launcher.opened, [member.githubUrl]);
+
+    feedback.dialogResults[DialogId.dlg32] = false;
+    expect(
+      await c.read(aboutViewModelProvider.notifier).openTeamGithub(member),
+      ExternalLinkResult.cancelled,
+    );
+    expect(launcher.opened, [member.githubUrl]);
   });
 }

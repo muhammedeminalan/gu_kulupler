@@ -74,12 +74,18 @@ void main() {
       );
     });
 
-    test('GuLogoAssets 4 dosya ⊂ assets/logo (9 dosya)', () {
+    test('GuLogoAssets 3 dosya ⊂ assets/logo (11 dosya); mühür kayıtsız', () {
       final onDisk = _keys('logo');
-      expect(onDisk, hasLength(9));
-      expect(GuLogoAssets.all.toSet(), hasLength(4));
+      // T-46: `app-icon-foreground-1024.png` + `app-icon-ios-1024.png`
+      // (launcher üretimi) eklendi.
+      expect(onDisk, hasLength(11));
+      expect(GuLogoAssets.all.toSet(), hasLength(3));
       expect(onDisk.containsAll(GuLogoAssets.all), isTrue);
-      expect(GuLogoAssets.logo, 'assets/logo/gu-logo.png');
+      // Kullanıcı kararı 2026-10-16: üniversite mührü depoda kalır, kod
+      // tarafından çizilmez.
+      expect(onDisk, contains('assets/logo/gu-logo.png'));
+      expect(GuLogoAssets.all, isNot(contains('assets/logo/gu-logo.png')));
+      expect(GuLogoAssets.emblem, 'assets/logo/placeholder-emblem.svg');
     });
 
     test('kök pubspec 5 varlık klasörünü kaydeder', () {
@@ -112,11 +118,11 @@ void main() {
       expect(failures, isEmpty);
     });
 
-    testWidgets('4 desen + 2 yer tutucu amblem', (tester) async {
+    testWidgets('4 desen + 2 amblem', (tester) async {
       final failures = await pumpSvgAssets(tester, [
         ...GuPatterns.all,
-        GuLogoAssets.placeholderEmblem,
-        GuLogoAssets.placeholderEmblemDark,
+        GuLogoAssets.emblem,
+        GuLogoAssets.emblemDark,
       ]);
       expect(tester.takeException(), isNull);
       expect(failures, isEmpty);

@@ -190,8 +190,7 @@ Future<GoRouter> _pumpApp(WidgetTester tester, {String? location}) async {
   return router;
 }
 
-/// Logo PNG'si çözülmüş hâlde açık + koyu golden (kod çözme motor
-/// tarafındadır → `runAsync`).
+/// Açık + koyu golden (amblem SVG; kullanıcı kararı 2026-10-16).
 Future<void> _golden(
   WidgetTester tester,
   String name, {
@@ -204,10 +203,6 @@ Future<void> _golden(
       theme: theme,
       locale: locale,
       overrides: overrides,
-    );
-    final image = tester.widget<Image>(find.byType(Image));
-    await tester.runAsync(
-      () => precacheImage(image.image, tester.element(find.byType(Image))),
     );
     await tester.pumpAndSettle();
     await expectLater(
