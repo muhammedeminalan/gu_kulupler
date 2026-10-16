@@ -2,6 +2,7 @@
 // `S`, kabuk, `AppFeedbackService` — gerçek menü / dialog / sheet) + sahte
 // servisler (`admin_flow_support.dart`).
 //
+//   (2026-10-16'dan beri ADM-01 / ADM-02 tek sayfa: `/admin?tab=clubs`)
 //   süper admin: ADM-01 "Aktif kulüp" KPI'ı (W-45) → ADM-02 → c03 menüsü
 //   "Askıya al" → DLG-28 (neden) → TST-50 → "Genel" → CLB-01'de c03 yok →
 //   ADM-01 "Askıdaki kulüp" KPI'ı (W-45) → ADM-02 askıdakiler →
@@ -80,11 +81,13 @@ void main() {
       email: 'ece@ogr.gumushane.edu.tr',
     );
 
-    // ADM-01 "Aktif kulüp" KPI'ı → ADM-02 (W-45).
+    // ADM-01 "Aktif kulüp" KPI'ı → Kulüpler bölmesi (W-45; tek sayfa, alt
+    // çubuk görünür — kullanıcı kararı 2026-10-16).
     await flowTap(tester, _k('NAV.tab.admin'));
     await flowTap(tester, _k('ADM-01.kpi.clubs'));
-    expect(flowLocation(tester), '/admin/clubs');
+    expect(flowLocation(tester), '/admin?tab=clubs');
     expect(find.byType(AdminClubsView), findsOneWidget);
+    expect(find.byType(GuBottomNav), findsOneWidget);
     final l10n = AppLocalizations.of(
       tester.element(find.byType(AdminClubsView)),
     );
@@ -117,7 +120,7 @@ void main() {
     // "Etkinleştir" → DLG-28 → TST-50.
     await flowTap(tester, _k('NAV.tab.admin'));
     await flowTap(tester, _k('ADM-01.kpi.suspended'));
-    expect(flowLocation(tester), '/admin/clubs?tab=suspended');
+    expect(flowLocation(tester), '/admin?tab=clubs&clubsTab=suspended');
     expect(find.byKey(_k('ADM-02.row.$_clubId')), findsOneWidget);
     await flowTap(tester, _k('ADM-02.menu.$_clubId'));
     await flowTap(tester, _k('ADM-02.menu.$_clubId.suspend'));
@@ -127,10 +130,21 @@ void main() {
     await flowTap(tester, _k('ADM-02.tab.active'));
     expect(find.byKey(_k('ADM-02.row.$_clubId')), findsOneWidget);
 
-    // Kulüp oluştur: var olan ad + kategori + başkan → ad alanında hata.
+    // Kulüp oluştur (alt sayfa: alt çubuk gizli) → kapat → Kulüpler bölmesi
+    // (aynı sekme, Aktif) → yeniden aç.
     await flowTap(tester, _k('ADM-02.create'));
     expect(flowLocation(tester), '/admin/clubs/new');
     expect(find.byType(AdminClubFormView), findsOneWidget);
+    expect(find.byType(GuBottomNav), findsNothing);
+    await flowTap(tester, _k('ADM-03.close'));
+    expect(flowLocation(tester), '/admin');
+    expect(find.byType(AdminClubsView), findsOneWidget);
+    expect(find.byType(GuBottomNav), findsOneWidget);
+    expect(find.byKey(_k('ADM-02.row.$_clubId')), findsOneWidget);
+    await flowTap(tester, _k('ADM-02.create'));
+    expect(flowLocation(tester), '/admin/clubs/new');
+
+    // Var olan ad + kategori + başkan → ad alanında hata.
     await _enter(
       tester,
       _k('ADM-03.name'),
@@ -150,7 +164,7 @@ void main() {
     await _enter(tester, _k('ADM-03.name'), 'Satranç Kulübü');
     await flowTap(tester, _k('ADM-03.save'));
     await _expectToast(tester, ToastId.tst33);
-    expect(flowLocation(tester), '/admin/clubs');
+    expect(flowLocation(tester), '/admin?tab=clubs');
     final created = _clubs.clubs.values.singleWhere(
       (c) => c.name == 'Satranç Kulübü',
     );
@@ -172,7 +186,7 @@ void main() {
     // Admin sekmesi → menü "Düzenle" → danışman (ad + unvan) → TST-21.
     await flowTap(tester, _k('CLB-03.back'));
     await flowTap(tester, _k('NAV.tab.admin'));
-    expect(flowLocation(tester), '/admin/clubs');
+    expect(flowLocation(tester), '/admin?tab=clubs');
     await flowTap(tester, _k('ADM-02.menu.${created.id}'));
     await flowTap(tester, _k('ADM-02.menu.${created.id}.edit'));
     expect(flowLocation(tester), '/admin/clubs/${created.id}/edit');
@@ -180,7 +194,7 @@ void main() {
     await _enter(tester, _k('ADM-03.advisorName'), 'Ayşe Kaya');
     await flowTap(tester, _k('ADM-03.save'));
     await _expectToast(tester, ToastId.tst21);
-    expect(flowLocation(tester), '/admin/clubs');
+    expect(flowLocation(tester), '/admin?tab=clubs');
     final advisor = _clubs.clubs[created.id]!.advisor;
     expect(advisor?.name, 'Ayşe Kaya');
     expect(advisor?.title, 'Dr.');

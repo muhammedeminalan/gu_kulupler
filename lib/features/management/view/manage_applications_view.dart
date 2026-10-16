@@ -409,7 +409,12 @@ class _ManageApplicationsViewState extends ConsumerState<ManageApplicationsView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  ..._slivers(state, l10n),
+                  // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                  // `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: state.tab,
+                    sliver: SliverMainAxisGroup(slivers: _slivers(state, l10n)),
+                  ),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),

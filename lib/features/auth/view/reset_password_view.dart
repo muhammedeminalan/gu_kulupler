@@ -53,7 +53,7 @@ class _ResetPasswordViewState extends ConsumerState<ResetPasswordView>
         backSemanticLabel: l10n.a11yBack,
         backActionKey: GuKey.action('AUT-04.back'),
       ),
-      body: SingleChildScrollView(
+      body: GuFormScrollView(
         padding: GuInsets.only(
           left: GuSpacing.s16,
           top: GuSpacing.s16,

@@ -294,7 +294,9 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
                     'CLB-03.tab.${ClubDetailTab.values[index].name}',
                   ),
                 ),
-                _tabBody(state),
+                // Sekme içeriği değişimi kısa solma (kullanıcı kararı
+                // 2026-10-16; `GuMotion.tabSwitch`).
+                GuSliverContentFade(value: state.tab, sliver: _tabBody(state)),
                 if (!hasBar)
                   SliverToBoxAdapter(
                     child: SizedBox(height: media.viewPadding.bottom),

@@ -9,7 +9,6 @@ import 'package:gu_kulupler/features/admin/provider/admin_reports_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_reports_view_model.dart';
 import 'package:gu_kulupler/features/admin/provider/report_target_preview.dart';
 import 'package:gu_kulupler/features/admin/view/admin_reports_view.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_detail_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialog_id.dart';
 import 'package:gu_kulupler/product/feedback/dialogs/suspend_club_dialog.dart';
@@ -17,14 +16,18 @@ import 'package:gu_kulupler/product/feedback/dialogs/suspend_user_dialog.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
+import 'package:gu_ui/gu_ui.dart';
 
-/// ADM-04 davranışı: açılış sekmesi (`?tab=`) ve grubu (`?reportId=` →
-/// `AppDurations.postNavigationSheetDelay` sonra SHT-26), sekme, süzgeç,
-/// çek-yenile, sayfalama, SHT-26 ve çözüm akışları.
+/// ADM-04 bölmesinin davranışı: açılış sekmesi (`?reportsTab=`) ve grubu
+/// (`?reportId=` → `AppDurations.postNavigationSheetDelay` sonra SHT-26),
+/// sekme, süzgeç, çek-yenile, başa kaydırma, sayfalama, SHT-26 ve çözüm
+/// akışları.
 ///
-/// * Gezinme `go` ile (guard'lı rotalar): "Genel" → ADM-01, "Kulüpler" →
-///   ADM-02 (prototip `nav.replace`); "Kullanıcılar" T-41'de bağlanır (W-47).
+/// * Bölmeli geçiş admin kökündedir (`AdminViewMixin`); etkin sekmeye
+///   yeniden dokunma (`scrollTopRequestProvider`) bölme sahnedeyse
+///   ([AdminReportsView.active]) listeyi başa kaydırır.
 /// * Satır → SHT-26 ([openGroup]); sheet eylemi ([onSheetAction]) →
 ///   gerekirse onay (DLG-29 içerik kaldır · DLG-30 kullanıcı askısı ·
 ///   DLG-28 kulüp askısı) → ViewModel yazımı; sheet yazım sürerken açık
@@ -37,6 +40,8 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
   Timer? _reportTimer;
 
   ProviderSubscription<AdminReportsState>? _stateSubscription;
+
+  ProviderSubscription<int>? _scrollTopSubscription;
 
   /// Ekranın ViewModel'i.
   AdminReportsViewModel get viewModel =>
@@ -66,6 +71,12 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
         (_) => _loadMoreIfNearEnd(),
       );
     });
+    _scrollTopSubscription = ref.listenManual(
+      scrollTopRequestProvider(GuTab.admin),
+      (_, _) {
+        if (widget.active) scrollToTop();
+      },
+    );
     _applyRouteTab();
     _scheduleReport();
   }
@@ -75,30 +86,37 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
     super.didUpdateWidget(oldWidget);
     if (widget.tab != oldWidget.tab) _applyRouteTab();
     if (widget.reportId != oldWidget.reportId) _scheduleReport();
+    // Bölme yeniden seçildi: öteki bölmenin yazımı (SHT-26 askı / çözüm,
+    // ADM-02 askı, başkan) burada bayat kalmasın — içerik kalarak yeniden
+    // okunur (çek-yenile gibi; ilk seçimde ViewModel zaten okur). Yaşam
+    // döngüsünde sağlayıcı değişmez: kare sonunda.
+    if (widget.active && !oldWidget.active) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.active) unawaited(viewModel.refresh());
+      });
+    }
   }
 
   @override
   void dispose() {
     _reportTimer?.cancel();
     _stateSubscription?.close();
+    _scrollTopSubscription?.close();
     scrollController.dispose();
     super.dispose();
   }
 
-  /// Bölmeli geçiş (`ADM-04.seg.<hedef>`); kendi seçeneği etkisizdir.
-  void openSegment(String screenId) {
-    switch (screenId) {
-      case AdminSegmentBar.overview:
-        const AdminRoute().go(context);
-      case AdminSegmentBar.clubs:
-        const AdminClubsRoute().go(context);
-      case AdminSegmentBar.users:
-        openUsers();
-    }
+  /// Listeyi başa kaydırır (sekmeye yeniden dokunma).
+  void scrollToTop() {
+    if (!scrollController.hasClients) return;
+    unawaited(
+      scrollController.animateTo(
+        0,
+        duration: context.gu.duration(GuMotion.base),
+        curve: GuMotion.easeStandard,
+      ),
+    );
   }
-
-  /// "Kullanıcılar" bölmesi → ADM-05.
-  void openUsers() => const AdminUsersRoute().go(context);
 
   /// Sekme (`ADM-04.tab.<name>`): liste başa döner.
   void selectTab(String name) {
@@ -206,8 +224,8 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
     }
   }
 
-  /// Rotadaki `?tab=` sekmesini ilk kareden sonra uygular (yapım sırasında
-  /// sağlayıcı değiştirilmez).
+  /// Rotadaki `?reportsTab=` sekmesini ilk kareden sonra uygular (yapım
+  /// sırasında sağlayıcı değiştirilmez); boş değer hâli değiştirmez.
   void _applyRouteTab() {
     final tab = widget.tab;
     if (tab == null) return;
@@ -216,7 +234,7 @@ mixin AdminReportsViewMixin on ConsumerState<AdminReportsView> {
     });
   }
 
-  /// `?reportId=` (bildirim / ADM-01): geçiş bitince grubun SHT-26'sı.
+  /// `?reportId=` (bildirim `new_report`): geçiş bitince grubun SHT-26'sı.
   void _scheduleReport() {
     _reportTimer?.cancel();
     final key = widget.reportId;

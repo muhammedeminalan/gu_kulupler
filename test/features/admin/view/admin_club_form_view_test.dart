@@ -56,7 +56,15 @@ final Key _assign = GuKey.action('ADM-03.assignPresident');
 final Key _removePresident = GuKey.action('ADM-03.removePresident');
 final Key _unlinkAdvisor = GuKey.action('ADM-03.unlinkAdvisor');
 
+/// Admin kökü (ADM-03'ün ebeveyni; 2026-10-16'dan beri ADM-02 kökün
+/// Kulüpler bölmesidir — `/admin?tab=clubs`).
+const String _adminPath = '/admin';
+
+/// Formun yolu `/admin/clubs/new` · `/admin/clubs/:clubId/edit`.
 const String _clubsPath = '/admin/clubs';
+
+/// Kaydetten sonra açılan Kulüpler bölmesi.
+const String _clubsTabPath = '/admin?tab=clubs';
 
 /// Uzun yüzey: formun tamamı kurulsun.
 const Size _tall = Size(390, 1600);
@@ -116,12 +124,12 @@ Future<GoRouter> _pumpRoute(
       routes: [
         GoRoute(path: '/start', builder: (_, _) => const _Stub('/start')),
         GoRoute(
-          path: _clubsPath,
+          path: _adminPath,
           builder: (_, s) => _Stub(s.uri.toString()),
           routes: [
-            GoRoute(path: 'new', builder: (_, _) => _newView),
+            GoRoute(path: 'clubs/new', builder: (_, _) => _newView),
             GoRoute(
-              path: ':clubId/edit',
+              path: 'clubs/:clubId/edit',
               builder: (_, s) =>
                   AdminClubFormView(clubId: s.pathParameters['clubId']),
             ),
@@ -310,7 +318,7 @@ void main() {
 
       await _tapKey(tester, _save);
       expect(_feedback().toasts, [ToastId.tst33]);
-      expect(_location(router), _clubsPath);
+      expect(_location(router), _clubsTabPath);
       final club = (GetIt.I<ClubRepository>() as FakeClubRepository)
           .clubs
           .values
@@ -339,7 +347,7 @@ void main() {
         '"Kaydetmeden çık" çıkar', (tester) async {
       var router = await _pumpRoute(tester);
       await _tapKey(tester, _close);
-      expect(_location(router), _clubsPath);
+      expect(_location(router), _adminPath);
       expect(_feedback().dialogs, isEmpty);
 
       router = await _pumpRoute(tester);
@@ -347,7 +355,7 @@ void main() {
       _feedback().nextDialogResult = UnsavedChangesResult.discard;
       await _tapKey(tester, _close);
       expect(_feedback().dialogs, [DialogId.dlg25]);
-      expect(_location(router), _clubsPath);
+      expect(_location(router), _adminPath);
     });
 
     testWidgets('düzenle: kısa açıklama → "Kaydet" → TST-21, ADM-02', (
@@ -357,7 +365,7 @@ void main() {
       await _enter(tester, _summary, 'Yeni özet');
       await _tapKey(tester, _save);
       expect(_feedback().toasts, [ToastId.tst21]);
-      expect(_location(router), _clubsPath);
+      expect(_location(router), _clubsTabPath);
     });
   });
 

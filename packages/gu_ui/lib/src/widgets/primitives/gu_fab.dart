@@ -15,8 +15,11 @@ import 'package:gu_ui/src/widgets/primitives/gu_action_surface.dart';
 ///
 /// **Bir `Stack`'in doğrudan çocuğu olmalıdır:** kendini sağ alt köşeye
 /// yerleştirir (`position:absolute`): sağ 16, alt `viewPadding.bottom + 16`;
-/// [aboveNav] (sekme kökü, ADM-02) → buna `GuSizes.bottomNavHeight` eklenir
-/// (K-34). Genişlik ekran genişliği − 2 × 16 ile sınırlıdır; etiket sığmazsa
+/// [aboveNav] → buna `GuSizes.bottomNavHeight` eklenir (K-34): `Stack`
+/// alt sekme çubuğunun altına uzanıyorsa. Şu an kullanan yok — ADM-02
+/// kulüpler bölmesi (K-94, admin tek sayfa) alt çubuğun üstünde biter, FAB
+/// bölmenin altından 16 yukarıdadır (tasarımdaki `nav-h + 16` ile aynı
+/// konum); parametre genel yetenek olarak kalır (CD-169). Genişlik ekran genişliği − 2 × 16 ile sınırlıdır; etiket sığmazsa
 /// `…` ile kesilir.
 ///
 /// Basılı ve devre dışı durumu tasarımda yoktur (CD-82); salt okunur ekranda
@@ -44,7 +47,8 @@ class GuFab extends StatelessWidget {
   /// Erişilebilirlik etiketi (ör. MGT-08 `compose.title`).
   final String semanticLabel;
 
-  /// Alt sekme çubuğunun üstünde konumlanır (sekme kökü).
+  /// Alt sekme çubuğunun yüksekliği kadar yukarıda konumlanır (`Stack`
+  /// çubuğun altına uzanıyorsa; şu an kullanan yok — CD-169).
   final bool aboveNav;
 
   @override

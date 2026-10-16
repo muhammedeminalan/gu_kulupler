@@ -248,5 +248,59 @@ void main() {
       );
       expect(label.didExceedMaxLines, isTrue);
     });
+
+    testWidgets('seçenek anahtarı değişince odak ve anlam düğümü korunur '
+        '(admin kökü: `<bölme>.seg.<hedef>`)', (tester) async {
+      final semantics = tester.ensureSemantics();
+      Key prefixed(String prefix, int index) =>
+          ValueKey<String>('$prefix.seg.$index');
+      var value = 'list';
+      var prefix = 'ADM-01';
+      late StateSetter rebuild;
+      await tester.pumpApp(
+        _host(
+          StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              return GuSegmented(
+                options: _options,
+                value: value,
+                onChanged: (id) => setState(() {
+                  value = id;
+                  prefix = id == 'list' ? 'ADM-01' : 'ADM-02';
+                }),
+                optionKeyBuilder: (i) => prefixed(prefix, i),
+              );
+            },
+          ),
+        ),
+      );
+      // Klavyeyle ikinci seçeneğe gel ve seç.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      final focused = FocusManager.instance.primaryFocus;
+      expect(focused, isNotNull);
+      final nodeId = tester.getSemantics(find.byKey(prefixed('ADM-01', 1))).id;
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(value, 'calendar');
+
+      // Anahtarlar `ADM-02.seg.*` oldu; odak aynı düğümde, anlam düğümü aynı.
+      expect(find.byKey(prefixed('ADM-01', 1)), findsNothing);
+      expect(find.byKey(prefixed('ADM-02', 1)), findsOneWidget);
+      expect(FocusManager.instance.primaryFocus, same(focused));
+      expect(focused!.hasPrimaryFocus, isTrue);
+      expect(
+        tester.getSemantics(find.byKey(prefixed('ADM-02', 1))).id,
+        nodeId,
+      );
+      // Yeni anahtarla dokunma çalışır.
+      await tester.tap(find.byKey(prefixed('ADM-02', 0)));
+      await tester.pump();
+      expect(value, 'list');
+      rebuild(() {});
+      semantics.dispose();
+    });
   });
 }

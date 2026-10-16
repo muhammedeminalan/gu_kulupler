@@ -1,9 +1,10 @@
-/// ADM-04 "Şikayetler" sekmeleri — `/admin/reports?tab=` sorgu
+/// ADM-04 "Şikayetler" sekmeleri — `/admin?tab=reports&reportsTab=` sorgu
 /// parametresinin değerleri (aksiyonlar `ADM-04.tab.<name>`).
 ///
 /// Sıra ekrandaki sekme sırasıdır. Üye adı sorgudaki değerdir
-/// (`AdminReportsTab.resolved.name` → `?tab=resolved`); `tab` yoksa ya da
-/// tanınmıyorsa ekran [open] ile açılır.
+/// (`AdminReportsTab.resolved.name` → `?reportsTab=resolved`); parametre
+/// yoksa ya da tanınmıyorsa bölme son seçili sekmeyi korur (ilk açılışta
+/// [open]).
 ///
 /// Rota sınıfıyla birlikte `routes/shell_route.dart` üzerinden de dışa
 /// aktarılır (`AdminClubsTab` kalıbı).

@@ -7,34 +7,44 @@ import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_clubs_view_model.dart';
 import 'package:gu_kulupler/features/admin/view/admin_clubs_view.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_club_menu.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/product/feedback/catalogs/sheets/president_picker_sheet.dart';
 import 'package:gu_kulupler/product/feedback/dialogs/suspend_club_dialog.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service_provider.dart';
 import 'package:gu_kulupler/product/feedback/sheet_id.dart';
+import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
+import 'package:gu_ui/gu_ui.dart';
 
-/// ADM-02 davranışı: açılış sekmesi (`?tab=`), sekme, arama, çek-yenile,
-/// satır menüsü ve gezinme.
+/// ADM-02 bölmesinin davranışı: açılış sekmesi (`?clubsTab=`), sekme, arama,
+/// çek-yenile, başa kaydırma, satır menüsü ve gezinme.
 ///
 /// * Gezinme `go` ile (guard'lı rotalar): satır ve menü "Görüntüle" → CLB-03
 ///   (Kulüpler yığını; Q-20 — ADM-01 en aktif kulüp emsali); "Düzenle" →
-///   ADM-03 düzenleme; "Kulüp oluştur" → ADM-03; bölmeli geçiş "Genel" →
-///   ADM-01 (prototip `nav.replace`). Şikayetler / Kullanıcılar sahip
-///   task'larında bağlanır (T-40 W-46, T-41 W-47).
+///   ADM-03 düzenleme; "Kulüp oluştur" → ADM-03 (admin kökünün alt sayfası;
+///   geri → bu bölme). Bölmeli geçiş admin kökündedir (`AdminViewMixin`).
+/// * Etkin sekmeye yeniden dokunma (`scrollTopRequestProvider`) bölme
+///   sahnedeyse ([AdminClubsView.active]) listeyi başa kaydırır.
 /// * "Askıya al" / "Etkinleştir" → DLG-28 → ViewModel (TST-50); "Başkanı
 ///   değiştir" → SHT-25 atama kipi → ViewModel (TST-49).
 mixin AdminClubsViewMixin on ConsumerState<AdminClubsView> {
   /// Listenin kaydırma denetleyicisi.
   final ScrollController scrollController = ScrollController();
 
-  /// Ekranın ViewModel'i.
+  ProviderSubscription<int>? _scrollTopSubscription;
+
+  /// Bölmenin ViewModel'i.
   AdminClubsViewModel get viewModel =>
       ref.read(adminClubsViewModelProvider.notifier);
 
   @override
   void initState() {
     super.initState();
+    _scrollTopSubscription = ref.listenManual(
+      scrollTopRequestProvider(GuTab.admin),
+      (_, _) {
+        if (widget.active) scrollToTop();
+      },
+    );
     _applyRouteTab();
   }
 
@@ -42,31 +52,35 @@ mixin AdminClubsViewMixin on ConsumerState<AdminClubsView> {
   void didUpdateWidget(AdminClubsView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.tab != oldWidget.tab) _applyRouteTab();
+    // Bölme yeniden seçildi: öteki bölmenin yazımı (SHT-26 askı / çözüm,
+    // ADM-02 askı, başkan) burada bayat kalmasın — içerik kalarak yeniden
+    // okunur (çek-yenile gibi; ilk seçimde ViewModel zaten okur). Yaşam
+    // döngüsünde sağlayıcı değişmez: kare sonunda.
+    if (widget.active && !oldWidget.active) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.active) unawaited(viewModel.refresh());
+      });
+    }
   }
 
   @override
   void dispose() {
+    _scrollTopSubscription?.close();
     scrollController.dispose();
     super.dispose();
   }
 
-  /// Bölmeli geçiş (`ADM-02.seg.<hedef>`); kendi seçeneği etkisizdir.
-  void openSegment(String screenId) {
-    switch (screenId) {
-      case AdminSegmentBar.overview:
-        const AdminRoute().go(context);
-      case AdminSegmentBar.reports:
-        openReports();
-      case AdminSegmentBar.users:
-        openUsers();
-    }
+  /// Listeyi başa kaydırır (sekmeye yeniden dokunma).
+  void scrollToTop() {
+    if (!scrollController.hasClients) return;
+    unawaited(
+      scrollController.animateTo(
+        0,
+        duration: context.gu.duration(GuMotion.base),
+        curve: GuMotion.easeStandard,
+      ),
+    );
   }
-
-  /// "Şikayetler" bölmesi → ADM-04.
-  void openReports() => const AdminReportsRoute().go(context);
-
-  /// "Kullanıcılar" bölmesi → ADM-05.
-  void openUsers() => const AdminUsersRoute().go(context);
 
   /// Sekme (`ADM-02.tab.<name>`): liste başa döner.
   void selectTab(String name) {
@@ -153,8 +167,8 @@ mixin AdminClubsViewMixin on ConsumerState<AdminClubsView> {
     }
   }
 
-  /// Rotadaki `?tab=` sekmesini ilk kareden sonra uygular (yapım sırasında
-  /// sağlayıcı değiştirilmez).
+  /// Rotadaki `?clubsTab=` sekmesini ilk kareden sonra uygular (yapım
+  /// sırasında sağlayıcı değiştirilmez); boş değer hâli değiştirmez.
   void _applyRouteTab() {
     final tab = widget.tab;
     if (tab == null) return;

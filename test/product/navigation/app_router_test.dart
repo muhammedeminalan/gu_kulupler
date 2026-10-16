@@ -635,6 +635,73 @@ void main() {
     });
   });
 
+  group('Tasarım hataları turu · sekme dalı geçişi solması (kullanıcı '
+      'kararı 2026-10-16; navigation.md §5)', () {
+    /// Dal kabının (`GuFadeIndexedStack`) solma opaklığı.
+    double opacity(WidgetTester tester) => tester
+        .widget<FadeTransition>(
+          find
+              .descendant(
+                of: find.byType(GuFadeIndexedStack).first,
+                matching: find.byType(FadeTransition),
+              )
+              .first,
+        )
+        .opacity
+        .value;
+
+    testWidgets('dal kabı GuFadeIndexedStack; başka sekme `GuMotion.tabSwitch` '
+        'boyunca solarak girer, dal yığını korunur', (tester) async {
+      final app = await TestRouter.pump(tester);
+      expect(
+        find.ancestor(
+          of: find.byType(ClubListView),
+          matching: find.byType(GuFadeIndexedStack),
+        ),
+        findsOneWidget,
+      );
+      expect(opacity(tester), 1);
+
+      await tester.tap(find.byKey(AppShellView.tabKeys[GuTab.events]!));
+      await tester.pump();
+      expect(app.location, '/events');
+      expect(opacity(tester), 0);
+      await tester.pump(GuMotion.tabSwitch ~/ 2);
+      expect(opacity(tester), inExclusiveRange(0, 1));
+      await tester.pumpAndSettle();
+      expect(opacity(tester), 1);
+      expect(find.byType(EventListView), findsOneWidget);
+
+      // Önceki dal ağaçta kalır (hâl korunur), sahnede değildir.
+      expect(find.byType(ClubListView), findsNothing);
+      expect(find.byType(ClubListView, skipOffstage: false), findsOneWidget);
+    });
+
+    testWidgets('etkin sekmeye yeniden dokunma dalı değiştirmez: solma yok', (
+      tester,
+    ) async {
+      await TestRouter.pump(tester);
+      await tester.tap(find.byKey(AppShellView.tabKeys[GuTab.clubs]!));
+      await tester.pump();
+      expect(opacity(tester), 1);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('hareket azaltılmışsa sekme geçişi anında', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final app = await TestRouter.pump(tester);
+      await tester.tap(find.byKey(AppShellView.tabKeys[GuTab.profile]!));
+      await tester.pump();
+      expect(app.location, '/profile');
+      expect(opacity(tester), 1);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+  });
+
   group('T-11 · typed route sınıfları', () {
     test('sekme kökleri ve sistem rotaları sabit kurulur', () {
       expect(const SplashRoute().location, '/splash');

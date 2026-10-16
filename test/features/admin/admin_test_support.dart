@@ -3,9 +3,12 @@
 // 5 açık şikayet; en aktif beş kulüp c03 · c10 · c01 · c11 · c02 (demo
 // `memberCount` değerleri). Modeller demo veriden kurulur.
 import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/session/session_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_state.dart';
+import 'package:gu_kulupler/features/admin/view/admin_view.dart';
+import 'package:gu_kulupler/product/navigation/routes/shell_route.dart';
 
 import '../../fakes/fake_admin_repository.dart';
 import '../../fakes/fake_club_repository.dart';
@@ -76,5 +79,25 @@ void seedAdmin() {
   }
   clubs[kSuspendedClubId] = clubs[kSuspendedClubId]!.copyWith(
     status: ClubStatus.suspended,
+  );
+}
+
+/// Akış kipi router'larında admin kökü (`/admin`): sorgudan [AdminView]
+/// (`AdminRoute` ayrıştırmasıyla aynı — tanınmayan değer `null`).
+AdminView adminViewOf(GoRouterState state) {
+  final query = state.uri.queryParameters;
+  T? named<T extends Enum>(List<T> values, String key) {
+    for (final value in values) {
+      if (value.name == query[key]) return value;
+    }
+    return null;
+  }
+
+  return AdminView(
+    tab: named(AdminTab.values, 'tab'),
+    clubsTab: named(AdminClubsTab.values, AdminRoute.clubsTabQuery),
+    reportsTab: named(AdminReportsTab.values, AdminRoute.reportsTabQuery),
+    reportId: query[AdminRoute.reportIdQuery],
+    filter: named(AdminUsersFilter.values, 'filter'),
   );
 }

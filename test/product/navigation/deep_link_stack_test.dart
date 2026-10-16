@@ -2,7 +2,7 @@
 // `NotificationTargets.locationFor` her `NotificationType` için beklenen
 // konum ve sekme; türün gerektirdiği kimlik eksikse SYS-04. Gecikmeli sheet
 // hedefleri: W-28 (T-32, MGT-02 `?applicant=`), W-29 (T-40, ADM-04
-// `?reportId=`).
+// `?reportId=`; 2026-10-16'dan beri admin kökü `/admin?tab=reports`).
 // `NotificationNavigator.open` / `openPayload` / `openPush` (T-42): okundu,
 // bilet ayrımı
 // (going / attended → EVT-03; waitlist / kayıt yok → EVT-02), silinmiş /
@@ -89,9 +89,10 @@ void main() {
         NotificationType.eventReminder: ('/events/e01', GuTab.events),
         NotificationType.waitlistPromoted: ('/events/e01', GuTab.events),
         NotificationType.reportResolved: (null, null),
-        // ADM-04 + SHT-26 (`?reportId=` grup anahtarı; W-29).
+        // Admin kökü › Şikayetler (ADM-04, tek sayfa — 2026-10-16) + SHT-26
+        // (`?reportId=` grup anahtarı; W-29).
         NotificationType.newReport: (
-          '/admin/reports?reportId=r01',
+          '/admin?tab=reports&reportId=r01',
           GuTab.admin,
         ),
         NotificationType.system: ('/profile/settings/about', GuTab.profile),

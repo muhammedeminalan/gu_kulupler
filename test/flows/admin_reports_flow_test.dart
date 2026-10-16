@@ -9,17 +9,23 @@
 //   3 şikayetçiye `report_resolved` (fake çözüm kaydı) → "Çözüldü"
 //   sekmesinde grup → "Açık" + süzgeç "Kullanıcı" → SHT-26 → "Kullanıcıyı
 //   askıya al" → DLG-30 (neden) → TST-52 → hesap askıda.
+//   Bildirim `new_report` (2026-10-16 tek sayfa): Admin › Kullanıcılar →
+//   Kulüpler sekmesi → bildirim hedefi → Admin sekmesi, Şikayetler bölmesi
+//   (alt çubuk görünür) → gecikmeyle grubun SHT-26'sı.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
+import 'package:gu_kulupler/core/constants/app_durations.dart';
 import 'package:gu_kulupler/features/admin/view/admin_reports_view.dart';
+import 'package:gu_kulupler/features/admin/view/admin_users_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_detail_sheet.dart';
 import 'package:gu_kulupler/features/admin/view/widget/report_group_row.dart';
 import 'package:gu_kulupler/product/feedback/dialogs/suspend_user_dialog.dart';
 import 'package:gu_kulupler/product/feedback/feedback_keys.dart';
 import 'package:gu_kulupler/product/feedback/toast_id.dart';
+import 'package:gu_kulupler/product/navigation/notification_navigator.dart';
 import 'package:gu_ui/gu_ui.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -69,15 +75,17 @@ void main() {
     await flowTap(tester, _k('NAV.tab.admin'));
     expect(find.byType(AdminView), findsOneWidget);
     await flowTap(tester, _k('ADM-01.task.reports'));
-    expect(flowLocation(tester), '/admin/reports');
+    expect(flowLocation(tester), '/admin?tab=reports');
     expect(find.byType(AdminReportsView), findsOneWidget);
     expect(_rowKeys(tester), kOpenGroupKeys);
 
-    // "Genel" → ADM-01 → bölme "Şikayetler" → ADM-04 (W-46).
+    // "Genel" → ADM-01 → bölme "Şikayetler" → ADM-04 (W-46; tek sayfa, alt
+    // çubuk görünür — kullanıcı kararı 2026-10-16).
     await flowTap(tester, _k('ADM-04.seg.ADM-01'));
     expect(flowLocation(tester), '/admin');
     await flowTap(tester, _k('ADM-01.seg.ADM-04'));
-    expect(flowLocation(tester), '/admin/reports');
+    expect(flowLocation(tester), '/admin?tab=reports');
+    expect(find.byType(GuBottomNav), findsOneWidget);
 
     // Süzgeç "Gönderi": yalnızca gönderi grupları; p17'nin 3 şikayeti tek
     // satır.
@@ -150,5 +158,32 @@ void main() {
     expect(suspension.groupKey, 'user_u077');
     expect(suspension.action, ReportAction.suspended);
     await _clearToast(tester);
+  });
+
+  testWidgets('bildirim new_report: başka sekme / bölmedeyken Admin › '
+      'Şikayetler açılır, gecikmeyle SHT-26 (W-29)', (tester) async {
+    await launchAdminApp(tester, uid: DemoDataFixture.superAdminId);
+    seedAdminReports();
+    await flowTap(tester, _k('NAV.tab.admin'));
+    await flowTap(tester, _k('ADM-01.seg.ADM-05'));
+    expect(find.byType(AdminUsersView), findsOneWidget);
+    await flowTap(tester, _k('NAV.tab.clubs'));
+    expect(flowLocation(tester), '/clubs');
+
+    final location = NotificationTargets.locationFor(
+      NotificationType.newReport,
+      const NotificationRefsModel(reportId: 'post_p17'),
+      hasTicket: false,
+    )!;
+    expect(location, '/admin?tab=reports&reportId=post_p17');
+    flowRouter(tester).go(location);
+    await tester.pumpAndSettle();
+    expect(flowLocation(tester), location);
+    expect(find.byType(AdminReportsView), findsOneWidget);
+    expect(find.byType(AdminUsersView), findsNothing);
+    expect(find.byType(GuBottomNav), findsOneWidget);
+    await tester.pump(AppDurations.postNavigationSheetDelay);
+    await tester.pumpAndSettle();
+    expect(find.byType(ReportDetailSheet), findsOneWidget);
   });
 }

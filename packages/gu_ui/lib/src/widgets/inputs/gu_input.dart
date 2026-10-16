@@ -34,6 +34,12 @@ import 'package:gu_ui/src/widgets/inputs/gu_field.dart';
 /// * [multiline] → dolgu 12/14, üste hizalı, metin alanı en az 88 px
 ///   (css:169); görünen satır `max(rows, 4)` — `rows` < 4 iken CSS
 ///   `min-height:88px` yüksekliği zaten 4 satıra tamamlar.
+/// * [maxRows] verilirse (yalnız [multiline]) alan **büyür**: [rows] satırla
+///   başlar, yazdıkça [maxRows] satıra dek uzar, sonra içinde kayar; 4 satır
+///   tabanı ve min 88 uygulanmaz (kutu min 48, dolgu 12/14 aynı). Kullanıcı
+///   kararıyla tasarımdan sapma (K-93): FED-02 / SHT-09 yorum alanı 1 → 5
+///   satır. Yanındaki öğeleri tek satırlık kutuya hizalamak için
+///   [growingLineBoxHeight].
 /// * [icon] 20 `text.muted` (css:170); [locked] → sonda kilit 18 (ui.js:30);
 ///   [trailing] en sonda (şifre göster / gizle ve temizle düğmesi çağırandan:
 ///   `GuIconButton(size: sm)`, AUT-01 / CLB-02).
@@ -44,6 +50,13 @@ import 'package:gu_ui/src/widgets/inputs/gu_field.dart';
 ///   `GuTypography.input`, yer tutucu `text.muted` (css:166–167).
 /// * Etkin alan (K-03): kutunun tamamı odağı verir; alanın semantik kutusu
 ///   `GuTapTarget` ile ≥ 44 pt / 48 dp.
+/// * Klavye (kullanıcı kararı, K-93): odaktayken alanın dışına dokunmak odağı
+///   bırakır, klavye kapanır (mobilde Flutter varsayılanı kapatmaz;
+///   [onTapOutside] ile çağıran değiştirebilir). Kutu (ikon, dolgu, kilit,
+///   [trailing] düğmesi) `TextFieldTapRegion` içindedir: şifre göster /
+///   gizle, temizle gibi alanla çalışan düğmeler klavyeyi kapatmaz. Kutu
+///   dışındaki eş düğmeyi (yorum gönder) çağıran `TextFieldTapRegion` ile
+///   sarar; başka bir metin alanına dokunmak odağı oraya taşır.
 /// * `Semantics`: `textField` + [semanticLabel] (yoksa [label]); hata →
 ///   `validationResult: invalid` (`aria-invalid`, ui.js:24).
 /// * Anahtar çağırandan: `actionKey: GuKey.action('ID.aksiyon')` metin
@@ -59,6 +72,7 @@ class GuInput extends StatefulWidget {
     this.trailing,
     this.multiline = false,
     this.rows = GuSizes.textareaRows,
+    this.maxRows,
     this.maxLength,
     this.showCounter = false,
     this.obscure = false,
@@ -72,11 +86,16 @@ class GuInput extends StatefulWidget {
     this.textInputAction,
     this.onChanged,
     this.onSubmitted,
+    this.onTapOutside,
     this.semanticLabel,
     this.actionKey,
     super.key,
   }) : assert(!obscure || !multiline, 'Gizli metin çok satırlı olamaz.'),
-       assert(rows > 0, 'rows pozitif olmalı.');
+       assert(rows > 0, 'rows pozitif olmalı.'),
+       assert(
+         maxRows == null || (multiline && maxRows >= rows),
+         'maxRows yalnız çok satırlıda ve rows ile en az eşit olmalı.',
+       );
 
   /// Metin denetleyicisi; `null` → widget kendi denetleyicisini kurar.
   final TextEditingController? controller;
@@ -102,8 +121,12 @@ class GuInput extends StatefulWidget {
   /// Çok satırlı (`textarea`).
   final bool multiline;
 
-  /// Çok satırlıda satır sayısı (ui.js:29 `rows || 4`).
+  /// Çok satırlıda satır sayısı (ui.js:29 `rows || 4`); [maxRows] verilirse
+  /// başlangıç satırı.
   final int rows;
+
+  /// Büyüyen çok satırlı alanın en çok satırı; `null` → sabit yükseklik.
+  final int? maxRows;
 
   /// Sayaç sınırı; yazma `maxLength + 20`'de durur.
   final int? maxLength;
@@ -144,6 +167,10 @@ class GuInput extends StatefulWidget {
   /// Enter (ui.js:24 `onEnter`); çok satırlıda çağrılmaz.
   final VoidCallback? onSubmitted;
 
+  /// Odaktayken `TextFieldTapRegion` grubunun dışına dokunuldu; `null` →
+  /// odak bırakılır (klavye kapanır).
+  final TapRegionCallback? onTapOutside;
+
   /// Erişilebilirlik etiketi (`aria-label`); `null` → [label].
   final String? semanticLabel;
 
@@ -155,6 +182,28 @@ class GuInput extends StatefulWidget {
 
   // ignore-hardcode: eksik token — pages-ds.js:34 `.input` `min-height:44px`
   static const double _compactHeight = 44;
+
+  /// Büyüyen alanın ([multiline] + [maxRows]) tek satırdaki kutu yüksekliği
+  /// (metin ölçeğiyle): yanındaki öğeleri ilk / son satıra ortalamak için
+  /// (FED-02 yorum çubuğu: avatar + "Gönder").
+  static double growingLineBoxHeight(BuildContext context) {
+    final gu = context.gu;
+    final style = gu.text.input;
+    // `EditableText` satırı: aynı stil + ölçek, strut `forceStrutHeight`
+    // (alan `strutStyle` vermez) — satır yüksekliği yuvarlamasıyla birebir.
+    final painter = TextPainter(
+      text: TextSpan(style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: gu.textScaler,
+      strutStyle: StrutStyle.fromTextStyle(style, forceStrutHeight: true),
+    );
+    final lineHeight = painter.preferredLineHeight;
+    painter.dispose();
+    return math.max(
+      GuSizes.inputHeight,
+      lineHeight + (GuSizes.inputMultilinePaddingY + GuSizes.inputBorder) * 2,
+    );
+  }
 
   @override
   State<GuInput> createState() => _GuInputState();
@@ -176,6 +225,9 @@ class _GuInputState extends State<GuInput> {
     _ownFocusNode?.dispose();
     super.dispose();
   }
+
+  /// K-93: alan dışına dokunma odağı bırakır (klavye kapanır).
+  void _unfocus(PointerDownEvent _) => _focusNode.unfocus();
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -227,7 +279,8 @@ class _GuInputState extends State<GuInput> {
             0,
             (minHeight - GuSizes.inputBorder * 2 - lineHeight) / 2,
           );
-    final lines = math.max(w.rows, GuSizes.textareaRows);
+    final growing = w.multiline && w.maxRows != null;
+    final lines = growing ? w.rows : math.max(w.rows, GuSizes.textareaRows);
     final onSubmitted = w.onSubmitted;
 
     Widget field = Material(
@@ -252,7 +305,7 @@ class _GuInputState extends State<GuInput> {
         keyboardType: w.keyboardType,
         textInputAction: w.textInputAction,
         minLines: w.multiline ? lines : null,
-        maxLines: w.multiline ? lines : 1,
+        maxLines: w.multiline ? (growing ? w.maxRows : lines) : 1,
         textAlignVertical: TextAlignVertical.top,
         inputFormatters: maxLength == null
             ? null
@@ -265,9 +318,10 @@ class _GuInputState extends State<GuInput> {
         onSubmitted: onSubmitted == null || w.multiline
             ? null
             : (_) => onSubmitted(),
+        onTapOutside: w.onTapOutside ?? _unfocus,
       ),
     );
-    if (w.multiline) {
+    if (w.multiline && !growing) {
       field = ConstrainedBox(
         constraints: const BoxConstraints(
           minHeight: GuSizes.textareaMinHeight,
@@ -327,14 +381,19 @@ class _GuInputState extends State<GuInput> {
     );
     if (w.disabled) {
       box = Opacity(opacity: GuOpacity.inputDisabled, child: box);
-    } else if (!isReadOnly) {
-      // K-03: ikon, dolgu ve kenarlık bandı da odağı verir.
-      box = GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        excludeFromSemantics: true,
-        onTap: _focusNode.requestFocus,
-        child: box,
-      );
+    } else {
+      if (!isReadOnly) {
+        // K-03: ikon, dolgu ve kenarlık bandı da odağı verir.
+        box = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          excludeFromSemantics: true,
+          onTap: _focusNode.requestFocus,
+          child: box,
+        );
+      }
+      // K-93: kutunun tamamı (sondaki düğme dahil) metin alanının parçası —
+      // içine dokunmak klavyeyi kapatmaz.
+      box = TextFieldTapRegion(child: box);
     }
 
     return GuField(

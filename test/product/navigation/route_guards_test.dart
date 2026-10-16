@@ -158,7 +158,7 @@ void main() {
     });
 
     test('R8: süper admin girer, diğerleri /clubs + TST-X18', () {
-      final location = Uri.parse('/admin/reports');
+      final location = Uri.parse('/admin?tab=reports');
       expect(RoleGuard.check(FakeSessionStates.activeSuper, location), isNull);
       expect(
         RoleGuard.check(FakeSessionStates.activeManager('c01'), location),

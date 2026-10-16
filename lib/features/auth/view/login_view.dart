@@ -87,7 +87,7 @@ class _LoginViewState extends ConsumerState<LoginView>
       backgroundColor: gu.colors.bgCanvas,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
+        child: GuFormScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

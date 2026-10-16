@@ -59,7 +59,7 @@ class _AdminClubFormViewState extends ConsumerState<AdminClubFormView>
     ],
   );
 
-  Widget _form(AdminClubFormState state) => SingleChildScrollView(
+  Widget _form(AdminClubFormState state) => GuFormScrollView(
     padding: GuInsets.only(
       left: GuSpacing.s16,
       right: GuSpacing.s16,

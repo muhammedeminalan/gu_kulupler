@@ -41,7 +41,11 @@ class GuSegmentOption {
 /// * Semantik: kap `tabBar`, seçenek `tab` + `selected` (`role="tablist"` /
 ///   `role="tab"`, ui.js:59).
 /// * Seçenek anahtarı çağırandan ([optionKeyBuilder]:
-///   `(i) => GuKey.action('EVT-01.view.<id>')`, CD-111).
+///   `(i) => GuKey.action('EVT-01.view.<id>')`, CD-111). Anahtar seçeneğin
+///   görsel kutusundadır; odak, anlam düğümü ve dokunma sahibi seçenek
+///   kimliğiyle ([GuSegmentOption.id]) anahtarlıdır: anahtar değişse de
+///   (admin kökü — `<bölme>.seg.<hedef>`) klavye / ekran okuyucu odağı
+///   düşmez.
 /// * Sınırlı genişlik ister (seçenekler `Expanded`); sınırsız genişlikte
 ///   çağıran `IntrinsicWidth` ile sarar.
 class GuSegmented extends StatelessWidget {
@@ -91,7 +95,8 @@ class GuSegmented extends StatelessWidget {
             for (final (index, option) in options.indexed)
               Expanded(
                 child: _GuSegment(
-                  key: optionKeyBuilder?.call(index),
+                  key: ValueKey<String>(option.id),
+                  actionKey: optionKeyBuilder?.call(index),
                   option: option,
                   selected: option.id == value,
                   onTap: () => onChanged(option.id),
@@ -110,8 +115,12 @@ class _GuSegment extends StatelessWidget {
     required this.option,
     required this.selected,
     required this.onTap,
+    this.actionKey,
     super.key,
   });
+
+  /// Çağıranın seçenek anahtarı (görsel kutuda; bkz. [GuSegmented]).
+  final Key? actionKey;
 
   final GuSegmentOption option;
   final bool selected;
@@ -126,7 +135,10 @@ class _GuSegment extends StatelessWidget {
     selected: selected,
     role: SemanticsRole.tab,
     borderRadius: GuRadius.borderChip,
-    builder: _buildVisual,
+    // Anahtar odak / anlam sahibinin (`GuActionSurface`) altında: değişince
+    // yalnızca görsel kutu yeniden kurulur.
+    builder: (context, pressed) =>
+        KeyedSubtree(key: actionKey, child: _buildVisual(context, pressed)),
   );
 
   Widget _buildVisual(BuildContext context, bool _) {

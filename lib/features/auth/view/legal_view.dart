@@ -95,36 +95,41 @@ class _LegalViewState extends ConsumerState<LegalView> with LegalViewMixin {
             ],
           ),
           Expanded(
-            child: SingleChildScrollView(
-              // Sekme başına ayrı kaydırma konumu (prototip `routeKey`).
-              key: PageStorageKey<String>('legal-${tab.name}'),
-              padding: GuInsets.only(
-                left: GuSpacing.s16,
-                right: GuSpacing.s16,
-                bottom:
-                    GuSpacing.s16 +
-                    safeBottom +
-                    GuSizes.screenScrollBottomExtra,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: GuSpacing.s16,
-                children: [
-                  Semantics(
-                    header: true,
-                    child: Text(document.title, style: gu.text.titleL),
-                  ),
-                  Text(l10n.legalUpdated, style: gu.text.caption),
-                  for (final (index, section) in document.sections.indexed)
-                    LegalSection(
-                      key: sectionKeys[index],
-                      heading: l10n.legalSectionHeading(
-                        index + 1,
-                        section.heading,
-                      ),
-                      body: section.body,
+            // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+            // `GuMotion.tabSwitch`).
+            child: GuContentFade(
+              value: tab,
+              child: SingleChildScrollView(
+                // Sekme başına ayrı kaydırma konumu (prototip `routeKey`).
+                key: PageStorageKey<String>('legal-${tab.name}'),
+                padding: GuInsets.only(
+                  left: GuSpacing.s16,
+                  right: GuSpacing.s16,
+                  bottom:
+                      GuSpacing.s16 +
+                      safeBottom +
+                      GuSizes.screenScrollBottomExtra,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: GuSpacing.s16,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(document.title, style: gu.text.titleL),
                     ),
-                ],
+                    Text(l10n.legalUpdated, style: gu.text.caption),
+                    for (final (index, section) in document.sections.indexed)
+                      LegalSection(
+                        key: sectionKeys[index],
+                        heading: l10n.legalSectionHeading(
+                          index + 1,
+                          section.heading,
+                        ),
+                        body: section.body,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

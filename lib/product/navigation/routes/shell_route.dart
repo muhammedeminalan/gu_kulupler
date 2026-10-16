@@ -2,9 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gu_data/gu_data.dart' show PostType;
 import 'package:gu_kulupler/features/admin/view/admin_club_form_view.dart';
-import 'package:gu_kulupler/features/admin/view/admin_clubs_view.dart';
-import 'package:gu_kulupler/features/admin/view/admin_reports_view.dart';
-import 'package:gu_kulupler/features/admin/view/admin_users_view.dart';
 import 'package:gu_kulupler/features/admin/view/admin_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_application_view.dart';
 import 'package:gu_kulupler/features/clubs/view/club_applied_view.dart';
@@ -46,6 +43,7 @@ import 'package:gu_kulupler/features/settings/view/settings_view.dart';
 import 'package:gu_kulupler/features/settings/view/support_view.dart';
 import 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart';
 import 'package:gu_kulupler/product/navigation/admin_reports_tab.dart';
+import 'package:gu_kulupler/product/navigation/admin_tab.dart';
 import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/applications_tab.dart';
@@ -57,11 +55,13 @@ import 'package:gu_kulupler/product/navigation/my_events_tab.dart';
 import 'package:gu_kulupler/product/navigation/navigator_keys.dart';
 import 'package:gu_kulupler/product/navigation/route_guards.dart';
 import 'package:gu_kulupler/product/navigation/shell/app_shell_view.dart';
+import 'package:gu_ui/gu_ui.dart' show GuFadeIndexedStack;
 
 export 'package:gu_kulupler/product/navigation/admin_clubs_tab.dart'
     show AdminClubsTab;
 export 'package:gu_kulupler/product/navigation/admin_reports_tab.dart'
     show AdminReportsTab;
+export 'package:gu_kulupler/product/navigation/admin_tab.dart' show AdminTab;
 export 'package:gu_kulupler/product/navigation/admin_users_filter.dart'
     show AdminUsersFilter;
 export 'package:gu_kulupler/product/navigation/applications_tab.dart'
@@ -120,8 +120,24 @@ final class AppShellRouteData extends StatefulShellRouteData {
     StatefulNavigationShell navigationShell,
   ) => AppShellView(navigationShell: navigationShell);
 
-  /// Kabuğa giriş (giriş sonrası) ve kabuktan çıkış (oturum kapatma) solar;
-  /// sekme değişimi animasyonsuzdur (navigation.md §5).
+  /// Dal kabı: dallar `IndexedStack` gibi ağaçta kalır (yığın ve hâl
+  /// korunur; sahne dışı dalın saati durur — go_router `indexedStack` kabıyla
+  /// aynı), dal değişince yeni dal kısa solmayla girer (`GuFadeIndexedStack`,
+  /// `GuMotion.tabSwitch`; hareket azaltılmışsa anında — kullanıcı kararı
+  /// 2026-10-16, navigation.md §5). Etkin sekmeye yeniden dokunma dalı
+  /// değiştirmez, solma olmaz.
+  static Widget $navigatorContainerBuilder(
+    BuildContext context,
+    StatefulNavigationShell navigationShell,
+    List<Widget> children,
+  ) => GuFadeIndexedStack(
+    index: navigationShell.currentIndex,
+    children: children,
+  );
+
+  /// Kabuğa giriş (giriş sonrası) ve kabuktan çıkış (oturum kapatma) solar
+  /// (navigation.md §5); sekme değişiminin solması dal kabındadır
+  /// ([$navigatorContainerBuilder]).
   @override
   Page<void> pageBuilder(
     BuildContext context,

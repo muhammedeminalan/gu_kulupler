@@ -4,23 +4,23 @@ import 'package:gu_kulupler/core/l10n/build_context_l10n_x.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_state.dart';
 import 'package:gu_kulupler/features/admin/provider/admin_users_view_model.dart';
 import 'package:gu_kulupler/features/admin/view/mixin/admin_users_view_mixin.dart';
-import 'package:gu_kulupler/features/admin/view/widget/admin_segment_bar.dart';
 import 'package:gu_kulupler/features/admin/view/widget/admin_user_row.dart';
 import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/navigation/admin_users_filter.dart';
 import 'package:gu_kulupler/product/widget/system/offline_list_fallback.dart';
 import 'package:gu_ui/gu_ui.dart';
 
-/// Admin kullanıcılar — `AdminUsersRoute` (`/admin/users?filter=`; guard
-/// `S`: yalnızca süper admin, router'da). Prototip `AdminUsers`
-/// (`screens-admin.js:72–78`).
+/// Admin kullanıcılar bölmesi (ADM-05) — admin kökünün (`AdminView`,
+/// `/admin?tab=users&filter=`; guard `S`) Kullanıcılar bölmesi. Prototip
+/// `AdminUsers` (`screens-admin.js:72–78`).
 ///
-/// Yukarıdan aşağıya: büyük başlık "Admin" + "Süper Admin" rozeti ·
-/// `AdminSegmentBar` (Kullanıcılar seçili) · `.px16.pb8` arama ("Ad veya
+/// Başlık ve `AdminSegmentBar` kökte (`AdminView`; kullanıcı kararı
+/// 2026-10-16 — önceden ayrı sayfa). Bölme: `.px16.pb8` arama ("Ad veya
 /// e-posta ara"; `pb8` tanımsız — K-42, dolgu yok) · `.hscroll.py8`
 /// süzgeç çipleri (Tümü · Askıda · Yöneticiler; K-59) · kaydırma alanı
-/// (çek-yenile, sayfalı): `AdminUserRow` satırları (dokunuş CLB-07, "⋮" →
-/// Profili gör · Askıya al / Askıyı kaldır).
+/// (çek-yenile, sayfalı; süzgeç değişimi kısa solma, `GuSliverContentFade`):
+/// `AdminUserRow` satırları (dokunuş CLB-07 — admin kökünün alt sayfası,
+/// geri → bu bölme; "⋮" → Profili gör · Askıya al / Askıyı kaldır).
 ///
 /// Durumlar (sıra: hata → yükleniyor → boş → dolu; referans
 /// `states/ADM-05__*`) yalnızca listeyi değiştirir; boş görünüm "Eşleşen üye
@@ -31,11 +31,16 @@ import 'package:gu_ui/gu_ui.dart';
 ///
 /// Design: ADM-05
 class AdminUsersView extends ConsumerStatefulWidget {
-  /// Kullanıcı listesi; [filter] ilk seçili süzgeç.
-  const AdminUsersView({this.filter, super.key});
+  /// Kullanıcı listesi; [filter] seçilen süzgeç.
+  const AdminUsersView({this.filter, this.active = true, super.key});
 
-  /// İlk seçili süzgeç (`AdminUsersRoute.filter`; `null` → tümü).
+  /// Seçilen süzgeç (`AdminRoute.filter`; değişip dolu geldiğinde uygulanır;
+  /// ilk açılışta tümü).
   final AdminUsersFilter? filter;
+
+  /// Bölme sahnede mi (sekmeye yeniden dokunma yalnızca etkin bölmeyi başa
+  /// kaydırır).
+  final bool active;
 
   @override
   ConsumerState<AdminUsersView> createState() => _AdminUsersViewState();
@@ -140,71 +145,55 @@ class _AdminUsersViewState extends ConsumerState<AdminUsersView>
 
   @override
   Widget build(BuildContext context) {
-    final gu = context.gu;
     final l10n = context.l10n;
     final state = ref.watch(adminUsersViewModelProvider);
 
-    return Scaffold(
-      backgroundColor: gu.colors.bgCanvas,
-      appBar: GuAppBar(
-        title: l10n.navAdmin,
-        large: true,
-        actions: [
-          GuRoleBadge(
-            kind: GuRoleBadgeKind.superadmin,
-            label: l10n.roleSuperadmin,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // `.px16.pb8`: `pb8` tanımsız (K-42) → alt dolgu yok.
+        Padding(
+          padding: GuInsets.h16,
+          child: GuSearchField(
+            value: state.query,
+            onChanged: search,
+            placeholder: l10n.adminUsersSearch,
+            semanticLabel: l10n.adminUsersSearch,
+            actionKey: GuKey.action('ADM-05.search'),
           ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AdminSegmentBar(
-            current: AdminSegmentBar.users,
-            onSelect: openSegment,
-            keyOf: (id) => GuKey.action('ADM-05.seg.$id'),
-          ),
-          // `.px16.pb8`: `pb8` tanımsız (K-42) → alt dolgu yok.
-          Padding(
-            padding: GuInsets.h16,
-            child: GuSearchField(
-              value: state.query,
-              onChanged: search,
-              placeholder: l10n.adminUsersSearch,
-              semanticLabel: l10n.adminUsersSearch,
-              actionKey: GuKey.action('ADM-05.search'),
-            ),
-          ),
-          // `.hscroll.py8` yazılmıştır, ancak `.hscroll` dolgusu ezer:
-          // dikey 3 px (K-59).
-          GuHorizontalList(
-            children: [
-              for (final filter in _filters)
-                GuChip(
-                  key: _filterKey(filter),
-                  label: _filterLabel(l10n, filter),
-                  selected: state.filter == filter,
-                  onTap: () => selectFilter(filter),
-                ),
-            ],
-          ),
-          Expanded(
-            child: GuRefresh(
-              onRefresh: refresh,
-              child: CustomScrollView(
-                controller: scrollController,
-                slivers: [
-                  ..._slivers(state, l10n),
-                  const SliverSafeArea(
-                    top: false,
-                    sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
-                  ),
-                ],
+        ),
+        // `.hscroll.py8` yazılmıştır, ancak `.hscroll` dolgusu ezer:
+        // dikey 3 px (K-59).
+        GuHorizontalList(
+          children: [
+            for (final filter in _filters)
+              GuChip(
+                key: _filterKey(filter),
+                label: _filterLabel(l10n, filter),
+                selected: state.filter == filter,
+                onTap: () => selectFilter(filter),
               ),
+          ],
+        ),
+        Expanded(
+          child: GuRefresh(
+            onRefresh: refresh,
+            child: CustomScrollView(
+              controller: scrollController,
+              slivers: [
+                GuSliverContentFade(
+                  value: state.filter,
+                  sliver: SliverMainAxisGroup(slivers: _slivers(state, l10n)),
+                ),
+                const SliverSafeArea(
+                  top: false,
+                  sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

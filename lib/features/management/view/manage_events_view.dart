@@ -201,7 +201,14 @@ class _ManageEventsViewState extends ConsumerState<ManageEventsView>
                   onRefresh: refresh,
                   child: CustomScrollView(
                     slivers: [
-                      ..._slivers(state, l10n),
+                      // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                      // `GuMotion.tabSwitch`).
+                      GuSliverContentFade(
+                        value: state.tab,
+                        sliver: SliverMainAxisGroup(
+                          slivers: _slivers(state, l10n),
+                        ),
+                      ),
                       // FAB son satırın "⋮" düğmesini örtmesin.
                       if (showFab)
                         const SliverToBoxAdapter(

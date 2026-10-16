@@ -149,4 +149,14 @@ abstract final class GuMotion {
   /// var(--ease-emphasized)` (sheets.js:161; K-46); eğri [easeEmphasized],
   /// ölçek `GuSizes.viewerZoomScale`.
   static const Duration viewerZoom = Duration(milliseconds: 300);
+
+  // ── Kullanıcı kararı (2026-10-16; D-06 eki, tasarımdan sapma) ────────
+
+  /// Kullanıcı kararı · sekme / içerik değişimi solması 200 ms (= [base];
+  /// eğri [easeStandard]): alt sekme dalları arası geçiş ve sayfa içi
+  /// sekme / segment / süzgeç içerik değişimi (`GuContentFade`,
+  /// `GuFadeIndexedStack`). Prototipte sekme geçişi animasyonsuzdur
+  /// (`nav.anim` `fade` yalnızca `replace`'te); sayfa push geçişi (D-06)
+  /// değişmez.
+  static const Duration tabSwitch = base;
 }

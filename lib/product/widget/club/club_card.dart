@@ -91,8 +91,9 @@ class ClubCard extends StatelessWidget {
   /// Izgara kartında "kategori · N üye" ayracı (`cards.js:32`).
   static const String _separator = ' · ';
 
-  /// Avatar grubu çapı (`cards.js:38` `size=${24}`; K-47).
-  static final double _avatarSize = GuSizes.avatarGroupSizes.first;
+  /// Avatar grubu çapı (`cards.js:38` `size=${24}`; K-47). Çağıran
+  /// [memberPreview] fotoğraflarını bu boyutta çözer.
+  static final double avatarSize = GuSizes.avatarGroupSizes.first;
 
   /// Kulüp.
   final ClubModel club;
@@ -396,7 +397,7 @@ class ClubCard extends StatelessWidget {
                       ExcludeSemantics(
                         child: GuAvatarGroup(
                           avatars: shown,
-                          size: _avatarSize,
+                          size: avatarSize,
                           max: previewMax,
                           moreLabel: rest > 0 ? '+$rest' : null,
                         ),

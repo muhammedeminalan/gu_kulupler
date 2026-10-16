@@ -124,49 +124,56 @@ class _MyClubsViewState extends ConsumerState<MyClubsView>
               child: CustomScrollView(
                 controller: scrollController,
                 slivers: [
-                  ...switch (status) {
-                    _ when OfflineListFallback.applies(ref, status) => [
-                      OfflineListFallback.sliver(onReload: retry),
-                    ],
-                    GuListStatus.error => [
-                      SliverToBoxAdapter(
-                        child: GuErrorState(
-                          title: l10n.sysErrorTitle,
-                          description: l10n.sysErrorDesc,
-                          retryLabel: l10n.commonRetry,
-                          retryActionKey: GuKey.action('PRF-03.retry'),
-                          inline: true,
-                          onRetry: retry,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.loading => [
-                      SliverToBoxAdapter(
-                        // Prototip `ListState n=4`.
-                        child: GuSkeletonList(
-                          semanticLabel: l10n.commonLoading,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.empty => [
-                      SliverToBoxAdapter(
-                        child: GuEmptyState(
-                          illustration: GuIllustrations.emptyApplications,
-                          title: _emptyTitle(l10n, state.tab),
-                          ctaLabel: l10n.eventsDiscover,
-                          ctaActionKey: GuKey.action('PRF-03.discover'),
-                          onCta: discover,
-                        ),
-                      ),
-                    ],
-                    GuListStatus.data => [
-                      SliverList.builder(
-                        itemCount: visible.length,
-                        itemBuilder: (_, index) =>
-                            _row(visible[index], formats),
-                      ),
-                    ],
-                  },
+                  // Sekme değişimi kısa solma (kullanıcı kararı 2026-10-16;
+                  // `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: state.tab,
+                    sliver: SliverMainAxisGroup(
+                      slivers: switch (status) {
+                        _ when OfflineListFallback.applies(ref, status) => [
+                          OfflineListFallback.sliver(onReload: retry),
+                        ],
+                        GuListStatus.error => [
+                          SliverToBoxAdapter(
+                            child: GuErrorState(
+                              title: l10n.sysErrorTitle,
+                              description: l10n.sysErrorDesc,
+                              retryLabel: l10n.commonRetry,
+                              retryActionKey: GuKey.action('PRF-03.retry'),
+                              inline: true,
+                              onRetry: retry,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.loading => [
+                          SliverToBoxAdapter(
+                            // Prototip `ListState n=4`.
+                            child: GuSkeletonList(
+                              semanticLabel: l10n.commonLoading,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.empty => [
+                          SliverToBoxAdapter(
+                            child: GuEmptyState(
+                              illustration: GuIllustrations.emptyApplications,
+                              title: _emptyTitle(l10n, state.tab),
+                              ctaLabel: l10n.eventsDiscover,
+                              ctaActionKey: GuKey.action('PRF-03.discover'),
+                              onCta: discover,
+                            ),
+                          ),
+                        ],
+                        GuListStatus.data => [
+                          SliverList.builder(
+                            itemCount: visible.length,
+                            itemBuilder: (_, index) =>
+                                _row(visible[index], formats),
+                          ),
+                        ],
+                      },
+                    ),
+                  ),
                   const SliverSafeArea(
                     top: false,
                     sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
