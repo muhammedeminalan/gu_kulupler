@@ -1,0 +1,38 @@
+name: 💡 Özellik önerisi
+description: Yeni bir özellik ya da iyileştirme öner.
+title: "[Öneri] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: sorun
+    attributes:
+      label: Hangi sorunu çözüyor?
+      placeholder: Kulüp başkanı olarak etkinlik katılımcılarına toplu mesaj atamıyorum.
+    validations:
+      required: true
+  - type: textarea
+    id: cozum
+    attributes:
+      label: Önerdiğin çözüm
+    validations:
+      required: true
+  - type: dropdown
+    id: kim
+    attributes:
+      label: Kimin işine yarar?
+      multiple: true
+      options:
+        - Öğrenci / üye
+        - Kulüp yönetimi (başkan, kurul, danışman)
+        - Uygulama yöneticisi
+        - Geliştirici
+    validations:
+      required: true
+  - type: textarea
+    id: alternatif
+    attributes:
+      label: Düşündüğün alternatifler
+  - type: textarea
+    id: ek
+    attributes:
+      label: Ek bilgi / görsel

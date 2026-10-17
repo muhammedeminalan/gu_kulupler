@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Güvenlik açığı bildir
+    url: https://github.com/muhammedeminalan/gu_kulupler/security/advisories/new
+    about: Güvenlik açıklarını herkese açık issue yerine buradan, gizli olarak bildir.
+  - name: 🙋 Uygulama desteği
+    url: https://gu-kulupler.web.app/destek
+    about: Hesap, giriş ya da kullanım sorunları için destek sayfası.

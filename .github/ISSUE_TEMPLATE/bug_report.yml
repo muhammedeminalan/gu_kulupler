@@ -1,0 +1,59 @@
+name: 🐞 Hata bildirimi
+description: Uygulamada beklendiği gibi çalışmayan bir şey bildir.
+title: "[Hata] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bildirdiğin için teşekkürler! **Güvenlik açıklarını burada bildirme**, [SECURITY.md](https://github.com/muhammedeminalan/gu_kulupler/blob/main/SECURITY.md) dosyasındaki yolu izle.
+  - type: textarea
+    id: ozet
+    attributes:
+      label: Ne oldu?
+      description: Hatayı kısaca anlat.
+      placeholder: Etkinliğe katıl düğmesine basınca uygulama kapanıyor.
+    validations:
+      required: true
+  - type: textarea
+    id: adimlar
+    attributes:
+      label: Yeniden üretme adımları
+      placeholder: |
+        1. Etkinlikler sekmesine git
+        2. Bir etkinliği aç
+        3. "Katıl"a bas
+    validations:
+      required: true
+  - type: textarea
+    id: beklenen
+    attributes:
+      label: Beklenen davranış
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - iOS
+        - Android
+        - Web
+    validations:
+      required: true
+  - type: input
+    id: cihaz
+    attributes:
+      label: Cihaz ve işletim sistemi
+      placeholder: iPhone 13, iOS 18.2
+  - type: input
+    id: surum
+    attributes:
+      label: Uygulama sürümü
+      description: Profil → Ayarlar → Hakkında
+      placeholder: 1.0.0 (1)
+  - type: textarea
+    id: ek
+    attributes:
+      label: Ekran görüntüsü / kayıt / günlük
+      description: Kişisel veri (e-posta, ad) içeriyorsa önce gizle.
