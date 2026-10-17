@@ -22,6 +22,8 @@ Kulüpleri keşfet, başvur, etkinliklere katıl, duyuruları kaçırma; kulüb�
 [![Android APK](https://img.shields.io/badge/Android-APK%20(beta)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/muhammedeminalan/gu_kulupler/releases)
 [![Web'de aç](https://img.shields.io/badge/Web-Tarayıcıda%20aç-D00A2D?style=for-the-badge&logo=googlechrome&logoColor=white)](https://gu-kulupler.web.app/app/)
 
+🌐 **Web'de dene:** [gu-kulupler.web.app/app](https://gu-kulupler.web.app/app/), kurulum gerekmez
+
 App Store sürümü incelemede · Google Play yakında · APK: [Releases](https://github.com/muhammedeminalan/gu_kulupler/releases)
 
 </div>
@@ -362,6 +364,7 @@ Katkıda bulunanlar ve teşekkürler için [CONTRIBUTORS.md](CONTRIBUTORS.md) do
 ## 📞 Destek ve iletişim
 
 - **Hata ve öneri:** [GitHub Issues](https://github.com/muhammedeminalan/gu_kulupler/issues)
+- **Web uygulaması:** [gu-kulupler.web.app/app](https://gu-kulupler.web.app/app/)
 - **Destek:** uygulama içinden *Profil → Ayarlar → Destek* ya da [gu-kulupler.web.app/destek](https://gu-kulupler.web.app/destek). Ayrıntılar [SUPPORT.md](SUPPORT.md) dosyasında.
 - **E-posta:** eminalan334@gmail.com
 - **Gizlilik politikası:** [gu-kulupler.web.app/gizlilik](https://gu-kulupler.web.app/gizlilik)
