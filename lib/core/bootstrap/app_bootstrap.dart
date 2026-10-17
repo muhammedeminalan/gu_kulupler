@@ -52,7 +52,8 @@ abstract final class AppBootstrap {
     await AppEnvironment.configure();
     await initializeDateFormatting('tr_TR');
     await initializeDateFormatting('en_GB');
-    await configureCrashlytics();
+    // Crashlytics web'i desteklemez (DI web'de no-op raporlayıcı kaydeder).
+    if (!kIsWeb) await configureCrashlytics();
     final toastController = GuToastController();
     await ProjectDependency.setup(toastController: toastController);
     await GetIt.I<AppPreferencesStore>().load();
