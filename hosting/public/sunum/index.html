@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>GÜ Kulüpler Sunumu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Düzen: 16:9 sahne. Kırmızı kapak ve ayıraçlar App Store banner dilini sürdürür; içerik slaytları
+   uygulamanın açık zemini üzerinde sola hizalı başlık + sağda telefon / diyagram. Tek tema (projeksiyon). */
+:root{
+  --red:#D00A2D; --red-deep:#A80824; --red-soft:#FCE8EC;
+  --canvas:#FAF9F6; --surface:#FFFFFF; --muted-bg:#F1F5F9; --line:#E4E7EC;
+  --ink:#101828; --heading:#1D293D; --text2:#45556C; --on-red:#FFFFFF; --on-red-2:#FFD9E0;
+  --ok:#1F7A3E; --ok-soft:#E6F4EA;
+  --display:"Montserrat","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --body:"Inter",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --step-0:clamp(15px,1.25vw,19px); --step-1:clamp(18px,1.6vw,24px); --step-2:clamp(22px,2.2vw,32px);
+  --step-3:clamp(30px,3.4vw,52px); --step-4:clamp(40px,5vw,80px);
+  --ease:cubic-bezier(.2,.7,.2,1);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:400 var(--step-0)/1.55 var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);color:var(--heading);margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+.deck{position:relative;height:100%}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding-block:clamp(28px,5vh,64px);padding-left:max(16px,env(safe-area-inset-left,0px),5vw);padding-right:max(16px,env(safe-area-inset-right,0px),5vw);
+  opacity:0;visibility:hidden;overflow-y:auto}
+.slide.is-active{opacity:1;visibility:visible}
+/* Geçiş animasyonları yalnızca ilk gezinmeden sonra (.anim): açılışta ve hareket olmayan ortamda içerik hazır görünür. */
+.anim .slide{transform:translateX(40px);transition:opacity .5s var(--ease),transform .6s var(--ease),visibility 0s .6s}
+.anim .slide.is-active{transform:none;transition:opacity .5s var(--ease),transform .6s var(--ease),visibility 0s}
+.anim .slide.is-past{transform:translateX(-40px)}
+.inner{width:100%;max-width:1240px;display:grid;gap:clamp(20px,3vw,48px);align-items:center}
+.two{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+.eyebrow{font:600 13px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:14px;display:block}
+.title{font-size:var(--step-3);font-weight:800;line-height:1.08}
+.lead{font-size:var(--step-1);color:var(--text2);max-width:34em;margin-top:16px}
+.red{background:var(--red);color:var(--on-red)}
+.red h1,.red h2,.red h3{color:var(--on-red)}
+.red .eyebrow{color:var(--on-red-2)}
+.red .lead{color:var(--on-red-2)}
+
+/* Giriş animasyonu: slayt etkinleşince [data-a] öğeleri sırayla (--i) belirir (yalnızca .anim). */
+.anim .slide:not(.is-active) [data-a]{opacity:0;transform:translateY(18px)}
+.anim .slide.is-active [data-a]{opacity:1;transform:none;transition:opacity .6s var(--ease),transform .7s var(--ease);transition-delay:calc(var(--i,0) * 90ms + 120ms)}
+
+/* Kapak: açık zemin, kırmızı yalnızca ikon, üst etiket ve arkadaki yumuşak daire */
+.cover .inner{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
+.mark{width:84px;height:84px;border-radius:22px;margin-bottom:30px;box-shadow:0 14px 34px rgba(208,10,45,.25);display:block}
+.cover h1{font-size:var(--step-4);font-weight:800;line-height:1;color:var(--heading)}
+.cover h1 span{color:var(--red)}
+.cover .lead{font-size:var(--step-2);font-family:var(--display);font-weight:600;color:var(--text2);max-width:18em;margin-top:20px}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:40px;padding-top:22px;border-top:1px solid var(--line);font-size:var(--step-0);color:var(--text2);max-width:34em}
+.meta-row strong{color:var(--heading);font-weight:600}
+.phone-stack{position:relative;height:min(70vh,640px)}
+.phone-stack::before{content:"";position:absolute;width:78%;aspect-ratio:1;max-width:100%;right:6%;top:50%;transform:translateY(-50%);border-radius:50%;background:radial-gradient(circle at 40% 40%,var(--red-soft),transparent 70%)}
+.phone-stack img{position:absolute;height:100%;width:auto;border-radius:9% / 4.2%;box-shadow:0 30px 60px rgba(16,24,40,.22),0 0 0 1px var(--line)}
+.phone-stack img:nth-child(1){right:36%;top:7%;height:86%;transform:rotate(-6deg)}
+.phone-stack img:nth-child(2){right:2%;top:0}
+
+/* Sorun */
+.chat{display:grid;gap:12px}
+.bubble{background:var(--surface);border:1px solid var(--line);border-radius:18px 18px 18px 6px;padding:14px 18px;max-width:30em;box-shadow:0 2px 0 rgba(16,24,40,.03)}
+.bubble small{display:block;font:600 12px/1.2 var(--display);color:var(--text2);margin-bottom:4px;letter-spacing:.04em}
+.bubble.me{justify-self:end;border-radius:18px 18px 6px 18px;background:var(--red-soft);border-color:transparent}
+.pain{display:grid;gap:14px;margin-top:28px}
+.pain li{list-style:none;display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:start;font-size:var(--step-1)}
+.pain li::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--red);margin-top:.5em}
+ul{padding:0;margin:0}
+
+/* Kartlar / ızgaralar */
+.cards{display:grid;gap:16px}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px 22px 24px;min-width:0}
+.card h3{font-size:var(--step-1);font-weight:700;margin-bottom:8px}
+.card p,.card li{color:var(--text2);font-size:var(--step-0)}
+.card li{list-style:none;padding-left:18px;position:relative;margin-top:6px}
+.card li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--red)}
+.tag{display:inline-block;font:600 12px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--red);background:var(--red-soft);padding:6px 10px;border-radius:999px;margin-bottom:14px}
+
+/* Çözüm: 5 fiil */
+.verbs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:36px}
+.verb{border-top:4px solid var(--red);padding-top:16px}
+.verb b{display:block;font:800 var(--step-2)/1.1 var(--display);color:var(--heading)}
+.verb span{display:block;color:var(--text2);margin-top:8px}
+
+/* Ekranlar */
+.screens{display:flex;gap:clamp(12px,2vw,28px);justify-content:center;align-items:flex-end}
+.screens figure{margin:0;display:grid;gap:12px;justify-items:center;flex:0 1 auto;min-width:0}
+.screens img{height:min(64vh,600px);width:auto;max-width:100%;border-radius:26px;box-shadow:0 24px 50px rgba(16,24,40,.18)}
+.screens.three img{height:min(56vh,520px)}
+.screens figcaption{font:600 var(--step-0)/1.3 var(--display);color:var(--heading);text-align:center}
+.screens figcaption span{display:block;font:400 14px/1.4 var(--body);color:var(--text2);margin-top:4px;max-width:20em}
+
+/* Yolculuk (gerçek sıra → numaralı) */
+.journey{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-top:40px;position:relative}
+.journey::before{content:"";position:absolute;left:4%;right:4%;top:26px;height:3px;background:linear-gradient(90deg,var(--red),var(--red-deep));border-radius:3px;transform-origin:left}
+.anim .slide:not(.is-active) .journey::before{transform:scaleX(0)}
+.anim .slide.is-active .journey::before{transform:scaleX(1);transition:transform 1.4s var(--ease) .2s}
+.step{position:relative;text-align:center;display:grid;justify-items:center;gap:10px}
+.step i{width:52px;height:52px;border-radius:50%;background:var(--surface);border:3px solid var(--red);display:grid;place-items:center;font:800 18px/1 var(--display);font-style:normal;color:var(--red);position:relative;z-index:1}
+.step b{font:700 var(--step-0)/1.25 var(--display);color:var(--heading)}
+.step span{font-size:14px;color:var(--text2);line-height:1.4}
+
+/* Roller */
+.roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.role{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px}
+.role b{font:700 var(--step-1)/1.2 var(--display);color:var(--heading);display:flex;align-items:center;gap:10px}
+.role b em{font:600 11px/1 var(--display);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--red);background:var(--red-soft);padding:5px 8px;border-radius:999px}
+.role p{color:var(--text2);margin-top:8px;font-size:15px}
+
+/* Mimari diyagramı */
+.arch{display:grid;gap:14px}
+.layer{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;align-items:center}
+.arch-two{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}
+.layer > span{font:700 13px/1.2 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--text2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font:600 15px/1.2 var(--display);color:var(--heading)}
+.chip small{display:block;font:400 12px/1.3 var(--body);color:var(--text2);margin-top:3px}
+.chip.hot{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.chip.hot small{color:var(--on-red-2)}
+.arrow{height:22px;display:grid;place-items:center;color:var(--red);font:700 18px/1 var(--display)}
+
+/* Büyük sayılar (bu slaytın konusu rakamlar) */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px}
+.stat b{display:block;font:800 var(--step-3)/1 var(--display);color:var(--red);font-variant-numeric:tabular-nums}
+.stat span{display:block;margin-top:10px;color:var(--text2);font-size:15px;line-height:1.4}
+
+/* Zaman çizelgesi */
+.timeline{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:34px}
+.phase{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 12px;min-height:140px;display:flex;flex-direction:column;gap:6px}
+.phase b{font:800 26px/1 var(--display);color:var(--red)}
+.phase strong{font:700 15px/1.25 var(--display);color:var(--heading)}
+.phase span{font-size:13px;color:var(--text2);margin-top:auto}
+
+/* Yayın */
+.platform{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.platform h3{font-size:var(--step-1)}
+.status{align-self:flex-start;font:600 12px/1 var(--display);letter-spacing:.04em;padding:6px 10px;border-radius:999px;background:var(--ok-soft);color:var(--ok)}
+.status.wait{background:var(--red-soft);color:var(--red)}
+.platform code{font:500 14px/1.4 ui-monospace,Menlo,monospace;color:var(--heading);word-break:break-all}
+
+/* Karşılaştırma tablosu */
+.table-wrap{overflow-x:auto;border-radius:20px;border:1px solid var(--line);background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{padding:14px 16px;text-align:center;border-bottom:1px solid var(--line);font-size:var(--step-0)}
+th{font:700 14px/1.2 var(--display);color:var(--text2);letter-spacing:.04em;background:var(--muted-bg)}
+th:first-child,td:first-child{text-align:left}
+td:first-child{font-weight:500;color:var(--heading)}
+tr:last-child td{border-bottom:0}
+.us{background:var(--red-soft)}
+th.us{background:var(--red);color:var(--on-red)}
+.y{color:var(--ok);font-weight:700}.n{color:var(--text2);opacity:.7}.p{color:var(--text2)}
+
+/* Maliyet */
+.cost{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px;align-items:center}
+.zero{font:800 clamp(80px,13vw,200px)/.9 var(--display);color:var(--red);letter-spacing:-.04em}
+.zero small{display:block;font:600 var(--step-1)/1.3 var(--display);color:var(--heading);letter-spacing:0;margin-top:12px}
+.rows{display:grid;gap:10px}
+.rowx{display:grid;grid-template-columns:1fr auto;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;align-items:center}
+.rowx b{font:600 var(--step-0)/1.3 var(--display);color:var(--heading)}
+.rowx span{font:700 var(--step-0)/1 var(--display);color:var(--red);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rowx small{display:block;color:var(--text2);font:400 14px/1.4 var(--body);margin-top:3px}
+
+/* Hedefler */
+.goal b{font:800 var(--step-3)/1 var(--display);color:var(--red);display:block}
+.note{font-size:14px;color:var(--text2);margin-top:18px}
+
+/* Ekip */
+.team{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px}
+.person{display:flex;align-items:center;gap:16px}
+.avatar{width:104px;height:104px;border-radius:50%;background:var(--on-red);color:var(--red);display:grid;place-items:center;font:800 32px/1 var(--display);overflow:hidden;flex:none;border:4px solid var(--on-red);box-shadow:0 12px 30px rgba(60,0,10,.28)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.person b{display:block;font:700 var(--step-1)/1.2 var(--display);color:var(--on-red)}
+.person span{color:var(--on-red-2);font-size:15px}
+.links{display:grid;gap:10px;margin-top:30px}
+.links div{font:500 var(--step-0)/1.3 var(--body);color:var(--on-red)}
+.links div em{font-style:normal;color:var(--on-red-2);display:inline-block;min-width:7.5em}
+.qr{background:var(--on-red);border-radius:24px;padding:20px;justify-self:end;display:grid;gap:12px;justify-items:center;max-width:100%}
+.qr #qr{width:220px;height:220px;display:grid;place-items:center}
+.qr #qr img,.qr #qr canvas{width:220px!important;height:220px!important}
+.qr span{font:600 14px/1.2 var(--display);color:var(--heading)}
+
+/* Arayüz: ilerleme, sayaç, düğmeler, notlar */
+.bar{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);height:4px;background:transparent;z-index:5}
+.bar i{display:block;height:100%;width:0;background:var(--red);transition:width .5s var(--ease)}
+.red-active .bar i{background:var(--on-red)}
+.hud{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;z-index:5}
+.hud button{font:600 14px/1 var(--display);border:1px solid var(--line);background:var(--surface);color:var(--heading);border-radius:999px;height:40px;min-width:40px;padding:0 14px;cursor:pointer}
+.hud button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.count{font:600 13px/1 var(--display);color:var(--text2);font-variant-numeric:tabular-nums;padding:0 6px}
+.red-active .count{color:var(--on-red-2)}
+.notes{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:min(560px,calc(100% - 260px));background:var(--heading);color:var(--surface);border-radius:14px;padding:12px 16px;font-size:14px;line-height:1.5;z-index:5}
+.notes b{font-family:var(--display);display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
+
+@media (max-width:900px){
+  body{overflow:auto}
+  .slide{align-items:flex-start}
+  .two,.arch-two,.cover .inner,.cost{grid-template-columns:minmax(0,1fr)}
+  .c3,.c4,.stats,.roles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .verbs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .journey{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:22px}
+  .journey::before{display:none}
+  .timeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .phone-stack{height:52vh}
+  .screens{flex-wrap:wrap}
+  .screens img,.screens.three img{height:46vh}
+  .layer{grid-template-columns:minmax(0,1fr)}
+  .qr{justify-self:start}
+  .notes{max-width:calc(100% - 32px);bottom:70px}
+}
+@media (max-width:520px){
+  .c3,.c4,.c2,.stats,.roles,.verbs{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .slide,.slide.is-active,[data-a],.journey::before,.bar i{transition:none!important;transform:none!important}
+  .anim .slide:not(.is-active) [data-a]{opacity:1}
+}
+</style>
+</head>
+<body>
+
+
+<main class="deck" id="deck" aria-live="polite">
+
+<!-- 1 · Kapak -->
+<section class="slide cover" data-notes="Merhaba. Biz Gümüşhane Üniversitesi öğrenci kulüpleri için tek bir uygulama geliştirdik: GÜ Kulüpler. Önce neden yaptığımızı, sonra ne yaptığımızı ve nasıl sürdüreceğimizi anlatacağız.">
+  <div class="inner">
+    <div>
+      <img class="mark" src="assets/app-icon.png" alt="GÜ Kulüpler uygulama ikonu" data-a style="--i:0">
+      <span class="eyebrow" data-a style="--i:1">Girişimcilik Projesi · Gümüşhane Üniversitesi · 2026</span>
+      <h1 data-a style="--i:2">GÜ <span>Kulüpler</span></h1>
+      <p class="lead" data-a style="--i:3">Kampüsteki tüm öğrenci kulüpleri, tek uygulamada.</p>
+      <div class="meta-row" data-a style="--i:4"><span><strong>Muhammed Emin Alan</strong> · <strong>Batuhan Cengiz</strong></span><span>iOS · Android · Web</span></div>
+    </div>
+    <div class="phone-stack" data-a style="--i:3" aria-hidden="true">
+      <img src="telefon/02-clb-03.jpg" alt="">
+      <img src="telefon/01-clb-01.jpg" alt="">
+    </div>
+  </div>
+</section>
+
+<!-- 2 · Sorun -->
+<section class="slide" data-notes="Bugün bir öğrenci kulübe katılmak istediğinde bilgi dağınık: WhatsApp grupları, Instagram hesapları, panolar, kâğıt formlar. Kulüp yönetimi de başvuruları, üyeleri ve yoklamayı elle takip ediyor.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Sorun</span>
+      <h2 class="title" data-a style="--i:1">Kulüp bilgisi beş farklı yere dağılmış durumda</h2>
+      <ul class="pain">
+        <li data-a style="--i:2">Duyurular WhatsApp gruplarında kayboluyor</li>
+        <li data-a style="--i:3">Hangi kulüp ne yapıyor, nasıl katılınır bilinmiyor</li>
+        <li data-a style="--i:4">Başvuru kâğıtta ya da DM'de; sonucu takip edilemiyor</li>
+        <li data-a style="--i:5">Etkinlik katılımı ve yoklama elle tutuluyor</li>
+      </ul>
+    </div>
+    <div class="chat" aria-label="Örnek mesajlaşma">
+      <div class="bubble" data-a style="--i:2"><small>Kulüp Duyuru Grubu · 312 mesaj</small>Yarınki etkinlik kaçtaydı?</div>
+      <div class="bubble me" data-a style="--i:3"><small>Öğrenci</small>Kulübe nasıl başvuruyoruz, form nerede?</div>
+      <div class="bubble" data-a style="--i:4"><small>Kulüp başkanı</small>Katılanları kâğıda yazın, sonra excel'e geçeriz.</div>
+      <div class="bubble me" data-a style="--i:5"><small>Öğrenci</small>Başvurum onaylandı mı? Kimse dönmedi…</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Kimler için -->
+<section class="slide" data-notes="Uygulamanın üç paydaşı var. Öğrenci keşfeder ve katılır, kulüp yönetimi işini tek panelden yürütür, üniversite de kulüp hayatını tek yerden görür.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Kimler için</span>
+      <h2 class="title" data-a style="--i:1">Üç paydaş, tek platform</h2>
+    </div>
+    <div class="cards c3">
+      <div class="card" data-a style="--i:2"><span class="tag">Öğrenci</span><h3>Keşfet ve katıl</h3><ul><li>İlgi alanına uygun kulübü bul</li><li>Tek dokunuşla başvur, durumu takip et</li><li>Etkinliğe kaydol, QR biletle gir</li></ul></div>
+      <div class="card" data-a style="--i:3"><span class="tag">Kulüp yönetimi</span><h3>Kulübü yönet</h3><ul><li>Başvuruları onayla / reddet</li><li>Üye, rol ve başkanlık devri</li><li>Etkinlik, duyuru, QR yoklama</li></ul></div>
+      <div class="card" data-a style="--i:4"><span class="tag">Üniversite</span><h3>Görünürlük ve denetim</h3><ul><li>Tüm kulüpler tek yerde</li><li>Kulüp açma / askıya alma</li><li>Şikayet ve kullanıcı denetimi</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · Çözüm -->
+<section class="slide red" data-notes="Çözümümüz beş fiilde özetleniyor: keşfet, başvur, katıl, takip et, yönet. Hepsi tek uygulamada, öğrencinin cebinde.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Çözüm</span>
+      <h2 class="title" data-a style="--i:1">Öğrenci kulüp hayatının tamamı tek uygulamada</h2>
+    </div>
+    <div class="verbs">
+      <div class="verb" data-a style="--i:2;border-color:var(--on-red)"><b>Keşfet</b><span style="color:var(--on-red-2)">Tüm kulüpler; kategori, arama, öneriler</span></div>
+      <div class="verb" data-a style="--i:3;border-color:var(--on-red)"><b>Başvur</b><span style="color:var(--on-red-2)">Not ile başvuru, anlık sonuç bildirimi</span></div>
+      <div class="verb" data-a style="--i:4;border-color:var(--on-red)"><b>Katıl</b><span style="color:var(--on-red-2)">Kontenjan, bekleme listesi, QR bilet</span></div>
+      <div class="verb" data-a style="--i:5;border-color:var(--on-red)"><b>Takip et</b><span style="color:var(--on-red-2)">Duyuru, gönderi, anket, bildirim</span></div>
+      <div class="verb" data-a style="--i:6;border-color:var(--on-red)"><b>Yönet</b><span style="color:var(--on-red-2)">Başkan ve kurul için yönetim paneli</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Ekran: keşfet -->
+<section class="slide" data-notes="Keşfet ekranında tüm kulüpler kategoriye göre listeleniyor. Kulüp sayfasında hakkında bilgisi, yönetim kurulu, gönderiler ve etkinlikler var.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Uygulama · Keşfet</span>
+      <h2 class="title" data-a style="--i:1">Kulübünü bul, birkaç dokunuşla başvur</h2>
+      <p class="lead" data-a style="--i:2">Kategori süzgeci, arama ve ilgi alanına göre öneriler. Kulüp sayfasında amaç, yönetim kurulu, danışman, gönderiler ve etkinlikler bir arada.</p>
+    </div>
+    <div class="screens">
+      <figure data-a style="--i:2"><img src="assets/screenshots/01-clb-01.jpg" alt="Kulüpler listesi ekranı"><figcaption>Kulüpler</figcaption></figure>
+      <figure data-a style="--i:3"><img src="assets/screenshots/02-clb-03.jpg" alt="Kulüp detay ekranı"><figcaption>Kulüp sayfası</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · Ekran: etkinlik -->
+<section class="slide" data-notes="Etkinliklere katılım kontenjanlı. Dolarsa bekleme listesine girersin, yer açılınca otomatik geçersin. Girişte QR biletin okutulur, yoklama kendiliğinden alınır.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Uygulama · Etkinlik</span>
+      <h2 class="title" data-a style="--i:1">Kâğıtsız etkinlik: kayıt, bilet, yoklama</h2>
+      <p class="lead" data-a style="--i:2">Kontenjan dolunca bekleme listesi; yer açılınca otomatik terfi ve bildirim. Girişte QR bilet okutulur, yoklama anında kaydedilir. Takvime ekleme ve hatırlatıcı.</p>
+    </div>
+    <div class="screens">
+      <figure data-a style="--i:2"><img src="assets/screenshots/03-evt-01.jpg" alt="Etkinlikler ekranı"><figcaption>Etkinlikler</figcaption></figure>
+      <figure data-a style="--i:3"><img src="assets/screenshots/04-evt-03.jpg" alt="QR bilet ekranı"><figcaption>QR bilet</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Ekran: akış, bildirim, yönetim -->
+<section class="slide" data-notes="Kulübün duyuruları, gönderileri ve anketleri tek akışta. Önemli gelişmeler bildirim olarak gelir. Başkan ve kurul da kulübü yönetim panelinden yürütür.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Uygulama · Akış, bildirim, yönetim</span>
+      <h2 class="title" data-a style="--i:1">Kulüp iletişimi ve yönetimi aynı yerde</h2>
+    </div>
+    <div class="screens three">
+      <figure data-a style="--i:2"><img src="assets/screenshots/05-fed-01.jpg" alt="Akış ekranı"><figcaption>Akış<span>Duyuru, gönderi, anket; beğeni ve yorum</span></figcaption></figure>
+      <figure data-a style="--i:3"><img src="assets/screenshots/06-ntf-01.jpg" alt="Bildirimler ekranı"><figcaption>Bildirimler<span>Başvuru sonucu, yeni etkinlik, iptal</span></figcaption></figure>
+      <figure data-a style="--i:4"><img src="assets/screenshots/07-mgt-01.jpg" alt="Kulüp yönetim paneli"><figcaption>Yönetim paneli<span>Başvurular, üyeler, etkinlikler, içerik</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · Kullanıcı yolculuğu -->
+<section class="slide" data-notes="Bir öğrencinin yolculuğu yedi adımda: üniversite e-postasıyla kayıt, profil, keşif, başvuru, onay bildirimi, etkinliğe kayıt ve QR ile giriş.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Kullanıcı yolculuğu</span>
+      <h2 class="title" data-a style="--i:1">Kayıttan etkinlik kapısına yedi adım</h2>
+    </div>
+    <div class="journey">
+      <div class="step" data-a style="--i:2"><i>1</i><b>Kayıt</b><span>Üniversite e-postası + doğrulama</span></div>
+      <div class="step" data-a style="--i:3"><i>2</i><b>Profil</b><span>Bölüm, sınıf, ilgi alanları</span></div>
+      <div class="step" data-a style="--i:4"><i>3</i><b>Keşif</b><span>Önerilen kulüpler</span></div>
+      <div class="step" data-a style="--i:5"><i>4</i><b>Başvuru</b><span>Not ile tek dokunuş</span></div>
+      <div class="step" data-a style="--i:6"><i>5</i><b>Onay</b><span>Anlık bildirim</span></div>
+      <div class="step" data-a style="--i:7"><i>6</i><b>Etkinlik</b><span>Kayıt, hatırlatıcı</span></div>
+      <div class="step" data-a style="--i:8"><i>7</i><b>QR giriş</b><span>Yoklama otomatik</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Roller -->
+<section class="slide" data-notes="Altı rol var. Her rolün yetkisi sunucu tarafında, Firebase güvenlik kurallarında uygulanıyor. Arayüzde bir düğmeyi gizlemek yetki sayılmıyor.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Roller ve yetkiler</span>
+      <h2 class="title" data-a style="--i:1">Herkes yalnızca kendi işini görür</h2>
+    </div>
+    <div class="roles">
+      <div class="role" data-a style="--i:2"><b>Öğrenci</b><p>Kulüpleri keşfeder, başvurur, herkese açık etkinliklere katılır.</p></div>
+      <div class="role" data-a style="--i:3"><b>Üye</b><p>Kulüp içi gönderileri, üye listesini ve üyelere özel etkinlikleri görür.</p></div>
+      <div class="role" data-a style="--i:4"><b>Yönetim kurulu</b><p>Başvuruları değerlendirir, etkinlik ve duyuru yayınlar, yoklama alır.</p></div>
+      <div class="role" data-a style="--i:5"><b>Başkan <em>tam yetki</em></b><p>Rolleri atar, kulüp ayarlarını yönetir, başkanlığı devreder.</p></div>
+      <div class="role" data-a style="--i:6"><b>Danışman <em>salt okunur</em></b><p>Akademik danışman kulübü izler, yönetimi görür.</p></div>
+      <div class="role" data-a style="--i:7"><b>Uygulama yöneticisi</b><p>Kulüp açar / askıya alır, şikayetleri ve kullanıcıları denetler.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Mimari -->
+<section class="slide" data-notes="Tek kod tabanıyla iOS, Android ve web. Uygulama katmanlı: ekran, ViewModel, repository, servis. Arka uçta Firebase'in yönetilen servislerini kullandık, sunucu bakımı yok.">
+  <div class="inner two arch-two">
+    <div>
+      <span class="eyebrow" data-a>Teknik mimari</span>
+      <h2 class="title" data-a style="--i:1">Tek kod tabanı, üç platform, sunucusuz arka uç</h2>
+      <p class="lead" data-a style="--i:2">Flutter ile iOS, Android ve web aynı koddan çıkıyor. Katmanlar tek yönlü: ekran → ViewModel → repository → servis → Firebase. Sunucu kiralama ve bakım yok.</p>
+    </div>
+    <div class="arch">
+      <div class="layer" data-a style="--i:2"><span>İstemci</span><div class="chips"><div class="chip hot">Flutter 3.44<small>iOS · Android · Web</small></div><div class="chip">Riverpod<small>durum yönetimi</small></div><div class="chip">go_router<small>gezinme</small></div></div></div>
+      <div class="arrow" data-a style="--i:3" aria-hidden="true">↓</div>
+      <div class="layer" data-a style="--i:3"><span>Paketler</span><div class="chips"><div class="chip">gu_data<small>model · repository · servis</small></div><div class="chip">gu_ui<small>tasarım sistemi</small></div></div></div>
+      <div class="arrow" data-a style="--i:4" aria-hidden="true">↓</div>
+      <div class="layer" data-a style="--i:4"><span>Firebase</span><div class="chips"><div class="chip">Auth</div><div class="chip">Firestore</div><div class="chip">Storage</div><div class="chip">Cloud Functions</div><div class="chip">FCM push</div><div class="chip">Remote Config</div><div class="chip">Crashlytics</div><div class="chip">Hosting</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · Mobil / ön yüz -->
+<section class="slide" data-notes="Ön yüzde kendi tasarım sistemimizi kurduk. Renk, boşluk, yazı tipi kodda sabit yazılmıyor, hepsi token'dan geliyor. Türkçe ve İngilizce, açık ve koyu tema, erişilebilirlik testli.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Mobil ve ön yüz</span>
+      <h2 class="title" data-a style="--i:1">Tasarımdan koda birebir, 51 ekran</h2>
+    </div>
+    <div class="cards c4">
+      <div class="card" data-a style="--i:2"><h3>Tasarım sistemi</h3><p>Renk, boşluk, yazı ve ikonlar token'dan. Kodda sabit değer yasak; otomatik denetleniyor.</p></div>
+      <div class="card" data-a style="--i:3"><h3>İki dil, iki tema</h3><p>Türkçe ve İngilizce; açık ve koyu tema. Metinlerin tamamı çeviri dosyalarında.</p></div>
+      <div class="card" data-a style="--i:4"><h3>Her ekran boyutu</h3><p>320 dp küçük telefondan tablete; metin ölçeği 1.0 / 1.3 / 1.6'da taşma yok.</p></div>
+      <div class="card" data-a style="--i:5"><h3>Erişilebilirlik</h3><p>Ekran okuyucu etiketleri, 44 pt dokunma alanı, AA renk kontrastı.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Arka uç -->
+<section class="slide" data-notes="Arka uçta yetkiyi sunucuda uyguluyoruz. Hiçbir veri kalıcı silinmiyor, silinen işaretleniyor. Cloud Functions bildirimleri gönderiyor, bekleme listesini ilerletiyor. Remote Config ile bakım modu ve zorunlu güncellemeyi anında açıyoruz.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Arka uç</span>
+      <h2 class="title" data-a style="--i:1">Kurallar sunucuda, veri asla kaybolmaz</h2>
+    </div>
+    <div class="cards c4">
+      <div class="card" data-a style="--i:2"><span class="tag">Firestore</span><h3>Güvenlik kuralları</h3><p>Rol × işlem matrisi sunucuda uygulanır. Arayüzden atlanamaz.</p></div>
+      <div class="card" data-a style="--i:3"><span class="tag">Veri</span><h3>Soft delete</h3><p>Hiçbir kayıt kalıcı silinmez; silinen işaretlenir, sayaçlar aynı işlemde güncellenir.</p></div>
+      <div class="card" data-a style="--i:4"><span class="tag">Functions</span><h3>Otomasyon</h3><p>Push dağıtımı, bekleme listesi terfisi, gece hesap silme temizliği.</p></div>
+      <div class="card" data-a style="--i:5"><span class="tag">Remote Config</span><h3>Anlık kontrol</h3><p>Bakım bandı ve zorunlu güncelleme, yeni sürüm çıkmadan açılır.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · Güvenlik ve gizlilik -->
+<section class="slide" data-notes="Kişisel veride KVKK'ya uyduk. E-posta profilde görünmüyor. Şikayet ve engelleme var. Hesap uygulama içinden silinebiliyor. Yayından önce güvenlik denetimi yaptık, 13 bulguyu düzelttik.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Güvenlik ve gizlilik</span>
+      <h2 class="title" data-a style="--i:1">KVKK uyumlu, yayından önce denetlendi</h2>
+      <p class="lead" data-a style="--i:2">Kapsamlı güvenlik denetiminde 16 bulgu çıktı: 13'ü düzeltildi, 3'ü doğrulamada elendi. Kritik bulgu yok.</p>
+    </div>
+    <div class="cards c2">
+      <div class="card" data-a style="--i:2"><h3>Üniversite e-postası</h3><p>Kayıt ve e-posta doğrulaması; sahte hesaba karşı ilk kapı.</p></div>
+      <div class="card" data-a style="--i:3"><h3>E-posta gizli</h3><p>Profilde görünmez; yalnızca ilgili kulüp yönetimi görür.</p></div>
+      <div class="card" data-a style="--i:4"><h3>Şikayet ve engelleme</h3><p>Uygunsuz içerik bildirilir, yönetici inceler.</p></div>
+      <div class="card" data-a style="--i:5"><h3>Hesap silme</h3><p>Uygulama içinden; kişisel veri anonimleştirilir.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 · Kalite: rakamlar -->
+<section class="slide" data-notes="Kaliteyi rakamlarla ölçtük. On dört bin beş yüzün üzerinde otomatik test var, her ekranın açık ve koyu görüntüsü kayıtlı. Kırmızı kalite kapısıyla kod birleştirilmiyor.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Kalite</span>
+      <h2 class="title" data-a style="--i:1">Rakamlarla proje</h2>
+    </div>
+    <div class="stats">
+      <div class="stat" data-a style="--i:2"><b data-count="14500" data-suffix="+">14.500+</b><span>otomatik test (birim, widget, güvenlik kuralı)</span></div>
+      <div class="stat" data-a style="--i:3"><b data-count="150" data-suffix="K">150K</b><span>satır Dart kodu</span></div>
+      <div class="stat" data-a style="--i:4"><b data-count="338">338</b><span>ekran görüntüsü testi (golden, açık + koyu)</span></div>
+      <div class="stat" data-a style="--i:5"><b data-count="51">51</b><span>tasarımdan birebir ekran</span></div>
+    </div>
+    <p class="note" data-a style="--i:6">Her değişiklik önce kalite kapısından geçer: biçim, statik analiz, katman sınırı, sabit değer ve kalıcı silme yasağı, çeviri eşitliği, testler ve kapsam eşikleri.</p>
+  </div>
+</section>
+
+<!-- 15 · Süreç -->
+<section class="slide" data-notes="Projeyi sekiz faza ve kırk sekiz göreve böldük. Önce tasarım ve analiz, sonra her görev plan, kod, test ve inceleme döngüsünden geçti. On günde iki yüzü aşkın commit.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Geliştirme süreci</span>
+      <h2 class="title" data-a style="--i:1">10 günde 8 faz, 48 görev, 206 commit</h2>
+    </div>
+    <div class="timeline">
+      <div class="phase" data-a style="--i:2"><b>A</b><strong>Temel</strong><span>Tasarım sistemi, veri katmanı, iskelet</span></div>
+      <div class="phase" data-a style="--i:3"><b>B</b><strong>Kimlik</strong><span>Kayıt, doğrulama, profil</span></div>
+      <div class="phase" data-a style="--i:4"><b>C</b><strong>Kulüpler ve akış</strong><span>Keşif, başvuru, gönderiler</span></div>
+      <div class="phase" data-a style="--i:5"><b>D</b><strong>Etkinlikler</strong><span>Kayıt, bilet, hatırlatıcı</span></div>
+      <div class="phase" data-a style="--i:6"><b>E</b><strong>Bildirim, profil</strong><span>Bildirim kutusu, ayarlar</span></div>
+      <div class="phase" data-a style="--i:7"><b>F</b><strong>Kulüp yönetimi</strong><span>Panel, yoklama, roller</span></div>
+      <div class="phase" data-a style="--i:8"><b>G</b><strong>Uygulama yönetimi</strong><span>Kulüp, şikayet, kullanıcı</span></div>
+      <div class="phase" data-a style="--i:9"><b>H</b><strong>Sertleştirme</strong><span>Push, performans, güvenlik, yayın</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 16 · Yayın durumu -->
+<section class="slide" data-notes="Uygulama bugün üç platformda erişilebilir. iOS App Store incelemesinde, TestFlight ile denenebiliyor. Android APK ve web sürümü yayında. Kodun tamamı açık kaynak.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Yayın durumu</span>
+      <h2 class="title" data-a style="--i:1">Bugün üç platformda canlı</h2>
+    </div>
+    <div class="cards c4">
+      <div class="platform" data-a style="--i:2"><span class="status wait">İncelemede</span><h3>iOS</h3><p>App Store incelemesinde; TestFlight ile beta.</p></div>
+      <div class="platform" data-a style="--i:3"><span class="status">Yayında</span><h3>Android</h3><p>APK, GitHub Releases'ta. Google Play sırada.</p></div>
+      <div class="platform" data-a style="--i:4"><span class="status">Yayında</span><h3>Web</h3><p>Kurulumsuz, tarayıcıdan.</p><code>gu-kulupler.web.app/app</code></div>
+      <div class="platform" data-a style="--i:5"><span class="status">Açık kaynak</span><h3>Kaynak kod</h3><p>MIT lisansı, herkese açık.</p><code>github.com/muhammedeminalan/gu_kulupler</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 · Rekabet -->
+<section class="slide" data-notes="Bugün kullanılan araçlarla kıyasladık. WhatsApp ve Instagram iletişim için iyi ama başvuru, yoklama ve rol yetkisi yok. Kâğıt form başvuruyu toplar ama takip edilemez. GÜ Kulüpler hepsini tek yerde, kampüse özel sunuyor.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Rekabet ve benzerler</span>
+      <h2 class="title" data-a style="--i:1">Bugünkü araçlar iletişim kurar, yönetmez</h2>
+    </div>
+    <div class="table-wrap" data-a style="--i:2">
+      <table>
+        <thead><tr><th>Özellik</th><th>WhatsApp grubu</th><th>Instagram</th><th>Kâğıt form / pano</th><th class="us">GÜ Kulüpler</th></tr></thead>
+        <tbody>
+          <tr><td>Duyuru ve iletişim</td><td class="y">✓</td><td class="y">✓</td><td class="p">kısmen</td><td class="us y">✓</td></tr>
+          <tr><td>Tüm kulüpleri tek yerde keşif</td><td class="n">—</td><td class="p">kısmen</td><td class="n">—</td><td class="us y">✓</td></tr>
+          <tr><td>Başvuru ve sonuç takibi</td><td class="n">—</td><td class="n">—</td><td class="p">kısmen</td><td class="us y">✓</td></tr>
+          <tr><td>Etkinlik kontenjanı, bekleme listesi</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="us y">✓</td></tr>
+          <tr><td>QR bilet ve yoklama</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="us y">✓</td></tr>
+          <tr><td>Rol bazlı yetki, denetim</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="us y">✓</td></tr>
+          <tr><td>KVKK uyumlu, kampüse özel</td><td class="n">—</td><td class="n">—</td><td class="p">kısmen</td><td class="us y">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 18 · Sürdürülebilirlik -->
+<section class="slide" data-notes="Sürdürülebilirlik açısından altyapı maliyetimiz bugünkü kullanımla ayda sıfır lira. Firebase'in ücretsiz kotaları öğrenci ölçeğine yetiyor. Sabit giderler yalnızca mağaza hesapları.">
+  <div class="inner cost">
+    <div data-a style="--i:1">
+      <span class="eyebrow">Sürdürülebilirlik ve maliyet</span>
+      <div class="zero">0 ₺<small>aylık altyapı maliyeti, bugünkü kullanımla</small></div>
+    </div>
+    <div class="rows">
+      <div class="rowx" data-a style="--i:2"><div><b>Firebase (veritabanı, giriş, depolama, bildirim)</b><small>Ücretsiz kotalar öğrenci ölçeğine yetiyor</small></div><span>0 ₺</span></div>
+      <div class="rowx" data-a style="--i:3"><div><b>Web barındırma + otomatik yayın</b><small>Firebase Hosting, GitHub Actions</small></div><span>0 ₺</span></div>
+      <div class="rowx" data-a style="--i:4"><div><b>Apple Developer</b><small>App Store hesabı</small></div><span>99 $ / yıl</span></div>
+      <div class="rowx" data-a style="--i:5"><div><b>Google Play</b><small>Bir kerelik kayıt</small></div><span>25 $</span></div>
+      <div class="rowx" data-a style="--i:6"><div><b>Büyüme</b><small>Kota aşılırsa kullanım başına küçük ücret; bütçe uyarısı kurulu</small></div><span>kullandıkça</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 19 · İş modeli -->
+<section class="slide" data-notes="İş modeli için üç seçenek düşünüyoruz. Öğrenci için her zaman ücretsiz ve reklamsız. Gelir, üniversite işbirliğinden, başka kampüslere yayılmaktan ve etkinlik sponsorluklarından gelebilir.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>İş modeli önerisi</span>
+      <h2 class="title" data-a style="--i:1">Öğrenciye her zaman ücretsiz ve reklamsız</h2>
+    </div>
+    <div class="cards c3">
+      <div class="card" data-a style="--i:2"><span class="tag">1 · Kurum</span><h3>Üniversite işbirliği</h3><p>Sağlık, Kültür ve Spor Daire Başkanlığı'nın resmî kulüp platformu olarak lisans ve destek sözleşmesi.</p></div>
+      <div class="card" data-a style="--i:3"><span class="tag">2 · Ölçek</span><h3>Diğer üniversiteler</h3><p>Aynı altyapı kampüs başına kurulur; kurum başına yıllık abonelik. Kod zaten çok dilli ve yapılandırılabilir.</p></div>
+      <div class="card" data-a style="--i:4"><span class="tag">3 · Etkinlik</span><h3>Sponsorlu etkinlikler</h3><p>Yerel işletme ve kurumlar kulüp etkinliklerine sponsor olur; öğrenciye reklam gösterilmez.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 20 · Etki ve hedefler -->
+<section class="slide" data-notes="Hedeflerimiz ölçülebilir. İlk dönem tüm etkin kulüpleri platforma almak, başvuruların ve yoklamanın dijitale geçmesi. Bunlar hedef, henüz gerçekleşmiş rakam değil.">
+  <div class="inner">
+    <div>
+      <span class="eyebrow" data-a>Etki ve hedefler</span>
+      <h2 class="title" data-a style="--i:1">İlk dönem için ölçülebilir hedefler</h2>
+    </div>
+    <div class="cards c4">
+      <div class="card goal" data-a style="--i:2"><b>%100</b><p>Etkin kulüplerin platformda olması</p></div>
+      <div class="card goal" data-a style="--i:3"><b>%80</b><p>Kulüp başvurularının uygulamadan yapılması</p></div>
+      <div class="card goal" data-a style="--i:4"><b>0</b><p>Kâğıtla tutulan etkinlik yoklaması</p></div>
+      <div class="card goal" data-a style="--i:5"><b>24 sa</b><p>Başvuru sonucunun öğrenciye ulaşma süresi</p></div>
+    </div>
+    <p class="note" data-a style="--i:6">Öğrenciye: tek yerden keşif ve katılım. Kulübe: daha az elle iş, daha çok etkinlik. Üniversiteye: kulüp hayatına tek ekrandan görünürlük. Değerler hedeftir, ölçüm yayından sonra başlar.</p>
+  </div>
+</section>
+
+<!-- 21 · Yol haritası -->
+<section class="slide" data-notes="Sıradaki adımlar: App Store ve Google Play yayını, üniversiteyle pilot, bölüm ve mekân listelerinin uygulama güncellemesi gerektirmeden değişmesi ve geniş ekran için web düzeni.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Yol haritası</span>
+      <h2 class="title" data-a style="--i:1">Sıradaki adımlar</h2>
+      <p class="lead" data-a style="--i:2">Planlar herkese açık yol haritası panosunda ve GitHub'da iş olarak takip ediliyor.</p>
+    </div>
+    <div class="rows">
+      <div class="rowx" data-a style="--i:2"><div><b>App Store ve Google Play yayını</b><small>iOS incelemede; Android imza anahtarı ve Play hesabı</small></div><span>Şimdi</span></div>
+      <div class="rowx" data-a style="--i:3"><div><b>Üniversiteyle pilot dönem</b><small>Kulüp başkanları ve SKS ile geri bildirim</small></div><span>1. ay</span></div>
+      <div class="rowx" data-a style="--i:4"><div><b>Dinamik bölüm ve mekân listeleri</b><small>Uygulama güncellemesi olmadan değişir</small></div><span>v1.1</span></div>
+      <div class="rowx" data-a style="--i:5"><div><b>Geniş ekran ve web düzeni</b><small>Kenar menü, çok sütunlu sayfalar</small></div><span>v1.1</span></div>
+      <div class="rowx" data-a style="--i:6"><div><b>Diğer üniversiteler</b><small>Çok kampüs desteği</small></div><span>Sonra</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 22 · Ekip ve teşekkür -->
+<section class="slide red" data-notes="Dinlediğiniz için teşekkürler. Uygulamayı şimdi QR kodu okutarak web'den deneyebilirsiniz. Sorularınızı alalım.">
+  <div class="inner two">
+    <div>
+      <span class="eyebrow" data-a>Ekip</span>
+      <h2 class="title" data-a style="--i:1">Teşekkürler</h2>
+      <div class="team">
+        <div class="person" data-a style="--i:2"><div class="avatar" id="avatar-emin"><img src="ekip/muhammed-emin-alan.jpg" alt="Muhammed Emin Alan"></div><div><b>Muhammed Emin Alan</b><span>Mobil geliştirme · tüm teknik altyapı</span></div></div>
+        <div class="person" data-a style="--i:3"><div class="avatar" id="avatar-batuhan"><img src="ekip/batuhan-cengiz.jpg" alt="Batuhan Cengiz"></div><div><b>Batuhan Cengiz</b><span>Pazarlama ve iletişim</span></div></div>
+      </div>
+      <div class="links" data-a style="--i:4">
+        <div><em>Web</em>gu-kulupler.web.app/app</div>
+        <div><em>Kaynak kod</em>github.com/muhammedeminalan/gu_kulupler</div>
+        <div><em>iOS beta</em>testflight.apple.com/join/YbsaqTNG</div>
+      </div>
+    </div>
+    <div class="qr" data-a style="--i:3"><div id="qr" aria-label="gu-kulupler.web.app/app için QR kodu"></div><span>Okut, hemen dene</span></div>
+  </div>
+</section>
+
+</main>
+
+<div class="bar" aria-hidden="true"><i id="bar"></i></div>
+<div class="notes" id="notes" hidden><b>Konuşma notu</b><span id="notes-text"></span></div>
+<nav class="hud" aria-label="Slayt gezinme">
+  <span class="count" id="count">1 / 22</span>
+  <button type="button" id="btn-notes" aria-pressed="false" title="Konuşma notları (N)">Not</button>
+  <button type="button" id="btn-full" title="Tam ekran (F)">Tam ekran</button>
+  <button type="button" id="btn-prev" aria-label="Önceki slayt">←</button>
+  <button type="button" id="btn-next" aria-label="Sonraki slayt">→</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const total = slides.length;
+  const bar = document.getElementById('bar');
+  const count = document.getElementById('count');
+  const notes = document.getElementById('notes');
+  const notesText = document.getElementById('notes-text');
+  let current = 0;
+
+  const fromHash = () => {
+    const m = /^#s(\d+)$/.exec(location.hash);
+    return m ? Math.min(Math.max(parseInt(m[1], 10) - 1, 0), total - 1) : 0;
+  };
+
+  function animateCounts(slide) {
+    for (const el of slide.querySelectorAll('[data-count]')) {
+      const target = Number(el.dataset.count);
+      const suffix = el.dataset.suffix || '';
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) continue;
+      const start = performance.now();
+      const step = (t) => {
+        const k = Math.min((t - start) / 1200, 1);
+        const v = Math.round(target * (1 - Math.pow(1 - k, 3)));
+        el.textContent = v.toLocaleString('tr-TR') + suffix;
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+  }
+
+  function go(index) {
+    current = Math.min(Math.max(index, 0), total - 1);
+    slides.forEach((s, i) => {
+      s.classList.toggle('is-active', i === current);
+      s.classList.toggle('is-past', i < current);
+      s.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+    });
+    document.body.classList.toggle('red-active', slides[current].classList.contains('red'));
+    bar.style.width = `${((current + 1) / total) * 100}%`;
+    count.textContent = `${current + 1} / ${total}`;
+    notesText.textContent = slides[current].dataset.notes || '';
+    if (location.hash !== `#s${current + 1}`) history.replaceState(null, '', `#s${current + 1}`);
+    animateCounts(slides[current]);
+  }
+
+  // İlk gezinmeden itibaren geçiş animasyonları açılır (açılış karesi animasyonsuz ve eksiksiz).
+  const armed = (fn) => () => { document.body.classList.add('anim'); fn(); };
+  const next = armed(() => go(current + 1));
+  const prev = armed(() => go(current - 1));
+
+  document.getElementById('btn-next').addEventListener('click', next);
+  document.getElementById('btn-prev').addEventListener('click', prev);
+  const btnNotes = document.getElementById('btn-notes');
+  const toggleNotes = () => {
+    notes.hidden = !notes.hidden;
+    btnNotes.setAttribute('aria-pressed', String(!notes.hidden));
+  };
+  btnNotes.addEventListener('click', toggleNotes);
+  const toggleFull = () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      else document.documentElement.requestFullscreen?.().catch(() => {});
+    } catch (e) { /* tam ekran yok */ }
+  };
+  document.getElementById('btn-full').addEventListener('click', toggleFull);
+
+  addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('input,textarea')) return;
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') armed(() => go(0))();
+    else if (e.key === 'End') armed(() => go(total - 1))();
+    else if (e.key === 'n' || e.key === 'N') toggleNotes();
+    else if (e.key === 'f' || e.key === 'F') toggleFull();
+  });
+
+  let touchX = null;
+  addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 60) (dx < 0 ? next : prev)();
+    touchX = null;
+  }, { passive: true });
+
+  addEventListener('hashchange', armed(() => go(fromHash())));
+
+  try {
+    if (window.QRCode) {
+      new QRCode(document.getElementById('qr'), { text: 'https://gu-kulupler.web.app/app/', width: 220, height: 220, colorDark: '#1D293D', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
+    } else {
+      document.getElementById('qr').textContent = 'gu-kulupler.web.app/app';
+    }
+  } catch (e) {
+    document.getElementById('qr').textContent = 'gu-kulupler.web.app/app';
+  }
+
+  go(fromHash());
+})();
+</script>
+
+</body>
+</html>
