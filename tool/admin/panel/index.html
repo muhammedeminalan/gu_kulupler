@@ -72,6 +72,22 @@ pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospa
 'use strict';
 // Kart tanımları: alanlar → betik argümanları. `read` = salt okunur (onay istemez).
 const CARDS = [
+  { id: 'stats', title: 'İstatistik', desc: 'Hesaplar, push alabilen cihazlar, kulüpler, yaklaşan etkinlikler, açık şikayet ve destek talepleri. Hiçbir şey yazmaz.',
+    fields: [], actions: [{ label: 'İstatistikleri göster', primary: true, read: true }] },
+  { id: 'userinfo', title: 'Kullanıcı bilgisi', desc: 'Doğrulama, son giriş, süper admin / askı durumu, üyelikler, bildirim cihazı sayısı. Hiçbir şey yazmaz.',
+    fields: [{ key: 'email', flag: '--email', label: 'E-posta', type: 'email', placeholder: 'kisi@gmail.com' }],
+    actions: [{ label: 'Bilgileri göster', primary: true, read: true, need: ['email'] }] },
+  { id: 'remoteconfig', title: 'Bakım ve güncelleme', desc: 'Uygulamadaki bakım bandı ve zorunlu güncelleme. Uygulamalar değişikliği anında alır.',
+    fields: [
+      { key: 'maintenance', flag: '--maintenance', label: 'Bakım mesajı', placeholder: 'Bugün 22:00–23:00 arası bakım var.' },
+      { key: 'minBuild', flag: '--min-build', label: 'En düşük build numarası', placeholder: 'ör. 2 (altındakiler güncellemeye zorlanır)' },
+    ],
+    actions: [
+      { label: 'Durumu göster', read: true, skipFields: true },
+      { label: 'Bakımı aç', primary: true, need: ['maintenance'], only: ['maintenance'] },
+      { label: 'Bakımı kapat', flags: ['--maintenance-off'], skipFields: true },
+      { label: 'Zorunlu güncellemeyi ayarla', need: ['minBuild'], only: ['minBuild'] },
+    ] },
   { id: 'superadmin', title: 'Süper admin', desc: 'Uygulama yöneticisi yetkisi (custom claim). Kullanıcı çıkış-giriş yapınca geçerli olur.',
     fields: [{ key: 'email', flag: '--email', label: 'E-posta', type: 'email', placeholder: 'kisi@gmail.com' }],
     actions: [
@@ -190,6 +206,7 @@ function renderCard(card) {
               continue;
             }
             if (f.showIf && target !== f.showIf) continue;
+            if (action.only && !action.only.includes(f.key)) continue;
             const v = inputs[f.key].value.trim();
             if (v) values[f.flag] = v;
           }
