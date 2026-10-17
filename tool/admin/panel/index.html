@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GÜ Admin Paneli</title>
+<style>
+:root{--brand:#D00A2D;--brand-soft:#FDECEF;--bg:#F6F5F2;--surface:#FFFFFF;--border:#E4E2DD;--text:#1E2533;--muted:#5E708A;--ok:#1F7A3E;--ok-soft:#E6F4EA;--err:#B3261E;--err-soft:#FCE8E6}
+@media (prefers-color-scheme:dark){:root{--brand:#FF4D6A;--brand-soft:#3A1520;--bg:#14161B;--surface:#1E2128;--border:#30343D;--text:#ECEEF2;--muted:#9AA6B8;--ok:#6DD58C;--ok-soft:#173523;--err:#F2B8B5;--err-soft:#3B1E1C}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center}
+h1{font-size:18px;margin:0}
+.meta{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+main{max-width:1100px;margin:0 auto;padding:24px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:16px;margin:0}
+.card p{margin:0;color:var(--muted);font-size:13px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input[type=text],input[type=email],select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;width:100%}
+input:focus,select:focus{outline:2px solid var(--brand);outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.radio{flex-direction:row;align-items:center;gap:6px;color:var(--text)}
+button{font:inherit;font-weight:600;border-radius:10px;padding:9px 14px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+button:hover:not(:disabled){filter:brightness(.97)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:5}
+.scrim.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;border:1px solid var(--border)}
+.modal header{position:static;border-radius:16px 16px 0 0}
+.modal .body{padding:16px 20px;overflow:auto}
+.modal footer{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border)}
+pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;margin-bottom:10px}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.err{background:var(--err-soft);color:var(--err)}
+.badge.warn{background:var(--brand-soft);color:var(--brand)}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" aria-hidden="true">GÜ</div>
+  <div>
+    <h1>GÜ Admin Paneli</h1>
+    <div class="meta" id="meta">bağlanıyor…</div>
+  </div>
+  <div class="spacer"></div>
+  <button id="shutdown" type="button">Paneli kapat</button>
+</header>
+<main id="cards"></main>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <header><h1 id="modal-title">Önizleme</h1></header>
+    <div class="body">
+      <span class="badge" id="modal-badge"></span>
+      <pre id="modal-output"></pre>
+      <p class="hint" id="modal-hint"></p>
+    </div>
+    <footer>
+      <button type="button" id="modal-close">Kapat</button>
+      <button type="button" class="primary" id="modal-apply">Evet, uygula</button>
+    </footer>
+  </div>
+</div>
+
+<script nonce="__NONCE__">
+'use strict';
+// Kart tanımları: alanlar → betik argümanları. `read` = salt okunur (onay istemez).
+const CARDS = [
+  { id: 'superadmin', title: 'Süper admin', desc: 'Uygulama yöneticisi yetkisi (custom claim). Kullanıcı çıkış-giriş yapınca geçerli olur.',
+    fields: [{ key: 'email', flag: '--email', label: 'E-posta', type: 'email', placeholder: 'kisi@gmail.com' }],
+    actions: [
+      { label: 'Yetki ver', primary: true, need: ['email'] },
+      { label: 'Yetkiyi geri al', flags: ['--revoke'], need: ['email'] },
+      { label: 'Süper adminleri listele', flags: ['--list'], read: true, skipFields: true },
+    ] },
+  { id: 'push', title: 'Push bildirimi', desc: 'Telefonlara bildirim gönderir (uygulama içi kutuya yazmaz). Başlık en çok 60, metin 300 karakter.',
+    fields: [
+      { key: 'title', flag: '--title', label: 'Başlık', placeholder: 'GÜ Kulüpler' },
+      { key: 'body', flag: '--body', label: 'Metin', placeholder: 'Yeni etkinlikler yayında!' },
+      { key: 'target', type: 'target' },
+      { key: 'email', flag: '--email', label: 'E-posta (tek kişi)', type: 'email', placeholder: 'kisi@gmail.com', showIf: 'one' },
+    ],
+    actions: [{ label: 'Push gönder', primary: true, need: ['title', 'body'] }] },
+  { id: 'system', title: 'Sistem bildirimi', desc: 'Uygulama içi bildirim kutusuna hazır metin yazar (metin uygulamada TR / EN).',
+    fields: [
+      { key: 'textKey', flag: '--text-key', label: 'Metin', type: 'select', options: [['welcome', 'Hoş geldin'], ['maintenance', 'Bakım duyurusu']] },
+      { key: 'target', type: 'target' },
+      { key: 'email', flag: '--email', label: 'E-posta (tek kişi)', type: 'email', placeholder: 'kisi@gmail.com', showIf: 'one' },
+    ],
+    actions: [{ label: 'Bildirimi gönder', primary: true }] },
+  { id: 'advisor', title: 'Danışman', desc: 'Hesabı kulübe danışman olarak bağlar ya da bağı kaldırır. Danışman adı önce kulüp formunda girilmiş olmalı.',
+    fields: [
+      { key: 'club', flag: '--club', label: 'Kulüp kimliği', placeholder: 'c01' },
+      { key: 'email', flag: '--email', label: 'Danışman e-postası', type: 'email', placeholder: 'hoca@gumushane.edu.tr' },
+    ],
+    actions: [
+      { label: 'Danışman yap', primary: true, need: ['club', 'email'] },
+      { label: 'Danışmanlığı kaldır', flags: ['--remove'], need: ['club', 'email'] },
+    ] },
+  { id: 'review', title: 'İnceleme hesabı', desc: 'E-postası doğrulanmış test hesabı açar. Şifre bir kez gösterilir; App Store Connect\'e yazmak için kopyala.',
+    fields: [{ key: 'email', flag: '--email', label: 'E-posta', type: 'email', placeholder: 'kisi+review@gmail.com' }],
+    actions: [
+      { label: 'Hesap aç / doğrula', primary: true, need: ['email'] },
+      { label: 'Şifreyi yenile', flags: ['--reset-password'], need: ['email'] },
+    ] },
+  { id: 'deletion', title: 'Hesap silme temizliği', desc: 'Uygulamada yarım kalan hesap silmelerini tamamlar (normalde her gece otomatik çalışır).',
+    fields: [{ key: 'uid', flag: '--uid', label: 'Kullanıcı kimliği (uid)', placeholder: 'boş bırak = hepsi' }],
+    actions: [
+      { label: 'Tüm silinmiş hesaplar', primary: true, flags: ['--all-deleted'], skipFields: true },
+      { label: 'Yalnızca bu hesap', need: ['uid'] },
+    ] },
+  { id: 'demo', title: 'Demo içerik', desc: 'Demo kulüp, üyelik, gönderi ve etkinlikleri yazar. Demo kulüpler zaten varsa hiçbir şey yazmaz.',
+    fields: [], actions: [{ label: 'Demo içeriği yükle', primary: true }] },
+];
+
+const $ = (id) => document.getElementById(id);
+const api = async (pathName, body) => {
+  const res = await fetch(pathName, {
+    method: body ? 'POST' : 'GET',
+    headers: { 'x-gu-panel': '1', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+};
+
+let projectId = '';
+let pending = null;
+
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const c of children) node.append(c);
+  return node;
+}
+
+function renderCard(card) {
+  const inputs = {};
+  let target = 'all';
+  const root = el('section', { class: 'card' }, [el('h2', { text: card.title }), el('p', { text: card.desc })]);
+  const dependents = [];
+  for (const f of card.fields) {
+    if (f.type === 'target') {
+      const name = `${card.id}-target`;
+      const mk = (value, text) => {
+        const r = el('input', { type: 'radio', name, value });
+        if (value === 'all') r.checked = true;
+        r.addEventListener('change', () => { target = value; dependents.forEach((d) => d()); });
+        return el('label', { class: 'radio' }, [r, document.createTextNode(text)]);
+      };
+      root.append(el('div', { class: 'row' }, [mk('all', 'Herkes'), mk('one', 'Tek kişi')]));
+      continue;
+    }
+    const input = f.type === 'select'
+      ? el('select', {}, f.options.map(([v, t]) => el('option', { value: v, text: t })))
+      : el('input', { type: f.type || 'text', placeholder: f.placeholder || '', autocomplete: 'off' });
+    inputs[f.key] = input;
+    const wrap = el('label', {}, [document.createTextNode(f.label), input]);
+    if (f.showIf) {
+      const sync = () => { wrap.style.display = target === f.showIf ? '' : 'none'; };
+      dependents.push(sync);
+      sync();
+    }
+    root.append(wrap);
+  }
+  const buttons = el('div', { class: 'row' });
+  for (const action of card.actions) {
+    buttons.append(el('button', {
+      type: 'button',
+      class: action.primary ? 'primary' : '',
+      text: action.label,
+      onclick: () => {
+        const values = {};
+        const flags = [...(action.flags || [])];
+        if (!action.skipFields) {
+          for (const f of card.fields) {
+            if (f.type === 'target') {
+              if (target === 'all') flags.push('--all');
+              continue;
+            }
+            if (f.showIf && target !== f.showIf) continue;
+            const v = inputs[f.key].value.trim();
+            if (v) values[f.flag] = v;
+          }
+        }
+        const missing = (action.need || []).filter((k) => !inputs[k].value.trim());
+        if (target === 'one' && card.fields.some((f) => f.showIf) && !inputs.email.value.trim()) missing.push('email');
+        if (missing.length) {
+          inputs[missing[0]].focus();
+          return showResult(`${card.title} — eksik bilgi`, { code: 2, output: 'Zorunlu alanı doldur.' }, false);
+        }
+        preview(card, action, values, flags);
+      },
+    }));
+  }
+  root.append(buttons);
+  return root;
+}
+
+async function preview(card, action, values, flags) {
+  showResult(`${card.title} — ${action.label}`, { code: null, output: 'Önizleme hazırlanıyor…' }, false);
+  try {
+    const result = await api('/api/run', { id: card.id, values, flags, apply: false });
+    // Süper admin betiği kuru çalıştırmada planı basıp "--yes ekle" ile 3 döner: önizleme başarılıdır.
+    const previewOk = result.code === 0 || (result.code === 3 && /--yes ekle/.test(result.output));
+    const canApply = previewOk && !action.read && !/Değişiklik yok\./.test(result.output);
+    pending = canApply ? { card, action, values, flags } : null;
+    showResult(`${card.title} — ${action.label}`, { ...result, code: previewOk ? 0 : result.code }, canApply, action.read);
+  } catch (e) {
+    showResult(`${card.title} — hata`, { code: 1, output: e.message }, false);
+  }
+}
+
+async function apply() {
+  if (!pending) return;
+  const { card, action, values, flags } = pending;
+  pending = null;
+  $('modal-apply').disabled = true;
+  showResult(`${card.title} — uygulanıyor`, { code: null, output: 'Gerçek projeye yazılıyor…' }, false);
+  try {
+    const result = await api('/api/run', { id: card.id, values, flags, apply: true });
+    showResult(`${card.title} — ${action.label}`, result, false, false, true);
+  } catch (e) {
+    showResult(`${card.title} — hata`, { code: 1, output: e.message }, false);
+  }
+}
+
+function showResult(title, result, canApply, readOnly = false, applied = false) {
+  $('modal-title').textContent = title;
+  const badge = $('modal-badge');
+  if (result.code === null) { badge.className = 'badge warn'; badge.textContent = 'Çalışıyor'; }
+  else if (result.code === 0) { badge.className = 'badge ok'; badge.textContent = applied ? 'Uygulandı' : readOnly ? 'Tamam' : 'Önizleme — henüz hiçbir şey yazılmadı'; }
+  else { badge.className = 'badge err'; badge.textContent = `Hata (kod ${result.code})`; }
+  $('modal-output').textContent = (result.output || '').replace(/^Kuru çalıştırma: .*$/m, '').trim() || '—';
+  $('modal-hint').textContent = canApply ? `"Evet, uygula" GERÇEK projeye (${projectId}) yazar.` : '';
+  const applyBtn = $('modal-apply');
+  applyBtn.style.display = canApply ? '' : 'none';
+  applyBtn.disabled = false;
+  $('scrim').classList.add('open');
+}
+
+$('modal-apply').addEventListener('click', apply);
+$('modal-close').addEventListener('click', () => { pending = null; $('scrim').classList.remove('open'); });
+$('shutdown').addEventListener('click', async () => {
+  try { await api('/api/shutdown', {}); } catch (e) { /* kapanıyor */ }
+  document.body.textContent = 'Panel kapatıldı. Yeniden açmak için masaüstündeki "GÜ Admin Paneli"ne çift tıkla.';
+});
+
+(async () => {
+  try {
+    const info = await api('/api/info');
+    projectId = info.projectId;
+    $('meta').textContent = `Proje: ${info.projectId} · anahtar: ${info.keyFile} ✓`;
+    const cards = $('cards');
+    for (const card of CARDS) cards.append(renderCard(card));
+  } catch (e) {
+    $('meta').textContent = `Bağlanamadı: ${e.message}`;
+  }
+})();
+</script>
+</body>
+</html>

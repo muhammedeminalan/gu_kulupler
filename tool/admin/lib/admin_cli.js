@@ -102,13 +102,15 @@ function resolveTarget(options, env, io = {}) {
 }
 
 /**
- * Uygulama izni: kuru çalıştırmada (`--yes` yok) `dry`; gerçek projede TTY yoksa `noTty`; aksi halde `ask`
- * (betik proje kimliğini yazdırıp [confirmationMatches] ile karşılaştırır); emülatörde `apply`.
+ * Uygulama izni: kuru çalıştırmada (`--yes` yok) `dry`; gerçek projede TTY varsa `ask` (betik proje kimliğini
+ * yazdırıp [confirmationMatches] ile karşılaştırır); TTY yoksa yerel admin panelinin onayı (`panelConfirm`, panelde
+ * elle yazılan proje kimliği — `GU_ADMIN_PANEL_CONFIRM`) varsa `panel`, yoksa `noTty`; emülatörde `apply`.
  */
-function applyMode({ yes, emulator, isTty }) {
+function applyMode({ yes, emulator, isTty, panelConfirm = null }) {
   if (!yes) return 'dry';
   if (emulator) return 'apply';
-  return isTty ? 'ask' : 'noTty';
+  if (isTty) return 'ask';
+  return typeof panelConfirm === 'string' && panelConfirm.length > 0 ? 'panel' : 'noTty';
 }
 
 /** Gerçek projede yazılan yanıt proje kimliğinin kendisi mi (boşluk kırpılır, büyük-küçük harf duyarlı). */

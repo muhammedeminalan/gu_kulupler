@@ -40,15 +40,22 @@ function initApp(name, admin, options) {
 }
 
 /**
- * Uygulama izni: `--yes` yoksa kuru çalıştırma (`false`); gerçek projede yalnızca TTY'de, proje kimliği yazılarak.
+ * Uygulama izni: `--yes` yoksa kuru çalıştırma (`false`); gerçek projede TTY'de proje kimliği yazılarak ya da yerel
+ * admin panelinde (tool/admin/panel.js) elle yazılmış proje kimliğiyle (`GU_ADMIN_PANEL_CONFIRM`).
  */
 async function confirmApply(name, target, yes, message) {
-  const mode = applyMode({ yes, emulator: target.emulator, isTty: !!(process.stdin.isTTY && process.stdout.isTTY) });
+  const panelConfirm = process.env.GU_ADMIN_PANEL_CONFIRM || null;
+  const mode = applyMode({ yes, emulator: target.emulator, isTty: !!(process.stdin.isTTY && process.stdout.isTTY), panelConfirm });
   if (mode === 'dry') {
     console.log('Kuru çalıştırma: hiçbir şey yazılmadı. Uygulamak için --yes ekle.');
     return false;
   }
-  if (mode === 'noTty') fail(name, 'GERÇEK projede yazım yalnızca etkileşimli terminalde yapılır (TTY yok). Komutu kendi terminalinde çalıştır.', 3);
+  if (mode === 'noTty') fail(name, 'GERÇEK projede yazım yalnızca etkileşimli terminalde ya da yerel admin panelinden yapılır (TTY yok). Komutu kendi terminalinde çalıştır.', 3);
+  if (mode === 'panel') {
+    if (!confirmationMatches(panelConfirm, target.projectId)) fail(name, 'panel onayı proje kimliğiyle eşleşmedi; işlem iptal', 3);
+    console.log(`${message}\nPanel onayı: ${target.projectId} ✓`);
+    return true;
+  }
   if (mode === 'apply') return true;
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const answer = await new Promise((resolve) => rl.question(`${message}\nOnaylamak için proje kimliğini yaz (${target.projectId}): `, resolve));

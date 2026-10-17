@@ -71,6 +71,20 @@ node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Batu, Kerime'ye APK
 node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Merhaba" --email kisi@ogr.gumushane.edu.tr --yes       # tek kişi
 ```
 
+## Yerel admin paneli (`panel.js`) — tek butonla
+
+Bu dizindeki betikleri tarayıcıdan, terminal açmadan çalıştırır: süper admin, push, sistem bildirimi, danışman, inceleme hesabı, hesap silme temizliği, demo içerik.
+
+1. **Bir kez kur:** `bash tool/admin/panel/make_launcher.sh`. Masaüstüne **GÜ Admin Paneli** uygulamasını koyar; anahtar yolu varsayılan `~/.secrets/gu-kulupler-admin.json`.
+2. **Kullan:** uygulamaya çift tıkla. Panel arka planda başlar ve tarayıcıda `http://127.0.0.1:4848/` açılır; zaten açıksa yalnızca tarayıcı açılır.
+3. Her buton önce **önizleme** (kuru çalıştırma) gösterir. **"Evet, uygula"** dersen işlem gerçek projeye yazılır. Kapatmak için **Paneli kapat**; 2 saat boşta kalırsa kendiliğinden kapanır.
+
+**Güvenlik:**
+- Betikler değiştirilmeden alt süreç olarak çalışır; panel yalnızca beyaz listedeki argümanları geçirir (`lib/panel_spec.js`). Proje, anahtar ve emülatör seçimi arayüzden verilemez.
+- "Uygula", terminaldeki proje kimliği onayının yerine geçer: panel `--yes` ve `GU_ADMIN_PANEL_CONFIRM=<proje>` ile çalıştırır, betikler bu değeri hedef projeyle karşılaştırır.
+- Panel yalnızca `127.0.0.1`'de dinler. Host / Origin / panel başlığı denetimi, başka sitelerin ve DNS yeniden bağlamanın istek atmasını engeller. Aynı anda tek işlem çalışır.
+- Günlük: `~/Library/Logs/gu-admin-panel.log`. Panel anahtarın içeriğini okumaz, betiğe yolunu verir.
+
 ## Demo içerik (`seed_demo_content.js`)
 
 Gerçek projeye demo içerik yazar (App Store incelemesi / tanıtım): `tool/seed/demo-data.json`'daki kulüpler, üyelikler, gönderiler, yorumlar, etkinlikler, katılımlar ve demo profiller, tarihleri bugüne kaydırılarak (emülatör tohumlayıcısıyla aynı dönüşüm, `tool/seed/lib/convert.js`). Kulüp logo / kapak ve gönderi görselleri yer tutucu PNG olarak Storage'a yüklenir.
