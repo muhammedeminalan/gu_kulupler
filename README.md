@@ -19,9 +19,10 @@ Kulüpleri keşfet, başvur, etkinliklere katıl, duyuruları kaçırma; kulüb�
 ### 📱 Uygulamayı dene
 
 [![TestFlight](https://img.shields.io/badge/iOS-TestFlight%20(beta)-0D96F6?style=for-the-badge&logo=app-store&logoColor=white)](https://testflight.apple.com/join/YbsaqTNG)
+[![Android APK](https://img.shields.io/badge/Android-APK%20(beta)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/muhammedeminalan/gu_kulupler/releases)
 [![Web sitesi](https://img.shields.io/badge/Web-gu--kulupler.web.app-D00A2D?style=for-the-badge&logo=firebase&logoColor=white)](https://gu-kulupler.web.app)
 
-App Store sürümü incelemede · Google Play yakında
+App Store sürümü incelemede · Google Play yakında · APK: [Releases](https://github.com/muhammedeminalan/gu_kulupler/releases)
 
 </div>
 
