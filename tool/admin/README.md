@@ -71,6 +71,19 @@ node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Batu, Kerime'ye APK
 node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Merhaba" --email kisi@ogr.gumushane.edu.tr --yes       # tek kişi
 ```
 
+## Demo içerik (`seed_demo_content.js`)
+
+Gerçek projeye demo içerik yazar (App Store incelemesi / tanıtım): `tool/seed/demo-data.json`'daki kulüpler, üyelikler, gönderiler, yorumlar, etkinlikler, katılımlar ve demo profiller, tarihleri bugüne kaydırılarak (emülatör tohumlayıcısıyla aynı dönüşüm, `tool/seed/lib/convert.js`). Kulüp logo / kapak ve gönderi görselleri yer tutucu PNG olarak Storage'a yüklenir.
+
+- **Yazılmaz:** bildirim ve şikayet (Functions gerçek cihazlara push gönderirdi), silinmiş hesap dizisi, destek talepleri.
+- **Auth kullanıcısı açılmaz:** demo profiller içerik sahibi olarak görünür, onlarla giriş yapılamaz. İnceleme hesabını uygulamadan kendin aç; açık kulüplere katılabilir.
+- **Çift tohum yok:** demo kulüplerinden biri zaten varsa hiçbir şey yazmadan durur.
+
+```bash
+node tool/admin/seed_demo_content.js          # kuru: belge ve görsel sayıları
+node tool/admin/seed_demo_content.js --yes    # yaz (proje kimliği sorulur)
+```
+
 ## Yarım kalan hesap silme temizliği (`finish_account_deletion.js` — W-91)
 
 > **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon ve betik (T-45, `lib/account_cleanup_runner.js`) aynı ilkeyle yazar: **iki geçiş** (önce tüm hesapların kritik temizliği — hesap belgesi, katılım, üyelik, iletişim — sonra kişisel belgeler), **sayfalı okuma** (kişisel belgeler ve `--all-deleted` listesi `documentId()` sırasıyla sayfa sayfa; kuru çalıştırma kişisel belgeleri yalnızca sayar), kişisel yazımlar **≤ 450'lik gruplu batch** ve her yazım okunduğu andaki `lastUpdateTime` **önkoşuluyla** (kritik birimde ilk yazım). Araya giren yazımda (fonksiyonun ya da istemcinin eşzamanlı temizliği) batch bütünüyle reddedilir, yarım yazım ve çift sayaç düşüşü olmaz; çıktı `! … önkoşul` der → betiği yeniden çalıştır. Yine de fonksiyonun koşu saatinde (03:30 civarı) çalıştırmamak reddi azaltır.
