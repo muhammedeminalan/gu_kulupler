@@ -14,7 +14,7 @@ Kulüpleri keşfet, başvur, etkinliklere katıl, duyuruları kaçırma; kulüb�
 [![Lisans: MIT](https://img.shields.io/badge/Lisans-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-iOS%20%C2%B7%20Android%20%C2%B7%20Web-lightgrey)](#-derleme-ve-dağıtım)
 
-[Özellikler](#-özellikler) • [Teknolojiler](#️-teknoloji-yığını) • [Başlarken](#-başlarken) • [Mimari](#️-mimari) • [Test](#-test-ve-kalite-kapısı) • [Katkı](#-katkıda-bulunma)
+[Özellikler](#-özellikler) • [Yol haritası](https://github.com/users/muhammedeminalan/projects/3) • [Teknolojiler](#️-teknoloji-yığını) • [Başlarken](#-başlarken) • [Mimari](#️-mimari) • [Test](#-test-ve-kalite-kapısı) • [Katkı](#-katkıda-bulunma)
 
 ### 📱 Uygulamayı dene
 
@@ -365,6 +365,7 @@ Katkıda bulunanlar ve teşekkürler için [CONTRIBUTORS.md](CONTRIBUTORS.md) do
 
 - **Hata ve öneri:** [GitHub Issues](https://github.com/muhammedeminalan/gu_kulupler/issues)
 - **Web uygulaması:** [gu-kulupler.web.app/app](https://gu-kulupler.web.app/app/)
+- **Yol haritası:** [GÜ Kulüpler Yol Haritası](https://github.com/users/muhammedeminalan/projects/3) (yapılacak / yapılıyor / bitti)
 - **Destek:** uygulama içinden *Profil → Ayarlar → Destek* ya da [gu-kulupler.web.app/destek](https://gu-kulupler.web.app/destek). Ayrıntılar [SUPPORT.md](SUPPORT.md) dosyasında.
 - **E-posta:** eminalan334@gmail.com
 - **Gizlilik politikası:** [gu-kulupler.web.app/gizlilik](https://gu-kulupler.web.app/gizlilik)
