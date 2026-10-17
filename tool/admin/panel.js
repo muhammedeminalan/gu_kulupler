@@ -24,6 +24,19 @@ const { SCRIPTS, buildArgs } = require('./lib/panel_spec');
 const NAME = 'panel';
 const SPEC = { values: ['--port', '--key'], flags: [] };
 const HTML_FILE = path.join(__dirname, 'panel', 'index.html');
+const ARB_FILE = path.join(__dirname, '..', '..', 'lib', 'l10n', 'app_tr.arb');
+
+/** Bölüm kimliği → Türkçe ad (`deptD05` → `d05`); ARB okunamazsa boş (panel kimliği gösterir). */
+function departmentLabels(file = ARB_FILE) {
+  try {
+    const arb = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Object.fromEntries(Object.entries(arb)
+      .filter(([k, v]) => /^deptD\d{2}$/.test(k) && typeof v === 'string')
+      .map(([k, v]) => [`d${k.slice(5)}`, v]));
+  } catch (e) {
+    return {};
+  }
+}
 const BODY_MAX = 16 * 1024;
 const OUTPUT_MAX = 200 * 1024;
 const RUN_TIMEOUT_MS = 15 * 60 * 1000;
@@ -126,7 +139,7 @@ function createPanelServer({ projectId, keyPath, port, run = runScript, onIdle =
 
     if (req.method === 'GET' && url.pathname === '/api/info') {
       const scripts = Object.fromEntries(Object.entries(SCRIPTS).map(([id, s]) => [id, { title: s.title, values: s.values, flags: s.flags }]));
-      return send(res, 200, { projectId, keyFile: path.basename(keyPath), scripts });
+      return send(res, 200, { projectId, keyFile: path.basename(keyPath), scripts, departments: departmentLabels() });
     }
 
     if (req.method === 'POST' && url.pathname === '/api/run') {
@@ -200,4 +213,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { createPanelServer, runScript };
+module.exports = { createPanelServer, departmentLabels, runScript };

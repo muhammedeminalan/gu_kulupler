@@ -4,7 +4,7 @@
  * İstatistik özeti (salt okunur): hesaplar, push alabilen cihazlar, kulüpler, üyelikler, yaklaşan etkinlikler,
  * son gönderiler, açık şikayet / destek talepleri.
  *
- *   node tool/admin/stats.js [--project <id>] [--key <json>]
+ *   node tool/admin/stats.js [--project <id>] [--key <json>] [--json]
  *
  * Hiçbir şey yazmaz. Sayımlar Firestore `count()` ile (belge başına okuma ücreti yok, sorgu başına 1); push cihaz
  * sayısı etkin kullanıcıların hesap belgelerinden okunur. Anahtar REPO DIŞINDA (D-36).
@@ -12,11 +12,11 @@
 const fs = require('fs');
 const { parseArgs } = require('./lib/admin_cli');
 const { collectTokens } = require('./lib/push_broadcast');
-const { formatStats } = require('./lib/admin_reports');
+const { formatStats, jsonLine } = require('./lib/admin_reports');
 const { initApp, loadAdmin, run } = require('./lib/admin_runtime');
 
 const NAME = 'stats';
-const SPEC = { values: ['--project', '--key'], flags: ['--emulator'] };
+const SPEC = { values: ['--project', '--key'], flags: ['--json', '--emulator'] };
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function main() {
@@ -61,8 +61,7 @@ async function main() {
     count(db.collection('supportTickets').where('status', '==', 'open')),
   ]);
 
-  console.log(`Proje        : ${target.projectId}  ·  ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC`);
-  const lines = formatStats({
+  const counts = {
     authUsers,
     activeUsers: activeUserSnap.size,
     pushUsers,
@@ -73,8 +72,13 @@ async function main() {
     recentPosts,
     openReports,
     openTickets,
-  });
-  for (const line of lines) console.log(line);
+  };
+  if (args.json) {
+    console.log(jsonLine({ kind: 'stats', projectId: target.projectId, generatedAt: now.toISOString(), counts }));
+    return;
+  }
+  console.log(`Proje        : ${target.projectId}  ·  ${now.toISOString().slice(0, 16).replace('T', ' ')} UTC`);
+  for (const line of formatStats(counts)) console.log(line);
 }
 
 if (require.main === module) run(NAME, main);

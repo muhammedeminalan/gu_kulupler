@@ -19,6 +19,48 @@ const tally = (items, keyOf) => {
   return Object.entries(out).map(([k, n]) => `${k} ${n}`).join(' · ') || '—';
 };
 
+/** Panelin yapılandırılmış sonucu okuması için tek satır öneki (`@@JSON {...}`). */
+const JSON_PREFIX = '@@JSON ';
+const jsonLine = (data) => JSON_PREFIX + JSON.stringify(data);
+const iso = (value) => {
+  if (!value) return null;
+  const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+const countBy = (items, keyOf) => {
+  const out = {};
+  for (const item of items) {
+    const key = keyOf(item) ?? '—';
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+};
+
+/**
+ * Kullanıcı özeti (panel görünümü için yapılandırılmış). Jetonların kendisi yer almaz.
+ * @param {{auth: object, profile: object|null, account: object|null, memberships: object[], rsvps: object[], clubNames?: Record<string, string>}} input
+ */
+function buildUserSummary({ auth, profile, account, memberships, rsvps, clubNames = {} }) {
+  const tokens = Array.isArray(account?.fcmTokens) ? account.fcmTokens : [];
+  const live = memberships.filter((m) => !m.isDeleted);
+  const liveRsvps = rsvps.filter((r) => !r.isDeleted);
+  return {
+    uid: auth.uid,
+    email: auth.email || null,
+    emailVerified: auth.emailVerified === true,
+    disabled: auth.disabled === true,
+    superadmin: auth.customClaims?.superadmin === true,
+    createdAt: iso(auth.metadata?.creationTime),
+    lastSignInAt: iso(auth.metadata?.lastSignInTime),
+    profile: profile
+      ? { name: profile.name || null, status: profile.status || null, deleted: profile.isDeleted === true, complete: profile.profileComplete === true, department: profile.department || null, year: profile.year || null }
+      : null,
+    devices: { count: tokens.length, platforms: countBy(tokens, (t) => t?.platform) },
+    memberships: live.map((m) => ({ clubId: m.clubId, clubName: clubNames[m.clubId] || null, role: m.role || null, status: m.status || null })),
+    rsvps: countBy(liveRsvps, (r) => r.status),
+  };
+}
+
 /**
  * Kullanıcı raporu satırları.
  * @param {{auth: object, profile: object|null, account: object|null, memberships: object[], rsvps: object[]}} input
@@ -60,4 +102,4 @@ function formatStats(counts) {
   ];
 }
 
-module.exports = { formatStats, formatUserReport };
+module.exports = { JSON_PREFIX, buildUserSummary, formatStats, formatUserReport, jsonLine };

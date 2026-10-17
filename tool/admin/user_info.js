@@ -4,22 +4,23 @@
  * Kullanıcı bilgisi (salt okunur): Auth hesabı, profil, bildirim cihazı sayısı, üyelikler, etkinlik kayıtları.
  *
  *   node tool/admin/user_info.js --email <e-posta>
- *   node tool/admin/user_info.js --uid <uid> [--project <id>] [--key <json>]
+ *   node tool/admin/user_info.js --uid <uid> [--project <id>] [--key <json>] [--json]
  *
+ * `--json`: yapılandırılmış özet (yerel admin paneli görünümü için tek satır).
  * Hiçbir şey yazmaz. FCM jetonları basılmaz (yalnızca sayı / platform). Anahtar REPO DIŞINDA (D-36).
  */
 const fs = require('fs');
 const { UsageError, parseArgs } = require('./lib/admin_cli');
-const { formatUserReport } = require('./lib/admin_reports');
+const { buildUserSummary, formatUserReport, jsonLine } = require('./lib/admin_reports');
 const { initApp, loadAdmin, run } = require('./lib/admin_runtime');
 
 const NAME = 'user_info';
-const SPEC = { values: ['--email', '--uid', '--project', '--key'], flags: ['--emulator'] };
+const SPEC = { values: ['--email', '--uid', '--project', '--key'], flags: ['--json', '--emulator'] };
 
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.length === 0 || argv.includes('-h') || argv.includes('--help')) {
-    console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(3, 10).join('\n').replace(/^ \* ?/gm, ''));
+    console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(3, 12).join('\n').replace(/^ \* ?/gm, ''));
     return;
   }
   const args = parseArgs(argv, SPEC);
@@ -40,14 +41,21 @@ async function main() {
     db.collection('memberships').where('userId', '==', auth.uid).limit(200).get(),
     db.collection('rsvps').where('userId', '==', auth.uid).limit(500).get(),
   ]);
-  const lines = formatUserReport({
+  const input = {
     auth,
     profile: profile.exists ? profile.data() : null,
     account: account.exists ? account.data() : null,
     memberships: memberships.docs.map((d) => d.data()),
     rsvps: rsvps.docs.map((d) => d.data()),
-  });
-  for (const line of lines) console.log(line);
+  };
+  if (args.json) {
+    const clubIds = [...new Set(input.memberships.filter((m) => !m.isDeleted && m.clubId).map((m) => m.clubId))];
+    const clubs = clubIds.length ? await db.getAll(...clubIds.map((id) => db.doc(`clubs/${id}`))) : [];
+    input.clubNames = Object.fromEntries(clubs.filter((c) => c.exists).map((c) => [c.id, c.get('name')]));
+    console.log(jsonLine({ kind: 'user', ...buildUserSummary(input) }));
+    return;
+  }
+  for (const line of formatUserReport(input)) console.log(line);
 }
 
 if (require.main === module) run(NAME, main);
