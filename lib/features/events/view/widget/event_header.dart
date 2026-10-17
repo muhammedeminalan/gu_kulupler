@@ -26,7 +26,7 @@ import 'package:gu_ui/gu_ui.dart';
 ///   view'ı kurar).
 /// * Tarih kartı: `dateLong` + "saat aralığı · süre" ([timeLabel] —
 ///   biçimleme view'dadır); mekân kartı: ad + "Kampüs" + "Yol tarifi" +
-///   harita yer tutucusu (`eventMapPlaceholder`, CD-88; font CD-19).
+///   konum görseli (`GuMapPlaceholder` kapak deseni + pin, H-24).
 class EventHeader extends StatelessWidget {
   /// [event] etkinliğinin üst bölümü.
   const EventHeader({
@@ -271,9 +271,7 @@ class EventHeader extends StatelessWidget {
                     right: GuSpacing.s16,
                     bottom: GuSpacing.s16,
                   ),
-                  child: GuMapPlaceholder(
-                    label: l10n.eventMapPlaceholder(placeLabel),
-                  ),
+                  child: GuMapPlaceholder(label: placeLabel),
                 ),
               ],
             ),

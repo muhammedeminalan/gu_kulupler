@@ -937,6 +937,16 @@ abstract final class GuSizes {
   /// `int` — `GuInput(maxRows:)`.
   static const int commentMaxRows = 5;
 
+  /// Tasarım dışı (H-24, kullanıcı kararı): EVT-02 konum görseli
+  /// (`GuMapPlaceholder`) pin dairesi çapı.
+  static const double mapPinBadge = 46;
+
+  /// Tasarım dışı (H-24): konum görseli çapraz çizgi deseni aralığı.
+  static const double mapPatternPeriod = 14;
+
+  /// Tasarım dışı (H-24): konum görseli çapraz çizgi kalınlığı.
+  static const double mapPatternLine = 2;
+
   /// ui.js:28 `<span class="in-icon"><${Icon} name=${icon} size=${20} />`.
   static const double inputIcon = 20;
 

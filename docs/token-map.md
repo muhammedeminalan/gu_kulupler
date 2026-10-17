@@ -353,6 +353,7 @@ Ad kuralı `<bileşen><Özellik>[<Varyant>]`, `static const double`. Her satır 
 | `inputMultilinePaddingY` / `textareaMinHeight` / `textareaRows` | 12 / 88 / 4 | `.input.is-multiline{padding:12px 14px}` `.input textarea{min-height:88px}` css:169; ui:29 `rows \|\| 4` |
 | `inputIcon` / `inputLockIcon` / `fieldHelpIcon` / `fieldHelpGap` | 20 / 18 / 14 / 4 | ui:28 `in-icon size=20`; ui:30 `lock size=18`; ui:33 `triangle-alert size=14`; `.field-help{gap:4px}` css:171 |
 | `commentMaxRows` | 5 | tasarım dışı — K-93 kullanıcı kararı: FED-02 / SHT-09 yorum alanı 1 → 5 satır büyür (`GuInput(maxRows:)`) |
+| `mapPinBadge` / `mapPatternPeriod` / `mapPatternLine` | 46 / 14 / 2 | tasarım dışı — H-24 kullanıcı kararı: EVT-02 konum görseli (`GuMapPlaceholder`) kapak deseni + büyük pin; çizgi opaklığı `GuOpacity.coverIcon` |
 | `counterThresholdRatio` | 0.8 | ui:23 `Math.floor(maxLength * 0.8)` |
 | `pickerHeight` / `pickerPaddingX` / `pickerChevron` | 48 / 14 / 20 | `.picker{min-height:48px;padding:0 14px}` css:173; ui:39 `chevron-down size=20` |
 | `switchWidth` / `switchHeight` / `switchThumb` / `switchThumbInset` / `switchThumbTravel` | 44 / 26 / 20 / 3 / 18 | `.switch{width:44px;height:26px}` css:231; `>i{top:3px;left:3px;width:20px;height:20px}` css:234; `translateX(18px)` css:235 |

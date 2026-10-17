@@ -1,12 +1,12 @@
-// T-06 · GuMapPlaceholder (widget-catalog #79; A.2 #79; css:410;
-// screens-events.js:65; CD-25, CD-19 / K-26, K-57, CD-88).
+// T-06 · GuMapPlaceholder (widget-catalog #79; EVT-02 konum görseli;
+// CD-25). H-24: kapak deseni + büyük pin (tasarımdaki şeritli kutu yerine).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 import '../../helpers/pump_app.dart';
 
-const _label = 'map placeholder · Bilgisayar Laboratuvarı-2';
+const _label = 'Bilgisayar Laboratuvarı-2';
 
 final Finder _placeholder = find.byType(GuMapPlaceholder);
 final Finder _paint = find.descendant(
@@ -16,9 +16,9 @@ final Finder _paint = find.descendant(
 
 void main() {
   group('T-06 · GuMapPlaceholder', () {
-    testWidgets('T-06 · GuMapPlaceholder · 120 yükseklik, radius 12, şerit '
-        'zemini + 1 px border.soft, yazı mapPlaceholder (ölçeklenmez) açık + '
-        'koyu; Semantics', (tester) async {
+    testWidgets('H-24 · 120 yükseklik, radius 12; brand.primaryContainer '
+        'zemin + çizgi deseni + 1 px border.soft; pin dairesi ve mekân hapı '
+        'açık + koyu; dekoratif', (tester) async {
       final handle = tester.ensureSemantics();
       for (final (mode, colors) in [
         (ThemeMode.light, GuColors.light),
@@ -44,12 +44,12 @@ void main() {
         expect(
           _paint,
           paints
-            // Şeritler: yinelenen sert geçişli gradyan (shader) ile dolgu.
-            ..something(
-              (method, arguments) =>
-                  method == #drawRRect &&
-                  arguments[0] == outer &&
-                  (arguments[1] as Paint).shader != null,
+            ..rrect(rrect: outer, color: colors.brandPrimaryContainer)
+            ..line(
+              color: colors.brandPrimary.withValues(
+                alpha: GuOpacity.coverIcon,
+              ),
+              strokeWidth: GuSizes.mapPatternLine,
             )
             ..rrect(
               rrect: outer.deflate(GuSizes.mapPlaceholderBorder / 2),
@@ -60,38 +60,56 @@ void main() {
           reason: '$mode',
         );
 
+        final badge = find.ancestor(
+          of: find.byType(GuIcon),
+          matching: find.byType(DecoratedBox),
+        );
+        final decoration =
+            tester.widget<DecoratedBox>(badge.first).decoration
+                as BoxDecoration;
+        expect(decoration.color, colors.brandPrimary);
+        expect(decoration.shape, BoxShape.circle);
+        expect(
+          tester.getSize(badge.first),
+          const Size.square(GuSizes.mapPinBadge),
+        );
+        final icon = tester.widget<GuIcon>(find.byType(GuIcon));
+        expect(icon.icon, GuIcons.mapPin);
+        expect(icon.color, colors.brandOnPrimary);
+
         final text = tester.widget<Text>(find.text(_label));
-        expect(text.style, GuTypography.resolve(colors).mapPlaceholder);
-        expect(text.style!.color, colors.textMuted);
-        expect(text.textScaler, TextScaler.noScaling);
-        expect(text.textAlign, TextAlign.center);
-        expect(
-          tester.getCenter(find.text(_label)),
-          tester.getCenter(_placeholder),
-        );
-        expect(
-          tester.getSemantics(find.text(_label)),
-          isSemantics(label: _label),
-        );
+        expect(text.style, GuTypography.resolve(colors).labelM);
+        expect(text.maxLines, 1);
+        expect(text.overflow, TextOverflow.ellipsis);
+        final pill =
+            tester
+                    .widget<DecoratedBox>(
+                      find
+                          .ancestor(
+                            of: find.text(_label),
+                            matching: find.byType(DecoratedBox),
+                          )
+                          .first,
+                    )
+                    .decoration
+                as BoxDecoration;
+        expect(pill.color, colors.bgSurface);
+        expect(pill.borderRadius, GuRadius.borderFull);
+
+        // Mekân adını üstteki satır okur; görsel ekran okuyucuya kapalı.
+        expect(find.bySemanticsLabel(_label), findsNothing);
       }
       handle.dispose();
     });
 
-    testWidgets('T-06 · GuMapPlaceholder · 320 × 640, ölçek 1.6: uzun metin '
-        'taşmaz (en çok 3 satır), kutu 120 kalır', (tester) async {
-      final long = ValueNotifier<bool>(false);
-      addTearDown(long.dispose);
+    testWidgets('H-24 · 320 × 640, ölçek 1.6: uzun mekân adı taşmaz (tek '
+        'satır, …), kutu 120 kalır', (tester) async {
       await tester.pumpApp(
         Padding(
           padding: GuInsets.all16,
-          child: ValueListenableBuilder<bool>(
-            valueListenable: long,
-            builder: (context, isLong, _) => Align(
-              alignment: Alignment.topCenter,
-              child: GuMapPlaceholder(
-                label: isLong ? '$_label ' * 12 : _label,
-              ),
-            ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: GuMapPlaceholder(label: '$_label ' * 12),
           ),
         ),
         size: const Size(320, 640),
@@ -99,16 +117,10 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       expect(tester.getSize(_placeholder), const Size(288, 120));
-      // Ölçek 1.6'da da 12 px tek satır (K-57).
-      final single = tester.getSize(find.byType(Text));
-
-      long.value = true;
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      expect(tester.getSize(_placeholder), const Size(288, 120));
-      final wrapped = tester.getSize(find.byType(Text));
-      expect(wrapped.height, closeTo(single.height * 3, 0.01));
-      expect(wrapped.width, lessThanOrEqualTo(288 - 2 * GuSpacing.s8));
+      final row = tester.getRect(
+        find.descendant(of: _placeholder, matching: find.byType(Row)),
+      );
+      expect(row.width, lessThanOrEqualTo(288 - 2 * GuSpacing.s16));
     });
   });
 }

@@ -231,7 +231,7 @@ void main() {
       final place = StaticLabels.place(context, kEvent.placeId!);
       expect(
         tester.widget<GuMapPlaceholder>(find.byType(GuMapPlaceholder)).label,
-        l10n.eventMapPlaceholder(place),
+        place,
       );
 
       // Kontenjan: 36/40, "4 kişi kaldı", %90 → uyarı çubuğu.
@@ -261,12 +261,8 @@ void main() {
       expect(join.full, isTrue);
       expect(find.byKey(_k('report')), findsOneWidget);
       expect(find.byKey(_k('attendeesPreview')), findsNothing);
-      // T-43 C-2: harita yer tutucusu metni desenli zeminde 4.46 : 1 (K-91
-      // öncesi 4.21) — tasarımdan, muaf.
-      await expectA11yGuidelines(
-        tester,
-        lowContrastLabels: {l10n.eventMapPlaceholder(place)},
-      );
+      // H-24: konum görseli dekoratif (mekân adını üstteki satır okur).
+      await expectA11yGuidelines(tester);
     });
 
     testWidgets('EN metinleri', (tester) async {

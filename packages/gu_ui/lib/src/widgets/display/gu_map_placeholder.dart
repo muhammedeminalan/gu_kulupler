@@ -1,53 +1,92 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/widgets.dart';
 import 'package:gu_ui/src/extensions/build_context_x.dart';
+import 'package:gu_ui/src/icons/gu_icon.dart';
+import 'package:gu_ui/src/icons/gu_icons.dart';
+import 'package:gu_ui/src/tokens/gu_opacity.dart';
 import 'package:gu_ui/src/tokens/gu_radius.dart';
 import 'package:gu_ui/src/tokens/gu_sizes.dart';
 import 'package:gu_ui/src/tokens/gu_spacing.dart';
 
-/// Harita yer tutucusu — CSS `.map-ph` (css:410); EVT-02 mekân kartı
-/// (`screens-events.js:65`); CD-25.
+/// Konum görseli — EVT-02 mekân kartı (`screens-events.js:65` `.map-ph`
+/// yerinde); CD-25.
 ///
-/// 120 px yükseklik, radius 12, 45° şerit deseni (10 px `bg.surfaceMuted` /
-/// 10 px `border.soft`), 1 px `border.soft` kenarlık, ortada `text.muted`
-/// metin.
+/// **Tasarımdan bilinçli sapma (H-24, kullanıcı kararı 2026-10-17):**
+/// prototipteki şeritli kutu ve "map placeholder · …" taslak metni yerine
+/// kapak deseni + büyük pin. Gerçek harita yoktur (D-31).
 ///
-/// * [label] çağırandan gelir (ARB `eventMapPlaceholder`, CD-88).
-/// * Yazı `GuTypography.mapPlaceholder` (Inter 500 12 + tabular; CSS
-///   `ui-monospace` → K-26 / CD-19) ve ölçeklenmez (K-57: css:410 sabit
-///   `12px`). Sığmayan metin en çok 3 satıra sarılır, sonra `…`.
+/// * 120 px yükseklik ([GuSizes.mapPlaceholderHeight]), radius 12, 1 px
+///   `border.soft` kenarlık; zemin `brand.primaryContainer`, üstünde
+///   `brand.primary` çapraz çizgi deseni (kapak katmanı opaklığı
+///   [GuOpacity.coverIcon]).
+/// * Ortada `brand.primary` daire içinde beyaz pin ([GuSizes.mapPinBadge])
+///   ve `bg.surface` hapta [label] (mekân adı; tek satır, sığmazsa `…`).
+/// * Dekoratiftir: mekân adını üstteki satır zaten okur, ekran okuyucuya
+///   ikinci kez verilmez.
 class GuMapPlaceholder extends StatelessWidget {
   const GuMapPlaceholder({required this.label, super.key});
 
-  /// Ortadaki metin.
+  /// Haptaki metin (mekân adı).
   final String label;
-
-  /// Sarılan metnin satır sınırı (kutu yüksekliğine sığan).
-  static const int _maxLines = 3;
 
   @override
   Widget build(BuildContext context) {
     final gu = context.gu;
-    return SizedBox(
-      height: GuSizes.mapPlaceholderHeight,
-      child: CustomPaint(
-        painter: _MapStripesPainter(
-          base: gu.colors.bgSurfaceMuted,
-          stripe: gu.colors.borderSoft,
-          border: gu.colors.borderSoft,
-        ),
-        child: Center(
-          child: Padding(
-            padding: GuInsets.h8,
-            child: Text(
-              label,
-              style: gu.text.mapPlaceholder,
-              textScaler: TextScaler.noScaling,
-              textAlign: TextAlign.center,
-              maxLines: _maxLines,
-              overflow: TextOverflow.ellipsis,
+    final colors = gu.colors;
+    return ExcludeSemantics(
+      child: SizedBox(
+        height: GuSizes.mapPlaceholderHeight,
+        child: CustomPaint(
+          painter: _MapPatternPainter(
+            base: colors.brandPrimaryContainer,
+            line: colors.brandPrimary.withValues(alpha: GuOpacity.coverIcon),
+            border: colors.borderSoft,
+          ),
+          child: Center(
+            child: Padding(
+              padding: GuInsets.h16,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.brandPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: SizedBox.square(
+                      dimension: GuSizes.mapPinBadge,
+                      child: Center(
+                        child: GuIcon(
+                          GuIcons.mapPin,
+                          color: colors.brandOnPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: GuSpacing.s12),
+                  Flexible(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.bgSurface,
+                        borderRadius: GuRadius.borderFull,
+                      ),
+                      child: Padding(
+                        padding: GuInsets.only(
+                          left: GuSpacing.s12,
+                          right: GuSpacing.s12,
+                          top: GuSpacing.s6,
+                          bottom: GuSpacing.s6,
+                        ),
+                        child: Text(
+                          label,
+                          style: gu.text.labelM,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -56,44 +95,40 @@ class GuMapPlaceholder extends StatelessWidget {
   }
 }
 
-/// CSS `repeating-linear-gradient(45deg, A 0 10px, B 10px 20px)` + 1 px
-/// kenarlık: 45° = sağ üste doğru; 0 noktası iç kutunun (kenarlık içi,
-/// `background-origin: padding-box`) sol alt köşesi; şeritler sol üstten sağ
-/// alta uzanır, dönem 20 px.
-class _MapStripesPainter extends CustomPainter {
-  const _MapStripesPainter({
+/// Zemin + çapraz (sol alttan sağ üste) çizgiler + 1 px kenarlık. Çizgiler
+/// [GuSizes.mapPatternPeriod] aralıkla, [GuSizes.mapPatternLine] kalınlıkta;
+/// yuvarlatılmış kutuya kırpılır.
+class _MapPatternPainter extends CustomPainter {
+  const _MapPatternPainter({
     required this.base,
-    required this.stripe,
+    required this.line,
     required this.border,
   });
 
   final Color base;
-  final Color stripe;
+  final Color line;
   final Color border;
-
-  /// Dönemin (2 şerit) x / y bileşeni: `20 / √2`.
-  static const double _step = 2 * GuSizes.mapPlaceholderStripe / math.sqrt2;
-
-  /// Sert geçişli duraklar: ilk yarı [base], ikinci yarı [stripe].
-  static const List<double> _stops = [0, 0.5, 0.5, 1];
 
   @override
   void paint(Canvas canvas, Size size) {
     const borderWidth = GuSizes.mapPlaceholderBorder;
     final outer = GuRadius.borderSm.toRRect(Offset.zero & size);
-    final origin = Offset(borderWidth, size.height - borderWidth);
     canvas
-      ..drawRRect(
-        outer,
-        Paint()
-          ..shader = ui.Gradient.linear(
-            origin,
-            origin + const Offset(_step, -_step),
-            [base, base, stripe, stripe],
-            _stops,
-            TileMode.repeated,
-          ),
-      )
+      ..drawRRect(outer, Paint()..color = base)
+      ..save()
+      ..clipRRect(outer);
+    final stroke = Paint()
+      ..color = line
+      ..strokeWidth = GuSizes.mapPatternLine;
+    for (var x = -size.height; x < size.width; x += GuSizes.mapPatternPeriod) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        stroke,
+      );
+    }
+    canvas
+      ..restore()
       ..drawRRect(
         outer.deflate(borderWidth / 2),
         Paint()
@@ -104,8 +139,8 @@ class _MapStripesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MapStripesPainter oldDelegate) =>
+  bool shouldRepaint(_MapPatternPainter oldDelegate) =>
       oldDelegate.base != base ||
-      oldDelegate.stripe != stripe ||
+      oldDelegate.line != line ||
       oldDelegate.border != border;
 }

@@ -26,8 +26,10 @@ import '../helpers/design_sources.dart';
 /// + T-20 `commentsSheetMinHeight` 1 = 404
 /// + T-31 `activityRowAvatar`, `manageHeaderClubMaxWidth` 2 = 406
 /// + T-35 `scanHintMaxWidth` 1 = 407
-/// + K-93 `commentMaxRows` 1 (tasarım dışı, kullanıcı kararı) = 408.
-const int _gusizesCount = 408;
+/// + K-93 `commentMaxRows` 1 (tasarım dışı, kullanıcı kararı) = 408
+/// + H-24 `mapPinBadge`, `mapPatternPeriod`, `mapPatternLine` 3 (tasarım
+/// dışı, kullanıcı kararı) = 411.
+const int _gusizesCount = 411;
 
 /// `GuOpacity`: §8.8 8 + `coverIcon` 1.
 const int _guOpacityCount = 9;
@@ -2921,6 +2923,24 @@ List<_Row> _sizesTable(CssMeasure css, _Js js) => [
     source: 'Karar K-93 — yorum alanı 1 → 5 satır büyür',
     expected: () => 5,
     actual: GuSizes.commentMaxRows,
+  ),
+  _Row(
+    name: 'mapPinBadge',
+    source: 'Karar H-24 — EVT-02 konum görseli pin dairesi',
+    expected: () => 46,
+    actual: GuSizes.mapPinBadge,
+  ),
+  _Row(
+    name: 'mapPatternPeriod',
+    source: 'Karar H-24 — konum görseli çizgi aralığı',
+    expected: () => 14,
+    actual: GuSizes.mapPatternPeriod,
+  ),
+  _Row(
+    name: 'mapPatternLine',
+    source: 'Karar H-24 — konum görseli çizgi kalınlığı',
+    expected: () => 2,
+    actual: GuSizes.mapPatternLine,
   ),
   // §8.10
   _platform(
