@@ -12,8 +12,8 @@
  *
  * Güvenlik:
  *  - Servis hesabı anahtarı (JSON) REPO DIŞINDA durur; repo içindeki yol reddedilir. Yol: --key ya da GOOGLE_APPLICATION_CREDENTIALS.
- *  - Gerçek projede komut yalnızca etkileşimli terminalde (TTY) çalışır ve proje kimliğini yazarak onay ister.
- *    Claude Code gibi TTY'siz ortamlar gerçek projede claim atayamaz (kasıtlı). Emülatörde onay gerekmez.
+ *  - Gerçek projede komut yalnızca etkileşimli terminalde (TTY) proje kimliği yazılarak ya da yerel admin panelinde
+ *    (tool/admin/panel.js) proje kimliği elle yazılarak onaylanır. Emülatörde onay gerekmez.
  *  - Mevcut diğer claim'ler korunur; yalnızca `superadmin` eklenir/çıkarılır. Belge/hesap silinmez.
  *  - Claim, kullanıcının token'ı yenilenince geçerli olur (çıkış-giriş ya da getIdToken(true)).
  */
@@ -60,7 +60,13 @@ function initApp() {
 
 async function confirmReal(msg) {
   if (emulator) return true;
-  if (!process.stdin.isTTY || !process.stdout.isTTY) fail('GERÇEK projede claim değişikliği yalnızca etkileşimli terminalde yapılır (TTY yok). Komutu kendi terminalinde çalıştır.', 3);
+  const panelConfirm = process.env.GU_ADMIN_PANEL_CONFIRM;
+  if (panelConfirm && (!process.stdin.isTTY || !process.stdout.isTTY)) {
+    // Yerel admin paneli (tool/admin/panel.js): proje kimliği panelde elle yazıldı.
+    console.log(`${msg}\nPanel onayı: ${panelConfirm.trim() === projectId ? projectId + ' ✓' : 'eşleşmedi'}`);
+    return panelConfirm.trim() === projectId;
+  }
+  if (!process.stdin.isTTY || !process.stdout.isTTY) fail('GERÇEK projede claim değişikliği yalnızca etkileşimli terminalde ya da yerel admin panelinden yapılır (TTY yok). Komutu kendi terminalinde çalıştır.', 3);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const answer = await new Promise((res) => rl.question(`${msg}\nOnaylamak için proje kimliğini yaz (${projectId}): `, res));
   rl.close();

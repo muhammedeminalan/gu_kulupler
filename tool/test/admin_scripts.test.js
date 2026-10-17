@@ -79,6 +79,10 @@ test('admin_cli · onay kipi: --yes yoksa kuru; gerçek projede TTY şart ve pro
   assert.equal(cli.applyMode({ yes: false, emulator: true, isTty: true }), 'dry');
   assert.equal(cli.applyMode({ yes: true, emulator: true, isTty: false }), 'apply');
   assert.equal(cli.applyMode({ yes: true, emulator: false, isTty: false }), 'noTty');
+  assert.equal(cli.applyMode({ yes: true, emulator: false, isTty: false, panelConfirm: 'gu-kulupler' }), 'panel');
+  assert.equal(cli.applyMode({ yes: true, emulator: false, isTty: false, panelConfirm: '' }), 'noTty');
+  assert.equal(cli.applyMode({ yes: false, emulator: false, isTty: false, panelConfirm: 'gu-kulupler' }), 'dry');
+  assert.equal(cli.applyMode({ yes: true, emulator: false, isTty: true, panelConfirm: 'gu-kulupler' }), 'ask');
   assert.equal(cli.applyMode({ yes: true, emulator: false, isTty: true }), 'ask');
   assert.ok(cli.confirmationMatches(' gu-kulupler\n', 'gu-kulupler'));
   assert.ok(!cli.confirmationMatches('evet', 'gu-kulupler'));
