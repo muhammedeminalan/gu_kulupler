@@ -3,12 +3,14 @@ import 'dart:math';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/connectivity/connectivity_gate.dart';
 import 'package:gu_kulupler/core/env/app_environment.dart';
 import 'package:gu_kulupler/core/env/emulator_services.dart';
+import 'package:gu_kulupler/core/env/web_services.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
 import 'package:gu_kulupler/product/feedback/feedback_service.dart';
 import 'package:gu_kulupler/product/init/app_preferences_store.dart';
@@ -137,7 +139,8 @@ abstract final class ProjectDependency {
     // (ör. ortam kurulmadan çağrı) GetIt yarım kayıtla kalmaz.
     final crashService =
         overrides.crashService ??
-        (isEmulator
+        // Crashlytics web'i desteklemez: web'de de yerel no-op raporlayıcı.
+        (isEmulator || kIsWeb
             ? const EmulatorCrashService()
             : FirebaseCrashService(FirebaseCrashlytics.instance));
     final remoteConfigService =
@@ -435,13 +438,17 @@ abstract final class ProjectDependency {
       )
       ..registerSingleton<LocalReminderService>(
         overrides.localReminderService ??
-            FlutterLocalReminderService(clock: appClock),
+            (kIsWeb
+                ? const WebLocalReminderService()
+                : FlutterLocalReminderService(clock: appClock)),
       )
       // T-42 · push (Mod F, CD-165): izin PermissionService'te kalır; jeton
       // yazımı UserRepository'de (`SessionPushSync`).
       ..registerSingleton<MessagingService>(
         overrides.messagingService ??
-            (isEmulator
+            (kIsWeb
+                ? const WebMessagingService()
+                : isEmulator
                 ? const EmulatorMessagingService()
                 : FirebaseMessagingService()),
       )

@@ -419,3 +419,38 @@ final class FlutterLocalReminderService implements LocalReminderService {
     }
   }
 }
+
+/// Web derlemesinin yerel hatırlatıcısı: **hiçbir şey planlamaz**
+/// (`flutter_local_notifications` web'i desteklemez).
+final class WebLocalReminderService implements LocalReminderService {
+  /// Hiçbir şey yapmayan servis.
+  const WebLocalReminderService();
+
+  @override
+  Future<void> ensureChannel(AppLocalizations l10n) async {}
+
+  @override
+  Future<void> schedule({
+    required RsvpModel rsvp,
+    required EventModel event,
+  }) async {}
+
+  @override
+  Future<void> cancel(String rsvpId) async {}
+
+  @override
+  Future<void> cancelAll() async {}
+
+  @override
+  Future<void> rescheduleAll({
+    required List<RsvpModel> myGoing,
+    required Map<String, EventModel> events,
+    required UserSettingsModel settings,
+  }) async {}
+
+  @override
+  Future<String?> initialLaunchPayload() async => null;
+
+  @override
+  Stream<String> get tappedPayloads => const Stream<String>.empty();
+}
