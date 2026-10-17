@@ -113,3 +113,9 @@ ui-debug.log
 
 # Firebase Hosting /app/ — web derlemesi (tool/build_web_hosting.sh üretir)
 hosting/public/app/
+
+# Derleme çıktıları ve yerel başlatıcı (masaüstündeki "GÜ Admin Paneli.app", APK / IPA kopyaları) repoya girmez
+*.app/
+*.apk
+*.aab
+*.ipa
