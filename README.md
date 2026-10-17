@@ -20,7 +20,7 @@ Kulüpleri keşfet, başvur, etkinliklere katıl, duyuruları kaçırma; kulüb�
 
 [![TestFlight](https://img.shields.io/badge/iOS-TestFlight%20(beta)-0D96F6?style=for-the-badge&logo=app-store&logoColor=white)](https://testflight.apple.com/join/YbsaqTNG)
 [![Android APK](https://img.shields.io/badge/Android-APK%20(beta)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/muhammedeminalan/gu_kulupler/releases)
-[![Web sitesi](https://img.shields.io/badge/Web-gu--kulupler.web.app-D00A2D?style=for-the-badge&logo=firebase&logoColor=white)](https://gu-kulupler.web.app)
+[![Web'de aç](https://img.shields.io/badge/Web-Tarayıcıda%20aç-D00A2D?style=for-the-badge&logo=googlechrome&logoColor=white)](https://gu-kulupler.web.app/app/)
 
 App Store sürümü incelemede · Google Play yakında · APK: [Releases](https://github.com/muhammedeminalan/gu_kulupler/releases)
 
@@ -307,6 +307,8 @@ flutter build appbundle --release  # Google Play
 flutter build ipa --release        # iOS (App Store / TestFlight)
 flutter build web --release        # Web
 ```
+
+- **Web (Hosting):** uygulama `gu-kulupler.web.app/app/` adresinde çalışır. `firebase deploy --only hosting` komutu önce `tool/build_web_hosting.sh` betiğini çalıştırır. Betik release web derlemesini `--base-href /app/` ile `hosting/public/app/` klasörüne koyar; bu klasör commit edilmez. Kökteki tanıtım, gizlilik ve destek sayfaları aynen kalır.
 
 - **iOS:** bundle `com.gukulupler.guKulupler`, yalnızca iPhone, dikey yön. Mağaza metinleri `docs/store/app-store-metadata.json` dosyasındadır.
 - **Web:** web derlemesinde push, yerel hatırlatıcı ve Crashlytics kapalıdır.

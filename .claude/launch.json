@@ -4,8 +4,30 @@
     {
       "name": "web-build",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8090", "--bind", "127.0.0.1", "--directory", "build/web"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8090",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "build/web"
+      ],
       "port": 8090
+    },
+    {
+      "name": "hosting-local",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8091",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "hosting/public"
+      ],
+      "port": 8091
     }
   ]
 }

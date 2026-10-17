@@ -36,6 +36,7 @@
   },
   "hosting": {
     "public": "hosting/public",
+    "predeploy": ["bash tool/build_web_hosting.sh"],
     "cleanUrls": true,
     "ignore": ["**/.*"],
     "headers": [
@@ -46,6 +47,10 @@
           { "key": "Referrer-Policy", "value": "no-referrer" },
           { "key": "Cache-Control", "value": "public, max-age=3600" }
         ]
+      },
+      {
+        "source": "/app/**",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       }
     ]
   },

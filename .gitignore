@@ -110,3 +110,6 @@ ui-debug.log
 
 # Golden testi başarısız olunca Flutter'ın yazdığı karşılaştırma görüntüleri (geçici)
 **/failures/
+
+# Firebase Hosting /app/ — web derlemesi (tool/build_web_hosting.sh üretir)
+hosting/public/app/
