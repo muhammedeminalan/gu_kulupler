@@ -26,7 +26,8 @@ set panelUrl to "http://127.0.0.1:$PORT/"
 try
   do shell script "/usr/bin/curl -s -o /dev/null -m 1 " & panelUrl & "health"
 on error
-  do shell script "cd " & quoted form of "$REPO" & " && GOOGLE_APPLICATION_CREDENTIALS=" & quoted form of "$KEY" & " " & quoted form of "$NODE" & " tool/admin/panel.js --port $PORT > \$HOME/Library/Logs/gu-admin-panel.log 2>&1 &"
+  -- Çıktılar dosyaya, girdi /dev/null: arka plan süreci AppleScript'in kanalını açık tutmaz (yoksa uygulama takılır).
+  do shell script "cd " & quoted form of "$REPO" & " || exit 1; GOOGLE_APPLICATION_CREDENTIALS=" & quoted form of "$KEY" & " nohup " & quoted form of "$NODE" & " tool/admin/panel.js --port $PORT > \$HOME/Library/Logs/gu-admin-panel.log 2>&1 < /dev/null &"
   repeat 20 times
     delay 0.25
     try
