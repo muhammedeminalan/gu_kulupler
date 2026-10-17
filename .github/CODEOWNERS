@@ -1,0 +1,7 @@
+# Varsayılan sahip: her PR için inceleme istenir.
+* @muhammedeminalan
+
+# Güvenlik açısından kritik alanlar
+/firebase/ @muhammedeminalan
+/functions/ @muhammedeminalan
+/tool/admin/ @muhammedeminalan
