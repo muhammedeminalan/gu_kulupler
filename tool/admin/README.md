@@ -73,7 +73,7 @@ node tool/admin/send_push.js --title "GÜ Kulüpler" --body "Merhaba" --email ki
 
 ## Yerel admin paneli (`panel.js`) — tek butonla
 
-Bu dizindeki betikleri tarayıcıdan, terminal açmadan çalıştırır: süper admin, push, sistem bildirimi, danışman, inceleme hesabı, hesap silme temizliği, demo içerik.
+Bu dizindeki betikleri tarayıcıdan, terminal açmadan çalıştırır: istatistik, kullanıcı bilgisi, bakım ve zorunlu güncelleme, süper admin, push, sistem bildirimi, danışman, inceleme hesabı, hesap silme temizliği, demo içerik.
 
 1. **Bir kez kur:** `bash tool/admin/panel/make_launcher.sh`. Masaüstüne **GÜ Admin Paneli** uygulamasını koyar; anahtar yolu varsayılan `~/.secrets/gu-kulupler-admin.json`.
 2. **Kullan:** uygulamaya çift tıkla. Panel arka planda başlar ve tarayıcıda `http://127.0.0.1:4848/` açılır; zaten açıksa yalnızca tarayıcı açılır.
@@ -84,6 +84,26 @@ Bu dizindeki betikleri tarayıcıdan, terminal açmadan çalıştırır: süper 
 - "Uygula", terminaldeki proje kimliği onayının yerine geçer: panel `--yes` ve `GU_ADMIN_PANEL_CONFIRM=<proje>` ile çalıştırır, betikler bu değeri hedef projeyle karşılaştırır.
 - Panel yalnızca `127.0.0.1`'de dinler. Host / Origin / panel başlığı denetimi, başka sitelerin ve DNS yeniden bağlamanın istek atmasını engeller. Aynı anda tek işlem çalışır.
 - Günlük: `~/Library/Logs/gu-admin-panel.log`. Panel anahtarın içeriğini okumaz, betiğe yolunu verir.
+
+## Bakım ve zorunlu güncelleme (`set_remote_config.js`)
+
+Remote Config'teki `maintenance_message` (bakım bandı; boşsa görünmez) ve `min_supported_build` (bu numaranın altındaki sürümler "Güncelle" ekranına düşer) değerlerini Console'a girmeden değiştirir. Uygulamalar değişikliği anında alır. `firebase deploy --only remoteconfig` şablon dosyasındaki değerleri geri yükler; bu yüzden dosyayı da güncel tut.
+
+```bash
+node tool/admin/set_remote_config.js                                   # şu anki durum
+node tool/admin/set_remote_config.js --maintenance "Bakım 22:00'de" --yes
+node tool/admin/set_remote_config.js --maintenance-off --yes
+node tool/admin/set_remote_config.js --min-build 2 --yes
+```
+
+## Kullanıcı bilgisi ve istatistik (`user_info.js`, `stats.js` — salt okunur)
+
+```bash
+node tool/admin/user_info.js --email kisi@gmail.com   # doğrulama, son giriş, süper admin / askı, üyelikler, cihaz sayısı
+node tool/admin/stats.js                              # hesaplar, push alabilen cihazlar, kulüpler, etkinlikler, açık talepler
+```
+
+FCM jetonları basılmaz, yalnızca sayıları ve platformları gösterilir. Sayımlar Firestore `count()` ile yapılır.
 
 ## Demo içerik (`seed_demo_content.js`)
 

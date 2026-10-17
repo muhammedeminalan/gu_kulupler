@@ -13,6 +13,9 @@
  * `omitted`: betikte olup panelde bilinçli olarak verilmeyen argümanlar.
  */
 const SCRIPTS = Object.freeze({
+  stats: { file: 'stats.js', title: 'İstatistik', values: [], flags: [] },
+  userinfo: { file: 'user_info.js', title: 'Kullanıcı bilgisi', values: ['--email', '--uid'], flags: [] },
+  remoteconfig: { file: 'set_remote_config.js', title: 'Bakım ve güncelleme', values: ['--maintenance', '--min-build'], flags: ['--maintenance-off'] },
   superadmin: { file: 'set_superadmin.js', title: 'Süper admin', values: ['--uid', '--email'], flags: ['--revoke', '--list'] },
   push: { file: 'send_push.js', title: 'Push bildirimi', values: ['--title', '--body', '--email'], flags: ['--all'] },
   system: { file: 'send_system_notification.js', title: 'Sistem bildirimi', values: ['--text-key', '--email'], flags: ['--all'] },
