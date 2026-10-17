@@ -309,6 +309,7 @@ flutter build web --release        # Web
 ```
 
 - **Web (Hosting):** uygulama `gu-kulupler.web.app/app/` adresinde çalışır. `firebase deploy --only hosting` komutu önce `tool/build_web_hosting.sh` betiğini çalıştırır. Betik release web derlemesini `--base-href /app/` ile `hosting/public/app/` klasörüne koyar; bu klasör commit edilmez. Kökteki tanıtım, gizlilik ve destek sayfaları aynen kalır.
+- **Otomatik web yayını:** GitHub'da bir sürüm (Release) yayımlanınca [`.github/workflows/web-deploy.yml`](.github/workflows/web-deploy.yml) o sürümün etiketini derleyip Hosting'e yükler. Elle çalıştırmak için: *Actions → Web'i yayınla → Run workflow*. Gerekli gizli anahtar: `FIREBASE_SERVICE_ACCOUNT_GU_KULUPLER` (`firebase init hosting:github` oluşturur).
 
 - **iOS:** bundle `com.gukulupler.guKulupler`, yalnızca iPhone, dikey yön. Mağaza metinleri `docs/store/app-store-metadata.json` dosyasındadır.
 - **Web:** web derlemesinde push, yerel hatırlatıcı ve Crashlytics kapalıdır.
