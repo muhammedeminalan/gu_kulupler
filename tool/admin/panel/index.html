@@ -39,6 +39,27 @@ pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospa
 .badge.err{background:var(--err-soft);color:var(--err)}
 .badge.warn{background:var(--brand-soft);color:var(--brand)}
 .hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+.view h3{font-size:13px;color:var(--muted);font-weight:600;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.04em}
+.view h3:first-child{margin-top:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tile .n{font-size:26px;font-weight:700;line-height:1.1}
+.tile .l{font-size:13px;color:var(--muted);margin-top:4px}
+.tile.alert{border-color:var(--brand);background:var(--brand-soft)}
+.tile.alert .n{color:var(--brand)}
+.who{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.who .name{font-size:20px;font-weight:700}
+.who .mail{color:var(--muted)}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badges .badge{margin:0}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;word-break:break-word}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.foot{font-size:12px;color:var(--muted);margin-top:12px}
 </style>
 </head>
 <body>
@@ -58,6 +79,7 @@ pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospa
     <header><h1 id="modal-title">Önizleme</h1></header>
     <div class="body">
       <span class="badge" id="modal-badge"></span>
+      <div class="view" id="modal-view"></div>
       <pre id="modal-output"></pre>
       <p class="hint" id="modal-hint"></p>
     </div>
@@ -73,10 +95,10 @@ pre{margin:0;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospa
 // Kart tanımları: alanlar → betik argümanları. `read` = salt okunur (onay istemez).
 const CARDS = [
   { id: 'stats', title: 'İstatistik', desc: 'Hesaplar, push alabilen cihazlar, kulüpler, yaklaşan etkinlikler, açık şikayet ve destek talepleri. Hiçbir şey yazmaz.',
-    fields: [], actions: [{ label: 'İstatistikleri göster', primary: true, read: true }] },
+    fields: [], actions: [{ label: 'İstatistikleri göster', primary: true, read: true, flags: ['--json'] }] },
   { id: 'userinfo', title: 'Kullanıcı bilgisi', desc: 'Doğrulama, son giriş, süper admin / askı durumu, üyelikler, bildirim cihazı sayısı. Hiçbir şey yazmaz.',
     fields: [{ key: 'email', flag: '--email', label: 'E-posta', type: 'email', placeholder: 'kisi@gmail.com' }],
-    actions: [{ label: 'Bilgileri göster', primary: true, read: true, need: ['email'] }] },
+    actions: [{ label: 'Bilgileri göster', primary: true, read: true, need: ['email'], flags: ['--json'] }] },
   { id: 'remoteconfig', title: 'Bakım ve güncelleme', desc: 'Uygulamadaki bakım bandı ve zorunlu güncelleme. Uygulamalar değişikliği anında alır.',
     fields: [
       { key: 'maintenance', flag: '--maintenance', label: 'Bakım mesajı', placeholder: 'Bugün 22:00–23:00 arası bakım var.' },
@@ -148,6 +170,7 @@ const api = async (pathName, body) => {
 };
 
 let projectId = '';
+let departments = {};
 let pending = null;
 
 function el(tag, props = {}, children = []) {
@@ -259,12 +282,110 @@ function showResult(title, result, canApply, readOnly = false, applied = false) 
   if (result.code === null) { badge.className = 'badge warn'; badge.textContent = 'Çalışıyor'; }
   else if (result.code === 0) { badge.className = 'badge ok'; badge.textContent = applied ? 'Uygulandı' : readOnly ? 'Tamam' : 'Önizleme — henüz hiçbir şey yazılmadı'; }
   else { badge.className = 'badge err'; badge.textContent = `Hata (kod ${result.code})`; }
-  $('modal-output').textContent = (result.output || '').replace(/^Kuru çalıştırma: .*$/m, '').trim() || '—';
+  const text = (result.output || '').replace(/^Kuru çalıştırma: .*$/m, '').trim();
+  const view = $('modal-view');
+  view.replaceChildren();
+  const structured = result.code === 0 ? parseStructured(text) : null;
+  if (structured) {
+    view.append(structured.kind === 'stats' ? renderStats(structured) : renderUser(structured));
+    $('modal-output').style.display = 'none';
+  } else {
+    $('modal-output').style.display = '';
+    $('modal-output').textContent = text || '—';
+  }
   $('modal-hint').textContent = canApply ? `"Evet, uygula" GERÇEK projeye (${projectId}) yazar.` : '';
   const applyBtn = $('modal-apply');
   applyBtn.style.display = canApply ? '' : 'none';
   applyBtn.disabled = false;
   $('scrim').classList.add('open');
+}
+
+// ── Yapılandırılmış sonuçlar (betiklerin --json çıktısı: tek satır "@@JSON {...}") ──
+const ROLE = { president: 'Başkan', board: 'Yönetim kurulu', member: 'Üye', advisor: 'Danışman' };
+const MEMBERSHIP = { active: 'Etkin', pending: 'Başvuru bekliyor', left: 'Ayrıldı', rejected: 'Reddedildi', cancelled: 'Vazgeçti', removed: 'Çıkarıldı' };
+const RSVP = { going: 'Katılıyor', waitlist: 'Bekleme listesi', cancelled: 'Vazgeçti' };
+const USER_STATUS = { active: 'Etkin', suspended: 'Askıda', deleted: 'Silinmiş' };
+const YEAR = { prep: 'Hazırlık', '1': '1. sınıf', '2': '2. sınıf', '3': '3. sınıf', '4': '4. sınıf', '5plus': '5+ sınıf', master: 'Yüksek lisans', phd: 'Doktora' };
+const PLATFORM = { ios: 'iOS', android: 'Android', web: 'Web' };
+const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString('tr-TR', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+const fmtNum = (n) => (Number.isFinite(n) ? n.toLocaleString('tr-TR') : '—');
+const counts = (obj, labels) => Object.entries(obj || {}).map(([k, n]) => `${labels[k] || k} ${n}`).join(' · ');
+
+function parseStructured(text) {
+  const line = text.split('\n').find((l) => l.startsWith('@@JSON '));
+  if (!line) return null;
+  try { return JSON.parse(line.slice(7)); } catch (e) { return null; }
+}
+
+function badge(textValue, tone) {
+  return el('span', { class: `badge ${tone}`, text: textValue });
+}
+
+function renderStats(data) {
+  const c = data.counts || {};
+  const group = (title, items) => [
+    el('h3', { text: title }),
+    el('div', { class: 'tiles' }, items.map(([label, n, alert]) => el('div', { class: `tile${alert && n > 0 ? ' alert' : ''}` }, [
+      el('div', { class: 'n', text: fmtNum(n) }),
+      el('div', { class: 'l', text: label }),
+    ]))),
+  ];
+  return el('div', {}, [
+    ...group('Kullanıcılar', [['Hesap', c.authUsers], ['Etkin profil', c.activeUsers], ['Push alabilen kullanıcı', c.pushUsers], ['Bildirim cihazı', c.pushDevices]]),
+    ...group('Kulüpler', [['Etkin kulüp', c.activeClubs], ['Etkin üyelik', c.activeMemberships]]),
+    ...group('Son hareketler', [['Önümüzdeki 7 gün etkinlik', c.upcomingEvents], ['Son 7 gün gönderi', c.recentPosts]]),
+    ...group('Bekleyen işler', [['Açık şikayet', c.openReports, true], ['Açık destek talebi', c.openTickets, true]]),
+    el('div', { class: 'foot', text: `${data.projectId} · ${fmtDate(data.generatedAt)}` }),
+  ]);
+}
+
+function renderUser(u) {
+  const p = u.profile;
+  const badges = [
+    u.emailVerified ? badge('E-posta doğrulanmış', 'ok') : badge('E-posta doğrulanmamış', 'err'),
+    u.disabled ? badge('Hesap devre dışı', 'err') : badge('Hesap etkin', 'ok'),
+  ];
+  if (u.superadmin) badges.push(badge('Süper admin', 'warn'));
+  if (!p) badges.push(badge('Profil yok', 'err'));
+  else if (!p.complete) badges.push(badge('Profil eksik', 'err'));
+  if (p && p.status && p.status !== 'active') badges.push(badge(USER_STATUS[p.status] || p.status, 'err'));
+
+  const devices = u.devices && u.devices.count > 0
+    ? `${u.devices.count} cihaz (${counts(u.devices.platforms, PLATFORM)})`
+    : 'Yok — push gitmez';
+  const rows = [
+    ['uid', u.uid, true],
+    ['Kayıt', fmtDate(u.createdAt)],
+    ['Son giriş', fmtDate(u.lastSignInAt)],
+    ['Durum', p ? (USER_STATUS[p.status] || p.status || '—') : '—'],
+    ['Bölüm', p && p.department ? (departments[p.department] || p.department) : '—'],
+    ['Sınıf', p && p.year ? (YEAR[p.year] || p.year) : '—'],
+    ['Bildirim', devices],
+    ['Etkinlik kaydı', counts(u.rsvps, RSVP) || 'Yok'],
+  ];
+  const kv = el('dl', { class: 'kv' });
+  for (const [k, v, mono] of rows) kv.append(el('dt', { text: k }), el('dd', { text: v, ...(mono ? { class: 'mono' } : {}) }));
+
+  const parts = [
+    el('div', { class: 'who' }, [
+      el('div', { class: 'name', text: (p && p.name) || u.email || u.uid }),
+      el('div', { class: 'mail', text: u.email || '' }),
+      el('div', { class: 'badges' }, badges),
+    ]),
+    el('h3', { text: 'Bilgiler' }),
+    kv,
+    el('h3', { text: `Üyelikler (${u.memberships.length})` }),
+  ];
+  if (u.memberships.length === 0) parts.push(el('p', { class: 'hint', text: 'Hiçbir kulübe üye değil.' }));
+  else {
+    const tbody = el('tbody', {}, u.memberships.map((m) => el('tr', {}, [
+      el('td', { text: m.clubName || m.clubId }),
+      el('td', { text: ROLE[m.role] || m.role || '—' }),
+      el('td', { text: MEMBERSHIP[m.status] || m.status || '—' }),
+    ])));
+    parts.push(el('table', {}, [el('thead', {}, [el('tr', {}, ['Kulüp', 'Rol', 'Durum'].map((h) => el('th', { text: h })))]), tbody]));
+  }
+  return el('div', {}, parts);
 }
 
 $('modal-apply').addEventListener('click', apply);
@@ -278,6 +399,7 @@ $('shutdown').addEventListener('click', async () => {
   try {
     const info = await api('/api/info');
     projectId = info.projectId;
+    departments = info.departments || {};
     $('meta').textContent = `Proje: ${info.projectId} · anahtar: ${info.keyFile} ✓`;
     const cards = $('cards');
     for (const card of CARDS) cards.append(renderCard(card));

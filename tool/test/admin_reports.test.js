@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { KEYS, MAINTENANCE_MAX, describeState, planRemoteConfig } = require('../admin/lib/remote_config_plan');
-const { formatStats, formatUserReport } = require('../admin/lib/admin_reports');
+const { JSON_PREFIX, buildUserSummary, formatStats, formatUserReport, jsonLine } = require('../admin/lib/admin_reports');
+const { departmentLabels } = require('../admin/panel');
 
 const template = () => ({
   version: { versionNumber: '7' },
@@ -73,4 +74,35 @@ test('formatStats: eksik sayı — ile gösterilir', () => {
   assert.match(lines, /230 hesap  ·  226 etkin profil/);
   assert.match(lines, /3 kullanıcı \/ 4 cihaz/);
   assert.match(lines, /Kulüp        : — etkin/);
+});
+
+test('buildUserSummary: panel için yapılandırılmış özet; jeton yok, silinmiş üyelik ve katılım sayılmaz, kulüp adı eklenir', () => {
+  const summary = buildUserSummary({
+    auth: { uid: 'u1', email: 'a@gmail.com', emailVerified: false, disabled: true, customClaims: { superadmin: true }, metadata: { creationTime: 'Sat, 17 Oct 2026 06:44:28 GMT', lastSignInTime: null } },
+    profile: { name: 'Ayşe', status: 'suspended', profileComplete: false, department: 'd05', year: '4' },
+    account: { fcmTokens: [{ token: 'GIZLI', platform: 'ios' }] },
+    memberships: [{ clubId: 'c01', role: 'president', status: 'active' }, { clubId: 'c02', status: 'left', isDeleted: true }],
+    rsvps: [{ status: 'going' }, { status: 'going' }, { status: 'cancelled', isDeleted: true }],
+    clubNames: { c01: 'Yazılım' },
+  });
+  assert.equal(summary.emailVerified, false);
+  assert.equal(summary.disabled, true);
+  assert.equal(summary.superadmin, true);
+  assert.equal(summary.createdAt, '2026-10-17T06:44:28.000Z');
+  assert.equal(summary.lastSignInAt, null);
+  assert.deepEqual(summary.profile, { name: 'Ayşe', status: 'suspended', deleted: false, complete: false, department: 'd05', year: '4' });
+  assert.deepEqual(summary.devices, { count: 1, platforms: { ios: 1 } });
+  assert.deepEqual(summary.memberships, [{ clubId: 'c01', clubName: 'Yazılım', role: 'president', status: 'active' }]);
+  assert.deepEqual(summary.rsvps, { going: 2 });
+  assert.doesNotMatch(JSON.stringify(summary), /GIZLI/);
+  const line = jsonLine({ kind: 'user', ...summary });
+  assert.ok(line.startsWith(JSON_PREFIX));
+  assert.equal(JSON.parse(line.slice(JSON_PREFIX.length)).kind, 'user');
+});
+
+test('departmentLabels: ARB bölüm anahtarları kimliğe çevrilir; dosya yoksa boş', () => {
+  const labels = departmentLabels();
+  assert.ok(Object.keys(labels).length >= 24);
+  assert.match(Object.keys(labels)[0], /^d\d{2}$/);
+  assert.deepEqual(departmentLabels('/yok/app_tr.arb'), {});
 });
