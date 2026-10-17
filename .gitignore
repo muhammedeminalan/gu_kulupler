@@ -119,3 +119,6 @@ hosting/public/app/
 *.apk
 *.aab
 *.ipa
+
+# Sunumun yerel çalışma kopyası (yayınlanan: hosting/public/sunum/)
+docs/sunum/
