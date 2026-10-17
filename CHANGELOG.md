@@ -9,6 +9,7 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 ### Eklendi
 - **Web sürümü:** Firebase web uygulaması ve `web/` hedefi eklendi. Uygulama Hosting'de [gu-kulupler.web.app/app](https://gu-kulupler.web.app/app/) adresinden yayınlanır; tanıtım sayfasına "Web'de aç" bağlantısı eklendi. Web'de push, yerel hatırlatıcı ve Crashlytics kapalıdır.
 - **Etkinlik konum kartı görseli:** kapak deseni üzerinde büyük pin ve mekân adı. Tasarımdaki taslak yer tutucunun yerini aldı (karar H-24).
+- **Otomatik web yayını:** GitHub'da sürüm yayımlanınca web uygulaması GitHub Actions ile Hosting'e yüklenir.
 - **Yönetim betikleri:**
   - Gerçek projeye demo içerik yazan `tool/admin/seed_demo_content.js`.
   - App Store inceleme hesabı açan `tool/admin/create_review_account.js`.
