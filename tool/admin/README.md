@@ -84,6 +84,17 @@ node tool/admin/seed_demo_content.js          # kuru: belge ve görsel sayılar�
 node tool/admin/seed_demo_content.js --yes    # yaz (proje kimliği sorulur)
 ```
 
+## İnceleme hesabı (`create_review_account.js`)
+
+App Store incelemesi için hesap açar: Auth hesabı, e-postası **doğrulanmış**, şifresi betikçe üretilir ve yalnızca terminale bir kez basılır (argüman olarak alınmaz). Firestore'a yazmaz; profil belgelerini ilk girişte uygulamanın profil ekranı yazar. Alan adı uygulamanın izinli listesinden (`EmailDomainPolicy.allowedDomains`). Var olan hesap için yalnızca e-postayı doğrular; `--reset-password` ile şifreyi yeniler. Devre dışı (askıya alınmış) hesaba dokunmaz.
+
+```bash
+node tool/admin/create_review_account.js --email kisi+review@gmail.com          # kuru
+node tool/admin/create_review_account.js --email kisi+review@gmail.com --yes    # aç; şifre bir kez basılır
+```
+
+Sonra uygulamada bu hesapla giriş yap → profili tamamla → 1–2 açık kulübe katıl → bilgileri App Store Connect › App Review Information'a yaz.
+
 ## Yarım kalan hesap silme temizliği (`finish_account_deletion.js` — W-91)
 
 > **T-42 (Mod F, CD-165) sonrası bu betik YEDEKTİR.** Functions yüklendikten sonra `finishAccountDeletions` zamanlanmış fonksiyonu her gün 03:30'da (Europe/Istanbul) `deletedAt`'i son 1–72 saat içindeki silinmiş hesapları aynı planlayıcıyla (`functions/src/lib/account_cleanup.ts` — bu dizindeki `lib/account_cleanup.js`'in TS portu; parite testi `functions/test/account_cleanup.test.ts`) kendiliğinden tamamlar (koşu başına ≤ 50). Betiği yalnızca şu durumlarda çalıştır: 72 saatten eski hesap, etkin başkan uyarısı (aşağıda) sonrası yeniden koşum, Functions henüz yüklenmemiş / devre dışı. Fonksiyon ve betik (T-45, `lib/account_cleanup_runner.js`) aynı ilkeyle yazar: **iki geçiş** (önce tüm hesapların kritik temizliği — hesap belgesi, katılım, üyelik, iletişim — sonra kişisel belgeler), **sayfalı okuma** (kişisel belgeler ve `--all-deleted` listesi `documentId()` sırasıyla sayfa sayfa; kuru çalıştırma kişisel belgeleri yalnızca sayar), kişisel yazımlar **≤ 450'lik gruplu batch** ve her yazım okunduğu andaki `lastUpdateTime` **önkoşuluyla** (kritik birimde ilk yazım). Araya giren yazımda (fonksiyonun ya da istemcinin eşzamanlı temizliği) batch bütünüyle reddedilir, yarım yazım ve çift sayaç düşüşü olmaz; çıktı `! … önkoşul` der → betiği yeniden çalıştır. Yine de fonksiyonun koşu saatinde (03:30 civarı) çalıştırmamak reddi azaltır.
