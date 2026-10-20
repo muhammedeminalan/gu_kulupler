@@ -3,6 +3,8 @@
          bildirim — yerel hatırlatıcılar için ön izin (DLG-03, Android 13+).
          READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE bilerek YOK: galeri sistem fotoğraf seçicisiyle
          (Android Photo Picker) açılır, depolama izni istenmez. -->
+    <!-- Release'te açıkça: Firebase / görsel indirme (debug manifest'i ayrıca ekler). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- T-23 (PLAN §5.6.2, CD-09): yeniden başlatmadan sonra planlı yerel hatırlatıcılar
