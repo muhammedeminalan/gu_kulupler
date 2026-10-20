@@ -98,6 +98,7 @@ extension PumpApp on WidgetTester {
     List<Override> overrides = const [],
     EdgeInsets viewPadding = EdgeInsets.zero,
     double keyboardInset = 0,
+    TransitionBuilder? wrap,
   }) => _pumpRoot(
     locale: locale,
     theme: theme,
@@ -108,6 +109,7 @@ extension PumpApp on WidgetTester {
     viewPadding: viewPadding,
     keyboardInset: keyboardInset,
     routerOf: routerOf ?? (ref) => ref.watch(appRouterProvider),
+    wrap: wrap,
   );
 
   /// [pumpApp] ve [pumpAppRouter]'ın ortak gövdesi: [home] ya da [routerOf]
@@ -123,6 +125,7 @@ extension PumpApp on WidgetTester {
     required double keyboardInset,
     Widget? home,
     GoRouter Function(WidgetRef ref)? routerOf,
+    TransitionBuilder? wrap,
   }) async {
     assert(
       (home == null) != (routerOf == null),
@@ -151,7 +154,7 @@ extension PumpApp on WidgetTester {
         viewPadding: viewPadding,
         keyboardInset: keyboardInset,
       ),
-      child: navigator!,
+      child: wrap == null ? navigator! : wrap(context, navigator),
     );
 
     await pumpWidget(

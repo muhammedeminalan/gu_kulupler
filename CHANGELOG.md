@@ -7,6 +7,7 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 ## [Yayınlanmamış]
 
 ### Eklendi
+- **Geniş ekranda web düzeni (H-23):** bilgisayarda uygulama desenli zeminde ortalanmış bir kartta açılır (en fazla 768 genişlik); geniş pencerede alt menü yerine solda yan menü (sekmeler + bildirim sayısı). Telefon ve mobil uygulama değişmedi.
 - **Daha çok bildirim (H-25):** uygulama kapalıyken de push gelir:
   - Kulüpte yeni gönderi / anket → kulüp üyelerine.
   - Gönderine yorum → sana; yorum yaptığın gönderiye yeni yorum → sana.

@@ -21,7 +21,7 @@
 | Hareket | 5 + 17 keyframe/ölçek + toast 2 | 5 + 17 + 2 doğrulandı + **6 ek** (`countdownTick` CD-97; `longPress`, `heartPopReset`, `applicationLeave`, `viewerDoubleTap`, `viewerZoom` K-46) + `easeCss` (CSS `ease`, eğrisi yazılmamış geçişler); `refreshSettle` = `base` (ayrı sabit yok); SHT-24 oto-kapanma `AppDurations.qrSuccessAutoClose` (`GuMotion` dışı, CD-58) | §7 |
 | `GuSizes` | 364 assert (353 ölçü + 11 ikon) | PLAN §7.7.1–7.7.6 satırlarının tamamı doğrulandı (353) + F-L **ek** 26 (taslaktaki 34 − 4 logo oranı CD-90 − 4 ad genişliği K-29/CD-106a) + 2 `/// Platform-derived` (CD-97) + K-46 8 + K-47 1 (`avatarGroupSizes`) + 11 ikon; `illustrationSizes` (K-48) ve `logoSizes` mevcut liste sabitlerini günceller → aday 401; **T-01 nihai N = 402** (`miniChartFillOpacity` → `GuOpacity.miniChartFill`, CD-120; inceleme sonrası K-46 + 2: `viewerZoomScale`, `applicationLeaveOffsetX`) | §8 |
 | `GuOpacity` | 8 | 8 + 1 ek (`coverIcon` .12) | §8.8 |
-| `GuBreakpoints` | 6 | 6 | yok |
+| `GuBreakpoints` | 6 | 6 + 2 web (H-23: `webFrame` 768, `webSidebar` 1024) | §9 |
 | AA kontrast beklenen kusur | 3 çift + disabled muaf | metin **3 çift** (T-45, K-91): CD-22'nin koyu 2'si (2.12 / 2.54) + `brandPrimaryText/bgSurfaceRaised` koyu 4.45 (CD-100); CD-22'nin `textMuted/bgSurfaceMuted` açık 4.35 kaydı `textMuted` açık `#5E708A` ile kapandı (4.61); metin dışı **10 çift** (K-43'ün 9'u + CD-110 `switch` kapalı rayı; CD-100); toast eylem metni koyu CD-98 ile 12.45 (K-41) | §10 |
 
 ## 1. Renkler — `GuColors` (27 × açık/koyu; `ThemeExtension<GuColors>`, `lerp` alan alan)
@@ -510,8 +510,24 @@ Sayım (CD-97 formülü): PLAN §7.7.1–7.7.6 ölçüleri (353) + 11 ikon = 364
 | `phoneLarge` | 430 | cihaz matrisi "büyük" |
 | `tablet` | 768 | cihaz matrisi "tablet"; prototip `mobile = w < 768` shell:65 |
 | `referenceHeight` | 844 | css:112 (golden yüksekliği) |
+| `webFrame` | 768 | H-23 (2026-10-20): web penceresi bundan genişse uygulama telefon kartında (`GuWebFrame`, `WebShell`); mobilde kullanılmaz |
+| `webSidebar` | 1024 | H-23: web penceresi en az bu genişlikteyse kabukta alt çubuk yerine yan menü (`GuSidebar`; kullanıcı kararı 600 / 1024) |
 
-`GuBreakpoints.isWide(BuildContext) => MediaQuery.sizeOf(context).width > maxContentWidth`; dikey kilit, yatay yerleşim yok (Q-13).
+`GuBreakpoints.isWide(BuildContext) => MediaQuery.sizeOf(context).width > maxContentWidth`; dikey kilit, yatay yerleşim yok (Q-13). Web kartının içinde `GuContentColumnScope(enabled: false)` sütunu kapatır (kart genişliği kartın kendisidir).
+
+### 9.1 Web çerçevesi — `GuWebLayout` (H-23; tasarım dışı, referans projedeki telefon kartı + yan menü)
+
+| Sabit | Değer | Kullanım |
+|---|---|---|
+| `cardMaxWidth` | 768 | kartın en geniş hali (480 – 768 arası, kalan alana göre) |
+| `framePadding` | 24 | kart / yan menü ile pencere kenarı |
+| `sidebarGap` | 24 | yan menü ile kart arası |
+| `sidebarWidth` | 264 | yan menü genişliği |
+| `sidebarItemHeight` | 48 | yan menü satırı (dokunma hedefi) |
+| `sidebarLogo` | 32 | yan menü amblemi |
+| `outline` | 1 | kart / yan menü kenarlığı (`border.soft`) |
+| `backdropDotSpacing` / `backdropDotRadius` | 24 / 1.5 | zemin nokta ızgarası (`border.default`, aşağı doğru silikleşir) |
+| `sidebarSlideRatio` / `sidebarRevealStart` | 0.25 / 0.3 | yan menünün kartın arkasından kayma payı ve belirmeye başladığı nokta |
 
 ## 10. AA kontrast — `gu_contrast_test.dart` beklentileri (CD-22, K-25)
 
