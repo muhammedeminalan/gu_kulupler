@@ -83,6 +83,21 @@ final class NoopNotificationDispatcher implements NotificationDispatcher {
   }) => _skipped(recipients.length);
 
   @override
+  Future<FirestoreResult<DispatchReport>> notifyPostNew({
+    required String postId,
+    required String clubId,
+    required List<String> recipients,
+  }) => _skipped(recipients.length);
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyCommentNew({
+    required String postId,
+    required String clubId,
+    required String commentId,
+    required List<String> recipients,
+  }) => _skipped(recipients.length);
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyEventNew({
     required String eventId,
     required String clubId,

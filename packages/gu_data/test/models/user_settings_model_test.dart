@@ -27,6 +27,8 @@ void main() {
     announcements: false,
     eventReminders: false,
     newEvents: false,
+    newPosts: false,
+    newComments: false,
     applicationResults: false,
     management: false,
     system: false,
@@ -77,6 +79,8 @@ void main() {
       expect(defaults.announcements, isTrue);
       expect(defaults.eventReminders, isTrue);
       expect(defaults.newEvents, isTrue);
+      expect(defaults.newPosts, isTrue);
+      expect(defaults.newComments, isTrue);
       expect(defaults.applicationResults, isTrue);
       expect(defaults.management, isTrue);
       expect(defaults.system, isTrue);
@@ -121,9 +125,9 @@ void main() {
   });
 
   group('T-09 · UserSettingsModel · copyWith ve eşitlik', () {
-    test('parametresiz copyWith aynı modeli verir; props 13 alan taşır', () {
+    test('parametresiz copyWith aynı modeli verir; props 15 alan taşır', () {
       expect(full.copyWith(), full);
-      expect(full.props, hasLength(13));
+      expect(full.props, hasLength(15));
     });
 
     test('her alan copyWith ile değişir ve eşitliğe girer', () {
@@ -145,6 +149,8 @@ void main() {
         true,
       );
       check(full.copyWith(newEvents: true), (m) => m.newEvents, true);
+      check(full.copyWith(newPosts: true), (m) => m.newPosts, true);
+      check(full.copyWith(newComments: true), (m) => m.newComments, true);
       check(
         full.copyWith(applicationResults: true),
         (m) => m.applicationResults,
@@ -224,6 +230,8 @@ void main() {
       announcements: false,
       eventReminders: false,
       newEvents: false,
+      newPosts: false,
+      newComments: false,
       applicationResults: false,
       management: false,
       system: false,
@@ -239,12 +247,14 @@ void main() {
       expect(fullPatch.isEmpty, isFalse);
     });
 
-    test('dolu yama tam olarak 10 genel tercihi yazar; clubs ve updatedAt '
+    test('dolu yama tam olarak 12 genel tercihi yazar; clubs ve updatedAt '
         'yazılmaz, hatırlatma JSON değeriyle', () {
       expect(fullPatch.toJson(), {
         'announcements': false,
         'eventReminders': false,
         'newEvents': false,
+        'newPosts': false,
+        'newComments': false,
         'applicationResults': false,
         'management': false,
         'system': false,
@@ -270,8 +280,8 @@ void main() {
       );
     });
 
-    test('her alan eşitliğe girer; props 10 alan taşır', () {
-      expect(fullPatch.props, hasLength(10));
+    test('her alan eşitliğe girer; props 12 alan taşır', () {
+      expect(fullPatch.props, hasLength(12));
       expect(
         const UserSettingsPatch(quiet: true),
         const UserSettingsPatch(quiet: true),
@@ -280,6 +290,8 @@ void main() {
         UserSettingsPatch(announcements: true),
         UserSettingsPatch(eventReminders: true),
         UserSettingsPatch(newEvents: true),
+        UserSettingsPatch(newPosts: true),
+        UserSettingsPatch(newComments: true),
         UserSettingsPatch(applicationResults: true),
         UserSettingsPatch(management: true),
         UserSettingsPatch(system: true),

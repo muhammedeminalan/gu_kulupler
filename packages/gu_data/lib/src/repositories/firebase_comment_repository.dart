@@ -9,6 +9,7 @@ import 'package:gu_data/src/core/base_fields.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/models/comment_model.dart';
+import 'package:gu_data/src/notifications/notification_dispatcher.dart';
 import 'package:gu_data/src/repositories/comment_repository.dart';
 import 'package:gu_data/src/repositories/query_x.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
@@ -26,11 +27,21 @@ import 'package:gu_data/src/utils/field_validators.dart';
 /// süper admin) Security Rules'ta denetlenir, repository aktöre göre dallanmaz.
 final class FirebaseCommentRepository implements CommentRepository {
   /// [_firestore] servisi üzerinden okur ve yazar; [add] sonucundaki yaklaşık
-  /// zaman alanlarını [_clock] saatinden alır.
-  FirebaseCommentRepository(this._firestore, this._clock);
+  /// zaman alanlarını [_clock] saatinden alır. [_notifications] verilirse yeni
+  /// yorum gönderi sahibine ve o gönderide yorum yapanlara bildirilir
+  /// (`comment_new`, H-25; en iyi çaba — yorumun sonucunu etkilemez).
+  FirebaseCommentRepository(
+    this._firestore,
+    this._clock, [
+    this._notifications,
+  ]);
 
   final FirestoreService _firestore;
   final AppClock _clock;
+  final NotificationDispatcher? _notifications;
+
+  /// Yeni yorum bildiriminde okunan en çok önceki yorum (alıcı adayı).
+  static const int _commentersScanMax = 200;
 
   /// `commentCount` deltası: yorum yazıldı ya da geri yüklendi.
   static const int _added = 1;
@@ -74,8 +85,60 @@ final class FirebaseCommentRepository implements CommentRepository {
         })
         ..update(_postRef(postId), _counterPayload(commentId, _added));
     });
+    if (written.isSuccess && _notifications != null) {
+      unawaited(
+        _notifyCommentNew(
+          postId: postId,
+          clubId: clubId,
+          commentId: commentId,
+          authorId: authorId,
+        ),
+      );
+    }
     return written.map(
       (_) => comment.copyWith(id: commentId, createdAt: now, updatedAt: now),
+    );
+  }
+
+  /// `comment_new` alıcıları: gönderi sahibi + bu gönderide yorum yapanlar
+  /// (yorumcu hariç). Okuma ya da yazım hatası günlüğe bile çıkmaz; yorum
+  /// zaten yazılmıştır.
+  Future<void> _notifyCommentNew({
+    required String postId,
+    required String clubId,
+    required String commentId,
+    required String authorId,
+  }) async {
+    final notifications = _notifications;
+    if (notifications == null) return;
+    final recipients = <String>{};
+    final post = await _firestore.getDoc(_postRef(postId));
+    if (post.dataOrNull?.data[FirestoreFields.authorId]
+        case final String postAuthor) {
+      recipients.add(postAuthor);
+    }
+    final others = await _firestore.getList(
+      _firestore
+          .collection(FirestoreCollections.comments)
+          .where(FirestoreFields.postId, isEqualTo: postId)
+          .where(FirestoreFields.clubId, isEqualTo: clubId)
+          .notDeleted()
+          .where(FirestoreFields.isHidden, isEqualTo: false)
+          .orderBy(FirestoreFields.createdAt, descending: true)
+          .limit(_commentersScanMax),
+    );
+    for (final doc in others.dataOrNull ?? const <FirestoreDoc>[]) {
+      if (doc.data[FirestoreFields.authorId] case final String commenter) {
+        recipients.add(commenter);
+      }
+    }
+    recipients.remove(authorId);
+    if (recipients.isEmpty) return;
+    await notifications.notifyCommentNew(
+      postId: postId,
+      clubId: clubId,
+      commentId: commentId,
+      recipients: recipients.toList(),
     );
   }
 

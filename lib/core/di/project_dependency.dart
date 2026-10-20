@@ -196,10 +196,7 @@ abstract final class ProjectDependency {
     final notificationRepository = FirebaseNotificationRepository(
       firestoreService,
     );
-    final recipientResolver = FirebaseRecipientResolver(
-      firestoreService,
-      userRepository,
-    );
+    final recipientResolver = FirebaseRecipientResolver(firestoreService);
     final notificationDispatcher = ClientFanOutDispatcher(
       writer: notificationRepository,
       recipients: recipientResolver,
@@ -246,6 +243,7 @@ abstract final class ProjectDependency {
     final commentRepository = FirebaseCommentRepository(
       firestoreService,
       appClock,
+      notificationDispatcher,
     );
     final savedPostRepository = FirebaseSavedPostRepository(firestoreService);
     // T-22 · etkinlik ve katılım. Yayın / iptal günlük kaydı asıl yazımla aynı

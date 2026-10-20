@@ -369,6 +369,8 @@ void main() {
           NotificationType.removedFromClub: {club},
           NotificationType.roleChanged: {club, FirestoreFields.role},
           NotificationType.announcement: {club, FirestoreFields.postId},
+          NotificationType.postNew: {club, FirestoreFields.postId},
+          NotificationType.commentNew: {club, FirestoreFields.postId},
           NotificationType.eventNew: {club, event},
           NotificationType.eventReminder: {club, event},
           NotificationType.eventCancelled: {club, event},

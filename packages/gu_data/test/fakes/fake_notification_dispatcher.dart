@@ -148,6 +148,28 @@ final class FakeNotificationDispatcher implements NotificationDispatcher {
   }, recipients);
 
   @override
+  Future<FirestoreResult<DispatchReport>> notifyPostNew({
+    required String postId,
+    required String clubId,
+    required List<String> recipients,
+  }) => _fanOut('notifyPostNew', {
+    'postId': postId,
+    'clubId': clubId,
+  }, recipients);
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyCommentNew({
+    required String postId,
+    required String clubId,
+    required String commentId,
+    required List<String> recipients,
+  }) => _fanOut('notifyCommentNew', {
+    'postId': postId,
+    'clubId': clubId,
+    'commentId': commentId,
+  }, recipients);
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyEventNew({
     required String eventId,
     required String clubId,

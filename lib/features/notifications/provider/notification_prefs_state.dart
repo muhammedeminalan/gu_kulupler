@@ -8,6 +8,12 @@ enum NotificationPrefField {
   /// Duyurular (`NTF-02.toggle.announcements`).
   announcements,
 
+  /// Yeni gönderiler (`NTF-02.toggle.newPosts`; H-25, tasarım dışı).
+  newPosts,
+
+  /// Gönderiye yorumlar (`NTF-02.toggle.newComments`; H-25, tasarım dışı).
+  newComments,
+
   /// Etkinlik hatırlatmaları (`NTF-02.toggle.eventReminders`).
   eventReminders,
 
@@ -38,6 +44,8 @@ enum NotificationPrefField {
   /// (`screens-events.js:112`).
   static const List<NotificationPrefField> typeToggles = [
     announcements,
+    newPosts,
+    newComments,
     eventReminders,
     newEvents,
     applicationResults,
@@ -102,6 +110,8 @@ final class NotificationPrefsState extends Equatable {
   /// [field] anahtarının değeri (yalnızca açık / kapalı alanlar).
   bool isOn(NotificationPrefField field) => switch (field) {
     NotificationPrefField.announcements => settings.announcements,
+    NotificationPrefField.newPosts => settings.newPosts,
+    NotificationPrefField.newComments => settings.newComments,
     NotificationPrefField.eventReminders => settings.eventReminders,
     NotificationPrefField.newEvents => settings.newEvents,
     NotificationPrefField.applicationResults => settings.applicationResults,

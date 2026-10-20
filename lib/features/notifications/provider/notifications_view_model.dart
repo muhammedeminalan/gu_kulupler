@@ -68,6 +68,10 @@ final class NotificationsViewModel extends _$NotificationsViewModel
           eventReminders: false,
         ),
         NotificationType.eventNew => const UserSettingsPatch(newEvents: false),
+        NotificationType.postNew => const UserSettingsPatch(newPosts: false),
+        NotificationType.commentNew => const UserSettingsPatch(
+          newComments: false,
+        ),
         NotificationType.applicationApproved ||
         NotificationType.applicationRejected => const UserSettingsPatch(
           applicationResults: false,
@@ -569,6 +573,8 @@ final class NotificationsViewModel extends _$NotificationsViewModel
     announcements: patch.announcements,
     eventReminders: patch.eventReminders,
     newEvents: patch.newEvents,
+    newPosts: patch.newPosts,
+    newComments: patch.newComments,
     applicationResults: patch.applicationResults,
     management: patch.management,
     system: patch.system,

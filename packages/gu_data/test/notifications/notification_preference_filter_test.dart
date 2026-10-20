@@ -36,6 +36,8 @@ void main() {
           announcements: false,
           eventReminders: false,
           newEvents: false,
+          newPosts: false,
+          newComments: false,
           applicationResults: false,
           management: false,
           system: false,
@@ -61,6 +63,8 @@ void main() {
           applicationResults: false,
         ),
         NotificationType.announcement: defaults.copyWith(announcements: false),
+        NotificationType.postNew: defaults.copyWith(newPosts: false),
+        NotificationType.commentNew: defaults.copyWith(newComments: false),
         NotificationType.eventNew: defaults.copyWith(newEvents: false),
         NotificationType.eventReminder: defaults.copyWith(
           eventReminders: false,

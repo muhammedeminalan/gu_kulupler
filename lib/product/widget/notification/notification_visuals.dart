@@ -24,6 +24,8 @@ abstract final class NotificationVisuals {
     NotificationType.removedFromClub => (GuIcons.userX, GuIconBoxTone.danger),
     NotificationType.roleChanged => (GuIcons.userCog, GuIconBoxTone.info),
     NotificationType.announcement => (GuIcons.megaphone, GuIconBoxTone.brand),
+    NotificationType.postNew => (GuIcons.newspaper, GuIconBoxTone.brand),
+    NotificationType.commentNew => (GuIcons.messageCircle, GuIconBoxTone.info),
     NotificationType.eventNew => (GuIcons.calendarPlus, GuIconBoxTone.info),
     NotificationType.eventReminder => (
       GuIcons.bellRing,

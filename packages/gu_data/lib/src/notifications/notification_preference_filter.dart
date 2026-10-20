@@ -56,6 +56,9 @@ abstract final class NotificationPreferenceFilter {
         settings.announcements && !clubMuted && (club?.announcements ?? true),
       NotificationType.eventNew =>
         settings.newEvents && !clubMuted && (club?.events ?? true),
+      NotificationType.postNew =>
+        settings.newPosts && !clubMuted && (club?.posts ?? true),
+      NotificationType.commentNew => settings.newComments && !clubMuted,
       NotificationType.eventReminder => settings.eventReminders,
       NotificationType.system => settings.system,
       NotificationType.unknown => false,

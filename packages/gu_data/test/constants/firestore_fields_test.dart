@@ -135,6 +135,8 @@ const Map<String, String> _actual = {
   'announcements': FirestoreFields.announcements,
   'eventReminders': FirestoreFields.eventReminders,
   'newEvents': FirestoreFields.newEvents,
+  'newPosts': FirestoreFields.newPosts,
+  'newComments': FirestoreFields.newComments,
   'applicationResults': FirestoreFields.applicationResults,
   'management': FirestoreFields.management,
   'system': FirestoreFields.system,
@@ -184,7 +186,7 @@ const Map<String, String> _actual = {
 /// tekil ad sayısı. PLAN §4.2, §9.1, §9.5 ve §9.11 aynı sayıyı beyan eder
 /// (v1'deki 145 sayım hatasıydı — CD-129); beyan tablodan türeyen sayıyla
 /// karşılaştırılır.
-const int _tableDerivedCount = 145;
+const int _tableDerivedCount = 147;
 
 /// §9.6 alt bölüm sayısı (18 koleksiyon / alt belge tablosu + T-30 yan sayaç
 /// belgesi §9.6.19).
@@ -489,7 +491,7 @@ void main() {
     });
 
     test('tablo başına alan sayısı (belge ID ve BaseFields satırları hariç): '
-        'toplam 165, tekil 125', () {
+        'toplam 167, tekil 127', () {
       final perSection = <String, int>{};
       for (final field in schema.fields) {
         perSection.update(field.section, (n) => n + 1, ifAbsent: () => 1);
@@ -512,15 +514,16 @@ void main() {
         '9.6.11': 4,
         '9.6.12': 10,
         '9.6.13': 5,
-        '9.6.14': 12,
+        // H-25: `newPosts`, `newComments`.
+        '9.6.14': 14,
         '9.6.15': 2,
         '9.6.16': 4,
         '9.6.17': 6,
         '9.6.18': 5,
         '9.6.19': 4,
       });
-      expect(schema.fields, hasLength(165));
-      expect({for (final f in schema.fields) f.json}, hasLength(125));
+      expect(schema.fields, hasLength(167));
+      expect({for (final f in schema.fields) f.json}, hasLength(127));
     });
   });
 
@@ -730,8 +733,8 @@ void main() {
   });
 
   group('T-08 · FirestoreFields · adlar ve değerler', () {
-    test('toplam 167 sabit: 145 anahtar + 22 yol', () {
-      expect(_actual, hasLength(167));
+    test('toplam 169 sabit: 147 anahtar + 22 yol', () {
+      expect(_actual, hasLength(169));
       expect(_flat.length + _dotted.length, _actual.length);
     });
 
@@ -774,7 +777,7 @@ void main() {
       expect(_readSourceMembers(), _actual);
     });
 
-    test('kaynak sırası: önce 145 anahtar, sonra 22 yol', () {
+    test('kaynak sırası: önce 147 anahtar, sonra 22 yol', () {
       final values = _readSourceMembers().values.toList();
       final firstDotted = values.indexWhere((v) => v.contains('.'));
 

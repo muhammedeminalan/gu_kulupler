@@ -7,6 +7,11 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 ## [Yayınlanmamış]
 
 ### Eklendi
+- **Daha çok bildirim (H-25):** uygulama kapalıyken de push gelir:
+  - Kulüpte yeni gönderi / anket → kulüp üyelerine.
+  - Gönderine yorum → sana; yorum yaptığın gönderiye yeni yorum → sana.
+  - Herkese açık yeni etkinlik → tüm kullanıcılara.
+  - Bildirime dokununca ilgili gönderi açılır. Bildirim tercihlerinde "Yeni gönderiler" ve "Yorumlar" anahtarları eklendi.
 - **Web sürümü:** Firebase web uygulaması ve `web/` hedefi eklendi. Uygulama Hosting'de [gu-kulupler.web.app/app](https://gu-kulupler.web.app/app/) adresinden yayınlanır; tanıtım sayfasına "Web'de aç" bağlantısı eklendi. Web'de push, yerel hatırlatıcı ve Crashlytics kapalıdır.
 - **Etkinlik konum kartı görseli:** kapak deseni üzerinde büyük pin ve mekân adı. Tasarımdaki taslak yer tutucunun yerini aldı (karar H-24).
 - **Otomatik web yayını:** GitHub'da sürüm yayımlanınca web uygulaması GitHub Actions ile Hosting'e yüklenir.

@@ -25,6 +25,8 @@ final class UserSettingsModel extends Equatable {
     this.announcements = true,
     this.eventReminders = true,
     this.newEvents = true,
+    this.newPosts = true,
+    this.newComments = true,
     this.applicationResults = true,
     this.management = true,
     this.system = true,
@@ -65,6 +67,16 @@ final class UserSettingsModel extends Equatable {
   /// Yeni etkinlik bildirimleri açık mı?
   @JsonKey(name: FirestoreFields.newEvents)
   final bool newEvents;
+
+  /// Yeni gönderi / anket bildirimleri açık mı? (H-25; eski belgede yoksa
+  /// `true`.)
+  @JsonKey(name: FirestoreFields.newPosts)
+  final bool newPosts;
+
+  /// Gönderiye yeni yorum bildirimleri açık mı? (H-25; eski belgede yoksa
+  /// `true`.)
+  @JsonKey(name: FirestoreFields.newComments)
+  final bool newComments;
 
   /// Başvuru sonucu bildirimleri açık mı?
   @JsonKey(name: FirestoreFields.applicationResults)
@@ -118,6 +130,8 @@ final class UserSettingsModel extends Equatable {
     bool? announcements,
     bool? eventReminders,
     bool? newEvents,
+    bool? newPosts,
+    bool? newComments,
     bool? applicationResults,
     bool? management,
     bool? system,
@@ -133,6 +147,8 @@ final class UserSettingsModel extends Equatable {
     announcements: announcements ?? this.announcements,
     eventReminders: eventReminders ?? this.eventReminders,
     newEvents: newEvents ?? this.newEvents,
+    newPosts: newPosts ?? this.newPosts,
+    newComments: newComments ?? this.newComments,
     applicationResults: applicationResults ?? this.applicationResults,
     management: management ?? this.management,
     system: system ?? this.system,
@@ -150,6 +166,8 @@ final class UserSettingsModel extends Equatable {
     announcements,
     eventReminders,
     newEvents,
+    newPosts,
+    newComments,
     applicationResults,
     management,
     system,
@@ -174,6 +192,8 @@ final class UserSettingsPatch extends Equatable {
     this.announcements,
     this.eventReminders,
     this.newEvents,
+    this.newPosts,
+    this.newComments,
     this.applicationResults,
     this.management,
     this.system,
@@ -191,6 +211,12 @@ final class UserSettingsPatch extends Equatable {
 
   /// Yeni etkinlik bildirimleri açık mı?
   final bool? newEvents;
+
+  /// Yeni gönderi / anket bildirimleri açık mı? (H-25)
+  final bool? newPosts;
+
+  /// Gönderiye yeni yorum bildirimleri açık mı? (H-25)
+  final bool? newComments;
 
   /// Başvuru sonucu bildirimleri açık mı?
   final bool? applicationResults;
@@ -223,6 +249,8 @@ final class UserSettingsPatch extends Equatable {
     FirestoreFields.announcements: ?announcements,
     FirestoreFields.eventReminders: ?eventReminders,
     FirestoreFields.newEvents: ?newEvents,
+    FirestoreFields.newPosts: ?newPosts,
+    FirestoreFields.newComments: ?newComments,
     FirestoreFields.applicationResults: ?applicationResults,
     FirestoreFields.management: ?management,
     FirestoreFields.system: ?system,
@@ -237,6 +265,8 @@ final class UserSettingsPatch extends Equatable {
     announcements,
     eventReminders,
     newEvents,
+    newPosts,
+    newComments,
     applicationResults,
     management,
     system,

@@ -2298,6 +2298,31 @@ service cloud.firestore {
         return post.clubId == c && post.type == 'announcement' && post.pushSent == true
             && post.isDeleted == false && post.isHidden == false && post.authorId == uid();
       }
+      // H-25 · `post_new`: bu kulübün, oturumun yazdığı, silinmemiş / gizlenmemiş, duyuru dışı (gönderi / anket) ve
+      // yeni (yayından sonraki pencere) gönderisi. Kimlik `post_new_{postId}_{alıcı}` → gönderi başına tek bildirim.
+      function postedBySelf(c, p) {
+        let post = get(postPath(p)).data;
+        return post.clubId == c && post.type in ['post', 'poll'] && post.authorId == uid()
+            && post.isDeleted == false && post.isHidden == false
+            && post.createdAt + duration.value(10, 'm') > request.time;   // limit: notificationEventNewWindow
+      }
+      // H-25 · `comment_new`: kimlik `comment_new_{commentId}_{alıcı}`; yorum kimlikten okunur ve oturumun bu
+      // gönderiye yazdığı, silinmemiş / gizlenmemiş, yeni yorumu olmalıdır → yorum başına alıcı başına tek bildirim.
+      function commentedNow(c, p, u) {
+        let prefix = 'comment_new_';
+        let suffix = '_' + u;
+        let cid = notificationId[prefix.size():notificationId.size() - suffix.size()];
+        return notificationId.size() > prefix.size() + suffix.size()
+            && notificationId[0:prefix.size()] == prefix
+            && notificationId[notificationId.size() - suffix.size():notificationId.size()] == suffix
+            && cid.matches('[A-Za-z0-9]{1,40}')
+            && commentIsFresh(get(commentPath(cid)).data, c, p);
+      }
+      function commentIsFresh(cm, c, p) {
+        return cm.clubId == c && cm.postId == p && cm.authorId == uid()
+            && cm.isDeleted == false && cm.isHidden == false
+            && cm.createdAt + duration.value(10, 'm') > request.time;   // limit: notificationEventNewWindow
+      }
       // Etkinlik bu kulübün, silinmemiş ve beklenen durumda (`published` → event_new, `cancelled` → event_cancelled).
       function eventIs(c, e, status) {
         let ev = get(eventPath(e)).data;
@@ -2363,6 +2388,12 @@ service cloud.firestore {
             || (t == 'announcement' && refsOk(r, ['clubId', 'postId'])
                 && notificationId == 'announcement_' + r.postId + '_' + d.userId
                 && isManager(r.clubId) && announced(r.clubId, r.postId) && clubLive(r.clubId))
+            // H-25: duyuru dışı gönderi / anket (üyelere) ve yeni yorum (gönderi sahibi + yorumcular).
+            || (t == 'post_new' && refsOk(r, ['clubId', 'postId'])
+                && notificationId == 'post_new_' + r.postId + '_' + d.userId
+                && isManager(r.clubId) && postedBySelf(r.clubId, r.postId) && clubLive(r.clubId))
+            || (t == 'comment_new' && refsOk(r, ['clubId', 'postId']) && d.userId != uid()
+                && commentedNow(r.clubId, r.postId, d.userId) && clubLive(r.clubId))
             || (t == 'event_new' && refsOk(r, ['clubId', 'eventId']) && keyedIdOk(d)
                 && isManager(r.clubId) && eventIs(r.clubId, r.eventId, 'published') && freshlyPublished(r.eventId)
                 && clubLive(r.clubId))
@@ -2409,7 +2440,8 @@ service cloud.firestore {
             && ((t == 'event_reminder' && d.userId == uid() && refsOk(r, ['clubId', 'eventId'])
                  && notificationId == 'event_reminder_' + r.eventId + '_' + uid()
                  && reminderRsvpOk(r))
-                || (t in ['application_received', 'announcement', 'event_new', 'event_cancelled', 'waitlist_promoted',
+                || (t in ['application_received', 'announcement', 'post_new', 'comment_new', 'event_new',
+                          'event_cancelled', 'waitlist_promoted',
                           'application_approved', 'application_rejected', 'removed_from_club', 'role_changed',
                           'report_resolved']
                     && kindOk(d, t, r)))
@@ -2784,6 +2816,9 @@ service cloud.firestore {
         let d = request.resource.data;
         return d.announcements is bool && d.eventReminders is bool && d.newEvents is bool
             && d.applicationResults is bool && d.management is bool && d.system is bool
+            // H-25: yeni gönderi / yorum tercihleri — eski sürüm yazmaz, alan isteğe bağlıdır
+            && (!('newPosts' in d) || d.newPosts is bool)
+            && (!('newComments' in d) || d.newComments is bool)
             // CD-34: `none` ve `15m` yalnızca rsvps.reminder içindir
             && d.reminderTime in ['1h', '1d']
             && d.quiet is bool
@@ -2800,6 +2835,7 @@ service cloud.firestore {
       function canCreateSettings() {
         return isOwner()
             && request.resource.data.keys().hasOnly(['announcements', 'eventReminders', 'newEvents',
+                                                     'newPosts', 'newComments',
                                                      'applicationResults', 'management', 'system',
                                                      'reminderTime', 'quiet', 'quietFrom', 'quietTo',
                                                      'clubs', 'updatedAt'])
@@ -2809,8 +2845,9 @@ service cloud.firestore {
 
       function canUpdateSettings() {
         return isOwner()
-            && touches(['announcements', 'eventReminders', 'newEvents', 'applicationResults',
-                        'management', 'system', 'reminderTime', 'quiet', 'quietFrom', 'quietTo', 'clubs'])
+            && touches(['announcements', 'eventReminders', 'newEvents', 'newPosts', 'newComments',
+                        'applicationResults', 'management', 'system', 'reminderTime', 'quiet', 'quietFrom',
+                        'quietTo', 'clubs'])
             && settingsShape()
             && notDeletedUser();
       }

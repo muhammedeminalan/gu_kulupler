@@ -437,6 +437,12 @@ abstract final class FirestoreFields {
   /// Yeni etkinlik bildirimleri tercihi.
   static const String newEvents = 'newEvents';
 
+  /// `settings.newPosts` — yeni gönderi / anket bildirimleri (H-25).
+  static const String newPosts = 'newPosts';
+
+  /// `settings.newComments` — gönderiye yeni yorum bildirimleri (H-25).
+  static const String newComments = 'newComments';
+
   /// Başvuru sonucu bildirimleri tercihi.
   static const String applicationResults = 'applicationResults';
 

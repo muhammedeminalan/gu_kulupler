@@ -3,7 +3,7 @@
 //
 //  1. Rol × işlem matrisi: `expectations/settings.json` (yalnızca sahibi; süper admin dahil başkası
 //     okuyamaz / yazamaz; askıdaki kullanıcı için `emailOk()` yeter).
-//  2. Alan beyaz listesi ve tipler: on bir alan + `updatedAt`; ortak alan (BaseFields) YOK.
+//  2. Alan beyaz listesi ve tipler: on üç alan (H-25 `newPosts` / `newComments` isteğe bağlı) + `updatedAt`; ortak alan (BaseFields) YOK.
 //  3. `reminderTime ∈ {1h, 1d}` (CD-34) ve `quietFrom` / `quietTo` `HH:mm` deseni — desen Dart
 //     `Limits.timeOfDayPattern` ile aynı sonucu verir (örnek değerler iki tarafta da sınanır).
 //  4. Sunucu zamanı: `updatedAt` istemci saatiyle yazılamaz, atlanamaz.
@@ -54,6 +54,10 @@ describe('settings · create — alan beyaz listesi ve tipler (rules-spec §3.12
   test.each([
     ['alan eksik (quiet)', {}, ['quiet'], 'deny'],
     ['alan eksik (clubs)', {}, ['clubs'], 'deny'],
+    // H-25: yeni tercihler isteğe bağlı — eski sürümün belgesi (iki alan yok) yazılabilir.
+    ['eski sürüm: newPosts / newComments yok', {}, ['newPosts', 'newComments'], 'allow'],
+    ['newPosts bool değil', { newPosts: 'true' }, [], 'deny'],
+    ['newComments bool değil', { newComments: 1 }, [], 'deny'],
     ['beyaz liste dışı alan (theme)', { theme: 'dark' }, [], 'deny'],
     ['ortak alan (isDeleted) — settings BaseFields taşımaz', { isDeleted: false }, [], 'deny'],
     ['createdAt — settings yalnızca updatedAt taşır', { createdAt: serverTimestamp() }, [], 'deny'],
@@ -83,6 +87,8 @@ describe('settings · update — alan beyaz listesi ve tipler (rules-spec §3.12
 
   test.each([
     ['tek alan (quiet)', touch({ quiet: true }), 'allow'],
+    ['H-25: newPosts / newComments', touch({ newPosts: false, newComments: false }), 'allow'],
+    ['H-25: newPosts bool değil', touch({ newPosts: 'no' }), 'deny'],
     ['clubs.<clubId> içindeki tek tercih', touch({ 'clubs.c01': CLUB_PREFS, 'clubs.c02': { ...CLUB_PREFS, muted: true } }), 'allow'],
     ['reminderTime 15m', touch({ reminderTime: '15m' }), 'deny'],
     ['quietTo desen dışı (25:00)', touch({ quietTo: '25:00' }), 'deny'],

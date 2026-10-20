@@ -758,6 +758,8 @@ void main() {
             announcements: false,
             eventReminders: false,
             newEvents: false,
+            newPosts: false,
+            newComments: false,
             applicationResults: false,
             management: false,
             system: false,

@@ -37,6 +37,10 @@ final class NotificationTexts {
         l.notifTypeApplicationRejectedTitle,
       NotificationType.removedFromClub => l.notifTypeRemovedFromClubTitle,
       NotificationType.roleChanged => l.notifTypeRoleChangedTitle,
+      NotificationType.postNew => l.notifTypePostNewTitle(_club(n, lookups)),
+      NotificationType.commentNew => l.notifTypeCommentNewTitle(
+        _club(n, lookups),
+      ),
       NotificationType.announcement => l.notifTypeAnnouncementTitle(
         _club(n, lookups),
       ),
@@ -78,6 +82,10 @@ final class NotificationTexts {
       NotificationType.roleChanged => l.notifTypeRoleChangedBody(
         _club(n, lookups),
         _role(n.refs.role),
+      ),
+      NotificationType.postNew => l.notifTypePostNewBody(_post(n, lookups)),
+      NotificationType.commentNew => l.notifTypeCommentNewBody(
+        _post(n, lookups),
       ),
       NotificationType.announcement => l.notifTypeAnnouncementBody(
         _post(n, lookups),

@@ -67,6 +67,8 @@ class ForegroundNotificationBanner extends ConsumerStatefulWidget {
         NotificationType.reportResolved => l10n.notifTypeReportResolvedTitle,
         NotificationType.newReport => l10n.notifTypeNewReportTitle,
         NotificationType.announcement => l10n.notifPrefsAnnouncements,
+        NotificationType.postNew => l10n.notifPrefsNewPosts,
+        NotificationType.commentNew => l10n.notifPrefsNewComments,
         NotificationType.eventNew => l10n.notifPrefsNewEvents,
         NotificationType.eventReminder => l10n.notifPrefsEventReminders,
         NotificationType.system ||
@@ -84,7 +86,9 @@ class ForegroundNotificationBanner extends ConsumerStatefulWidget {
     NotificationLookups lookups,
   ) {
     final nameId = switch (n.type) {
-      NotificationType.announcement => n.refs.clubId,
+      NotificationType.announcement ||
+      NotificationType.postNew ||
+      NotificationType.commentNew => n.refs.clubId,
       NotificationType.eventNew ||
       NotificationType.eventReminder => n.refs.eventId,
       _ => '',

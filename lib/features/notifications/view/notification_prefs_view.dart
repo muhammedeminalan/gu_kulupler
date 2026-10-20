@@ -46,6 +46,8 @@ class NotificationPrefsView extends ConsumerStatefulWidget {
         NotificationPrefField.announcements => l10n.notifPrefsAnnouncements,
         NotificationPrefField.eventReminders => l10n.notifPrefsEventReminders,
         NotificationPrefField.newEvents => l10n.notifPrefsNewEvents,
+        NotificationPrefField.newPosts => l10n.notifPrefsNewPosts,
+        NotificationPrefField.newComments => l10n.notifPrefsNewComments,
         NotificationPrefField.applicationResults =>
           l10n.notifPrefsApplicationResults,
         NotificationPrefField.management => l10n.notifPrefsManagement,
@@ -60,6 +62,8 @@ class NotificationPrefsView extends ConsumerStatefulWidget {
     NotificationPrefField.announcements => GuIcons.megaphone,
     NotificationPrefField.eventReminders => GuIcons.bellRing,
     NotificationPrefField.newEvents => GuIcons.calendarPlus,
+    NotificationPrefField.newPosts => GuIcons.newspaper,
+    NotificationPrefField.newComments => GuIcons.messageCircle,
     NotificationPrefField.applicationResults => GuIcons.userCheck,
     NotificationPrefField.management => GuIcons.shieldCheck,
     NotificationPrefField.system => GuIcons.info,
@@ -86,6 +90,10 @@ class _NotificationPrefsViewState extends ConsumerState<NotificationPrefsView>
       'NTF-02.toggle.eventReminders',
     ),
     NotificationPrefField.newEvents => GuKey.action('NTF-02.toggle.newEvents'),
+    NotificationPrefField.newPosts => GuKey.action('NTF-02.toggle.newPosts'),
+    NotificationPrefField.newComments => GuKey.action(
+      'NTF-02.toggle.newComments',
+    ),
     NotificationPrefField.applicationResults => GuKey.action(
       'NTF-02.toggle.applicationResults',
     ),
