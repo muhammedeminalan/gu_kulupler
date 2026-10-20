@@ -138,7 +138,8 @@ class _Stub extends StatelessWidget {
 
 void main() {
   group('NTF-02 · Bildirim tercihleri · içerik', () {
-    testWidgets('varsayılan: izin kapalı + "İzni aç", beş tür anahtarı açık, '
+    testWidgets('varsayılan: izin kapalı + "İzni aç", yedi tür anahtarı açık '
+        '(H-25 gönderi / yorum dahil), '
         '1 saat önce seçili, sessiz saat kapalı, iki kulüp', (tester) async {
       await _pump(tester);
       final l10n = tester.l10n;
@@ -148,6 +149,8 @@ void main() {
       expect(find.byKey(_permission), findsOneWidget);
       for (final field in [
         NotificationPrefField.announcements,
+        NotificationPrefField.newPosts,
+        NotificationPrefField.newComments,
         NotificationPrefField.eventReminders,
         NotificationPrefField.newEvents,
         NotificationPrefField.applicationResults,
@@ -162,6 +165,8 @@ void main() {
       expect(find.byKey(_management), findsNothing);
       final switches = tester.widgetList<GuSwitch>(find.byType(GuSwitch));
       expect(switches.map((s) => s.value), [
+        true,
+        true,
         true,
         true,
         true,

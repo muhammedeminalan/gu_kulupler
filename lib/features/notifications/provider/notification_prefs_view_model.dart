@@ -335,6 +335,8 @@ final class NotificationPrefsViewModel extends _$NotificationPrefsViewModel
       eventReminders: value,
     ),
     NotificationPrefField.newEvents => settings.copyWith(newEvents: value),
+    NotificationPrefField.newPosts => settings.copyWith(newPosts: value),
+    NotificationPrefField.newComments => settings.copyWith(newComments: value),
     NotificationPrefField.applicationResults => settings.copyWith(
       applicationResults: value,
     ),
@@ -358,6 +360,12 @@ final class NotificationPrefsViewModel extends _$NotificationPrefsViewModel
     ),
     NotificationPrefField.newEvents => UserSettingsPatch(
       newEvents: settings.newEvents,
+    ),
+    NotificationPrefField.newPosts => UserSettingsPatch(
+      newPosts: settings.newPosts,
+    ),
+    NotificationPrefField.newComments => UserSettingsPatch(
+      newComments: settings.newComments,
     ),
     NotificationPrefField.applicationResults => UserSettingsPatch(
       applicationResults: settings.applicationResults,

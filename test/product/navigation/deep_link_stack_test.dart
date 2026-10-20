@@ -81,6 +81,14 @@ void main() {
           '/clubs/c01/posts/p01?tab=posts',
           GuTab.clubs,
         ),
+        NotificationType.postNew: (
+          '/clubs/c01/posts/p01?tab=posts',
+          GuTab.clubs,
+        ),
+        NotificationType.commentNew: (
+          '/clubs/c01/posts/p01?tab=posts',
+          GuTab.clubs,
+        ),
         NotificationType.eventNew: ('/events/e01', GuTab.events),
         NotificationType.eventCancelled: (
           '/events/e01?showCancelled=true',

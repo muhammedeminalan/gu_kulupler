@@ -136,6 +136,27 @@ abstract interface class NotificationDispatcher {
     required List<String> recipients,
   });
 
+  /// `post_new` — duyuru dışı [postId] gönderisi / anketi [recipients]
+  /// alıcılarına (fan-out; çağıran `RecipientResolver.membersOf(clubId,
+  /// excludeUserId: yazar)` verir; H-25). Kimlik `post_new_{postId}_{uid}`:
+  /// gönderi başına tek bildirim. `refs`: `clubId`, `postId`.
+  Future<FirestoreResult<DispatchReport>> notifyPostNew({
+    required String postId,
+    required String clubId,
+    required List<String> recipients,
+  });
+
+  /// `comment_new` — [postId] gönderisine yazılan [commentId] yorumu
+  /// [recipients] alıcılarına (gönderi sahibi + o gönderide yorum yapanlar,
+  /// yorumcu hariç; H-25). Kimlik `comment_new_{commentId}_{uid}`: yorum
+  /// başına tek bildirim. `refs`: `clubId`, `postId`.
+  Future<FirestoreResult<DispatchReport>> notifyCommentNew({
+    required String postId,
+    required String clubId,
+    required String commentId,
+    required List<String> recipients,
+  });
+
   /// `event_new` — yayımlanan [eventId] etkinliği [recipients] alıcılarına
   /// (fan-out; çağıran `RecipientResolver.eventNew(...).ids` verir).
   /// `refs`: `clubId`, `eventId`.

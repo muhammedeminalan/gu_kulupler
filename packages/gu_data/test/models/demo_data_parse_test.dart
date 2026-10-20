@@ -72,7 +72,18 @@ _parsers = {
   },
   FirestoreCollections.settings: (json, id) {
     final model = UserSettingsModel.fromJson(json, id: id);
-    return (id: model.uid, json: model.toJson());
+    // H-25 alanları eski belgede yoktur (varsayılan `true`); girdide yoksa
+    // karşılaştırmadan düşer.
+    return (
+      id: model.uid,
+      json: model.toJson()
+        ..removeWhere(
+          (key, _) =>
+              (key == FirestoreFields.newPosts ||
+                  key == FirestoreFields.newComments) &&
+              !json.containsKey(key),
+        ),
+    );
   },
   FirestoreCollections.savedPosts: (json, id) {
     final model = SavedPostModel.fromJson(json, id: id);

@@ -1,6 +1,6 @@
 // T-09 · JSON anahtar paritesi (PLAN §9.5, §9.11): her modelin `toJson()`
 // anahtarları `FirestoreFields` içindedir; 28 modelin anahtar birleşimi
-// `FirestoreFields`'in noktasız 145 adına eşittir (yan sayaç belgesinin iki
+// `FirestoreFields`'in noktasız 147 adına eşittir (yan sayaç belgesinin iki
 // işaretçisi hariç — §9.6.19; fazla / eksik = kırmızı) ve
 // her noktalı yol gerçek bir gömülü anahtarı gösterir. Model listesi
 // `lib/src/models/` kaynak dosyalarından doğrulanır: yeni model buraya
@@ -386,9 +386,9 @@ void main() {
       expect(_fullJson.keys.toList()..sort(), declared);
     });
 
-    test('FirestoreFields: 145 noktasız ad + 22 noktalı yol', () {
+    test('FirestoreFields: 147 noktasız ad + 22 noktalı yol', () {
       expect(_fieldValues.toSet(), hasLength(_fieldValues.length));
-      expect(_plainNames, hasLength(145));
+      expect(_plainNames, hasLength(147));
       expect(_dottedPaths, hasLength(22));
     });
 

@@ -298,7 +298,12 @@ void main() {
             if (type != NotificationType.unknown)
               type.json: type.category?.name,
         },
-        _registryMap('notifCat'),
+        {
+          ..._registryMap('notifCat'),
+          // H-25: tasarım dışı push türleri (gönderi / yorum) kulüp kategorisinde.
+          'post_new': 'clubs',
+          'comment_new': 'clubs',
+        },
       );
       expect(NotificationType.unknown.category, isNull);
     });

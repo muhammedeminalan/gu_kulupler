@@ -48,7 +48,9 @@ final class NotificationRefsModel extends Equatable {
       FirestoreFields.clubId,
       FirestoreFields.role,
     },
-    NotificationType.announcement => const {
+    NotificationType.announcement ||
+    NotificationType.postNew ||
+    NotificationType.commentNew => const {
       FirestoreFields.clubId,
       FirestoreFields.postId,
     },

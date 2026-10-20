@@ -46,6 +46,17 @@ Future<Map<String, FirestoreResult<DispatchReport>>> _callAll(
     clubId: 'c01',
     recipients: const ['u1', 'u2', 'u3'],
   ),
+  'notifyPostNew': await dispatcher.notifyPostNew(
+    postId: 'p02',
+    clubId: 'c01',
+    recipients: const ['u1', 'u2'],
+  ),
+  'notifyCommentNew': await dispatcher.notifyCommentNew(
+    postId: 'p02',
+    clubId: 'c01',
+    commentId: 'cm01',
+    recipients: const ['u1'],
+  ),
   'notifyEventNew': await dispatcher.notifyEventNew(
     eventId: 'e01',
     clubId: 'c01',
@@ -81,6 +92,8 @@ const Map<String, int> _requested = {
   'notifyRemoved': 1,
   'notifyRoleChanged': 1,
   'notifyAnnouncement': 3,
+  'notifyPostNew': 2,
+  'notifyCommentNew': 1,
   'notifyEventNew': 2,
   'notifyEventCancelled': 1,
   'notifyWaitlistPromoted': 1,
@@ -95,7 +108,7 @@ const int _transactionMembers = 4;
 
 void main() {
   group('T-15 · NotificationDispatcher · sözleşme', () {
-    test('arayüz PLAN §10.5 tanımındaki 15 üyeyi (11 + T-30 `…InTransaction` '
+    test('arayüz PLAN §10.5 tanımındaki 17 üyeyi (13 + T-30 `…InTransaction` '
         'karşılıkları) aynı adlandırılmış parametrelerle taşır; hepsi '
         'DispatchReport döner', () {
       final plan = RegExp(
@@ -201,7 +214,8 @@ void main() {
           ),
         );
         expect(dispatcher.calls[4].recipients, ['u1', 'u2', 'u3']);
-        expect(dispatcher.calls[8].recipients, ['u1', 'u2']);
+        expect(dispatcher.calls[5].recipients, ['u1', 'u2']);
+        expect(dispatcher.calls[10].recipients, ['u1', 'u2']);
         expect(dispatcher.batches, hasLength(5));
         expect(
           dispatcher.batches.every((item) => identical(item, batch)),

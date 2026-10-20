@@ -114,6 +114,54 @@ describe('notifications · announcement (yönetici → üyeler; bildirimli duyur
   });
 });
 
+describe('notifications · post_new (H-25: gönderinin yazarı yönetici → üyeler; gönderi başına tek bildirim)', () => {
+  const refs = (extra) => ({ clubId: CLUB, postId: 'p02', ...extra });
+  const chunk = (refsValue = refs(), key) => payloads.fanOutWrites({ type: 'post_new', refs: refsValue, recipients: ['u_member', 'u_board'], key });
+  const OLD = { createdAt: Timestamp.fromMillis(Date.now() - 60 * 60 * 1000) };
+  test.each([
+    ['gönderinin yazarı başkan iki üyeye tek batch', 'president', chunk(), 'allow'],
+    ['anketin yazarı yönetim kurulu üyesi', 'board', payloads.fanOutWrites({ type: 'post_new', refs: refs({ postId: 'p01' }), recipients: ['u_member'] }), 'allow'],
+    ['yazarı olmayan yönetici', 'board', chunk(), 'deny'],
+    ['sıradan üye', 'member', chunk(), 'deny'],
+    ['duyuru post_new olamaz (kendi türü var)', 'president', chunk(), 'deny', { patch: { 'posts/p02': { type: 'announcement', pushSent: true } } }],
+    ['silinmiş gönderi', 'president', chunk(), 'deny', { patch: { 'posts/p02': { isDeleted: true, deletedBy: 'u_president' } } }],
+    ['gizlenmiş gönderi', 'president', chunk(), 'deny', { patch: { 'posts/p02': { isHidden: true, hiddenBy: 'u_super' } } }],
+    ['eski gönderi (yayın penceresi dışında)', 'president', chunk(), 'deny', { patch: { 'posts/p02': OLD } }],
+    ['olmayan gönderi (olaysız bildirim)', 'president', chunk(refs({ postId: 'p_missing' })), 'deny'],
+    ['rastgele anahtar (gönderi başına tek bildirim)', 'president', chunk(refs(), payloads.EVENT_KEY), 'deny'],
+    ['refs.clubId gönderinin kulübü değil', 'president', chunk(refs({ clubId: OTHER_CLUB })), 'deny'],
+    ['askıdaki kulüp', 'president', chunk(), 'deny', { patch: { 'clubs/c01': { status: 'suspended' } } }],
+  ])('%s → %s', async (_title, role, writes, expected, edit = NO_EDIT) => {
+    await seedFixture('base', undefined, edit);
+    await expectWrite(commit(role, writes), expected);
+  });
+});
+
+describe('notifications · comment_new (H-25: yorumun yazarı → gönderi sahibi + yorumcular; yorum başına tek bildirim)', () => {
+  const refs = (extra) => ({ clubId: CLUB, postId: 'p02', ...extra });
+  const note = (recipient, refsValue = refs(), key = 'cm02') => one('comment_new', recipient, refsValue, { key });
+  const OLD = { createdAt: Timestamp.fromMillis(Date.now() - 60 * 60 * 1000) };
+  // Satır: [başlık, üretici, alıcı, refs, anahtar, beklenti, veri düzenlemesi?] — cm02 = u_board'un p02 yorumu.
+  test.each([
+    ['yorumcu → gönderi sahibi', 'board', 'u_president', refs(), 'cm02', 'allow'],
+    ['yorumcu → başka yorumcu (alıcı doğrulanmaz)', 'board', 'u_member', refs(), 'cm02', 'allow'],
+    ['üye yorumcu → anketin sahibi', 'member', 'u_board', refs({ postId: 'p01' }), 'cm01', 'allow'],
+    ['kendine bildirim', 'board', 'u_board', refs(), 'cm02', 'deny'],
+    ['yorumun yazarı olmayan', 'member', 'u_president', refs(), 'cm02', 'deny'],
+    ['yorum başka gönderinin', 'board', 'u_president', refs({ postId: 'p01' }), 'cm02', 'deny'],
+    ['refs.clubId yorumun kulübü değil', 'board', 'u_president', refs({ clubId: OTHER_CLUB }), 'cm02', 'deny'],
+    ['olmayan yorum (olaysız bildirim)', 'board', 'u_president', refs(), 'cm_missing', 'deny'],
+    ['rastgele anahtar', 'board', 'u_president', refs(), payloads.EVENT_KEY, 'deny'],
+    ['gizlenmiş yorum', 'board', 'u_president', refs(), 'cm02', 'deny', { patch: { 'comments/cm02': { isHidden: true, hiddenBy: 'u_super' } } }],
+    ['silinmiş yorum', 'board', 'u_president', refs(), 'cm02', 'deny', { patch: { 'comments/cm02': { isDeleted: true, deletedBy: 'u_board' } } }],
+    ['eski yorum (pencere dışında)', 'board', 'u_president', refs(), 'cm02', 'deny', { patch: { 'comments/cm02': OLD } }],
+    ['askıdaki kulüp', 'board', 'u_president', refs(), 'cm02', 'deny', { patch: { 'clubs/c01': { status: 'suspended' } } }],
+  ])('%s → %s', async (_title, role, recipient, refsValue, key, expected, edit = NO_EDIT) => {
+    await seedFixture('base', undefined, edit);
+    await expectWrite(commit(role, note(recipient, refsValue, key)), expected);
+  });
+});
+
 describe('notifications · event_new / event_cancelled (yönetici → üyeler / ilgi eşleşmesi / katılımcılar)', () => {
   const refs = (extra) => ({ clubId: CLUB, eventId: 'e_public', ...extra });
   test.each([

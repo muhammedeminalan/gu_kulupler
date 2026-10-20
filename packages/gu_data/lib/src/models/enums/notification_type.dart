@@ -27,6 +27,14 @@ enum NotificationType {
   /// Kulüp duyurusu yayımlandı.
   announcement('announcement', NotificationCategory.clubs),
 
+  /// Kulüpte yeni gönderi ya da anket yayımlandı (duyuru dışı; H-25).
+  postNew('post_new', NotificationCategory.clubs),
+
+  /// Gönderiye yeni yorum: gönderi sahibine ve o gönderide yorum yapanlara
+  /// (H-25). Yorum kimliği bildirim kimliğindedir
+  /// (`comment_new_{commentId}_{uid}`).
+  commentNew('comment_new', NotificationCategory.clubs),
+
   /// Yeni etkinlik yayımlandı.
   eventNew('event_new', NotificationCategory.events),
 

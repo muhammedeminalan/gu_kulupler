@@ -1,20 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gu_data/src/constants/firestore_collections.dart';
 import 'package:gu_data/src/constants/firestore_fields.dart';
-import 'package:gu_data/src/constants/limits.dart';
-import 'package:gu_data/src/constants/static_tables.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/models/club_model.dart';
 import 'package:gu_data/src/models/enums/club_role.dart';
 import 'package:gu_data/src/models/enums/event_visibility.dart';
 import 'package:gu_data/src/models/enums/membership_status.dart';
 import 'package:gu_data/src/models/enums/rsvp_status.dart';
+import 'package:gu_data/src/models/enums/user_status.dart';
 import 'package:gu_data/src/models/event_model.dart';
 import 'package:gu_data/src/notifications/recipient_resolver.dart';
+import 'package:gu_data/src/repositories/query_x.dart';
 import 'package:gu_data/src/repositories/repository_helpers.dart';
-import 'package:gu_data/src/repositories/user_repository.dart';
 import 'package:gu_data/src/services/firestore_service.dart';
 import 'package:gu_data/src/services/firestore_types.dart';
+import 'package:meta/meta.dart';
 
 /// [RecipientResolver] uygulaması (PLAN §10.5; `docs/plans/T-25.md` §6 d).
 ///
@@ -38,12 +38,11 @@ import 'package:gu_data/src/services/firestore_types.dart';
 /// Kimlik parametreleri dış girdi sayılır: geçersiz kimlik
 /// `FirestoreError.invalidArgument` döner.
 final class FirebaseRecipientResolver implements RecipientResolver {
-  /// Üyelik / katılım sorgularını [_firestore] ile, ilgi eşleşmesini
-  /// [_users] ile yapar.
-  FirebaseRecipientResolver(this._firestore, this._users);
+  /// Üyelik, katılım ve (herkese açık etkinlikte) kullanıcı sorgularını
+  /// [_firestore] ile yapar.
+  FirebaseRecipientResolver(this._firestore);
 
   final FirestoreService _firestore;
-  final UserRepository _users;
 
   /// `application_received` alıcı rolleri (danışman hariç — `isManager`).
   static const List<ClubRole> _managerRoles = [
@@ -129,28 +128,39 @@ final class FirebaseRecipientResolver implements RecipientResolver {
       return FirebaseFailure(error, message: message);
     }
     final ids = {...?members.dataOrNull};
-    final interests = StaticTables.interestIdsOf(club.categoryId);
-    if (event.visibility != EventVisibility.public || interests.isEmpty) {
+    if (event.visibility != EventVisibility.public) {
       return FirebaseSuccess(RecipientSet(ids: ids.toList()));
     }
-    // Bir fazlası istenir: üst sınırın aşıldığı ancak böyle anlaşılır.
-    final matched = await _users.listByInterests(
-      interests,
-      limit: Limits.eventNewInterestFanOutMax + 1,
+    // H-25: herkese açık etkinlik tüm etkin kullanıcılara (ilgi eşleşmesi
+    // yerine); alıcı tercihleri (`newEvents`, kulüp sessize alma) gelen kutusu
+    // ve push süzgecinde uygulanır.
+    final everyone = await _firestore.getList(
+      _firestore
+          .collection(FirestoreCollections.users)
+          .notDeleted()
+          .where(FirestoreFields.status, isEqualTo: UserStatus.active.json)
+          .limit(publicEventFanOutMax + 1),
     );
-    switch (matched) {
+    switch (everyone) {
       case FirebaseFailure(:final error, :final message):
         return FirebaseFailure(error, message: message);
-      case FirebaseSuccess(data: final users):
-        final truncated = users.length > Limits.eventNewInterestFanOutMax;
-        for (final user in users.take(Limits.eventNewInterestFanOutMax)) {
-          if (user.uid != publisher) ids.add(user.uid);
+      case FirebaseSuccess(data: final docs):
+        final truncated = docs.length > publicEventFanOutMax;
+        for (final doc in docs.take(publicEventFanOutMax)) {
+          if (doc.id != publisher && RepositoryHelpers.isValidId(doc.id)) {
+            ids.add(doc.id);
+          }
         }
         return FirebaseSuccess(
           RecipientSet(ids: ids.toList(), truncated: truncated),
         );
     }
   }
+
+  /// Herkese açık etkinlikte en çok alıcı (H-25; istemci fan-out — parça
+  /// boyu `Limits.notificationFanOutChunkSize`).
+  @visibleForTesting
+  static const int publicEventFanOutMax = 2000;
 
   @override
   Future<FirestoreResult<int>> estimateEventNew(

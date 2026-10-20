@@ -8,6 +8,8 @@
  * | application_received ∧ !management | gizli |
  * | application_approved / _rejected ∧ !applicationResults | gizli |
  * | announcement ∧ (!announcements ∨ kulüp sessiz ∨ kulüpte duyuru kapalı) | gizli |
+ * | post_new ∧ (!newPosts ∨ kulüp sessiz ∨ kulüpte gönderi kapalı) | gizli |
+ * | comment_new ∧ (!newComments ∨ kulüp sessiz) | gizli |
  * | event_new ∧ (!newEvents ∨ kulüp sessiz ∨ kulüpte etkinlik kapalı) | gizli |
  * | event_reminder ∧ !eventReminders | gizli |
  * | system ∧ !system | gizli |
@@ -29,6 +31,8 @@ export interface UserSettings {
   announcements: boolean;
   eventReminders: boolean;
   newEvents: boolean;
+  newPosts: boolean;
+  newComments: boolean;
   applicationResults: boolean;
   management: boolean;
   system: boolean;
@@ -72,6 +76,8 @@ export function settingsFrom(data: Record<string, unknown> | undefined): UserSet
     announcements: bool(d.announcements, true),
     eventReminders: bool(d.eventReminders, true),
     newEvents: bool(d.newEvents, true),
+    newPosts: bool(d.newPosts, true),
+    newComments: bool(d.newComments, true),
     applicationResults: bool(d.applicationResults, true),
     management: bool(d.management, true),
     system: bool(d.system, true),
@@ -96,6 +102,10 @@ export function allows(type: string, refs: Refs, settings: UserSettings): boolea
       return settings.applicationResults;
     case 'announcement':
       return settings.announcements && !clubMuted && (club?.announcements ?? true);
+    case 'post_new':
+      return settings.newPosts && !clubMuted && (club?.posts ?? true);
+    case 'comment_new':
+      return settings.newComments && !clubMuted;
     case 'event_new':
       return settings.newEvents && !clubMuted && (club?.events ?? true);
     case 'event_reminder':

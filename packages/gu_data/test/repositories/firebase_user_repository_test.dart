@@ -203,6 +203,8 @@ void main() {
         'announcements',
         'eventReminders',
         'newEvents',
+        'newPosts',
+        'newComments',
         'applicationResults',
         'management',
         'system',

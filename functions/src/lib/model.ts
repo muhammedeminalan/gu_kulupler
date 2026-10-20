@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES = [
   'removed_from_club',
   'role_changed',
   'announcement',
+  'post_new',
+  'comment_new',
   'event_new',
   'event_reminder',
   'event_cancelled',

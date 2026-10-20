@@ -135,6 +135,8 @@ function settingsCreate(extra) {
     announcements: true,
     eventReminders: true,
     newEvents: true,
+    newPosts: true,
+    newComments: true,
     applicationResults: true,
     management: true,
     system: true,
@@ -889,14 +891,14 @@ function notificationCreate(type, userId, refs, extra) {
 
 /**
  * Dağıtıcının olay anahtarı (CD-148 — ClientFanOutDispatcher): tek seferlik olaylarda olayın kimliği
- * (`announcement` → postId, `event_cancelled` → eventId, `application_received` →
+ * (`announcement` / `post_new` → postId, `comment_new` → commentId (`key` ile verilir), `event_cancelled` → eventId, `application_received` →
  * `FirestoreIds.applicationEventKey` = `{clubId}_{applicantId}_{priorCount}`), diğerlerinde rastgele anahtar.
  * `key` verilirse olduğu gibi kullanılır (ret vakaları: tek seferlik türde rastgele anahtar).
  */
 function eventKeyOf(type, refs, { key, sequence = 0 } = {}) {
   if (key !== undefined) return key;
   // Zorunlu referansı eksik ret vakalarında kimlik yine kurulabilsin diye boş referans rastgele anahtara düşer.
-  if (type === 'announcement') return refs.postId || EVENT_KEY;
+  if (type === 'announcement' || type === 'post_new') return refs.postId || EVENT_KEY;
   if (type === 'event_cancelled') return refs.eventId || EVENT_KEY;
   if (type === 'application_received') return `${refs.clubId}_${refs.applicantId}_${sequence}`;
   return EVENT_KEY;

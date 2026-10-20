@@ -13,6 +13,8 @@
         "removed_from_club": true,
         "role_changed": true,
         "announcement": true,
+        "post_new": true,
+        "comment_new": true,
         "event_new": true,
         "event_reminder": true,
         "event_cancelled": true,
@@ -29,6 +31,8 @@
         "announcements": false,
         "eventReminders": false,
         "newEvents": false,
+        "newPosts": false,
+        "newComments": false,
         "applicationResults": false,
         "management": false,
         "system": false,
@@ -42,6 +46,8 @@
         "removed_from_club": true,
         "role_changed": true,
         "announcement": false,
+        "post_new": false,
+        "comment_new": false,
         "event_new": false,
         "event_reminder": false,
         "event_cancelled": true,
@@ -59,7 +65,9 @@
         "application_received": false,
         "application_approved": false,
         "application_rejected": false,
-        "announcement": true
+        "announcement": true,
+        "post_new": true,
+        "comment_new": true
       }
     },
     {
@@ -68,6 +76,8 @@
       "clubId": "c01",
       "allowed": {
         "announcement": false,
+        "post_new": true,
+        "comment_new": true,
         "event_new": false,
         "event_reminder": false,
         "system": false,
@@ -78,31 +88,31 @@
       "name": "kulüp sessiz: duyuru ve yeni etkinlik gizli, başvuru görünür",
       "settings": { "clubs": { "c01": { "muted": true } } },
       "clubId": "c01",
-      "allowed": { "announcement": false, "event_new": false, "application_received": true, "event_reminder": true }
+      "allowed": { "announcement": false, "post_new": false, "comment_new": false, "event_new": false, "application_received": true, "event_reminder": true }
     },
     {
       "name": "sessiz kulüp başka kulübün bildirimini etkilemez",
       "settings": { "clubs": { "c01": { "muted": true } } },
       "clubId": "c02",
-      "allowed": { "announcement": true, "event_new": true }
+      "allowed": { "announcement": true, "post_new": true, "comment_new": true, "event_new": true }
     },
     {
       "name": "kulüpte duyuru kapalı: yalnızca duyuru gizli",
       "settings": { "clubs": { "c01": { "announcements": false } } },
       "clubId": "c01",
-      "allowed": { "announcement": false, "event_new": true }
+      "allowed": { "announcement": false, "post_new": true, "comment_new": true, "event_new": true }
     },
     {
-      "name": "kulüpte etkinlik kapalı: yalnızca yeni etkinlik gizli; gönderi tercihi push'u etkilemez",
+      "name": "kulüpte etkinlik kapalı: yalnızca yeni etkinlik gizli; gönderi tercihi yalnızca yeni gönderiyi gizler (H-25)",
       "settings": { "clubs": { "c01": { "events": false, "posts": false } } },
       "clubId": "c01",
-      "allowed": { "announcement": true, "event_new": false }
+      "allowed": { "announcement": true, "post_new": false, "comment_new": true, "event_new": false }
     },
     {
       "name": "sessiz saat listeyi / push'u engellemez (yalnızca sesi kapatır)",
       "settings": { "quiet": true, "quietFrom": "00:00", "quietTo": "23:59" },
       "clubId": "c01",
-      "allowed": { "announcement": true, "event_new": true, "system": true }
+      "allowed": { "announcement": true, "post_new": true, "comment_new": true, "event_new": true, "system": true }
     }
   ],
   "payloads": [

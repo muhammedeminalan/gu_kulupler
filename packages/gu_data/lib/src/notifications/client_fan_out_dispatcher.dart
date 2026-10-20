@@ -262,6 +262,33 @@ final class ClientFanOutDispatcher implements NotificationDispatcher {
   );
 
   @override
+  Future<FirestoreResult<DispatchReport>> notifyPostNew({
+    required String postId,
+    required String clubId,
+    required List<String> recipients,
+  }) => _guardedFanOut(
+    NotificationType.postNew,
+    NotificationRefsModel(clubId: clubId, postId: postId),
+    refIds: {'clubId': clubId, 'postId': postId},
+    recipientIds: recipients,
+    eventKey: postId,
+  );
+
+  @override
+  Future<FirestoreResult<DispatchReport>> notifyCommentNew({
+    required String postId,
+    required String clubId,
+    required String commentId,
+    required List<String> recipients,
+  }) => _guardedFanOut(
+    NotificationType.commentNew,
+    NotificationRefsModel(clubId: clubId, postId: postId),
+    refIds: {'clubId': clubId, 'postId': postId, 'commentId': commentId},
+    recipientIds: recipients,
+    eventKey: commentId,
+  );
+
+  @override
   Future<FirestoreResult<DispatchReport>> notifyEventNew({
     required String eventId,
     required String clubId,

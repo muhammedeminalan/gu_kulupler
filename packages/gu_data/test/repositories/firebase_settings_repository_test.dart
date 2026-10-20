@@ -26,6 +26,8 @@ const Set<String> _settingsKeys = {
   'announcements',
   'eventReminders',
   'newEvents',
+  'newPosts',
+  'newComments',
   'applicationResults',
   'management',
   'system',
@@ -189,13 +191,15 @@ void main() {
       expect(after['updatedAt'], isA<Timestamp>());
     });
 
-    test('on genel tercihin hepsi yazılabilir', () async {
+    test('on iki genel tercihin hepsi yazılabilir', () async {
       await repository.updateSettings(
         _uid,
         const UserSettingsPatch(
           announcements: false,
           eventReminders: false,
           newEvents: false,
+          newPosts: false,
+          newComments: false,
           applicationResults: false,
           management: false,
           system: false,
@@ -215,6 +219,8 @@ void main() {
           announcements: false,
           eventReminders: false,
           newEvents: false,
+          newPosts: false,
+          newComments: false,
           applicationResults: false,
           management: false,
           system: false,

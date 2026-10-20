@@ -459,19 +459,31 @@ final class FirebaseManagementRepository implements ManagementRepository {
       clubId: clubId,
       postId: postId,
     );
-    // Duyuru bildirimi yazarın oturumundan gider (Rules `post.authorId ==
-    // uid()` — W-83); yalnızca kesinleşmiş bildirimli duyuruda.
-    if (created case FirebaseSuccess(
-      data: final post,
-    ) when post.type == PostType.announcement && post.pushSent) {
-      if (await _recipients.membersOf(clubId, excludeUserId: authorId)
-          case FirebaseSuccess(data: final recipients)
-          when recipients.isNotEmpty) {
-        await _notifications.notifyAnnouncement(
-          postId: post.id,
-          clubId: clubId,
-          recipients: recipients,
-        );
+    // Bildirim yazarın oturumundan gider (Rules `post.authorId == uid()` —
+    // W-83): bildirimli duyuru → `announcement`; normal gönderi / anket →
+    // `post_new` (H-25). Günlük sınırı aşan (bildirimsiz) duyuru bildirim
+    // üretmez.
+    if (created case FirebaseSuccess(data: final post)) {
+      final announced = post.type == PostType.announcement && post.pushSent;
+      final isPost = post.type != PostType.announcement;
+      if (announced || isPost) {
+        if (await _recipients.membersOf(clubId, excludeUserId: authorId)
+            case FirebaseSuccess(data: final recipients)
+            when recipients.isNotEmpty) {
+          if (announced) {
+            await _notifications.notifyAnnouncement(
+              postId: post.id,
+              clubId: clubId,
+              recipients: recipients,
+            );
+          } else {
+            await _notifications.notifyPostNew(
+              postId: post.id,
+              clubId: clubId,
+              recipients: recipients,
+            );
+          }
+        }
       }
     }
     return created;

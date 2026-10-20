@@ -735,8 +735,24 @@ void main() {
       ]);
     });
 
-    test('bildirimsiz duyuru, gönderi ve oluşturma reddi fan-out '
-        'yapmaz', () async {
+    test('H-25 · gönderi / anket: oluşturma kesinleşince üyeler (yazar '
+        'hariç) notifyPostNew', () async {
+      final result = await publish(
+        const PostDraft(type: PostType.post, text: 'Merhaba'),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(script.calls, ['create p01 u_board c01', 'membersOf c01 u_board']);
+      expect(dispatcher.calls, [
+        const DispatchCall(
+          kind: 'notifyPostNew',
+          args: {'postId': _postId, 'clubId': _clubId},
+          recipients: _Recipients.ids,
+        ),
+      ]);
+    });
+
+    test('bildirimsiz duyuru ve oluşturma reddi fan-out yapmaz', () async {
       await publish(
         const PostDraft(
           type: PostType.announcement,
@@ -744,7 +760,6 @@ void main() {
           text: 'Sessiz duyuru',
         ),
       );
-      await publish(const PostDraft(type: PostType.post, text: 'Merhaba'));
       script.fail['create'] = FirestoreError.ruleViolation;
       final denied = await publish(
         const PostDraft(

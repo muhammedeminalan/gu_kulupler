@@ -66,6 +66,8 @@ const TR: Record<Exclude<NotificationType, 'system'>, Template> = {
     body: club ? `${club} kulübündeki rolün güncellendi.` : 'Kulüpteki rolün güncellendi.',
   }),
   announcement: ({ club }) => ({ title: club ?? 'Yeni duyuru', body: 'Yeni bir duyuru yayınlandı.' }),
+  post_new: ({ club }) => ({ title: club ?? 'Yeni gönderi', body: 'Yeni bir gönderi paylaşıldı.' }),
+  comment_new: ({ club }) => ({ title: club ?? 'Yeni yorum', body: 'Takip ettiğin gönderiye yeni yorum var.' }),
   event_new: ({ club, event }) => ({
     title: event ? `Yeni etkinlik: ${event}` : 'Yeni etkinlik',
     body: club ? `${club} yeni bir etkinlik yayınladı. Yerini ayırt.` : 'Bir kulüp yeni bir etkinlik yayınladı. Yerini ayırt.',
@@ -115,6 +117,8 @@ const EN: Record<Exclude<NotificationType, 'system'>, Template> = {
     body: club ? `Your role in ${club} was updated.` : 'Your club role was updated.',
   }),
   announcement: ({ club }) => ({ title: club ?? 'New announcement', body: 'A new announcement was posted.' }),
+  post_new: ({ club }) => ({ title: club ?? 'New post', body: 'A new post was shared.' }),
+  comment_new: ({ club }) => ({ title: club ?? 'New comment', body: 'A post you follow has a new comment.' }),
   event_new: ({ club, event }) => ({
     title: event ? `New event: ${event}` : 'New event',
     body: club ? `${club} published a new event. Save your spot.` : 'A club published a new event. Save your spot.',
@@ -150,6 +154,8 @@ export const NEEDS_CLUB: ReadonlySet<string> = new Set([
   'removed_from_club',
   'role_changed',
   'announcement',
+  'post_new',
+  'comment_new',
   'event_new',
 ]);
 export const NEEDS_EVENT: ReadonlySet<string> = new Set([

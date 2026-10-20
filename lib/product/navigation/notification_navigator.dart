@@ -65,7 +65,9 @@ abstract final class NotificationTargets {
         clubId == null
             ? AppPaths.notFound
             : ClubApplicationRoute(clubId: clubId).location,
-      NotificationType.announcement =>
+      NotificationType.announcement ||
+      NotificationType.postNew ||
+      NotificationType.commentNew =>
         clubId == null || postId == null
             ? AppPaths.notFound
             : _postInPostsTab(clubId, postId),

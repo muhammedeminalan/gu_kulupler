@@ -3,20 +3,18 @@
 // yöneticileri (board + president; danışman / üye / bekleyen hariç),
 // `announcement` üyeleri (danışman ve yazar hariç), `event_cancelled`
 // katılımcıları (yalnızca istenen durumlar, aynı etkinlik + kulüp),
-// `event_new` = üyeler ∪ (public ise) ilgi eşleşmesi (yayıncı ve silinmiş
-// kullanıcı hariç, `Limits.eventNewInterestFanOutMax` kesimi → truncated),
+// `event_new` = üyeler ∪ (public ise, H-25) tüm etkin kullanıcılar (yayıncı,
+// silinmiş ve askıdaki kullanıcı hariç, `publicEventFanOutMax` kesimi →
+// truncated),
 // DLG-22 tahmini; geçersiz kimlik ve hata eşlemesi.
 //
 // Mutlu yollar `fake_cloud_firestore` ile (Q-06); hata yolu el yazımı SDK
 // çiftiyle (`test/fakes/sdk_firestore_stubs.dart`).
-import 'dart:math';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
-import '../fakes/fake_app_clock.dart';
-import '../fakes/recording_storage_service.dart';
 import '../fakes/sdk_firestore_stubs.dart';
 
 const String _clubId = 'c01';
@@ -54,15 +52,7 @@ void main() {
   late FirebaseRecipientResolver resolver;
 
   RecipientResolver resolverOn(FirestoreService service) =>
-      FirebaseRecipientResolver(
-        service,
-        FirebaseUserRepository(
-          service,
-          RecordingStorageService(),
-          FakeAppClock(DateTime.utc(2026, 10, 14)),
-          Random(1),
-        ),
-      );
+      FirebaseRecipientResolver(service);
 
   Future<void> membership(
     String userId, {
@@ -92,11 +82,13 @@ void main() {
     String uid, {
     List<String> interests = const ['i01'],
     bool isDeleted = false,
+    String status = 'active',
   }) => db.doc('users/$uid').set({
     'name': 'Kullanıcı $uid',
     'nameLower': 'kullanıcı $uid',
     'avatarSeed': uid,
     'interests': interests,
+    'status': status,
     'profileComplete': true,
     ...BaseFieldsPayload.create(),
     'isDeleted': isDeleted,
@@ -150,13 +142,13 @@ void main() {
   });
 
   group('eventNew (CD-38)', () {
-    test('public: üyeler ∪ ilgi eşleşmesi (tekil); yayıncı, silinmiş ve '
-        'eşleşmeyen kullanıcı hariç; tahmin = küme boyu', () async {
+    test('public (H-25): üyeler ∪ tüm etkin kullanıcılar (tekil); yayıncı, '
+        'silinmiş ve askıdaki kullanıcı hariç; tahmin = küme boyu', () async {
       await user('u_m1');
       await user('u_fan', interests: const ['i02', 'i40']);
       await user(_publisher);
       await user('u_gone', isDeleted: true);
-      await user('u_unrelated', interests: const ['i04']);
+      await user('u_banned', status: 'suspended');
 
       final set = await resolver.eventNew(_event(), _club);
       final estimate = await resolver.estimateEventNew(_event(), _club);
@@ -172,7 +164,7 @@ void main() {
       expect(estimate.dataOrNull, 4);
     });
 
-    test('yalnızca üyelere açık etkinlik ilgi eşleşmesi sorgulamaz', () async {
+    test('yalnızca üyelere açık etkinlik kullanıcıları sorgulamaz', () async {
       await user('u_fan');
 
       final set = await resolver.eventNew(
@@ -184,9 +176,9 @@ void main() {
       expect(set.dataOrNull?.truncated, isFalse);
     });
 
-    test('ilgi eşleşmesi üst sınırı aşarsa en çok '
-        'Limits.eventNewInterestFanOutMax eklenir, truncated', () async {
-      const max = Limits.eventNewInterestFanOutMax;
+    test('kullanıcı üst sınırı aşarsa en çok publicEventFanOutMax eklenir, '
+        'truncated', () async {
+      const max = FirebaseRecipientResolver.publicEventFanOutMax;
       for (var i = 0; i <= max; i++) {
         await user('fan$i');
       }

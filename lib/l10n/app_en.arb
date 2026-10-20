@@ -3784,6 +3784,14 @@
   "@notifPrefsNewEvents": {
     "description": "Key notifPrefs.newEvents"
   },
+  "notifPrefsNewPosts": "New posts",
+  "@notifPrefsNewPosts": {
+    "description": "Key notifPrefs.newPosts"
+  },
+  "notifPrefsNewComments": "Comments",
+  "@notifPrefsNewComments": {
+    "description": "Key notifPrefs.newComments"
+  },
   "notifPrefsNoClubs": "You're not a member of any club.",
   "@notifPrefsNoClubs": {
     "description": "Key notifPrefs.noClubs"
@@ -3842,6 +3850,42 @@
     "description": "Key notifType.announcement.title",
     "placeholders": {
       "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypePostNewTitle": "{club}",
+  "@notifTypePostNewTitle": {
+    "description": "Key notifType.post_new.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypePostNewBody": "New post: {post}",
+  "@notifTypePostNewBody": {
+    "description": "Key notifType.post_new.body",
+    "placeholders": {
+      "post": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeCommentNewTitle": "{club}",
+  "@notifTypeCommentNewTitle": {
+    "description": "Key notifType.comment_new.title",
+    "placeholders": {
+      "club": {
+        "type": "String"
+      }
+    }
+  },
+  "notifTypeCommentNewBody": "New comment: {post}",
+  "@notifTypeCommentNewBody": {
+    "description": "Key notifType.comment_new.body",
+    "placeholders": {
+      "post": {
         "type": "String"
       }
     }
