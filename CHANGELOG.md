@@ -6,6 +6,14 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 
 ## [Yayınlanmamış]
 
+### Planlandı
+- Bölüm, fakülte ve mekân listelerinin Firestore'dan gelmesi (`docs/plans/dinamik-listeler.md`, H-22).
+- Geniş ekran ve web için tam responsive düzen (`docs/plans/responsive-web.md`, H-23).
+
+## [1.1.0] — 2026-10-20
+
+İlk Google Play sürümü; iOS güncellemesi.
+
 ### Eklendi
 - **Geniş ekranda web düzeni (H-23):** bilgisayarda uygulama desenli zeminde ortalanmış bir kartta açılır (en fazla 768 genişlik); geniş pencerede alt menü yerine solda yan menü (sekmeler + bildirim sayısı). Telefon ve mobil uygulama değişmedi.
 - **Daha çok bildirim (H-25):** uygulama kapalıyken de push gelir:
@@ -25,10 +33,6 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
   - App Store inceleme hesabı açan `tool/admin/create_review_account.js`.
   - Serbest metinli push gönderen `tool/admin/send_push.js`.
 - **Açık kaynak belgeleri:** README, LICENSE (MIT), katkı rehberi, davranış kuralları, güvenlik politikası, destek, katkıda bulunanlar, issue ve PR şablonları.
-
-### Planlandı
-- Bölüm, fakülte ve mekân listelerinin Firestore'dan gelmesi (`docs/plans/dinamik-listeler.md`, H-22).
-- Geniş ekran ve web için tam responsive düzen (`docs/plans/responsive-web.md`, H-23).
 
 ## [1.0.0] — 2026-10-16
 
