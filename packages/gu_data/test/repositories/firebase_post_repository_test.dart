@@ -322,6 +322,7 @@ void main() {
         'myVote',
         'countVotes',
         'listFeed',
+        'watchFeedHead',
         'listForManagement',
         'getPost',
         'watchPost',

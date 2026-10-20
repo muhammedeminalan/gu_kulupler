@@ -9,6 +9,8 @@
 // olmayanı atlayarak döner; silinmiş kulübün adı dolu sayılır; geçersiz
 // kimlik `invalidArgument`. Salt okunurdur — `memberCount` yalnızca
 // `FakeMembershipRepository` geçişleriyle değişir.
+import 'dart:async';
+
 import 'package:gu_data/gu_data.dart';
 
 import 'fake_base.dart';
@@ -69,6 +71,16 @@ final class FakeClubRepository extends FakeBase implements ClubRepository {
         if (!club.isDeleted) club,
     ]..sort((a, b) => a.nameLower.compareTo(b.nameLower));
     return FirebaseSuccess(live.take(Limits.clubsFetchMax).toList());
+  }
+
+  /// Canlı liste olayları; testler `liveClubs.add(...)` ile olay yayar.
+  final StreamController<FirestoreResult<List<ClubModel>>> liveClubs =
+      StreamController<FirestoreResult<List<ClubModel>>>.broadcast();
+
+  @override
+  Stream<FirestoreResult<List<ClubModel>>> watchActiveClubs() {
+    record('watchActiveClubs');
+    return liveClubs.stream;
   }
 
   @override

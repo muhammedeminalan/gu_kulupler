@@ -24,6 +24,11 @@ abstract interface class ClubRepository {
     bool forceRefresh = false,
   });
 
+  /// Etkin kulüp listesini canlı dinler ([fetchActiveClubs] ile aynı sorgu ve
+  /// sıralama; bellek önbelleği kullanılmaz). Yeni açılan, düzenlenen ya da
+  /// askıya alınan kulüp yenilemeden gelir. Hata olayı akışı kapatmaz.
+  Stream<FirestoreResult<List<ClubModel>>> watchActiveClubs();
+
   /// [clubId] kulübü (CLB-03).
   ///
   /// Belge yoksa ya da soft delete edilmişse [FirestoreError.notFound];

@@ -167,6 +167,15 @@ mixin ClubDetailViewMixin on ConsumerState<ClubDetailView> {
   /// "Yeniden dene" (hata görünümü).
   Future<void> retry() => viewModel.fetch();
 
+  /// Aşağı çekip bırakınca yenile: kulüp ve etkinlikler; gönderiler sekmesi
+  /// açıldıysa akış da (akış ayrıca canlıdır).
+  Future<void> refresh() async {
+    final feed = _feedKeepAlive != null
+        ? ref.read(clubFeedViewModelProvider(widget.clubId).notifier).refresh()
+        : Future<void>.value();
+    await Future.wait([viewModel.refresh(), feed]);
+  }
+
   /// Sekme seçildi (`CLB-03.tab.<ad>`).
   void selectTab(String id) =>
       viewModel.setTab(ClubDetailTab.values.byName(id));

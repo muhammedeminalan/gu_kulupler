@@ -233,75 +233,82 @@ class _ClubDetailViewState extends ConsumerState<ClubDetailView>
       body: Column(
         children: [
           Expanded(
-            child: CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                // Üst güvenli alan şeridi: kapak görünürken saydam (kapak
-                // arkasından görünür), kapak çıkınca `bg.canvas`. Yapışkan
-                // sekmeler bu şeridin altına sabitlenir.
-                PinnedHeaderSliver(
-                  child: ValueListenableBuilder<double>(
-                    valueListenable: scrollOffset,
-                    builder: (context, offset, child) => Opacity(
-                      opacity: topStripOpacity(offset, topInset),
-                      child: child,
-                    ),
-                    // Şerit dokunmayı yutmaz: altındaki kapak düğmeleri
-                    // güvenli alanın 4 dp üstünden başlar.
-                    child: IgnorePointer(
-                      child: ColoredBox(
-                        color: colors.bgCanvas,
-                        child: SizedBox(
-                          height: topInset,
-                          width: double.infinity,
+            child: GuRefresh(
+              onRefresh: refresh,
+              noSafe: true,
+              child: CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  // Üst güvenli alan şeridi: kapak görünürken saydam (kapak
+                  // arkasından görünür), kapak çıkınca `bg.canvas`. Yapışkan
+                  // sekmeler bu şeridin altına sabitlenir.
+                  PinnedHeaderSliver(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: scrollOffset,
+                      builder: (context, offset, child) => Opacity(
+                        opacity: topStripOpacity(offset, topInset),
+                        child: child,
+                      ),
+                      // Şerit dokunmayı yutmaz: altındaki kapak düğmeleri
+                      // güvenli alanın 4 dp üstünden başlar.
+                      child: IgnorePointer(
+                        child: ColoredBox(
+                          color: colors.bgCanvas,
+                          child: SizedBox(
+                            height: topInset,
+                            width: double.infinity,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: ClubHeader(
-                    club: club,
-                    scrollOffset: scrollOffset,
-                    role: state.activeRole,
-                    isAdvisor: state.access == ClubAccess.advisor,
-                    memberPreview: state.memberPreview,
-                    coverImage: ref.clubCoverImage(club),
-                    logoImage: ref.clubLogoImage(
-                      club,
-                      displaySize: GuEmblemSize.lg.dimension,
-                    ),
-                    onBack: back,
-                    onShare: openShare,
-                    onMenu: openMenu,
-                    onMemberCount: openMembersTab,
-                    backKey: GuKey.action('CLB-03.back'),
-                    shareKey: GuKey.action('CLB-03.share'),
-                    menuKey: GuKey.action('CLB-03.menu'),
-                    memberCountKey: GuKey.action('CLB-03.memberCount'),
-                  ),
-                ),
-                const SliverToBoxAdapter(child: GuGap.v16),
-                GuTabs(
-                  sticky: true,
-                  tabs: [
-                    for (final tab in ClubDetailTab.values)
-                      GuTabItem(id: tab.name, label: _tabLabel(tab)),
-                  ],
-                  value: state.tab.name,
-                  onChanged: selectTab,
-                  tabKeyBuilder: (index) => GuKey.action(
-                    'CLB-03.tab.${ClubDetailTab.values[index].name}',
-                  ),
-                ),
-                // Sekme içeriği değişimi kısa solma (kullanıcı kararı
-                // 2026-10-16; `GuMotion.tabSwitch`).
-                GuSliverContentFade(value: state.tab, sliver: _tabBody(state)),
-                if (!hasBar)
                   SliverToBoxAdapter(
-                    child: SizedBox(height: media.viewPadding.bottom),
+                    child: ClubHeader(
+                      club: club,
+                      scrollOffset: scrollOffset,
+                      role: state.activeRole,
+                      isAdvisor: state.access == ClubAccess.advisor,
+                      memberPreview: state.memberPreview,
+                      coverImage: ref.clubCoverImage(club),
+                      logoImage: ref.clubLogoImage(
+                        club,
+                        displaySize: GuEmblemSize.lg.dimension,
+                      ),
+                      onBack: back,
+                      onShare: openShare,
+                      onMenu: openMenu,
+                      onMemberCount: openMembersTab,
+                      backKey: GuKey.action('CLB-03.back'),
+                      shareKey: GuKey.action('CLB-03.share'),
+                      menuKey: GuKey.action('CLB-03.menu'),
+                      memberCountKey: GuKey.action('CLB-03.memberCount'),
+                    ),
                   ),
-              ],
+                  const SliverToBoxAdapter(child: GuGap.v16),
+                  GuTabs(
+                    sticky: true,
+                    tabs: [
+                      for (final tab in ClubDetailTab.values)
+                        GuTabItem(id: tab.name, label: _tabLabel(tab)),
+                    ],
+                    value: state.tab.name,
+                    onChanged: selectTab,
+                    tabKeyBuilder: (index) => GuKey.action(
+                      'CLB-03.tab.${ClubDetailTab.values[index].name}',
+                    ),
+                  ),
+                  // Sekme içeriği değişimi kısa solma (kullanıcı kararı
+                  // 2026-10-16; `GuMotion.tabSwitch`).
+                  GuSliverContentFade(
+                    value: state.tab,
+                    sliver: _tabBody(state),
+                  ),
+                  if (!hasBar)
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: media.viewPadding.bottom),
+                    ),
+                ],
+              ),
             ),
           ),
           if (hasBar)

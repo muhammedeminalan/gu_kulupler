@@ -109,6 +109,10 @@ final class UserProfileViewModel extends _$UserProfileViewModel
   void onBlockSaved(String userId, {required bool isBlocked}) =>
       _session?.setBlocked(userId, isBlocked: isBlocked);
 
+  /// Çek-yenile: kullanıcıyı iskelet göstermeden yeniden okur. Süren okuma
+  /// varken gelen çağrı yok sayılır.
+  Future<void> refresh() => _load();
+
   /// Kullanıcıyı yeniden okur — hata görünümündeki "Yeniden dene". Süren
   /// okuma varken gelen çağrı yok sayılır.
   Future<void> fetch() async {

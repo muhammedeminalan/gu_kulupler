@@ -527,6 +527,27 @@ final class FirebasePostRepository implements PostRepository {
   }
 
   @override
+  Stream<FirestoreResult<List<PostModel>>> watchFeedHead(
+    String clubId, {
+    int limit = Limits.pageSize,
+  }) {
+    if (RepositoryHelpers.rejectInvalidIds<List<PostModel>>({
+          'clubId': clubId,
+        })
+        case final rejected?) {
+      return Stream.value(rejected);
+    }
+    return _firestore
+        .watchList(
+          _inClub(clubId)
+              .where(FirestoreFields.isHidden, isEqualTo: false)
+              .orderBy(FirestoreFields.createdAt, descending: true)
+              .limit(limit),
+        )
+        .map((event) => RepositoryHelpers.parseAll(event, postOf));
+  }
+
+  @override
   Future<FirestoreResult<PageResult<PostModel>>> listForManagement(
     String clubId,
     PageRequest page,

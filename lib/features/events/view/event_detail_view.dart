@@ -98,67 +98,71 @@ class _EventDetailViewState extends ConsumerState<EventDetailView>
       body: Column(
         children: [
           Expanded(
-            child: CustomScrollView(
-              controller: scrollController,
-              slivers: [
-                // Üst güvenli alan şeridi: kapak görünürken saydam, kapak
-                // çıkınca `bg.canvas`.
-                PinnedHeaderSliver(
-                  child: ValueListenableBuilder<double>(
-                    valueListenable: parallaxOffset,
-                    builder: (context, offset, child) => Opacity(
-                      opacity: topStripOpacity(offset, topInset),
-                      child: child,
-                    ),
-                    child: IgnorePointer(
-                      child: ColoredBox(
-                        color: colors.bgCanvas,
-                        child: SizedBox(
-                          height: topInset,
-                          width: double.infinity,
+            child: GuRefresh(
+              onRefresh: refresh,
+              noSafe: true,
+              child: CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  // Üst güvenli alan şeridi: kapak görünürken saydam, kapak
+                  // çıkınca `bg.canvas`.
+                  PinnedHeaderSliver(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: parallaxOffset,
+                      builder: (context, offset, child) => Opacity(
+                        opacity: topStripOpacity(offset, topInset),
+                        child: child,
+                      ),
+                      child: IgnorePointer(
+                        child: ColoredBox(
+                          color: colors.bgCanvas,
+                          child: SizedBox(
+                            height: topInset,
+                            width: double.infinity,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: ValueListenableBuilder<double>(
-                    valueListenable: parallaxOffset,
-                    builder: (context, offset, _) => EventHeader(
-                      event: event,
-                      club: club,
-                      status: status,
-                      placeLabel: placeLabel,
-                      dateLabel: dateLabelOf(event),
-                      timeLabel: timeLabelOf(event),
-                      coverImage: coverImage,
-                      scrollOffset: offset,
-                      onBack: back,
-                      onShare: openShare,
-                      onMenu: openMenu,
-                      onClub: openClub,
-                      onDirections: openDirections,
+                  SliverToBoxAdapter(
+                    child: ValueListenableBuilder<double>(
+                      valueListenable: parallaxOffset,
+                      builder: (context, offset, _) => EventHeader(
+                        event: event,
+                        club: club,
+                        status: status,
+                        placeLabel: placeLabel,
+                        dateLabel: dateLabelOf(event),
+                        timeLabel: timeLabelOf(event),
+                        coverImage: coverImage,
+                        scrollOffset: offset,
+                        onBack: back,
+                        onShare: openShare,
+                        onMenu: openMenu,
+                        onClub: openClub,
+                        onDirections: openDirections,
+                      ),
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: EventDetailSections(
-                    event: event,
-                    expanded: aboutExpanded,
-                    showReminder: !isPast && !isCancelled,
-                    reminderLabel: rsvp == null
-                        ? null
-                        : ReminderSheet.labelOf(l10n, rsvp.reminder),
-                    showAttendees: state.seesInside,
-                    showReport: !state.canManage && !state.isAdvisor,
-                    onReminder: openReminder,
-                    onCalendar: openCalendar,
-                    onReadMore: readMore,
-                    onAttendees: openAttendeesPreview,
-                    onReport: openReport,
+                  SliverToBoxAdapter(
+                    child: EventDetailSections(
+                      event: event,
+                      expanded: aboutExpanded,
+                      showReminder: !isPast && !isCancelled,
+                      reminderLabel: rsvp == null
+                          ? null
+                          : ReminderSheet.labelOf(l10n, rsvp.reminder),
+                      showAttendees: state.seesInside,
+                      showReport: !state.canManage && !state.isAdvisor,
+                      onReminder: openReminder,
+                      onCalendar: openCalendar,
+                      onReadMore: readMore,
+                      onAttendees: openAttendeesPreview,
+                      onReport: openReport,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (bar != null)

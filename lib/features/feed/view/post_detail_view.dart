@@ -147,66 +147,73 @@ class _PostDetailViewState extends ConsumerState<PostDetailView>
     final gu = context.gu;
     final comments = state.visibleComments;
     final author = state.authorOf(post.authorId);
-    return SingleChildScrollView(
-      controller: scrollController,
-      padding: GuInsets.only(
-        left: GuSpacing.s16,
-        right: GuSpacing.s16,
-        bottom: GuSizes.screenScrollBottomExtra,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: GuSpacing.s16,
-        children: [
-          PostCard(
-            post: post,
-            author: author,
-            authorAvatar: ref.userAvatarImage(
-              author,
-              displaySize: GuSizes.postAvatar,
+    return GuRefresh(
+      onRefresh: refresh,
+      noSafe: true,
+      child: SingleChildScrollView(
+        controller: scrollController,
+        padding: GuInsets.only(
+          left: GuSpacing.s16,
+          right: GuSpacing.s16,
+          bottom: GuSizes.screenScrollBottomExtra,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: GuSpacing.s16,
+          children: [
+            PostCard(
+              post: post,
+              author: author,
+              authorAvatar: ref.userAvatarImage(
+                author,
+                displaySize: GuSizes.postAvatar,
+              ),
+              role: state.roles[post.authorId],
+              club: state.club,
+              liked: uid != null && post.likedBy(uid),
+              saved: state.isSaved,
+              myOptionId: state.myOptionId,
+              pollResults: state.pollResults,
+              expanded: true,
+              showClub: true,
+              keys: PostCardKeys(
+                author: GuKey.action('FED-02.author.${post.id}'),
+                menu: GuKey.action('FED-02.menu.${post.id}'),
+                post: GuKey.action('FED-02.post.${post.id}'),
+                like: GuKey.action('FED-02.like.${post.id}'),
+                comment: GuKey.action('FED-02.comment.${post.id}'),
+                share: GuKey.action('FED-02.share.${post.id}'),
+                save: GuKey.action('FED-02.save.${post.id}'),
+                image: (index) =>
+                    GuKey.action('FED-02.image.${post.id}.$index'),
+                vote: (optionId) =>
+                    GuKey.action('FED-02.vote.${post.id}.$optionId'),
+              ),
+              onAuthor: author == null
+                  ? null
+                  : () => openProfile(post.authorId),
+              onMenu: openMenu,
+              onLike: like,
+              onShare: share,
+              onSave: save,
+              onVote: vote,
+              onImage: openImage,
+              // Görseller Storage'dan çözülür; adres gelene dek yer tutucu
+              // (K-18). Yalnızca bu gönderinin yolları izlenir (T-44).
+              imageOf: ref.postImagesOf(post.images),
             ),
-            role: state.roles[post.authorId],
-            club: state.club,
-            liked: uid != null && post.likedBy(uid),
-            saved: state.isSaved,
-            myOptionId: state.myOptionId,
-            pollResults: state.pollResults,
-            expanded: true,
-            showClub: true,
-            keys: PostCardKeys(
-              author: GuKey.action('FED-02.author.${post.id}'),
-              menu: GuKey.action('FED-02.menu.${post.id}'),
-              post: GuKey.action('FED-02.post.${post.id}'),
-              like: GuKey.action('FED-02.like.${post.id}'),
-              comment: GuKey.action('FED-02.comment.${post.id}'),
-              share: GuKey.action('FED-02.share.${post.id}'),
-              save: GuKey.action('FED-02.save.${post.id}'),
-              image: (index) => GuKey.action('FED-02.image.${post.id}.$index'),
-              vote: (optionId) =>
-                  GuKey.action('FED-02.vote.${post.id}.$optionId'),
-            ),
-            onAuthor: author == null ? null : () => openProfile(post.authorId),
-            onMenu: openMenu,
-            onLike: like,
-            onShare: share,
-            onSave: save,
-            onVote: vote,
-            onImage: openImage,
-            // Görseller Storage'dan çözülür; adres gelene dek yer tutucu
-            // (K-18). Yalnızca bu gönderinin yolları izlenir (T-44).
-            imageOf: ref.postImagesOf(post.images),
-          ),
-          Semantics(
-            header: true,
-            child: Text(
-              context.l10n.postComments(comments.length),
-              style: gu.text.titleS.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
+            Semantics(
+              header: true,
+              child: Text(
+                context.l10n.postComments(comments.length),
+                style: gu.text.titleS.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
-          ),
-          _comments(state, comments),
-        ],
+            _comments(state, comments),
+          ],
+        ),
       ),
     );
   }

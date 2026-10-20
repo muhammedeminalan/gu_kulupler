@@ -52,6 +52,16 @@ final class FirebaseClubRepository implements ClubRepository {
     return result.map(List.of);
   }
 
+  @override
+  Stream<FirestoreResult<List<ClubModel>>> watchActiveClubs() => _firestore
+      .watchList(_clubs.notDeleted().limit(Limits.clubsFetchMax))
+      .map(
+        (event) => RepositoryHelpers.parseAll(
+          event,
+          clubOf,
+        ).map((clubs) => clubs.sortedBy((club) => club.nameLower)),
+      );
+
   /// Etkin kulüp listesini sunucudan okur; [cache] verilirse sunucudan gelen
   /// her kulübü kimliğiyle de yazar.
   Future<CacheLoad<List<ClubModel>>> _readActive(

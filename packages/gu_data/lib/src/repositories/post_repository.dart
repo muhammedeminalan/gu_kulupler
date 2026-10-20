@@ -1,3 +1,4 @@
+import 'package:gu_data/src/constants/limits.dart';
 import 'package:gu_data/src/core/firebase_result.dart';
 import 'package:gu_data/src/core/firestore_error.dart';
 import 'package:gu_data/src/core/media_update_error.dart';
@@ -212,6 +213,17 @@ abstract interface class PostRepository {
     String postId,
     List<String> optionIds,
   );
+
+  /// Kulüp akışının en yeni [limit] gönderisini canlı dinler ([listFeed] ilk
+  /// sayfasıyla aynı sorgu: silinmemiş, gizlenmemiş, yeniden eskiye). Yeni
+  /// gönderi, beğeni / yorum sayısı ve kaldırılan gönderi yenilemeden gelir.
+  /// Eski sayfalar [listFeed] ile okunmaya devam eder. Hata olayı akışı
+  /// kapatmaz; geçersiz kimlik tek bir [FirestoreError.invalidArgument] olayı
+  /// yayar.
+  Stream<FirestoreResult<List<PostModel>>> watchFeedHead(
+    String clubId, {
+    int limit = Limits.pageSize,
+  });
 
   /// [clubId] kulübünün akışından bir sayfa, en yeni üstte (FED-01).
   ///

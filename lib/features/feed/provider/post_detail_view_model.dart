@@ -202,6 +202,10 @@ final class PostDetailViewModel extends _$PostDetailViewModel
 
   // ───────────────────────────────── okuma ──────────────────────────────────
 
+  /// Çek-yenile: gönderiyi ve yorumları iskelet göstermeden yeniden dinler
+  /// (ikisi zaten canlıdır; bağlam — yazarlar, kayıt, anket — tazelenir).
+  Future<void> refresh() => _start();
+
   /// Gönderiyi ve yorumları yeniden dinler — hata görünümündeki "Yeniden
   /// dene".
   Future<void> fetch() async {
