@@ -47,6 +47,8 @@ export function buildPushMessages(input: {
   tokens: DeviceToken[];
   names: PushNames;
   quiet: boolean;
+  /** H-25: uygulama simgesi rozeti (okunmamış sayısı); yoksa rozete dokunulmaz. */
+  badge?: number;
 }): PushMessage[] {
   const byLocale = new Map<Locale, string[]>();
   for (const { token, locale } of input.tokens) {
@@ -60,7 +62,14 @@ export function buildPushMessages(input: {
     const tokens = byLocale.get(locale);
     if (!tokens || tokens.length === 0) continue;
     const text = pushText(input.type, input.refs, locale, input.names);
-    messages.push({ tokens, title: text.title, body: text.body, data: { ...data }, quiet: input.quiet });
+    messages.push({
+      tokens,
+      title: text.title,
+      body: text.body,
+      data: { ...data },
+      quiet: input.quiet,
+      ...(input.badge !== undefined ? { badge: input.badge } : {}),
+    });
   }
   return messages;
 }

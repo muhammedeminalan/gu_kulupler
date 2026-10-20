@@ -75,6 +75,9 @@ export const REPORT_GROUP_SCAN = 100;
 /** Terfi adayı tararken en çok bekleyen kaydı (biçimi bozuk kayıt atlanır). */
 export const WAITLIST_SCAN = 10;
 
+/** Uygulama simgesi rozeti (H-25): sayılan en çok okunmamış bildirim (rozet en çok bu sayıyı gösterir). */
+export const BADGE_SCAN_MAX = 99;
+
 /** Hesap silme temizliği penceresi ve koşu sınırı (W-91; daha eskisi `tool/admin` betiğiyle). */
 export const CLEANUP_MIN_AGE_MS = 60 * 60 * 1000;
 export const CLEANUP_MAX_AGE_MS = 72 * 60 * 60 * 1000;

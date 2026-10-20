@@ -32,6 +32,10 @@ final class FakeMessagingService extends FakeBase implements MessagingService {
   /// `configureForeground` çağrıldı mı?
   bool foregroundConfigured = false;
 
+  /// `setBadge` değerleri, sırasıyla (H-25; çağrı günlüğüne [calls]
+  /// yazılmaz — mevcut sıra testleri değişmez).
+  final List<int> badges = <int>[];
+
   /// Verilirse `invalidateToken` bunu bekler (süre sınırı testleri).
   Completer<void>? invalidateGate;
 
@@ -100,4 +104,7 @@ final class FakeMessagingService extends FakeBase implements MessagingService {
     record('configureForeground');
     foregroundConfigured = true;
   }
+
+  @override
+  Future<void> setBadge(int count) async => badges.add(count);
 }
