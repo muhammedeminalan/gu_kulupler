@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["https://gu-kulupler.web.app", "https://gu-kulupler.firebaseapp.com", "http://localhost:8090"],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600
+  }
+]
