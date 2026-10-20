@@ -468,6 +468,17 @@ final class NotificationsViewModel extends _$NotificationsViewModel
       for (final n in visible)
         if (!n.read && n.refs.clubId != null) n.refs.clubId!,
     });
+    _syncBadge(state.unreadCount);
+  }
+
+  /// Son yazılan uygulama simgesi rozeti (H-25); aynı değer tekrar yazılmaz.
+  int? _badge;
+
+  /// Okundu / silindi / yeni bildirim değişimini simge rozetine yansıtır.
+  void _syncBadge(int count) {
+    if (count == _badge) return;
+    _badge = count;
+    unawaited(messagingService.setBadge(count));
   }
 
   /// [s] durumunda görünür bildirimler (filtreden önce).

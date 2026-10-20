@@ -17,5 +17,22 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // H-25: uygulama simgesi rozeti (MessagingService.setBadge — `gu_kulupler/badge`).
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "GuBadge") {
+      let channel = FlutterMethodChannel(name: "gu_kulupler/badge", binaryMessenger: registrar.messenger())
+      channel.setMethodCallHandler { call, result in
+        guard call.method == "set" else {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        let count = max(0, (call.arguments as? Int) ?? 0)
+        if #available(iOS 16.0, *) {
+          UNUserNotificationCenter.current().setBadgeCount(count) { _ in }
+        } else {
+          UIApplication.shared.applicationIconBadgeNumber = count
+        }
+        result(nil)
+      }
+    }
   }
 }

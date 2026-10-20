@@ -51,6 +51,23 @@ describe('sendPushOnNotificationCreated', () => {
     expect(receipt).toMatchObject({ userId: uid, type: 'application_received', status: 'sent', successCount: 2, failureCount: 0 });
   });
 
+  test('H-25 rozet: silinmemiş okunmamışlardan tercih süzgecinden geçenler sayılır (bu bildirim dahil)', async () => {
+    const uid = await seedUser({ tokens: [token('tok-badge')], settings: { announcements: false } });
+    const put = (type: string, refs: Record<string, string>, extra: Record<string, unknown> = {}) => {
+      const doc = note(uid, type, refs, extra);
+      return db.doc(`notifications/${doc.id}`).set(doc.data).then(() => doc);
+    };
+    await put('role_changed', { clubId: 'c_yok', role: 'board' }); // sayılır (zorunlu tür)
+    await put('announcement', { clubId: 'c_yok', postId: 'p1' }); // duyurular kapalı → sayılmaz
+    await put('event_reminder', { clubId: 'c_yok', eventId: 'e1' }, { read: true }); // okunmuş
+    await put('system', { textKey: 'welcome' }, { isDeleted: true }); // silinmiş
+    const n = await put('role_changed', { clubId: 'c_yok', role: 'board' });
+    const sender = new FakeSender();
+
+    expect(await handleNotificationCreated({ db, sender, now }, n.id, n.data)).toBe('sent');
+    expect(sender.calls.map((c) => c.badge)).toEqual([2]);
+  });
+
   test('geçersiz jeton (not-registered / invalid) çıkarılır; başka hata jetona dokunmaz', async () => {
     const uid = await seedUser({ tokens: [token('bad-1'), token('bad-2'), token('flaky'), token('good')] });
     const n = note(uid, 'role_changed', { clubId: 'c_yok', role: 'board' });

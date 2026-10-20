@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gu_data/gu_data.dart';
 
@@ -141,6 +142,34 @@ void main() {
         'otomatik başlatma hatası sonucu değiştirmez', () async {
       expect(await service.invalidateToken(), isTrue);
       expect(sdk.invalidations, 1);
+    });
+
+    test('H-25 · setBadge: kanala `set` + sayı (negatif → 0); kanal yoksa '
+        'fırlatmaz; çıkışta (invalidateToken) rozet 0', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel = MethodChannel('test/badge');
+      final sent = <Object?>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            sent.add('${call.method}:${call.arguments}');
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      final badged = FirebaseMessagingService(
+        messaging: sdk,
+        openedApp: opened.stream,
+        badgeChannel: channel,
+      );
+
+      await badged.setBadge(3);
+      await badged.setBadge(-1);
+      await badged.invalidateToken();
+      await service.setBadge(2);
+
+      expect(sent, ['set:3', 'set:0', 'set:0']);
     });
 
     test('configureForeground: iOS bandı, ses ve rozet kapalı; dokunma ve '

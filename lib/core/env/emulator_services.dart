@@ -94,4 +94,7 @@ final class EmulatorMessagingService implements MessagingService {
 
   @override
   Future<void> configureForeground() async {}
+
+  @override
+  Future<void> setBadge(int count) async {}
 }

@@ -32,7 +32,7 @@ describe('push_payload', () => {
     expect(Object.values(messages[0].data).every((v) => typeof v === 'string')).toBe(true);
   });
 
-  test('FCM iletisi: normalde gu_push + ses; sessiz saatte gu_push_quiet + sessiz; rozet yok', () => {
+  test('FCM iletisi: normalde gu_push + ses; sessiz saatte gu_push_quiet + sessiz; rozet verilmezse yok', () => {
     const base = { tokens: ['t'], title: 'x', body: 'y', data: { type: 'system' } };
     const loud = toMulticast({ ...base, quiet: false });
     const silent = toMulticast({ ...base, quiet: true });
@@ -43,6 +43,25 @@ describe('push_payload', () => {
     ]);
     expect([silent.android?.notification?.channelId, silent.apns?.payload?.aps]).toEqual(['gu_push_quiet', {}]);
     expect(JSON.stringify([loud, silent])).not.toContain('badge');
+  });
+
+  test('H-25 rozet: iOS aps.badge + Android notificationCount; sessiz saatte de; 0 rozeti temizler', () => {
+    const base = { tokens: ['t'], title: 'x', body: 'y', data: { type: 'system' } };
+    const loud = toMulticast({ ...base, quiet: false, badge: 3 });
+    const silent = toMulticast({ ...base, quiet: true, badge: 0 });
+    expect(loud.apns?.payload?.aps).toEqual({ sound: 'default', badge: 3 });
+    expect(loud.android?.notification).toEqual({ channelId: 'gu_push', notificationCount: 3 });
+    expect(silent.apns?.payload?.aps).toEqual({ badge: 0 });
+    const messages = buildPushMessages({
+      notificationId: 'n',
+      type: 'system',
+      refs: { textKey: 'welcome' },
+      tokens: [{ token: 't', locale: 'tr' }],
+      names: {},
+      quiet: false,
+      badge: 2,
+    });
+    expect(messages[0].badge).toBe(2);
   });
 
   test('her tür × dil: metinde yalnızca verilen kulüp / etkinlik adı; ad yoksa genel metin; event_reminder dahil boş değil', () => {

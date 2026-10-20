@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/services.dart';
 
 /// Push (FCM) cihaz servisi — T-42, Mod F (CD-62 adı, CD-165).
 ///
@@ -59,6 +60,12 @@ abstract interface class MessagingService {
   /// Ön plan sunumunu kurar: iOS'ta sistem bandı, ses ve rozet kapalı.
   Future<void> configureForeground();
 
+  /// Uygulama simgesi rozetini [count] yapar (H-25; `0` rozeti kaldırır).
+  /// iOS'ta yerel kanal; Android'de rozeti başlatıcı bildirimlerden sayar
+  /// (etkisiz). Push gelince rozeti sunucu yazar (`aps.badge`); bu çağrı
+  /// uygulama açıkken okundu / silindi değişimlerini yansıtır.
+  Future<void> setBadge(int count);
+
   /// Push `data` yükünde bildirim belgesinin kimliği.
   static const String notificationIdKey = 'notificationId';
 
@@ -75,10 +82,18 @@ abstract interface class MessagingService {
 /// uygulamayı kaydeder.
 final class FirebaseMessagingService implements MessagingService {
   /// Varsayılan Firebase uygulamasının FCM'i.
-  FirebaseMessagingService({this._messaging, this._openedApp});
+  FirebaseMessagingService({
+    this._messaging,
+    this._openedApp,
+    this._badgeChannel,
+  });
 
   final FirebaseMessaging? _messaging;
   final Stream<RemoteMessage>? _openedApp;
+  final MethodChannel? _badgeChannel;
+
+  /// Rozet kanalı (iOS `AppDelegate`: `set` → `setBadgeCount`).
+  static const MethodChannel badgeChannel = MethodChannel('gu_kulupler/badge');
 
   FirebaseMessaging get _sdk => _messaging ?? FirebaseMessaging.instance;
 
@@ -135,6 +150,8 @@ final class FirebaseMessagingService implements MessagingService {
     } on Object {
       // En iyi çaba (sonucu değiştirmez).
     }
+    // Çıkış: önceki hesabın rozeti kalmaz (H-25).
+    await setBadge(0);
     return deleted;
   }
 
@@ -160,6 +177,18 @@ final class FirebaseMessagingService implements MessagingService {
       await _sdk.setForegroundNotificationPresentationOptions();
     } on Object {
       // Android'de etkisiz; iOS varsayılanı zaten kapalıdır.
+    }
+  }
+
+  @override
+  Future<void> setBadge(int count) async {
+    try {
+      await (_badgeChannel ?? badgeChannel).invokeMethod<void>(
+        'set',
+        count < 0 ? 0 : count,
+      );
+    } on Object {
+      // Android / web / testte kanal yok: etkisiz.
     }
   }
 }

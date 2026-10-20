@@ -497,8 +497,11 @@ final class ComposeViewModel extends _$ComposeViewModel
     final images = await _uploadImages(uid, postId, form);
     if (images == null) return ComposeOutcome.failed;
 
+    // H-25: `publishPost` yazar + bildirim (bildirimli duyuru → announcement,
+    // gönderi / anket → post_new) tek yoldan; `postRepository.create`
+    // bildirim üretmez.
     Future<FirestoreResult<PostModel>> write({required bool pushSent}) =>
-        postRepository.create(
+        managementRepository.publishPost(
           _draftOf(form, images, pushSent: pushSent),
           authorId: uid,
           clubId: clubId,

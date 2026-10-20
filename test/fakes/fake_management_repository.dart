@@ -418,14 +418,17 @@ final class FakeManagementRepository extends FakeBase
       clubId: clubId,
       postId: postId,
     );
-    if (created case FirebaseSuccess(
-      data: final post,
-    ) when post.type == PostType.announcement && post.pushSent) {
-      fanOuts.add((
-        kind: NotificationType.announcement,
-        clubId: clubId,
-        id: post.id,
-      ));
+    if (created case FirebaseSuccess(data: final post)) {
+      final kind = switch (post.type) {
+        PostType.announcement when post.pushSent =>
+          NotificationType.announcement,
+        PostType.announcement => null,
+        // H-25: gönderi / anket → post_new.
+        _ => NotificationType.postNew,
+      };
+      if (kind != null) {
+        fanOuts.add((kind: kind, clubId: clubId, id: post.id));
+      }
     }
     return created;
   }

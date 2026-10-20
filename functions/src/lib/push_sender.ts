@@ -16,6 +16,8 @@ export interface PushMessage {
   data: Record<string, string>;
   /** Sessiz saat: sessiz kanal, iOS'ta ses yok. */
   quiet: boolean;
+  /** Uygulama simgesi rozeti (H-25): alıcının tercih süzgecinden geçen okunmamış sayısı; yoksa rozete dokunulmaz. */
+  badge?: number;
 }
 
 /** Jeton başına sonuç; başarısızlıkta FCM hata kodu (`messaging/...`). */
@@ -31,20 +33,25 @@ export interface PushSender {
 
 /**
  * FCM çok-jetonlu ileti. Android `priority: high` + kanal (`gu_push` / sessizde `gu_push_quiet`); iOS
- * `aps.sound = 'default'` (sessizde yok); `badge` gönderilmez (okunmamış sayısı istemci süzgecine bağlı).
+ * `aps.sound = 'default'` (sessizde yok); H-25: `badge` verilirse iOS `aps.badge`, Android `notificationCount`
+ * (sunucu, istemciyle aynı tercih süzgecinden geçen okunmamışları sayar — send_push `unreadBadge`).
  */
 export function toMulticast(message: PushMessage): MulticastMessage {
+  const badge = message.badge;
   return {
     tokens: message.tokens,
     notification: { title: message.title, body: message.body },
     data: message.data,
     android: {
       priority: 'high',
-      notification: { channelId: message.quiet ? ANDROID_QUIET_CHANNEL : ANDROID_CHANNEL },
+      notification: {
+        channelId: message.quiet ? ANDROID_QUIET_CHANNEL : ANDROID_CHANNEL,
+        ...(badge !== undefined ? { notificationCount: badge } : {}),
+      },
     },
     apns: {
       headers: { 'apns-priority': '10' },
-      payload: { aps: message.quiet ? {} : { sound: 'default' } },
+      payload: { aps: { ...(message.quiet ? {} : { sound: 'default' }), ...(badge !== undefined ? { badge } : {}) } },
     },
   };
 }

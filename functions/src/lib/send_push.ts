@@ -18,11 +18,11 @@
  *   anahtarı (`key = sha256(notificationId)[0:20]`) yazar.
  */
 import { FieldValue, Firestore } from 'firebase-admin/firestore';
-import { Col, INVALID_TOKEN_CODES } from './config';
+import { BADGE_SCAN_MAX, Col, INVALID_TOKEN_CODES } from './config';
 import { Deps } from './deps';
 import { eventKeyOf } from './ids';
 import { isAlreadyExists, isKnownType, isValidId, NotificationType, refsFrom, Refs } from './model';
-import { allows, settingsFrom } from './preference_filter';
+import { allows, settingsFrom, UserSettings } from './preference_filter';
 import { buildPushMessages, tokensFrom } from './push_payload';
 import { gateIdFor, linkOf } from './push_guard';
 import { PushResult } from './push_sender';
@@ -152,6 +152,7 @@ async function deliver(
     tokens,
     names: await namesFor(db, type, refs),
     quiet: isQuietNow(settings, now),
+    badge: await unreadBadge(db, userId, settings),
   });
   const results: PushResult[] = [];
   for (const message of messages) {
@@ -168,6 +169,28 @@ async function deliver(
   const successCount = results.filter((r) => r.ok).length;
   const failureCount = results.length - successCount;
   return outcome(successCount > 0 ? 'sent' : 'failed', successCount, failureCount);
+}
+
+/**
+ * H-25: uygulama simgesi rozeti — alıcının silinmemiş okunmamış bildirimlerinden tercih süzgecinden geçenler
+ * (istemcinin gelen kutusu sayacıyla aynı kural; en çok [BADGE_SCAN_MAX]). Okunamazsa `undefined` (rozete
+ * dokunulmaz; push yine gider).
+ */
+async function unreadBadge(db: Firestore, userId: string, settings: UserSettings): Promise<number | undefined> {
+  try {
+    const snap = await db
+      .collection(Col.notifications)
+      .where('userId', '==', userId)
+      .where('read', '==', false)
+      .where('isDeleted', '==', false)
+      .select('type', 'refs')
+      .limit(BADGE_SCAN_MAX)
+      .get();
+    return snap.docs.filter((doc) => allows(String(doc.get('type')), refsFrom(doc.get('refs')), settings)).length;
+  } catch (error) {
+    log.warn('rozet sayısı okunamadı', errorFields(error));
+    return undefined;
+  }
 }
 
 /** Şablonun istediği kulüp adı / etkinlik başlığı; okunamazsa boş (genel metin). */

@@ -19,6 +19,7 @@ import 'package:gu_kulupler/product/widget/notification/notification_texts.dart'
 
 import '../../../fakes/fake_connectivity_service.dart';
 import '../../../fakes/fake_feedback_service.dart';
+import '../../../fakes/fake_messaging_service.dart';
 import '../../../fakes/fake_session_states.dart';
 import '../../../fakes/fake_settings_repository.dart';
 import '../../../fakes/register_fakes.dart';
@@ -87,6 +88,11 @@ void main() {
       expect(idsOf(c).first, 'n_new');
       expect(stateOf(c).unreadCount, kNtfUnread.length + 1);
       expect(stateOf(c).incoming?.id, 'n_new');
+      // H-25: simge rozeti okunmamış sayısını izler; aynı değer tekrar yazılmaz.
+      final badges =
+          (GetIt.I<MessagingService>() as FakeMessagingService).badges;
+      expect(badges.last, kNtfUnread.length + 1);
+      expect(badges.toSet(), hasLength(badges.length));
       vmOf(c).consumeIncoming();
       expect(stateOf(c).incoming, isNull);
     });
