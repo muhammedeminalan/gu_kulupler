@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
@@ -101,6 +102,10 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
     );
     // Akış ilk karede okunmaya başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_load));
+    // Canlı akış başı: yeni gönderi, beğeni / yorum sayısı ve kaldırılan
+    // gönderi yenilemeden gelir; eski sayfalar `loadMore` ile okunur.
+    final live = postRepository.watchFeedHead(clubId).listen(_onLiveHead);
+    ref.onDispose(live.cancel);
     return ClubFeedState(
       roles: _rolesOf(board.read()),
       blockedUserIds: ref.read(sessionViewModelProvider).blockedUserIds,
@@ -109,6 +114,49 @@ final class ClubFeedViewModel extends _$ClubFeedViewModel
   }
 
   // ───────────────────────────── okuma / süzgeç ─────────────────────────────
+
+  /// Gönderinin akış sırası zamanı (yazım anı; yoksa en eski sayılır).
+  static DateTime _timeOf(PostModel post) =>
+      post.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+  /// Canlı akış başından gelen olay. İlk yükleme / yenileme sürerken yok
+  /// sayılır (o okuma zaten taze sayfayı yazar). Pencere içindeki gönderiler
+  /// olaydaki hâliyle değişir, pencerede artık olmayanlar (kaldırılan /
+  /// gizlenen) düşer, yeni gönderiler yazar verisiyle birlikte eklenir;
+  /// pencereden eski sayfalar korunur.
+  Future<void> _onLiveHead(FirestoreResult<List<PostModel>> result) async {
+    if (!ref.mounted || _isLoading || state.isFetching) return;
+    final head = result.dataOrNull;
+    if (head == null) {
+      AppLogger.warn('Canlı akış: ${result.errorOrNull?.name}');
+      return;
+    }
+    final generation = _generation;
+    final byId = {for (final post in head) post.id: post};
+    final oldest = head.isEmpty ? null : _timeOf(head.last);
+    final known = {for (final post in state.posts) post.id};
+    final fresh = [
+      for (final post in head)
+        if (!known.contains(post.id)) post,
+    ];
+    final extras = fresh.isEmpty ? null : await _readExtras(fresh);
+    if (!ref.mounted || generation != _generation || _isLoading) return;
+    final kept = [
+      for (final post in state.posts)
+        if (byId[post.id] case final live?)
+          live
+        else if (oldest != null && _timeOf(post).isBefore(oldest))
+          post,
+    ];
+    final posts = [...fresh, ...kept]
+      ..sort((a, b) => _timeOf(b).compareTo(_timeOf(a)));
+    if (extras == null && listEquals(posts, state.posts)) return;
+    state = state.copyWith(
+      posts: posts,
+      users: extras == null ? null : {...state.users, ...extras.users},
+      savedPostIds: extras == null ? null : _mergedSaved(extras.saved),
+    );
+  }
 
   /// Akışı yeniden okur — hata görünümündeki "Yeniden dene". Süren okuma
   /// varken gelen çağrı yok sayılır.

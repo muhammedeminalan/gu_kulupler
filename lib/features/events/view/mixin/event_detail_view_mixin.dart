@@ -176,6 +176,9 @@ mixin EventDetailViewMixin on ConsumerState<EventDetailView> {
   /// "Yeniden dene" (hata görünümü).
   Future<void> retry() => viewModel.fetch();
 
+  /// Aşağı çekip bırakınca yenile.
+  Future<void> refresh() => viewModel.refresh();
+
   /// "Devamı" (`EVT-02.more`).
   void readMore() => setState(() => aboutExpanded = true);
 

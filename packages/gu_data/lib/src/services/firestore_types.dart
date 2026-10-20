@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gu_data/src/constants/firestore_fields.dart';
 
 /// Ham Firestore belge verisi (PLAN §10.2).
 typedef Json = Map<String, Object?>;
@@ -18,9 +19,25 @@ final class FirestoreDoc {
   });
 
   /// Var olan bir [snapshot] belgesinden üretir; belge yoksa `null`.
+  ///
+  /// Henüz sunucuya ulaşmamış yerel yazımda (`hasPendingWrites`) sunucu
+  /// zamanı alanları (`createdAt`, `updatedAt`) SDK'da `null` gelir; canlı
+  /// dinlemede yeni yorum / gönderi bu yüzden ayrıştırılamıyor ve listenin
+  /// tamamı hata oluyordu. Bu alanlar yerel saatle tahmin edilir
+  /// (`ServerTimestampBehavior.estimate` karşılığı); sunucu onayıyla gelen
+  /// sonraki olay gerçek değeri taşır.
   static FirestoreDoc? fromSnapshot(DocumentSnapshot<Json> snapshot) {
-    final data = snapshot.exists ? snapshot.data() : null;
-    if (data == null) return null;
+    final raw = snapshot.exists ? snapshot.data() : null;
+    if (raw == null) return null;
+    var data = raw;
+    final missing = [
+      for (final field in _serverTimeFields)
+        if (raw.containsKey(field) && raw[field] == null) field,
+    ];
+    if (missing.isNotEmpty && snapshot.metadata.hasPendingWrites) {
+      final now = Timestamp.now();
+      data = {...raw, for (final field in missing) field: now};
+    }
     return FirestoreDoc(
       id: snapshot.id,
       path: snapshot.reference.path,
@@ -28,6 +45,13 @@ final class FirestoreDoc {
       snapshot: snapshot,
     );
   }
+
+  /// Yazımda `FieldValue.serverTimestamp()` alan ortak zaman alanları
+  /// (`BaseFieldsPayload`).
+  static const List<String> _serverTimeFields = [
+    FirestoreFields.createdAt,
+    FirestoreFields.updatedAt,
+  ];
 
   /// Belge kimliği (yolun son parçası).
   final String id;

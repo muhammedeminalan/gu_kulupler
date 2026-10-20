@@ -98,6 +98,9 @@ mixin PostDetailViewMixin on ConsumerState<PostDetailView> {
   /// "Yeniden dene" (`FED-02.retry`).
   Future<void> retry() => viewModel.fetch();
 
+  /// Aşağı çekip bırakınca yenile.
+  Future<void> refresh() => viewModel.refresh();
+
   /// Yazar satırı / yorum avatarı (`FED-02.author.<id>`) → CLB-07, kulüp
   /// bağlamıyla.
   void openProfile(String userId) {

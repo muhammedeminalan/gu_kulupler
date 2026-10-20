@@ -69,6 +69,9 @@ mixin UserProfileViewMixin on ConsumerState<UserProfileView> {
   /// "Yeniden dene" (`CLB-07.retry`).
   Future<void> retry() => viewModel.fetch();
 
+  /// Aşağı çekip bırakınca yenile.
+  Future<void> refresh() => viewModel.refresh();
+
   /// Ortak kulüp çipi (`CLB-07.club.<clubId>`) → CLB-03.
   void openClub(String clubId) => ClubDetailRoute(clubId: clubId).go(context);
 

@@ -467,6 +467,27 @@ final class FakePostRepository extends FakeBase implements PostRepository {
     });
   }
 
+  /// Kulüp başına canlı akış olayları; testler `feedHeadController(clubId)
+  /// .add(...)` ile olay yayar.
+  StreamController<FirestoreResult<List<PostModel>>> feedHeadController(
+    String clubId,
+  ) => _feedHeads.putIfAbsent(
+    clubId,
+    StreamController<FirestoreResult<List<PostModel>>>.broadcast,
+  );
+
+  final Map<String, StreamController<FirestoreResult<List<PostModel>>>>
+  _feedHeads = {};
+
+  @override
+  Stream<FirestoreResult<List<PostModel>>> watchFeedHead(
+    String clubId, {
+    int limit = Limits.pageSize,
+  }) {
+    record('watchFeedHead', [clubId]);
+    return feedHeadController(clubId).stream;
+  }
+
   @override
   Future<FirestoreResult<PageResult<PostModel>>> listFeed(
     String clubId,

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show VoidCallback;
 
+import 'package:flutter/foundation.dart' show listEquals;
+
 import 'package:gu_data/gu_data.dart';
 import 'package:gu_kulupler/core/di/project_dependency_mixin.dart';
 import 'package:gu_kulupler/core/error/app_logger.dart';
@@ -55,6 +57,10 @@ final class ClubListViewModel extends _$ClubListViewModel
     ref.listen(sessionViewModelProvider, (_, session) => _onSession(session));
     // Kulüpler ilk karede okunmaya başlar; view ayrıca çağırmaz.
     unawaited(Future<void>.microtask(_load));
+    // Canlı liste: yeni açılan / düzenlenen / askıya alınan kulüp yenilemeden
+    // gelir. Hata olayı içeriği bozmaz (son liste kalır).
+    final live = clubRepository.watchActiveClubs().listen(_onLiveClubs);
+    ref.onDispose(live.cancel);
     return ClubListState(
       memberClubIds: _memberClubIds(ref.read(sessionViewModelProvider)),
       isFetching: true,
@@ -249,6 +255,24 @@ final class ClubListViewModel extends _$ClubListViewModel
       },
     );
     if (next != state) state = next;
+  }
+
+  /// Canlı listeden gelen olay: başarıda liste yenilenir ve ilk yükleme
+  /// biter; hata olayı yalnızca günlüğe yazılır.
+  void _onLiveClubs(FirestoreResult<List<ClubModel>> result) {
+    if (!ref.mounted) return;
+    switch (result) {
+      case FirebaseSuccess(:final data):
+        if (state.isFetching || !listEquals(data, state.clubs)) {
+          state = state.copyWith(
+            clubs: data,
+            isFetching: false,
+            isError: false,
+          );
+        }
+      case FirebaseFailure(:final error):
+        AppLogger.warn('Canlı kulüp listesi: ${error.name}');
+    }
   }
 
   /// Kulüpleri okur ve ilk yüklemeyi bitirir.

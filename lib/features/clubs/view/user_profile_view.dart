@@ -131,44 +131,48 @@ class _UserProfileViewState extends ConsumerState<UserProfileView>
     UserProfileState state,
     UserModel user,
     AppLocalizations l10n,
-  ) => SingleChildScrollView(
-    padding: GuInsets.only(
-      bottom:
-          MediaQuery.paddingOf(context).bottom +
-          GuSizes.screenScrollBottomExtra,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (state.isBlocked)
-          GuBanner(
-            kind: GuBannerKind.warning,
-            icon: GuIcons.ban,
-            text: l10n.userprofileBlockedBanner,
-            actionLabel: l10n.userprofileUnblock,
-            actionKey: GuKey.action('CLB-07.unblock'),
-            onAction: unblock,
+  ) => GuRefresh(
+    onRefresh: refresh,
+    noSafe: true,
+    child: SingleChildScrollView(
+      padding: GuInsets.only(
+        bottom:
+            MediaQuery.paddingOf(context).bottom +
+            GuSizes.screenScrollBottomExtra,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (state.isBlocked)
+            GuBanner(
+              kind: GuBannerKind.warning,
+              icon: GuIcons.ban,
+              text: l10n.userprofileBlockedBanner,
+              actionLabel: l10n.userprofileUnblock,
+              actionKey: GuKey.action('CLB-07.unblock'),
+              onAction: unblock,
+            ),
+          UserProfileHeader(
+            user: user,
+            showDetails: state.showsDetails,
+            isSuperAdmin: state.isSuperAdmin,
+            roles: state.roles,
+            avatarImage: ref.userAvatarImage(
+              user,
+              displaySize: UserProfileHeader.avatarSize,
+            ),
           ),
-        UserProfileHeader(
-          user: user,
-          showDetails: state.showsDetails,
-          isSuperAdmin: state.isSuperAdmin,
-          roles: state.roles,
-          avatarImage: ref.userAvatarImage(
-            user,
-            displaySize: UserProfileHeader.avatarSize,
-          ),
-        ),
-        if (state.isHiddenByPrivacy)
-          _private(l10n)
-        else if (state.showsDetails && state.sharedClubs.isNotEmpty)
-          _commonClubs(state.sharedClubs, l10n),
-        if (state.showsContactCard) ...[
-          // `.col.gap20`: ortak kulüplerden sonra 20.
-          if (state.showsDetails && state.sharedClubs.isNotEmpty) GuGap.v20,
-          _managerCard(state, l10n),
+          if (state.isHiddenByPrivacy)
+            _private(l10n)
+          else if (state.showsDetails && state.sharedClubs.isNotEmpty)
+            _commonClubs(state.sharedClubs, l10n),
+          if (state.showsContactCard) ...[
+            // `.col.gap20`: ortak kulüplerden sonra 20.
+            if (state.showsDetails && state.sharedClubs.isNotEmpty) GuGap.v20,
+            _managerCard(state, l10n),
+          ],
         ],
-      ],
+      ),
     ),
   );
 

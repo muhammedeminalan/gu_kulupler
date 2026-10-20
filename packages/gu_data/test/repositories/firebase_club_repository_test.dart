@@ -141,6 +141,7 @@ void main() {
 
       expect(plan.map((row) => row.member), [
         'fetchActiveClubs',
+        'watchActiveClubs',
         'getClub',
         'getClubs',
         'isNameTaken',
