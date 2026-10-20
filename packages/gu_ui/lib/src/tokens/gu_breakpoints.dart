@@ -27,6 +27,14 @@ abstract final class GuBreakpoints {
   /// CSS-derived · referans/golden yüksekliği 844 (`.device{height:844px}` css:112).
   static const double referenceHeight = 844;
 
+  /// Platform-derived · web: pencere bundan genişse uygulama desenli zeminde
+  /// ortalanmış "telefon kartı" içinde çizilir (H-23; `GuWebFrame`).
+  static const double webFrame = 768;
+
+  /// Platform-derived · web: pencere en az bu genişlikteyse kabukta alt çubuk
+  /// yerine kartın solunda yan menü (H-23; kullanıcı kararı 1024).
+  static const double webSidebar = 1024;
+
   /// Ekran genişliği `maxContentWidth`'i aşıyorsa `true` (480 dahil değil).
   static bool isWide(BuildContext context) =>
       MediaQuery.sizeOf(context).width > maxContentWidth;

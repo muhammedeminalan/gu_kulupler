@@ -20,7 +20,10 @@ class GuContentColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!GuBreakpoints.isWide(context)) return child;
+    if (!GuContentColumnScope.enabledOf(context) ||
+        !GuBreakpoints.isWide(context)) {
+      return child;
+    }
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(
@@ -30,4 +33,29 @@ class GuContentColumn extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [GuContentColumn]'u alt ağaçta kapatır (H-23): web telefon kartı
+/// (`GuWebFrame`) genişliğini kendisi seçer; kart içindeki sayfa, sheet,
+/// toast ve menü kartın tamamını kullanır. Kapsam yoksa sütun açıktır.
+class GuContentColumnScope extends InheritedWidget {
+  const GuContentColumnScope({
+    required this.enabled,
+    required super.child,
+    super.key,
+  });
+
+  /// `false` → alt ağaçtaki [GuContentColumn]'lar sütun açmaz.
+  final bool enabled;
+
+  /// [context] üstünde sütun açık mı?
+  static bool enabledOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<GuContentColumnScope>()
+          ?.enabled ??
+      true;
+
+  @override
+  bool updateShouldNotify(GuContentColumnScope oldWidget) =>
+      enabled != oldWidget.enabled;
 }

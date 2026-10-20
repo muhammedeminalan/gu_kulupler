@@ -1,6 +1,7 @@
 # Tam responsive web / geniş ekran (H-23)
 
-> Durum: **PLAN — başlanmadı** (kullanıcı 2026-10-17: "C seçeneğini planla: tam responsive"). Tahmini süre ~17 sa (≈ 2 iş günü), 6 aşama.
+> Durum: **Yerine referans düzen uygulandı (2026-10-20, H-23)** — telefon kartı + yan menü (`WebShell`, `GuWebFrame`, `GuSidebar`). Aşağıdaki sayfa sayfa plan uygulanmadı; ileride gerekirse bu plandan devam edilir.
+> Eski durum: **PLAN — başlanmadı** (kullanıcı 2026-10-17: "C seçeneğini planla: tam responsive"). Tahmini süre ~17 sa (≈ 2 iş günü), 6 aşama.
 > Bugün: geniş ekranda tüm uygulama ortalanmış 480 dp telefon sütunu (Q-13, CD-29 — `GuContentColumn`, `gu_app.dart:188`). Tasarımda masaüstü ekranı yok; prototip 390 px telefon.
 
 ## 1. İlke

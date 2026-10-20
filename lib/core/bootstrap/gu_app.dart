@@ -11,6 +11,8 @@ import 'package:gu_kulupler/l10n/app_localizations.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/app_router.dart';
+import 'package:gu_kulupler/product/navigation/shell/web_layout_scope.dart';
+import 'package:gu_kulupler/product/navigation/shell/web_shell.dart';
 import 'package:gu_kulupler/product/widget/system/app_gate.dart';
 import 'package:gu_kulupler/product/widget/system/maintenance_banner.dart';
 import 'package:gu_kulupler/product/widget/system/offline_banner.dart';
@@ -178,19 +180,29 @@ class _GuAppState extends ConsumerState<GuApp> {
         child: content,
       );
     }
-    return GuToastHost(
-      controller: widget.toastController,
-      // Sekme kökünde toast alt çubuğun üstünde durur (`.above-nav`).
-      bottomInset: GuTab.isTabRoot(location) ? GuSizes.bottomNavHeight : 0,
-      child: ColoredBox(
-        // Sütun dışı zemin (geniş ekran) ve bant üstündeki güvenli alan.
-        color: context.gu.colors.bgCanvas,
-        child: GuContentColumn(
-          child: OfflineBanner(
-            // Prototip bandı yalnızca uygulama kabuğunda gösterir
-            // (`nav.mode === 'app'`).
-            enabled: GuTab.ofLocation(location) != null,
-            child: MaintenanceBanner(child: AppGate(child: content)),
+    // Web'de geniş pencere: telefon kartı + yan menü (H-23); mobilde etkisiz.
+    return WebShell(
+      location: location,
+      child: Builder(
+        builder: (context) => GuToastHost(
+          controller: widget.toastController,
+          // Sekme kökünde toast alt çubuğun üstünde durur (`.above-nav`);
+          // web yan menüsü açıkken alt çubuk yoktur.
+          bottomInset:
+              GuTab.isTabRoot(location) && !WebLayoutScope.hasSidebar(context)
+              ? GuSizes.bottomNavHeight
+              : 0,
+          child: ColoredBox(
+            // Sütun dışı zemin (geniş ekran) ve bant üstündeki güvenli alan.
+            color: context.gu.colors.bgCanvas,
+            child: GuContentColumn(
+              child: OfflineBanner(
+                // Prototip bandı yalnızca uygulama kabuğunda gösterir
+                // (`nav.mode === 'app'`).
+                enabled: GuTab.ofLocation(location) != null,
+                child: MaintenanceBanner(child: AppGate(child: content)),
+              ),
+            ),
           ),
         ),
       ),

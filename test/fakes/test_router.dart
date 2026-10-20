@@ -79,6 +79,8 @@ final class TestRouter {
     List<Override> overrides = const [],
     Size size = const Size(390, 844),
     TargetPlatform platform = TargetPlatform.android,
+    ThemeMode theme = ThemeMode.light,
+    Widget Function(GoRouter router, Widget navigator)? wrap,
   }) async {
     final feedback = FakeFeedbackService();
     final allOverrides = [
@@ -97,7 +99,11 @@ final class TestRouter {
       ),
       size: size,
       platform: platform,
+      theme: theme,
       overrides: allOverrides,
+      wrap: wrap == null
+          ? null
+          : (context, navigator) => wrap(created!, navigator!),
     );
     final router = created!;
     addTearDown(router.dispose);

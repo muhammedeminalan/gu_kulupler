@@ -12,6 +12,8 @@ import 'package:gu_kulupler/product/format/count_badge_label.dart';
 import 'package:gu_kulupler/product/init/app_preferences_view_model.dart';
 import 'package:gu_kulupler/product/navigation/app_navigator.dart';
 import 'package:gu_kulupler/product/navigation/notification_navigator.dart';
+import 'package:gu_kulupler/product/navigation/shell/shell_tab_selector.dart';
+import 'package:gu_kulupler/product/navigation/shell/web_layout_scope.dart';
 import 'package:gu_ui/gu_ui.dart';
 
 /// Uygulama kabuğu: etkin dalın gezgini + alt sekme çubuğu (navigation.md
@@ -42,6 +44,8 @@ import 'package:gu_ui/gu_ui.dart';
 ///   (`SessionViewModel.pushTaps`) `NotificationNavigator.openPush`'a
 ///   verilir.
 /// * Ön plan bandı (TST-55) kabuğu sarar ([ForegroundNotificationBanner]).
+/// * Web yan menüsü (H-23): kabuk seçim kuralını `ShellTabSelector`'a bağlar;
+///   yan menü açıkken ([WebLayoutScope]) alt çubuk çizilmez.
 class AppShellView extends ConsumerStatefulWidget {
   /// [navigationShell]: `StatefulShellRoute.indexedStack`'in dal kabı.
   const AppShellView({required this.navigationShell, super.key});
@@ -67,6 +71,24 @@ class AppShellView extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<AppShellView> createState() => _AppShellViewState();
+
+  /// Sekme ikonu (alt çubuk ve web yan menüsü).
+  static GuIcons iconOf(GuTab tab) => switch (tab) {
+    GuTab.clubs => GuIcons.usersRound,
+    GuTab.events => GuIcons.calendar,
+    GuTab.notifications => GuIcons.bell,
+    GuTab.admin => GuIcons.shieldCheck,
+    GuTab.profile => GuIcons.user,
+  };
+
+  /// Sekme etiketi (alt çubuk ve web yan menüsü).
+  static String labelOf(AppLocalizations l10n, GuTab tab) => switch (tab) {
+    GuTab.clubs => l10n.navClubs,
+    GuTab.events => l10n.navEvents,
+    GuTab.notifications => l10n.navNotifications,
+    GuTab.admin => l10n.navAdmin,
+    GuTab.profile => l10n.navProfile,
+  };
 
   /// Sekme seçimi kuralı (navigation.md §1; prototip `nav.switchTab`).
   ///
@@ -99,6 +121,15 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
   /// Uygulama arka plandayken dokunulan push'lar (yalnızca etkin oturumda).
   StreamSubscription<Map<String, String>>? _pushTaps;
 
+  /// Web yan menüsünün bağlandığı seçici (H-23; çözmek için saklanır).
+  ShellTabSelector? _selector;
+
+  /// Yan menüye verilen seçim kuralı (bağla / çöz aynı nesneyle).
+  late final ValueChanged<GuTab> _sidebarSelect = _selectFromSidebar;
+
+  /// Son kurulumdaki konum sekme kökü mü (yan menü seçimi için).
+  bool _isTabRoot = true;
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +138,9 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
     _pushTaps = session.pushTaps.listen(_openPush);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final selector = ref.read(shellTabSelectorProvider.notifier)
+        ..attach(_sidebarSelect);
+      _selector = selector;
       unawaited(
         ref
             .read(appPreferencesViewModelProvider.notifier)
@@ -121,7 +155,24 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
   void dispose() {
     unawaited(_reminderTaps?.cancel());
     unawaited(_pushTaps?.cancel());
+    // Sağlayıcı ağaç sökülürken değiştirilemez: çözme hemen ardından.
+    final selector = _selector;
+    if (selector != null) {
+      scheduleMicrotask(() => selector.detach(_sidebarSelect));
+    }
     super.dispose();
+  }
+
+  /// Web yan menüsünden sekme seçimi — alt çubukla aynı kural.
+  void _selectFromSidebar(GuTab tab) {
+    if (!mounted) return;
+    AppShellView.selectTab(
+      shell: widget.navigationShell,
+      tab: tab,
+      isTabRoot: _isTabRoot,
+      onScrollTop: (tab) =>
+          ref.read(scrollTopRequestProvider(tab).notifier).request(),
+    );
   }
 
   /// Soğuk açılışın hatırlatıcı yükü varsa hedefine gider.
@@ -161,6 +212,8 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
       sessionViewModelProvider.select((session) => session.isSuperAdmin),
     );
     final isTabRoot = GuTab.isTabRoot(GoRouterState.of(context).uri);
+    _isTabRoot = isTabRoot;
+    final hasSidebar = WebLayoutScope.hasSidebar(context);
     final currentTab = GuTab.values[navigationShell.currentIndex];
     final tabs = AppShellView.visibleTabs(isSuperAdmin: isSuperAdmin);
     final l10n = context.l10n;
@@ -190,13 +243,13 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
           child: Scaffold(
             backgroundColor: colors.bgCanvas,
             body: navigationShell,
-            bottomNavigationBar: isTabRoot
+            bottomNavigationBar: isTabRoot && !hasSidebar
                 ? GuBottomNav(
                     items: [
                       for (final tab in tabs)
                         GuBottomNavItem(
-                          icon: _iconOf(tab),
-                          label: _labelOf(l10n, tab),
+                          icon: AppShellView.iconOf(tab),
+                          label: AppShellView.labelOf(l10n, tab),
                           badge: tab == GuTab.notifications
                               ? countBadgeLabel(l10n, unreadCount)
                               : null,
@@ -221,20 +274,4 @@ class _AppShellViewState extends ConsumerState<AppShellView> {
       ),
     );
   }
-
-  static GuIcons _iconOf(GuTab tab) => switch (tab) {
-    GuTab.clubs => GuIcons.usersRound,
-    GuTab.events => GuIcons.calendar,
-    GuTab.notifications => GuIcons.bell,
-    GuTab.admin => GuIcons.shieldCheck,
-    GuTab.profile => GuIcons.user,
-  };
-
-  static String _labelOf(AppLocalizations l10n, GuTab tab) => switch (tab) {
-    GuTab.clubs => l10n.navClubs,
-    GuTab.events => l10n.navEvents,
-    GuTab.notifications => l10n.navNotifications,
-    GuTab.admin => l10n.navAdmin,
-    GuTab.profile => l10n.navProfile,
-  };
 }
