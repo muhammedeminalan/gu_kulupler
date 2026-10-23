@@ -1,0 +1,6 @@
+{
+  "_doc": "Tasarım sonrası eklenen bölümler (demo-data.json kilitli — verify_pack FROZEN_FILES; README madde 4). StaticTables.departments = demo-data.json#departments + bu liste, sırayla. 2026-10-23: d25 Yönetim Bilişim Sistemleri (İİBF, f4) — kullanıcı isteği.",
+  "departments": [
+    { "id": "d25", "faculty": "f4" }
+  ]
+}

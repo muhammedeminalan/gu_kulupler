@@ -1987,6 +1987,10 @@
   "@deptD24": {
     "description": "Key dept.d24"
   },
+  "deptD25": "Yönetim Bilişim Sistemleri",
+  "@deptD25": {
+    "description": "Key dept.d25"
+  },
   "dlg01Body": "Topluluk kurallarını ihlal ettiği için hesabına erişimin geçici olarak kapatıldı. İtiraz için destek ekibine yazabilirsin.",
   "@dlg01Body": {
     "description": "Key dlg.01.body"

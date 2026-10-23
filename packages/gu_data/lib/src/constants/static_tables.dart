@@ -93,7 +93,8 @@ abstract final class StaticTables {
     faculties.map((faculty) => faculty.id),
   );
 
-  /// Bölümler (24; `d01`–`d24`), tasarım sırasıyla.
+  /// Bölümler (25; `d01`–`d25`): tasarımın 24'ü sırasıyla + tasarım sonrası
+  /// eklenen `d25` Yönetim Bilişim Sistemleri (İİBF; `tool/seed/extra-departments.json`).
   static const List<DepartmentModel> departments = [
     DepartmentModel(id: 'd01', facultyId: 'f1'),
     DepartmentModel(id: 'd02', facultyId: 'f1'),
@@ -119,6 +120,7 @@ abstract final class StaticTables {
     DepartmentModel(id: 'd22', facultyId: 'f6'),
     DepartmentModel(id: 'd23', facultyId: 'f6'),
     DepartmentModel(id: 'd24', facultyId: 'f6'),
+    DepartmentModel(id: 'd25', facultyId: 'f4'),
   ];
 
   /// [departments] kimlik kümesi (`users.department` doğrulaması).

@@ -134,7 +134,7 @@ void main() {
       }
     });
 
-    testWidgets('24 bölüm, 6 fakülte grubu, tablo sırasıyla; başlıklar büyük '
+    testWidgets('25 bölüm, 6 fakülte grubu, fakülte sırasıyla; başlıklar büyük '
         'harf (TR: i → İ); seçim yokken hiçbiri seçili değil', (tester) async {
       for (final locale in [_tr, _en]) {
         final h = _harness();
@@ -143,12 +143,14 @@ void main() {
         final l10n = tester.l10nFor(locale);
 
         expect(_rowIds(tester), [
-          for (final department in StaticTables.departments) department.id,
+          for (final faculty in StaticTables.faculties)
+            for (final department in StaticTables.departmentsOf(faculty.id))
+              department.id,
         ]);
         final rows = tester
             .widgetList<GuOptionRow>(find.byType(GuOptionRow))
             .toList();
-        expect(rows, hasLength(24));
+        expect(rows, hasLength(25));
         expect(rows.map((row) => row.selected).toSet(), {false});
         expect(rows.map((row) => row.control).toSet(), {GuOptionControl.radio});
         expect(rows.map((row) => row.sub).toSet(), {null});
@@ -241,7 +243,9 @@ void main() {
       await h.openWith(tester, value: 'd99');
 
       expect(_rowIds(tester), [
-        for (final department in StaticTables.departments) department.id,
+        for (final faculty in StaticTables.faculties)
+          for (final department in StaticTables.departmentsOf(faculty.id))
+            department.id,
       ]);
       expect(
         tester
@@ -268,7 +272,7 @@ void main() {
         expect(find.text(l10n.sht02Empty), findsNothing);
 
         await _search(tester, '');
-        expect(_rowIds(tester), hasLength(24));
+        expect(_rowIds(tester), hasLength(25));
         expect(_headers(tester), hasLength(6));
       },
     );

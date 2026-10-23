@@ -6,6 +6,9 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 
 ## [Yayınlanmamış]
 
+### Eklendi
+- Bölüm listesine **Yönetim Bilişim Sistemleri** (İktisadi ve İdari Bilimler Fakültesi) eklendi (H-26).
+
 ### Planlandı
 - Bölüm, fakülte ve mekân listelerinin Firestore'dan gelmesi (`docs/plans/dinamik-listeler.md`, H-22).
 - Geniş ekran ve web için tam responsive düzen (`docs/plans/responsive-web.md`, H-23).
