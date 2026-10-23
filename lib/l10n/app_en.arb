@@ -1987,6 +1987,10 @@
   "@deptD24": {
     "description": "Key dept.d24"
   },
+  "deptD25": "Management Information Systems",
+  "@deptD25": {
+    "description": "Key dept.d25"
+  },
   "dlg01Body": "Access to your account was temporarily closed for violating community rules. You can contact support to appeal.",
   "@dlg01Body": {
     "description": "Key dlg.01.body"

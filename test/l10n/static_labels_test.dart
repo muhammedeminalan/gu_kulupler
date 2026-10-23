@@ -93,14 +93,14 @@ Future<BuildContext> _pumpContext(WidgetTester tester, Locale locale) async {
 
 void main() {
   group('T-08 · StaticLabels · tablolar', () {
-    test('yedi tablo, toplam 77 kimlik (8 + 16 + 6 + 24 + 10 + 8 + 5)', () {
+    test('yedi tablo, toplam 78 kimlik (8 + 16 + 6 + 25 + 10 + 8 + 5)', () {
       expect(
         {for (final table in _tables) table.name: table.ids.length},
         {
           'category': 8,
           'interest': 16,
           'faculty': 6,
-          'department': 24,
+          'department': 25,
           'place': 10,
           'year': 8,
           'eventType': 5,
@@ -114,7 +114,7 @@ void main() {
       expect(_arbKey(table('category'), 'k01'), 'catK01');
       expect(_arbKey(table('interest'), 'i16'), 'interestI16');
       expect(_arbKey(table('faculty'), 'f6'), 'facultyF6');
-      expect(_arbKey(table('department'), 'd24'), 'deptD24');
+      expect(_arbKey(table('department'), 'd25'), 'deptD25');
       expect(_arbKey(table('place'), 'pl10'), 'placePl10');
       expect(
         [for (final id in table('year').ids) _arbKey(table('year'), id)],

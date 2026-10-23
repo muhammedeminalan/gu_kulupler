@@ -10,6 +10,15 @@ const String _sourcePath =
     'packages/gu_data/lib/src/constants/static_tables.dart';
 
 final Map<String, Object?> _demo = readRepoJson('tool/seed/demo-data.json');
+
+/// Tasarım sonrası eklenen bölümler (demo-data.json kilitli).
+final List<Map<String, Object?>> _extraDepartments = [
+  for (final row
+      in readRepoJson('tool/seed/extra-departments.json')['departments']!
+          as List<Object?>)
+    row! as Map<String, Object?>,
+];
+
 final Map<String, Object?> _registry = readRepoJson(
   'design/extracted/registry.json',
 );
@@ -225,12 +234,13 @@ void main() {
     });
   });
 
-  group('T-08 · StaticTables · departments ↔ demo-data.json', () {
-    final rows = _demoRows('departments');
+  group('T-08 · StaticTables · departments ↔ demo-data.json + ek', () {
+    final rows = [..._demoRows('departments'), ..._extraDepartments];
 
-    test('24 bölüm', () {
-      expect(rows, hasLength(24));
-      expect(StaticTables.departments, hasLength(24));
+    test("25 bölüm (tasarımın 24'ü + d25)", () {
+      expect(_demoRows('departments'), hasLength(24));
+      expect(rows, hasLength(25));
+      expect(StaticTables.departments, hasLength(25));
       expect(_planCount('Bölümler'), StaticTables.departments.length);
     });
 
@@ -244,11 +254,11 @@ void main() {
       ]);
     });
 
-    test('kimlikler d01–d24', () {
+    test('kimlikler d01–d25', () {
       expect(
         [for (final department in StaticTables.departments) department.id],
         [
-          for (var n = 1; n <= 24; n++) 'd${n.toString().padLeft(2, '0')}',
+          for (var n = 1; n <= 25; n++) 'd${n.toString().padLeft(2, '0')}',
         ],
       );
     });
@@ -335,7 +345,7 @@ void main() {
       expect(ids('f1'), ['d01', 'd02', 'd03', 'd04', 'd05', 'd06', 'd07']);
       expect(ids('f2'), ['d08', 'd09']);
       expect(ids('f3'), ['d10', 'd11', 'd12', 'd13', 'd14', 'd15']);
-      expect(ids('f4'), ['d16', 'd17', 'd18']);
+      expect(ids('f4'), ['d16', 'd17', 'd18', 'd25']);
       expect(ids('f5'), ['d19', 'd20']);
       expect(ids('f6'), ['d21', 'd22', 'd23', 'd24']);
     });
@@ -352,7 +362,7 @@ void main() {
     });
 
     test('demo dosyasındaki faculty bağlarıyla her fakülte için aynı', () {
-      final rows = _demoRows('departments');
+      final rows = [..._demoRows('departments'), ..._extraDepartments];
 
       for (final faculty in StaticTables.faculties) {
         expect(
@@ -375,7 +385,9 @@ void main() {
           ...StaticTables.departmentsOf(faculty.id),
       ];
 
-      expect(all, StaticTables.departments);
+      // Ek bölüm (d25) listenin sonunda, fakültesinin grubunda çıkar.
+      expect(all, unorderedEquals(StaticTables.departments));
+      expect(all, hasLength(StaticTables.departments.length));
     });
 
     test('bilinmeyen fakülte boş liste döner', () {
@@ -520,14 +532,14 @@ void main() {
       'popularSearches': StaticTables.popularSearches,
     };
 
-    test('sekiz tablonun satır sayıları: 8 · 16 · 6 · 24 · 10 · 8 · 5 · 6', () {
+    test('sekiz tablonun satır sayıları: 8 · 16 · 6 · 25 · 10 · 8 · 5 · 6', () {
       expect(
         {for (final entry in tables.entries) entry.key: entry.value.length},
         {
           'categories': 8,
           'interests': 16,
           'faculties': 6,
-          'departments': 24,
+          'departments': 25,
           'places': 10,
           'years': 8,
           'eventTypes': 5,
@@ -547,7 +559,7 @@ void main() {
       expect(StaticTables.categoryIds, hasLength(8));
       expect(StaticTables.interestIds, hasLength(16));
       expect(StaticTables.facultyIds, hasLength(6));
-      expect(StaticTables.departmentIds, hasLength(24));
+      expect(StaticTables.departmentIds, hasLength(25));
       expect(StaticTables.placeIds, hasLength(10));
     });
 
@@ -561,7 +573,7 @@ void main() {
       ];
       final union = {for (final ids in lookups) ...ids};
 
-      expect(union, hasLength(8 + 16 + 6 + 24 + 10));
+      expect(union, hasLength(8 + 16 + 6 + 25 + 10));
     });
 
     test('kimlik kümeleri üyelik sorgusunu doğru yanıtlar', () {
@@ -572,8 +584,8 @@ void main() {
       expect(StaticTables.interestIds.contains('i17'), isFalse);
       expect(StaticTables.facultyIds.contains('f6'), isTrue);
       expect(StaticTables.facultyIds.contains('f0'), isFalse);
-      expect(StaticTables.departmentIds.contains('d24'), isTrue);
-      expect(StaticTables.departmentIds.contains('d25'), isFalse);
+      expect(StaticTables.departmentIds.contains('d25'), isTrue);
+      expect(StaticTables.departmentIds.contains('d26'), isFalse);
       expect(StaticTables.placeIds.contains('pl10'), isTrue);
       expect(StaticTables.placeIds.contains('pl11'), isFalse);
       expect(StaticTables.placeIds.contains(''), isFalse);
@@ -612,7 +624,7 @@ void main() {
       );
       expect(StaticTables.facultyIds.clear, throwsUnsupportedError);
       expect(
-        () => StaticTables.departmentIds.add('d25'),
+        () => StaticTables.departmentIds.add('d26'),
         throwsUnsupportedError,
       );
       expect(() => StaticTables.placeIds.add('pl11'), throwsUnsupportedError);
@@ -701,9 +713,12 @@ void main() {
         {for (final club in _demoDocs('clubs')) club['categoryId']},
         StaticTables.categoryIds,
       );
+      // Tasarım sonrası eklenen bölümler demo veride kullanılmaz.
       expect(
         {for (final user in users) ?user['department']},
-        StaticTables.departmentIds,
+        StaticTables.departmentIds.difference({
+          for (final row in _extraDepartments) row['id'],
+        }),
       );
       expect({
         for (final user in users) ...user['interests']! as List<Object?>,

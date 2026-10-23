@@ -67,7 +67,7 @@ abstract final class StaticLabels {
     };
   }
 
-  /// Bölüm adı (`d01`–`d24` → `deptD01`–`deptD24`).
+  /// Bölüm adı (`d01`–`d25` → `deptD01`–`deptD25`).
   static String department(BuildContext context, String id) {
     final l10n = AppLocalizations.of(context);
     return switch (id) {
@@ -95,6 +95,7 @@ abstract final class StaticLabels {
       'd22' => l10n.deptD22,
       'd23' => l10n.deptD23,
       'd24' => l10n.deptD24,
+      'd25' => l10n.deptD25,
       _ => id,
     };
   }

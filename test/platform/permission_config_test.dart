@@ -111,9 +111,11 @@ void main() {
       r'<uses-permission\s+android:name="([^"]+)"',
     ).allMatches(manifest).map((match) => match.group(1)).toList();
 
-    test('kamera (DLG-04), bildirim (DLG-03) ve — T-23 — yeniden başlatma '
-        '(yerel hatırlatıcı) izni bildirilir; başka izin yok', () {
+    test('internet (1.1.0: release manifestinde açıkça), kamera (DLG-04), '
+        'bildirim (DLG-03) ve — T-23 — yeniden başlatma (yerel hatırlatıcı) '
+        'izni bildirilir; başka izin yok', () {
       expect(permissions, [
+        'android.permission.INTERNET',
         'android.permission.CAMERA',
         'android.permission.POST_NOTIFICATIONS',
         'android.permission.RECEIVE_BOOT_COMPLETED',

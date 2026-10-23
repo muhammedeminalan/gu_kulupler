@@ -39,11 +39,11 @@ void main() {
 
     expect(
       tester.getSemantics(find.text('Etkinlikler')),
-      containsSemantics(isButton: true, isSelected: true),
+      isSemantics(isButton: true, isSelected: true),
     );
     expect(
       tester.getSemantics(find.text('Kulüpler')),
-      containsSemantics(isButton: true, isSelected: false),
+      isSemantics(isButton: true, isSelected: false),
     );
     expect(
       tester.getSize(find.byKey(const ValueKey<String>('side.0'))).height,

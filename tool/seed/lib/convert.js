@@ -10,6 +10,8 @@
 // `*_rel_days` anahtarları yazılmaz.
 // Zamanlar JS `Date` olarak döner (yazıcı bunları Firestore `timestampValue`'ya çevirir).
 const { trLower } = require('./tr_lower');
+// Tasarım sonrası eklenen bölümler (demo-data.json kilitli): StaticTables = demo + ek, sırayla.
+const EXTRA_DEPARTMENTS = require('../extra-departments.json').departments;
 
 /** Askıdaki kullanıcıların `private/account` belgesine yazılan neden (PLAN §9.12, CD-133). */
 const SEED_SUSPEND_REASON = 'Topluluk kurallarının ihlali.';
@@ -741,7 +743,10 @@ function staticTablesDiff(raw, staticTablesSource) {
   const expected = {
     categories: [pairs('CategoryModel', 'icon'), raw.categories.map((c) => `${c.id}:${c.icon}`)],
     interests: [pairs('InterestModel', 'categoryId'), raw.interests.map((i) => `${i.id}:${i.cat}`)],
-    departments: [pairs('DepartmentModel', 'facultyId'), raw.departments.map((d) => `${d.id}:${d.faculty}`)],
+    departments: [
+      pairs('DepartmentModel', 'facultyId'),
+      [...raw.departments, ...EXTRA_DEPARTMENTS].map((d) => `${d.id}:${d.faculty}`),
+    ],
     places: [pairs('PlaceModel', null), raw.places.map((p) => (typeof p === 'string' ? p : p.id))],
   };
   const problems = [];
