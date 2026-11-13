@@ -7,21 +7,35 @@
 /// ARB'dedir (`aboutLicense*`, `aboutTeamGithub`).
 library;
 
+/// Ekip üyesinin görevi (etiketi ARB'de: `aboutTeamRole*`).
+enum AboutTeamRole {
+  /// Geliştirici.
+  developer,
+
+  /// Pazarlama.
+  marketing,
+}
+
 /// "Ekip" kartının satırı.
 ///
-/// Kullanıcı kararı 2026-10-16: prototipin üç örnek kişisi (rol etiketli)
-/// yerine tek geliştirici; rol etiketi yerine adın altında GitHub bağlantısı
-/// (DLG-32 → [githubUrl]), avatar olarak profil fotoğrafı ([avatarAsset]).
+/// Kullanıcı kararları: 2026-10-16 prototipin üç örnek kişisi yerine gerçek
+/// ekip, avatar olarak profil fotoğrafı ([avatarAsset]) ve adın altında
+/// GitHub bağlantısı (DLG-32 → [githubUrl]); 2026-11-13 ikinci üye (Batuhan
+/// Cengiz) ve adın altında görev ([role]).
 final class AboutTeamMember {
   /// [githubUser] GitHub kullanıcı adıdır (`github.com/<githubUser>`).
   const AboutTeamMember({
     required this.name,
+    required this.role,
     required this.githubUser,
     this.avatarAsset,
   });
 
   /// Ad soyad (avatar baş harfleri ve renk tohumu da buradan).
   final String name;
+
+  /// Görev (adın altında).
+  final AboutTeamRole role;
 
   /// GitHub kullanıcı adı.
   final String githubUser;
@@ -77,12 +91,19 @@ enum AboutLicense {
 
 /// Ekip ve ekrana özgü ölçüler.
 abstract final class AboutContent {
-  /// "Ekip" kartı (kullanıcı kararı 2026-10-16: yalnızca geliştirici).
+  /// "Ekip" kartı (kullanıcı kararları 2026-10-16, 2026-11-13).
   static const List<AboutTeamMember> team = [
     AboutTeamMember(
       name: 'Muhammed Emin Alan',
+      role: AboutTeamRole.developer,
       githubUser: 'muhammedeminalan',
       avatarAsset: 'assets/team/muhammed-emin-alan.jpg',
+    ),
+    AboutTeamMember(
+      name: 'Batuhan Cengiz',
+      role: AboutTeamRole.marketing,
+      githubUser: 'batucengiz',
+      avatarAsset: 'assets/team/batuhan-cengiz.jpg',
     ),
   ];
 

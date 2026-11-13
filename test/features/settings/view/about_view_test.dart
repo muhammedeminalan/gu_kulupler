@@ -116,17 +116,33 @@ void main() {
       expect(find.text('v1.0.0'), findsNWidgets(2));
       expect(find.textContaining(' · '), findsNothing);
       expect(find.text(l10n.aboutDesc), findsOneWidget);
-      expect(AboutContent.team, hasLength(1));
-      final member = AboutContent.team.single;
-      expect(member.name, 'Muhammed Emin Alan');
-      expect(find.text(member.name), findsOneWidget);
-      expect(find.text('github.com/muhammedeminalan'), findsOneWidget);
-      final avatar = tester.widget<GuAvatar>(find.byType(GuAvatar));
+      // Kullanıcı kararı 2026-11-13: iki üye, adın altında görev.
       expect(
-        avatar.image,
-        const AssetImage('assets/team/muhammed-emin-alan.jpg'),
+        [for (final m in AboutContent.team) m.name],
+        [
+          'Muhammed Emin Alan',
+          'Batuhan Cengiz',
+        ],
       );
-      expect(avatar.size, GuSizes.avatar);
+      final member = AboutContent.team.first;
+      for (final m in AboutContent.team) {
+        expect(find.text(m.name), findsOneWidget);
+      }
+      expect(find.text(l10n.aboutTeamRoleDeveloper), findsOneWidget);
+      expect(find.text(l10n.aboutTeamRoleMarketing), findsOneWidget);
+      expect(find.text('github.com/muhammedeminalan'), findsOneWidget);
+      expect(find.text('github.com/batucengiz'), findsOneWidget);
+      final avatars = tester
+          .widgetList<GuAvatar>(find.byType(GuAvatar))
+          .toList();
+      expect(
+        [for (final a in avatars) a.image],
+        const [
+          AssetImage('assets/team/muhammed-emin-alan.jpg'),
+          AssetImage('assets/team/batuhan-cengiz.jpg'),
+        ],
+      );
+      expect(avatars.map((a) => a.size).toSet(), {GuSizes.avatar});
       // Satır tek düğüm: ad + "GitHub profili" (adres okunmaz).
       final row = tester.getSemantics(find.byKey(_k('team.github')));
       expect(row.label, contains(member.name));
@@ -183,6 +199,13 @@ void main() {
       expect(launcher.opened, [
         Uri.parse('https://github.com/muhammedeminalan'),
       ]);
+
+      // İkinci üye: kendi anahtarıyla, kendi profili.
+      final second = find.byKey(_k('team.github.batucengiz'));
+      await tester.ensureVisible(second);
+      await tester.tap(second);
+      await tester.pumpAndSettle();
+      expect(launcher.opened.last, Uri.parse('https://github.com/batucengiz'));
     });
 
     testWidgets('koşullar / gizlilik → AUT-06 (push); destek → SET-05; '
@@ -233,16 +256,16 @@ void main() {
       const locale = Locale('tr');
       for (final theme in kGoldenThemes) {
         await tester.pumpApp(const AboutView(), theme: theme);
-        final photo = find.descendant(
+        final photos = find.descendant(
           of: find.byType(GuAvatar),
           matching: find.byType(Image),
         );
-        await tester.runAsync(
-          () => precacheImage(
-            tester.widget<Image>(photo).image,
-            tester.element(photo),
-          ),
-        );
+        expect(photos, findsNWidgets(AboutContent.team.length));
+        for (final photo in photos.evaluate().toList()) {
+          await tester.runAsync(
+            () => precacheImage((photo.widget as Image).image, photo),
+          );
+        }
         await tester.pumpAndSettle();
         await expectLater(
           find.byKey(kPumpAppBoundaryKey),

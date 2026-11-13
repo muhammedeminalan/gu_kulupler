@@ -104,6 +104,14 @@
   "@aboutTeamGithub": {
     "description": "Key about.team.github"
   },
+  "aboutTeamRoleDeveloper": "Geliştirici",
+  "@aboutTeamRoleDeveloper": {
+    "description": "Key about.team.roleDeveloper"
+  },
+  "aboutTeamRoleMarketing": "Pazarlama",
+  "@aboutTeamRoleMarketing": {
+    "description": "Key about.team.roleMarketing"
+  },
   "aboutTitle": "Hakkında",
   "@aboutTitle": {
     "description": "Key about.title"

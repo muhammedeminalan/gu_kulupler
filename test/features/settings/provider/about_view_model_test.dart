@@ -105,7 +105,7 @@ void main() {
 
   test('ekip satırı: DLG-32 "Aç" → GitHub profili açılır; vazgeçilirse '
       'açılmaz', () async {
-    final member = AboutContent.team.single;
+    final member = AboutContent.team.first;
     expect(member.githubUrl, Uri.parse('https://github.com/muhammedeminalan'));
     expect(member.githubLabel, 'github.com/muhammedeminalan');
 
