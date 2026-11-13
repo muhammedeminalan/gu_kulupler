@@ -7,6 +7,7 @@ Biçim [Keep a Changelog](https://keepachangelog.com/tr-TR/1.1.0/) kurallarına 
 ## [Yayınlanmamış]
 
 ### Eklendi
+- Hakkında › Ekip: **Batuhan Cengiz** (Pazarlama) eklendi; iki üyenin adının altında görevi görünür (H-27).
 - Bölüm listesine **Yönetim Bilişim Sistemleri** (İktisadi ve İdari Bilimler Fakültesi) eklendi (H-26).
 
 ### Planlandı

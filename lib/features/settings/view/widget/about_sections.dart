@@ -7,13 +7,14 @@ import 'package:gu_ui/gu_ui.dart';
 /// SET-04 kartları — prototip `screens-profile.js:100–103`. Durum ve
 /// eylemler `AboutView`'dan gelir; kartlar yalnızca çizer.
 
-/// "Ekip" kartı (`card-body col gap8`): başlık + ekip satırı.
+/// "Ekip" kartı (`card-body col gap8`): başlık + ekip satırları.
 ///
-/// Kullanıcı kararı 2026-10-16: tek kişi; satır = avatar 40 (profil
-/// fotoğrafı, yüklenemezse baş harfler) + ad, altında GitHub satırı
-/// (`external-link` 14 + `github.com/<kullanıcı>`, caption, marka rengi).
-/// Satırın tamamı dokunulabilir (`SET-04.team.github` → [onOpenGithub],
-/// DLG-32 dış bağlantı onayı).
+/// Kullanıcı kararları 2026-10-16 / 2026-11-13: satır = avatar 40 (profil
+/// fotoğrafı, yüklenemezse baş harfler) + ad, altında görev (caption, ikincil
+/// renk) ve GitHub satırı (`external-link` 14 + `github.com/<kullanıcı>`,
+/// caption, marka rengi). Satırın tamamı dokunulabilir ([onOpenGithub],
+/// DLG-32 dış bağlantı onayı); anahtar ilk üyede `SET-04.team.github`,
+/// sonrakilerde `SET-04.team.github.<kullanıcı>` (kardeş anahtarlar tekil).
 class AboutTeamCard extends StatelessWidget {
   /// [onOpenGithub] ekip satırına dokunmadır.
   const AboutTeamCard({required this.onOpenGithub, super.key});
@@ -34,9 +35,13 @@ class AboutTeamCard extends StatelessWidget {
         spacing: GuSpacing.s8,
         children: [
           Text(l10n.aboutTeam.upperFor(locale), style: gu.text.overline),
-          for (final member in AboutContent.team)
+          for (final (index, member) in AboutContent.team.indexed)
             GuTapTarget(
-              key: GuKey.action('SET-04.team.github'),
+              key: GuKey.action(
+                index == 0
+                    ? 'SET-04.team.github'
+                    : 'SET-04.team.github.${member.githubUser}',
+              ),
               onTap: () => onOpenGithub(member),
               child: Row(
                 spacing: GuSizes.tileGap,
@@ -60,6 +65,14 @@ class AboutTeamCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: gu.text.bodyM.copyWith(
                             color: gu.colors.textHeading,
+                          ),
+                        ),
+                        Text(
+                          _roleOf(l10n, member.role),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: gu.text.caption.copyWith(
+                            color: gu.colors.textSecondary,
                           ),
                         ),
                         // Ekran okuyucu adresi değil "GitHub profili"ni okur.
@@ -95,6 +108,13 @@ class AboutTeamCard extends StatelessWidget {
       ),
     );
   }
+
+  /// Görev etiketi.
+  static String _roleOf(AppLocalizations l10n, AboutTeamRole role) =>
+      switch (role) {
+        AboutTeamRole.developer => l10n.aboutTeamRoleDeveloper,
+        AboutTeamRole.marketing => l10n.aboutTeamRoleMarketing,
+      };
 }
 
 /// "Açık kaynak lisansları" kartı: başlık (12 / 16 / 4) + her lisans için
